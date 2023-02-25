@@ -4,7 +4,7 @@ import * as path from 'path'
 import {expect, test} from '@jest/globals'
 
 test('test runs', () => {
-  process.env['INPUT_ACTION'] = 'code-reviewer'
+  process.env['INPUT_ACTION'] = 'code-review'
   const np = process.execPath
   const ip = path.join(__dirname, '..', 'lib', 'main.js')
   const options: cp.ExecFileSyncOptions = {

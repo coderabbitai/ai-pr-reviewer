@@ -6,6 +6,14 @@ inputs:
     required: false
     description: 'The action to run'
     default: 'code-review'
+  prompt:
+    required: false
+    description: 'We have a pull request with title $title and the description is as follows: $description. Here is the code patch of filename $filename, please do a brief code review, tell me any bug risk and improvement suggestion. Please note the input is in diff format'
+    default: 'code-review'
+  prompt_suffix:
+    required: false
+    description: 'Just tell me "LGTM!" if you think the patch looks good and nothing to improve.'
+    default: 'code-review'
 runs:
   using: 'node16'
   main: 'dist/index.js'

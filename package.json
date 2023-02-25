@@ -2,14 +2,16 @@
   "name": "chatgpt-action",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "A collection of ChatGPT assistants, e.g., code viewer, labeler, assigner, etc.",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
+    "package": "ncc build --source-map --license licenses.txt",
+    "act": "npm run build && npm run package && ./bin/act pull_request_target --secret-file .secrets",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
@@ -22,11 +24,14 @@
     "node",
     "setup"
   ],
-  "author": "",
+  "author": "Tao He <sighingnow@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.0",
-    "chatgpt": "^4.7.2"
+    "@actions/github": "^5.1.1",
+    "@octokit/action": "^5.0.2",
+    "chatgpt": "^4.7.2",
+    "node-fetch": "^3.3.0"
   },
   "devDependencies": {
     "@jest/globals": "^27.2.5",
