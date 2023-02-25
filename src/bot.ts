@@ -24,7 +24,7 @@ export class Bot {
       this.bot = new ChatGPTUnofficialProxyAPI({
         accessToken: process.env.CHATGPT_ACCESS_TOKEN,
         apiReverseProxyUrl: options.chatgpt_reverse_proxy,
-        debug: options.debug,
+        debug: options.debug
       })
     } else if (process.env.OPENAI_API_KEY) {
       this.mimic = new ChatGPTAPI({
@@ -63,9 +63,9 @@ export class Bot {
         opts.parentMessageId = this.history.id
         opts.conversationId = this.history.conversationId
       }
-      core.info("opts: " + JSON.stringify(opts));
+      core.info('opts: ' + JSON.stringify(opts))
       response = await this.bot.sendMessage(message, opts)
-      core.info("response: " + JSON.stringify(response));
+      core.info('response: ' + JSON.stringify(response))
     } else if (this.mimic) {
       let opts: SendMessageOptions = {
         promptPrefix: ' ', // use a space to avoid the prefix from the "chatgpt" library

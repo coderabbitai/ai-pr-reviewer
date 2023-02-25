@@ -23403,7 +23403,7 @@ class Bot {
             this.bot = new ChatGPTUnofficialProxyAPI({
                 accessToken: process.env.CHATGPT_ACCESS_TOKEN,
                 apiReverseProxyUrl: options.chatgpt_reverse_proxy,
-                debug: options.debug,
+                debug: options.debug
             });
         }
         else if (process.env.OPENAI_API_KEY) {
@@ -23439,9 +23439,9 @@ class Bot {
                 opts.parentMessageId = this.history.id;
                 opts.conversationId = this.history.conversationId;
             }
-            core.info("opts: " + JSON.stringify(opts));
+            core.info('opts: ' + JSON.stringify(opts));
             response = await this.bot.sendMessage(message, opts);
-            core.info("response: " + JSON.stringify(response));
+            core.info('response: ' + JSON.stringify(response));
         }
         else if (this.mimic) {
             let opts = {
@@ -23559,10 +23559,10 @@ class Commenter {
             owner: repo.owner,
             repo: repo.repo,
             pull_number: pull_number,
+            body: message,
             commit_id: commit_id,
             path: path,
-            line: line,
-            body: message
+            line: line
         });
     }
 }
@@ -23702,9 +23702,6 @@ const codeReview = async (bot, options, prompts) => {
         core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    const line_number = (line) => {
-        return line === null || line === undefined ? 0 : line;
-    };
     let inputs = new Inputs();
     inputs.title = review_context.payload.pull_request.title;
     if (review_context.payload.pull_request.body) {
@@ -23727,6 +23724,12 @@ const codeReview = async (bot, options, prompts) => {
     }
     // find existing comments
     const comments = await list_review_comments(review_context.payload.pull_request.number);
+    const comments_and_lines = comments.map(comment => {
+        return {
+            comment: comment,
+            line: ensure_line_number(comment.line)
+        };
+    });
     // find patches to review
     let patches = [];
     for (let file of files) {
@@ -23734,21 +23737,14 @@ const codeReview = async (bot, options, prompts) => {
         if (!patch) {
             continue;
         }
-        let lines = patch.split('\n');
-        let target_line = lines.length - 1;
-        for (let i = lines.length - 1; i >= 0; i--) {
-            if (lines[i].startsWith('+') || lines[i].startsWith('-')) {
-                target_line = i;
-                break;
-            }
-        }
+        let line = patch_comment_line(patch);
         // skip existing comments
-        if (comments.some(comment => {
-            return comment.path === file.filename && comment.line === target_line;
+        if (comments_and_lines.some(comment => {
+            return comment.comment.path === file.filename && comment.line === line;
         })) {
             continue;
         }
-        patches.push([file.filename, target_line, patch]);
+        patches.push([file.filename, line, patch]);
     }
     if (patches.length > 0) {
         await bot.chat('review', prompts.render_review_beginning(inputs), true);
@@ -23763,7 +23759,9 @@ const codeReview = async (bot, options, prompts) => {
             continue;
         }
         try {
-            await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, patch.split('\n').length - 1, `[chatgpt review] ${response}`);
+            await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, response.startsWith('ChatGPT')
+                ? `:robot: ${response}`
+                : `:robot: ChatGPT: ${response}`);
         }
         catch (e) {
             core.warning(`Failed to comment: ${e}, skip this comment.
@@ -23791,6 +23789,17 @@ const list_review_comments = async (target, page = 1) => {
     else {
         return comments;
     }
+};
+const patch_comment_line = (patch) => {
+    let index0 = patch.indexOf('+');
+    let index1 = patch.indexOf(',', index0);
+    let index2 = patch.indexOf(' ', index1);
+    let line1 = parseInt(patch.substring(index0 + 1, index1));
+    let line2 = parseInt(patch.substring(index1 + 1, index2));
+    return line1 + line2 - 1;
+};
+const ensure_line_number = (line) => {
+    return line === null || line === undefined ? 0 : line;
 };
 
 ;// CONCATENATED MODULE: ./lib/score.js
@@ -23845,7 +23854,7 @@ const scorePullRequest = async (bot, options, prompts) => {
     const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
     const response = await bot.chat('score', prompts.render_scoring(inputs));
     const commenter = new Commenter();
-    await commenter.comment(`[chatgpt score] ${response}`, tag, 'replace');
+    await commenter.comment(`:robot: ChatGPT score: ${response}`, tag, 'replace');
 };
 
 ;// CONCATENATED MODULE: ./lib/main.js

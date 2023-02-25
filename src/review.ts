@@ -33,9 +33,6 @@ export const codeReview = async (
     return
   }
 
-  const line_number = (line: number | null | undefined) => {
-    return line === null || line === undefined ? 0 : line
-  }
   let inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body) {
@@ -61,6 +58,12 @@ export const codeReview = async (
   const comments = await list_review_comments(
     context.payload.pull_request.number
   )
+  const comments_and_lines = comments.map(comment => {
+    return {
+      comment: comment,
+      line: ensure_line_number(comment.line)
+    }
+  })
 
   // find patches to review
   let patches: Array<[string, number, string]> = []
@@ -69,23 +72,16 @@ export const codeReview = async (
     if (!patch) {
       continue
     }
-    let lines = patch.split('\n')
-    let target_line = lines.length - 1
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (lines[i].startsWith('+') || lines[i].startsWith('-')) {
-        target_line = i
-        break
-      }
-    }
+    let line = patch_comment_line(patch)
     // skip existing comments
     if (
-      comments.some(comment => {
-        return comment.path === file.filename && comment.line === target_line
+      comments_and_lines.some(comment => {
+        return comment.comment.path === file.filename && comment.line === line
       })
     ) {
       continue
     }
-    patches.push([file.filename, target_line, patch])
+    patches.push([file.filename, line, patch])
   }
 
   if (patches.length > 0) {
@@ -109,8 +105,10 @@ export const codeReview = async (
         context.payload.pull_request.number,
         commits[commits.length - 1].sha,
         filename,
-        patch.split('\n').length - 1,
-        `[chatgpt review] ${response}`,
+        line,
+        response.startsWith('ChatGPT')
+          ? `:robot: ${response}`
+          : `:robot: ChatGPT: ${response}`
       )
     } catch (e) {
       core.warning(`Failed to comment: ${e}, skip this comment.
@@ -138,4 +136,18 @@ const list_review_comments = async (target: number, page: number = 1) => {
   } else {
     return comments
   }
+}
+
+const patch_comment_line = (patch: string): number => {
+  let index0 = patch.indexOf('+')
+  let index1 = patch.indexOf(',', index0)
+  let index2 = patch.indexOf(' ', index1)
+
+  let line1 = parseInt(patch.substring(index0 + 1, index1))
+  let line2 = parseInt(patch.substring(index1 + 1, index2))
+  return line1 + line2 - 1
+}
+
+const ensure_line_number = (line: number | null | undefined): number => {
+  return line === null || line === undefined ? 0 : line
 }

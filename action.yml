@@ -29,7 +29,8 @@ inputs:
 
       Next, I will given you a series of patches, each of them consists of a filename and a diff
       snippet, and you need to do a brief code review for every message, and tell me any bug risk
-      and improvement suggestion. If the patch is looks good and acceptable, please reply "LGTM!".
+      and improvement suggestion. If the patch is looks good and acceptable, please reply "LGTM!"
+      with a short comment with 30 words.
 
       You answer should be concise. Don't include the diff in your comment, and markdown format is
       preferred. Reply "OK" to confirm.

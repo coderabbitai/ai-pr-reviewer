@@ -30,10 +30,10 @@ export class Commenter {
       owner: repo.owner,
       repo: repo.repo,
       pull_number: pull_number,
+      body: message,
       commit_id: commit_id,
       path: path,
-      line: line,
-      body: message
+      line: line
     })
   }
 }
