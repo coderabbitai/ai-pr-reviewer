@@ -1,0 +1,11 @@
+name: 'chatgpt-action'
+description: 'A collection of ChatGPT assistants, e.g., code viewer, labeler, assigner, etc.'
+author: 'Tao He'
+inputs:
+  action:
+    required: false
+    description: 'The action to run'
+    default: 'code-review'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
