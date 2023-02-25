@@ -11,9 +11,13 @@ const repo = context.repo
 
 import {Bot} from './bot.js'
 import {Commenter} from './commenter.js'
-import {Prompts, Inputs} from './prompt.js'
+import {Prompts, Inputs, Options} from './options.js'
 
-export const codeReview = async (bot: Bot, prompts: Prompts) => {
+export const codeReview = async (
+  bot: Bot,
+  options: Options,
+  prompts: Prompts
+) => {
   if (
     context.eventName != 'pull_request' &&
     context.eventName != 'pull_request_target'
@@ -85,7 +89,7 @@ export const codeReview = async (bot: Bot, prompts: Prompts) => {
   }
 
   if (patches.length > 0) {
-    await bot.talk('review', prompts.render_review_beginning(inputs))
+    await bot.chat('review', prompts.render_review_beginning(inputs), true)
   }
 
   const commenter: Commenter = new Commenter()
@@ -93,20 +97,27 @@ export const codeReview = async (bot: Bot, prompts: Prompts) => {
     core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
     inputs.filename = filename
     inputs.patch = patch
-    const response = await bot.talk(
+    const response = await bot.chat(
       'review',
       prompts.render_review_patch(inputs)
     )
-    if (response.indexOf('LGTM!') != -1) {
+    if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
       continue
     }
-    commenter.review_comment(
-      context.payload.pull_request.number,
-      context.payload.pull_request.head.sha,
-      filename,
-      line,
-      response
-    )
+    try {
+      await commenter.review_comment(
+        context.payload.pull_request.number,
+        commits[commits.length - 1].sha,
+        filename,
+        patch.split('\n').length - 1,
+        `[chatgpt review] ${response}`,
+      )
+    } catch (e) {
+      core.warning(`Failed to comment: ${e}, skip this comment.
+        filename: ${filename}
+        line: ${line}
+        patch: ${patch}`)
+    }
   }
 }
 

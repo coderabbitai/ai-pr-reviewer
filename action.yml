@@ -6,6 +6,19 @@ inputs:
     required: false
     description: 'The action to run, currently can be "review", "score"'
     default: 'code-review'
+  debug:
+    required: false
+    description: 'Enable debug mode'
+    default: false
+  chatgpt_reverse_proxy:
+    required: false
+    description: |
+      The URL of the chatgpt reverse proxy, see also https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy
+    default: https://chat.duti.tech/api/conversation
+  review_comment_lgtm:
+    required: false
+    description: 'Leave comments even the patch is LGTM'
+    default: false
   review_beginning:
     required: false
     description: "The beginning prompt of a code review dialog"
@@ -18,8 +31,8 @@ inputs:
       snippet, and you need to do a brief code review for every message, and tell me any bug risk
       and improvement suggestion. If the patch is looks good and acceptable, please reply "LGTM!".
 
-      You answer should be concise and don't repeat the diff snippets, and markdown format is preferred.
-      Tell me "OK!" once you are ready.
+      You answer should be concise. Don't include the diff in your comment, and markdown format is
+      preferred. Reply "OK" to confirm.
   review_patch:
     required: false
     description: 'The prompt for each chunks/patches'

@@ -1,4 +1,4 @@
-import './sourcemap-register.cjs';import { createRequire as __WEBPACK_EXTERNAL_createRequire } from "module";
+import { createRequire as __WEBPACK_EXTERNAL_createRequire } from "module";
 /******/ var __webpack_modules__ = ({
 
 /***/ 7958:
@@ -20151,8 +20151,6 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ./node_modules/.store/@actions+core@1.10.0/node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(4606);
-// EXTERNAL MODULE: ./node_modules/.store/@octokit+action@5.0.2/node_modules/@octokit/action/dist-node/index.js
-var dist_node = __nccwpck_require__(3110);
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
 ;// CONCATENATED MODULE: external "node:https"
@@ -22310,7 +22308,7 @@ if (!globalThis.fetch) {
     globalThis.Request = Request;
     globalThis.Response = Response;
 }
-//# sourceMappingURL=fetch-polyfill.js.map
+
 // EXTERNAL MODULE: ./node_modules/.store/keyv@4.5.2/node_modules/keyv/src/index.js
 var src = __nccwpck_require__(6907);
 ;// CONCATENATED MODULE: ./node_modules/.store/p-timeout@6.1.1/node_modules/p-timeout/index.js
@@ -23280,8 +23278,8 @@ var ChatGPTUnofficialProxyAPI = class {
   async sendMessage(text, opts = {}) {
     const {
       conversationId,
-      parentMessageId = uuidv42(),
-      messageId = uuidv42(),
+      parentMessageId = v4(),
+      messageId = v4(),
       action = "next",
       timeoutMs,
       onProgress
@@ -23312,7 +23310,7 @@ var ChatGPTUnofficialProxyAPI = class {
     }
     const result = {
       role: "assistant",
-      id: uuidv42(),
+      id: v4(),
       parentMessageId: messageId,
       conversationId,
       text: ""
@@ -23379,7 +23377,7 @@ var ChatGPTUnofficialProxyAPI = class {
           abortController.abort();
         };
       }
-      return pTimeout2(responseP, {
+      return pTimeout(responseP, {
         milliseconds: timeoutMs,
         message: "ChatGPT timed out waiting for response"
       });
@@ -23394,19 +23392,35 @@ var ChatGPTUnofficialProxyAPI = class {
 
 
 class Bot {
-    bot;
+    bot = null;
+    mimic = null;
+    history = null;
     MAX_PATCH_COUNT = 4000;
-    constructor(openai_api_key) {
-        if (!openai_api_key) {
-            if (process.env.OPENAI_API_KEY) {
-                openai_api_key = process.env.OPENAI_API_KEY;
-            }
+    options;
+    constructor(options) {
+        this.options = options;
+        if (process.env.CHATGPT_ACCESS_TOKEN) {
+            this.bot = new ChatGPTUnofficialProxyAPI({
+                accessToken: process.env.CHATGPT_ACCESS_TOKEN,
+                apiReverseProxyUrl: options.chatgpt_reverse_proxy,
+                debug: options.debug,
+            });
         }
-        this.bot = new ChatGPTAPI({
-            apiKey: openai_api_key
-        });
+        else if (process.env.OPENAI_API_KEY) {
+            this.mimic = new ChatGPTAPI({
+                apiKey: process.env.OPENAI_API_KEY,
+                debug: options.debug
+                // assistantLabel: " ",
+                // userLabel: " ",
+            });
+        }
+        else {
+            const err = "Unable to initialize the chatgpt API, both 'CHATGPT_ACCESS_TOKEN' " +
+                "and 'OPENAI_API_KEY' environment variable are not available";
+            throw new Error(err);
+        }
     }
-    talk = async (action, message) => {
+    chat = async (action, message, initial = false) => {
         if (!message) {
             return '';
         }
@@ -23415,25 +23429,57 @@ class Bot {
             core.warning(`Message is too long, truncate to ${this.MAX_PATCH_COUNT} tokens`);
             message = message.substring(0, this.MAX_PATCH_COUNT);
         }
-        core.debug(`sending to chatgpt: ${message}`);
-        const response = await this.bot.sendMessage(message, {
-            promptPrefix: 'hi,',
-            promptSuffix: "\nlet's start"
-        });
+        if (this.options.debug) {
+            core.info(`sending to chatgpt: ${message}`);
+        }
+        let response = null;
+        if (this.bot) {
+            let opts = {};
+            if (this.history && !initial) {
+                opts.parentMessageId = this.history.id;
+                opts.conversationId = this.history.conversationId;
+            }
+            core.info("opts: " + JSON.stringify(opts));
+            response = await this.bot.sendMessage(message, opts);
+            core.info("response: " + JSON.stringify(response));
+        }
+        else if (this.mimic) {
+            let opts = {
+                promptPrefix: ' ',
+                promptSuffix: ' ' // use a space to avoid the suffix from the "chatgpt" library
+            };
+            if (this.history && !initial) {
+                opts.parentMessageId = this.history.id;
+                opts.conversationId = this.history.conversationId;
+            }
+            response = await this.mimic.sendMessage(message, opts);
+        }
+        else {
+            core.setFailed('The chatgpt API is not initialized');
+        }
         let response_text = '';
         if (response) {
+            if (initial) {
+                this.history = response;
+            }
             response_text = response.text;
         }
         else {
             core.warning('chatgpt response is null');
         }
-        core.debug(`chatgpt responses: ${response_text}`);
+        // remove the prefix "with " in the response
+        if (response_text.startsWith('with ')) {
+            response_text = response_text.substring(5);
+        }
+        if (this.options.debug) {
+            core.info(`chatgpt responses: ${response_text}`);
+        }
         console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`);
         return response_text;
     };
 }
-//# sourceMappingURL=bot.js.map
-;// CONCATENATED MODULE: ./lib/prompt.js
+
+;// CONCATENATED MODULE: ./lib/options.js
 class Prompts {
     review_beginning;
     review_patch;
@@ -23475,9 +23521,21 @@ class Inputs {
             .replaceAll('$diff', this.diff);
     }
 }
-//# sourceMappingURL=prompt.js.map
+class Options {
+    debug;
+    chatgpt_reverse_proxy;
+    review_comment_lgtm;
+    constructor(debug, chatgpt_reverse_proxy, review_comment_lgtm = false) {
+        this.debug = debug;
+        this.chatgpt_reverse_proxy = chatgpt_reverse_proxy;
+        this.review_comment_lgtm = review_comment_lgtm;
+    }
+}
+
 // EXTERNAL MODULE: ./node_modules/.store/@actions+github@5.1.1/node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(4879);
+// EXTERNAL MODULE: ./node_modules/.store/@octokit+action@5.0.2/node_modules/@octokit/action/dist-node/index.js
+var dist_node = __nccwpck_require__(3110);
 ;// CONCATENATED MODULE: ./lib/commenter.js
 
 
@@ -23621,7 +23679,7 @@ const list_comments = async (target, page = 1) => {
         return comments;
     }
 };
-//# sourceMappingURL=commenter.js.map
+
 ;// CONCATENATED MODULE: ./lib/review.js
 
 
@@ -23634,7 +23692,7 @@ const review_context = github.context;
 const review_repo = review_context.repo;
 
 
-const codeReview = async (bot, prompts) => {
+const codeReview = async (bot, options, prompts) => {
     if (review_context.eventName != 'pull_request' &&
         review_context.eventName != 'pull_request_target') {
         core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
@@ -23693,18 +23751,26 @@ const codeReview = async (bot, prompts) => {
         patches.push([file.filename, target_line, patch]);
     }
     if (patches.length > 0) {
-        await bot.talk('review', prompts.render_review_beginning(inputs));
+        await bot.chat('review', prompts.render_review_beginning(inputs), true);
     }
     const commenter = new Commenter();
     for (let [filename, line, patch] of patches) {
         core.info(`Reviewing ${filename}:${line} with chatgpt ...`);
         inputs.filename = filename;
         inputs.patch = patch;
-        const response = await bot.talk('review', prompts.render_review_patch(inputs));
-        if (response.indexOf('LGTM!') != -1) {
+        const response = await bot.chat('review', prompts.render_review_patch(inputs));
+        if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
             continue;
         }
-        commenter.review_comment(review_context.payload.pull_request.number, review_context.payload.pull_request.head.sha, filename, line, response);
+        try {
+            await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, patch.split('\n').length - 1, `[chatgpt review] ${response}`);
+        }
+        catch (e) {
+            core.warning(`Failed to comment: ${e}, skip this comment.
+        filename: ${filename}
+        line: ${line}
+        patch: ${patch}`);
+        }
     }
 };
 const list_review_comments = async (target, page = 1) => {
@@ -23726,7 +23792,7 @@ const list_review_comments = async (target, page = 1) => {
         return comments;
     }
 };
-//# sourceMappingURL=review.js.map
+
 ;// CONCATENATED MODULE: ./lib/score.js
 
 
@@ -23739,7 +23805,7 @@ const score_context = github.context;
 const score_repo = score_context.repo;
 
 
-const scorePullRequest = async (bot, prompts) => {
+const scorePullRequest = async (bot, options, prompts) => {
     if (score_context.eventName != 'pull_request' &&
         score_context.eventName != 'pull_request_target') {
         core.warning(`Skipped: current event is ${score_context.eventName}, only support pull_request event`);
@@ -23759,21 +23825,29 @@ const scorePullRequest = async (bot, prompts) => {
         inputs.description = score_context.payload.pull_request.title;
     }
     // collect diff chunks
-    const { data: diff } = await score_octokit.pulls.get({
+    const diff = await score_octokit.repos.compareCommits({
         owner: score_repo.owner,
         repo: score_repo.repo,
-        pull_number: score_context.payload.pull_request.number,
-        mediaType: {
-            format: 'diff'
-        }
+        base: score_context.payload.pull_request.base.sha,
+        head: score_context.payload.pull_request.head.sha
     });
-    inputs.diff = `${diff}`;
+    let { files, commits } = diff.data;
+    if (files) {
+        inputs.diff = files.map(file => file.patch).join('\n\n');
+    }
+    else {
+        inputs.diff = '';
+    }
+    if (!files) {
+        core.warning(`Skipped: diff.data.files is null`);
+        return;
+    }
     const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
-    const response = await bot.talk('score', prompts.render_scoring(inputs));
+    const response = await bot.chat('score', prompts.render_scoring(inputs));
     const commenter = new Commenter();
-    await commenter.comment(`[chatgpt] ${response}`, tag, 'replace');
+    await commenter.comment(`[chatgpt score] ${response}`, tag, 'replace');
 };
-//# sourceMappingURL=score.js.map
+
 ;// CONCATENATED MODULE: ./lib/main.js
 
 
@@ -23781,27 +23855,26 @@ const scorePullRequest = async (bot, prompts) => {
 
 
 
-
 async function run() {
-    const octokit = new dist_node/* Octokit */.v();
+    const action = core.getInput('action');
+    const prompts = new Prompts(core.getInput('review_beginning'), core.getInput('review_patch'), core.getInput('scoring'));
+    let options = new Options(core.getBooleanInput('debug'), core.getInput('chatgpt_reverse_proxy'), core.getBooleanInput('review_comment_lgtm'));
     // initialize chatgpt bot
-    var bot;
+    let bot = null;
     try {
-        bot = new Bot(core.getInput('openai_api_key'));
+        bot = new Bot(options);
     }
     catch (e) {
         core.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}`);
         return;
     }
-    const action = core.getInput('action');
-    const prompts = new Prompts(core.getInput('review_beginning'), core.getInput('review_patch'), core.getInput('scoring'));
     try {
         core.info(`running Github action: ${action}`);
         if (action === 'score') {
-            await scorePullRequest(bot, prompts);
+            await scorePullRequest(bot, options, prompts);
         }
         else if (action === 'review') {
-            await codeReview(bot, prompts);
+            await codeReview(bot, options, prompts);
         }
         else {
             core.warning(`Unknown action: ${action}`);
@@ -23814,8 +23887,6 @@ async function run() {
     }
 }
 run();
-//# sourceMappingURL=main.js.map
+
 })();
 
-
-//# sourceMappingURL=index.js.map

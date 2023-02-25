@@ -11,9 +11,13 @@ const repo = context.repo
 
 import {Bot} from './bot.js'
 import {Commenter} from './commenter.js'
-import {Prompts, Inputs} from './prompt.js'
+import {Prompts, Inputs, Options} from './options.js'
 
-export const scorePullRequest = async (bot: Bot, prompts: Prompts) => {
+export const scorePullRequest = async (
+  bot: Bot,
+  options: Options,
+  prompts: Prompts
+) => {
   if (
     context.eventName != 'pull_request' &&
     context.eventName != 'pull_request_target'
@@ -39,18 +43,26 @@ export const scorePullRequest = async (bot: Bot, prompts: Prompts) => {
   }
 
   // collect diff chunks
-  const { data: diff } = await octokit.pulls.get({
+  const diff = await octokit.repos.compareCommits({
     owner: repo.owner,
     repo: repo.repo,
-    pull_number: context.payload.pull_request.number,
-    mediaType: {
-      format: 'diff'
-    }
+    base: context.payload.pull_request.base.sha,
+    head: context.payload.pull_request.head.sha
   })
-  inputs.diff = `${diff}`
+  let {files, commits} = diff.data
+  if (files) {
+    inputs.diff = files.map(file => file.patch).join('\n\n')
+  } else {
+    inputs.diff = ''
+  }
+
+  if (!files) {
+    core.warning(`Skipped: diff.data.files is null`)
+    return
+  }
 
   const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->'
-  const response = await bot.talk('score', prompts.render_scoring(inputs))
+  const response = await bot.chat('score', prompts.render_scoring(inputs))
   const commenter = new Commenter()
-  await commenter.comment(`[chatgpt] ${response}`, tag, 'replace')
+  await commenter.comment(`[chatgpt score] ${response}`, tag, 'replace')
 }

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "incremental": false,
-    "sourceMap": true,
+    "sourceMap": false,
     "allowJs": true,
     "checkJs": false,
     "moduleResolution": "node",
