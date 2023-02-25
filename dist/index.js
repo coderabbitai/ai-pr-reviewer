@@ -23403,64 +23403,264 @@ class Bot {
             }
         }
         this.bot = new ChatGPTAPI({
-            apiKey: openai_api_key,
+            apiKey: openai_api_key
         });
     }
     talk = async (action, message) => {
         if (!message) {
             return '';
         }
-        console.time(`chatgpt ${action} cost`);
+        console.time(`chatgpt ${action} ${message.length} tokens cost`);
         if (message.length > this.MAX_PATCH_COUNT) {
+            core.warning(`Message is too long, truncate to ${this.MAX_PATCH_COUNT} tokens`);
             message = message.substring(0, this.MAX_PATCH_COUNT);
         }
         core.debug(`sending to chatgpt: ${message}`);
-        const res = await this.bot.sendMessage(message, {
+        const response = await this.bot.sendMessage(message, {
             promptPrefix: 'hi,',
-            promptSuffix: "\nlet's start",
+            promptSuffix: "\nlet's start"
         });
-        core.debug(`chatgpt responses: ${message}`);
-        console.timeEnd(`chatgpt ${action} cost`);
-        return res.text;
+        let response_text = '';
+        if (response) {
+            response_text = response.text;
+        }
+        else {
+            core.warning('chatgpt response is null');
+        }
+        core.debug(`chatgpt responses: ${response_text}`);
+        console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`);
+        return response_text;
     };
 }
 //# sourceMappingURL=bot.js.map
+;// CONCATENATED MODULE: ./lib/prompt.js
+class Prompts {
+    review_beginning;
+    review_patch;
+    scoring;
+    constructor(review_beginning = '', review_patch = '', scoring = '') {
+        this.review_beginning = review_beginning;
+        this.review_patch = review_patch;
+        this.scoring = scoring;
+    }
+    render_review_beginning(inputs) {
+        return inputs.render(this.review_beginning);
+    }
+    render_review_patch(inputs) {
+        return inputs.render(this.review_patch);
+    }
+    render_scoring(inputs) {
+        return inputs.render(this.scoring);
+    }
+}
+class Inputs {
+    title;
+    description;
+    filename;
+    patch;
+    diff;
+    constructor(title = '', description = '', filename = '', patch = '', diff = '') {
+        this.title = title;
+        this.description = description;
+        this.filename = filename;
+        this.patch = patch;
+        this.diff = diff;
+    }
+    render(content) {
+        return content
+            .replaceAll('$title', this.title)
+            .replaceAll('$description', this.description)
+            .replaceAll('$filename', this.filename)
+            .replaceAll('$patch', this.patch)
+            .replaceAll('$diff', this.diff);
+    }
+}
+//# sourceMappingURL=prompt.js.map
 // EXTERNAL MODULE: ./node_modules/.store/@actions+github@5.1.1/node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(4879);
-;// CONCATENATED MODULE: ./lib/codereview.js
+;// CONCATENATED MODULE: ./lib/commenter.js
 
 
-const codeReview = async (bot, prompt, promptSuffix, octokit) => {
-    if (github.context.eventName != "pull_request" && github.context.eventName != "pull_request_target") {
-        core.warning(`Skipped: current event is ${github.context.eventName}, only support pull_request event`);
+
+const token = core.getInput('token')
+    ? core.getInput('token')
+    : process.env.GITHUB_TOKEN;
+const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
+const context = github.context;
+const repo = context.repo;
+const DEFAULT_TAG = '<!-- This is an auto-generated comment -->';
+class Commenter {
+    /**
+     * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
+     */
+    async comment(message, tag, mode) {
+        await comment(message, tag, mode);
+    }
+    async review_comment(pull_number, commit_id, path, line, message) {
+        await octokit.pulls.createReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number: pull_number,
+            commit_id: commit_id,
+            path: path,
+            line: line,
+            body: message
+        });
+    }
+}
+const comment = async (message, tag, mode) => {
+    let target;
+    if (context.payload.pull_request) {
+        target = context.payload.pull_request.number;
+    }
+    else if (context.payload.issue) {
+        target = context.payload.issue.number;
+    }
+    else {
+        core.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
         return;
     }
-    // compute the diff
-    const context = github.context;
-    const repo = context.repo;
-    if (!context.payload.pull_request) {
+    if (!tag) {
+        tag = DEFAULT_TAG;
+    }
+    const body = `${message}
+
+${tag}`;
+    if (mode == 'create') {
+        await create(body, tag, target);
+    }
+    else if (mode == 'replace') {
+        await replace(body, tag, target);
+    }
+    else if (mode == 'append') {
+        await append(body, tag, target);
+    }
+    else if (mode == 'prepend') {
+        await prepend(body, tag, target);
+    }
+    else {
+        core.warning(`Unknown mode: ${mode}, use "replace" instead`);
+        await replace(body, tag, target);
+    }
+};
+const create = async (body, tag, target) => {
+    await octokit.issues.createComment({
+        owner: repo.owner,
+        repo: repo.repo,
+        issue_number: target,
+        body: body
+    });
+};
+const replace = async (body, tag, target) => {
+    const comment = await find_comment_with_tag(tag, target);
+    if (comment) {
+        await octokit.issues.updateComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: body
+        });
+    }
+    else {
+        await create(body, tag, target);
+    }
+};
+const append = async (body, tag, target) => {
+    const comment = await find_comment_with_tag(tag, target);
+    if (comment) {
+        await octokit.issues.updateComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: `${comment.body} ${body}`
+        });
+    }
+    else {
+        await create(body, tag, target);
+    }
+};
+const prepend = async (body, tag, target) => {
+    const comment = await find_comment_with_tag(tag, target);
+    if (comment) {
+        await octokit.issues.updateComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: `${body} ${comment.body}`
+        });
+    }
+    else {
+        await create(body, tag, target);
+    }
+};
+const find_comment_with_tag = async (tag, target) => {
+    const comments = await list_comments(target);
+    for (let comment of comments) {
+        if (comment.body && comment.body.includes(tag)) {
+            return comment;
+        }
+    }
+    return null;
+};
+const list_comments = async (target, page = 1) => {
+    let { data: comments } = await octokit.issues.listComments({
+        owner: repo.owner,
+        repo: repo.repo,
+        issue_number: target,
+        page: page,
+        per_page: 100
+    });
+    if (!comments) {
+        return [];
+    }
+    if (comments.length >= 100) {
+        comments = comments.concat(await list_comments(target, page + 1));
+        return comments;
+    }
+    else {
+        return comments;
+    }
+};
+//# sourceMappingURL=commenter.js.map
+;// CONCATENATED MODULE: ./lib/review.js
+
+
+
+const review_token = core.getInput('token')
+    ? core.getInput('token')
+    : process.env.GITHUB_TOKEN;
+const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
+const review_context = github.context;
+const review_repo = review_context.repo;
+
+
+const codeReview = async (bot, prompts) => {
+    if (review_context.eventName != 'pull_request' &&
+        review_context.eventName != 'pull_request_target') {
+        core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
+        return;
+    }
+    if (!review_context.payload.pull_request) {
         core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
     const line_number = (line) => {
-        return (line === null || line === undefined) ? 0 : line;
+        return line === null || line === undefined ? 0 : line;
     };
-    let title = context.payload.pull_request.title;
-    let description = "";
-    if (context.payload.pull_request.body) {
-        description = context.payload.pull_request.body;
+    let inputs = new Inputs();
+    inputs.title = review_context.payload.pull_request.title;
+    if (review_context.payload.pull_request.body) {
+        inputs.description = review_context.payload.pull_request.body;
     }
-    const preprocessPrompt = (prompt, filename) => {
-        return prompt.replaceAll('$filename', title)
-            .replaceAll('$description', description)
-            .replaceAll('$filename', filename);
-    };
+    else {
+        inputs.description = review_context.payload.pull_request.title;
+    }
     // collect diff chunks
-    const diff = await octokit.repos.compareCommits({
-        owner: repo.owner,
-        repo: repo.repo,
-        base: context.payload.pull_request.base.sha,
-        head: context.payload.pull_request.head.sha,
+    const diff = await review_octokit.repos.compareCommits({
+        owner: review_repo.owner,
+        repo: review_repo.repo,
+        base: review_context.payload.pull_request.base.sha,
+        head: review_context.payload.pull_request.head.sha
     });
     let { files, commits } = diff.data;
     if (!files) {
@@ -23468,23 +23668,7 @@ const codeReview = async (bot, prompt, promptSuffix, octokit) => {
         return;
     }
     // find existing comments
-    let comments = [];
-    for (let page = 0; /* true */; page += 1) {
-        const results = await octokit.pulls.listReviewComments({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: context.payload.pull_request.number,
-            page: page,
-        });
-        if (results.data.length === 0) {
-            break;
-        }
-        comments = comments.concat(results.data.map((comment) => {
-            core.info(`Found comment ${comment.path}:${comment.line}`);
-            return [comment.path, line_number(comment.line)];
-        }));
-    }
-    core.info(`Found ${comments.length} existing comments.`);
+    const comments = await list_review_comments(review_context.payload.pull_request.number);
     // find patches to review
     let patches = [];
     for (let file of files) {
@@ -23501,44 +23685,98 @@ const codeReview = async (bot, prompt, promptSuffix, octokit) => {
             }
         }
         // skip existing comments
-        if (comments.some((comment) => {
-            return comment[0] === file.filename && comment[1] === target_line;
+        if (comments.some(comment => {
+            return comment.path === file.filename && comment.line === target_line;
         })) {
             continue;
         }
         patches.push([file.filename, target_line, patch]);
     }
+    if (patches.length > 0) {
+        await bot.talk('review', prompts.render_review_beginning(inputs));
+    }
+    const commenter = new Commenter();
     for (let [filename, line, patch] of patches) {
         core.info(`Reviewing ${filename}:${line} with chatgpt ...`);
-        let preprocessedPrompt = preprocessPrompt(prompt, filename);
-        let message = annotate(preprocessedPrompt, promptSuffix, filename, patch);
-        const comment = await bot.talk('review', message);
-        if (comment.indexOf("LGTM!") != -1) {
+        inputs.filename = filename;
+        inputs.patch = patch;
+        const response = await bot.talk('review', prompts.render_review_patch(inputs));
+        if (response.indexOf('LGTM!') != -1) {
             continue;
         }
-        await octokit.pulls.createReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: context.payload.pull_request.number,
-            commit_id: context.payload.pull_request.head.sha,
-            path: filename,
-            body: comment,
-            line: line,
-        });
+        commenter.review_comment(review_context.payload.pull_request.number, review_context.payload.pull_request.head.sha, filename, line, response);
     }
 };
-const annotate = (prompt, promptSuffix, filename, patch) => {
-    return `${prompt}
-
-\`\`\`diff
-${patch}
-\`\`\`
-
-${promptSuffix}
-`;
+const list_review_comments = async (target, page = 1) => {
+    let { data: comments } = await review_octokit.pulls.listReviewComments({
+        owner: review_repo.owner,
+        repo: review_repo.repo,
+        pull_number: target,
+        page: page,
+        per_page: 100
+    });
+    if (!comments) {
+        return [];
+    }
+    if (comments.length >= 100) {
+        comments = comments.concat(await list_review_comments(target, page + 1));
+        return comments;
+    }
+    else {
+        return comments;
+    }
 };
-//# sourceMappingURL=codereview.js.map
+//# sourceMappingURL=review.js.map
+;// CONCATENATED MODULE: ./lib/score.js
+
+
+
+const score_token = core.getInput('token')
+    ? core.getInput('token')
+    : process.env.GITHUB_TOKEN;
+const score_octokit = new dist_node/* Octokit */.v({ auth: `token ${score_token}` });
+const score_context = github.context;
+const score_repo = score_context.repo;
+
+
+const scorePullRequest = async (bot, prompts) => {
+    if (score_context.eventName != 'pull_request' &&
+        score_context.eventName != 'pull_request_target') {
+        core.warning(`Skipped: current event is ${score_context.eventName}, only support pull_request event`);
+        return;
+    }
+    // compute the diff
+    if (!score_context.payload.pull_request) {
+        core.warning(`Skipped: context.payload.pull_request is null`);
+        return;
+    }
+    const inputs = new Inputs();
+    inputs.title = score_context.payload.pull_request.title;
+    if (score_context.payload.pull_request.body) {
+        inputs.description = score_context.payload.pull_request.body;
+    }
+    else {
+        inputs.description = score_context.payload.pull_request.title;
+    }
+    // collect diff chunks
+    const { data: diff } = await score_octokit.pulls.get({
+        owner: score_repo.owner,
+        repo: score_repo.repo,
+        pull_number: score_context.payload.pull_request.number,
+        mediaType: {
+            format: 'diff'
+        }
+    });
+    inputs.diff = `${diff}`;
+    const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
+    const response = await bot.talk('score', prompts.render_scoring(inputs));
+    const commenter = new Commenter();
+    await commenter.comment(`[chatgpt] ${response}`, tag, 'replace');
+};
+//# sourceMappingURL=score.js.map
 ;// CONCATENATED MODULE: ./lib/main.js
+
+
 
 
 
@@ -23555,16 +23793,18 @@ async function run() {
         core.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}`);
         return;
     }
+    const action = core.getInput('action');
+    const prompts = new Prompts(core.getInput('review_beginning'), core.getInput('review_patch'), core.getInput('scoring'));
     try {
-        const action = core.getInput('action');
-        const prompt = core.getInput('prompt');
-        const promptSuffix = core.getInput('prompt_suffix');
         core.info(`running Github action: ${action}`);
-        if (action === 'code-review') {
-            codeReview(bot, prompt, promptSuffix, octokit);
+        if (action === 'score') {
+            await scorePullRequest(bot, prompts);
+        }
+        else if (action === 'review') {
+            await codeReview(bot, prompts);
         }
         else {
-            core.warning(`unknown action: ${action}`);
+            core.warning(`Unknown action: ${action}`);
         }
     }
     catch (error) {

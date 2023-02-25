@@ -4,16 +4,49 @@ author: 'Tao He'
 inputs:
   action:
     required: false
-    description: 'The action to run'
+    description: 'The action to run, currently can be "review", "score"'
     default: 'code-review'
-  prompt:
+  review_beginning:
     required: false
-    description: 'We have a pull request with title $title and the description is as follows: $description. Here is the code patch of filename $filename, please do a brief code review, tell me any bug risk and improvement suggestion. Please note the input is in diff format'
-    default: 'code-review'
-  prompt_suffix:
+    description: "The beginning prompt of a code review dialog"
+    default: |
+      Hi chatgpt, I have a pull request with title "$title" and the description is as follows,
+
+      > $description.
+
+      Next, I will given you a series of patches, each of them consists of a filename and a diff
+      snippet, and you need to do a brief code review for every message, and tell me any bug risk
+      and improvement suggestion. If the patch is looks good and acceptable, please reply "LGTM!".
+
+      You answer should be concise and don't repeat the diff snippets, and markdown format is preferred.
+      Tell me "OK!" once you are ready.
+  review_patch:
     required: false
-    description: 'Just tell me "LGTM!" if you think the patch looks good and nothing to improve.'
-    default: 'code-review'
+    description: 'The prompt for each chunks/patches'
+    default: |
+      $filename
+
+      ```diff
+      $patch
+      ```
+  scoring:
+    required: false
+    description: 'The prompt for the whole pull request'
+    default: |
+      Hi chatgpt, I have a pull request with title "$title" and the description is as follows,
+
+      > $description
+
+      I would like to give you the whole diff of the pull request and you need to given a score after
+      reviewing the pull request. The score should be a number between 0 and 100 and 85 means the
+      the pull request is basically acceptable. You just need to reply a number between 0 and 100,
+      e.g., "85", and a comment within 30 words.
+
+      The diff is as follows:
+
+      ```diff
+      $diff
+      ```
 runs:
   using: 'node16'
   main: 'dist/index.js'

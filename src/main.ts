@@ -1,32 +1,41 @@
 import * as core from '@actions/core'
-import { Octokit } from '@octokit/action';
+import {Octokit} from '@octokit/action'
 
 import './fetch-polyfill.js'
-import { Bot } from './bot.js';
-import { codeReview } from './codereview.js';
+import {Bot} from './bot.js'
+import {Prompts} from './prompt.js'
+import {codeReview} from './review.js'
+import {scorePullRequest} from './score.js'
 
 async function run(): Promise<void> {
-  const octokit = new Octokit();
+  const octokit = new Octokit()
 
   // initialize chatgpt bot
-  var bot: Bot;
+  var bot: Bot
   try {
-    bot = new Bot(core.getInput('openai_api_key'));
+    bot = new Bot(core.getInput('openai_api_key'))
   } catch (e) {
-    core.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}`);
-    return;
+    core.warning(
+      `Skipped: failed to create bot, please check your openai_api_key: ${e}`
+    )
+    return
   }
 
-  try {
-    const action: string = core.getInput('action');
-    const prompt: string = core.getInput('prompt');
-    const promptSuffix: string = core.getInput('prompt_suffix');
+  const action: string = core.getInput('action')
+  const prompts: Prompts = new Prompts(
+    core.getInput('review_beginning'),
+    core.getInput('review_patch'),
+    core.getInput('scoring')
+  )
 
+  try {
     core.info(`running Github action: ${action}`)
-    if (action === 'code-review') {
-      codeReview(bot, prompt, promptSuffix, octokit);
+    if (action === 'score') {
+      await scorePullRequest(bot, prompts)
+    } else if (action === 'review') {
+      await codeReview(bot, prompts)
     } else {
-      core.warning(`unknown action: ${action}`)
+      core.warning(`Unknown action: ${action}`)
     }
   } catch (error) {
     if (error instanceof Error) {

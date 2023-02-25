@@ -23,8 +23,30 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
-          action: code-view
+          action: score
+
+      - uses: unsafecoerce/chatgpt-action@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        with:
+          action: review
 ```
+
+Possible variables in prompt templates:
+
+- code review (`action: review`):
+
+  - `$title`: Title of the pull requests.
+  - `$description`: The description of the pull request.
+  - `$filename`: Filename of the file being viewed.
+  - `$patch`: The diff contents of the patch being viewed.
+
+- pull request score (`action: score`):
+
+  - `$title`: Title of the pull requests.
+  - `$description`: The description of the pull request.
+  - `$diff`: The whole diff of the pull request.
 
 ## Developing
 
