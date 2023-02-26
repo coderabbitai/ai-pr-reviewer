@@ -68,20 +68,21 @@ export const codeReview = async (
   // find patches to review
   let patches: Array<[string, number, string]> = []
   for (let file of files) {
-    const patch = file.patch
-    if (!patch) {
+    if (!options.check_path(file.filename)) {
       continue
     }
-    let line = patch_comment_line(patch)
-    // skip existing comments
-    if (
-      comments_and_lines.some(comment => {
-        return comment.comment.path === file.filename && comment.line === line
-      })
-    ) {
-      continue
+    for (let patch of split_patch(file.patch)) {
+      let line = patch_comment_line(patch)
+      // skip existing comments
+      if (
+        comments_and_lines.some(comment => {
+          return comment.comment.path === file.filename && comment.line === line
+        })
+      ) {
+        continue
+      }
+      patches.push([file.filename, line, patch])
     }
-    patches.push([file.filename, line, patch])
   }
 
   if (patches.length > 0) {
@@ -138,14 +139,37 @@ const list_review_comments = async (target: number, page: number = 1) => {
   }
 }
 
-const patch_comment_line = (patch: string): number => {
-  let index0 = patch.indexOf('+')
-  let index1 = patch.indexOf(',', index0)
-  let index2 = patch.indexOf(' ', index1)
+const split_patch = (patch: string | null | undefined): Array<string> => {
+  if (!patch) {
+    return []
+  }
 
-  let line1 = parseInt(patch.substring(index0 + 1, index1))
-  let line2 = parseInt(patch.substring(index1 + 1, index2))
-  return line1 + line2 - 1
+  let pattern: RegExp = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@ )/gm
+
+  let result: Array<string> = []
+  let last = -1
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(patch)) !== null) {
+    if (last == -1) {
+      last = match.index
+    } else {
+      result.push(patch.substring(last, match.index))
+    }
+  }
+  if (last != -1) {
+    result.push(patch.substring(last))
+  }
+  return result
+}
+
+const patch_comment_line = (patch: string): number => {
+  let pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@ )/gm
+  let match = pattern.exec(patch)
+  if (match && match.groups) {
+    return parseInt(match.groups.begin) + parseInt(match.groups.diff) - 1
+  } else {
+    return -1
+  }
 }
 
 const ensure_line_number = (line: number | null | undefined): number => {

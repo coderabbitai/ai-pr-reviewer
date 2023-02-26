@@ -8,15 +8,16 @@ import {scorePullRequest} from './score.js'
 
 async function run(): Promise<void> {
   const action: string = core.getInput('action')
+  let options: Options = new Options(
+    core.getBooleanInput('debug'),
+    core.getInput('chatgpt_reverse_proxy'),
+    core.getBooleanInput('review_comment_lgtm'),
+    core.getMultilineInput('path_filters')
+  )
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),
     core.getInput('review_patch'),
     core.getInput('scoring')
-  )
-  let options: Options = new Options(
-    core.getBooleanInput('debug'),
-    core.getInput('chatgpt_reverse_proxy'),
-    core.getBooleanInput('review_comment_lgtm')
   )
 
   // initialize chatgpt bot

@@ -51,7 +51,10 @@ export const scorePullRequest = async (
   })
   let {files, commits} = diff.data
   if (files) {
-    inputs.diff = files.map(file => file.patch).join('\n\n')
+    inputs.diff = files
+      .filter(file => options.check_path(file.filename))
+      .map(file => file.patch)
+      .join('\n\n')
   } else {
     inputs.diff = ''
   }

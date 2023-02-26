@@ -1,3 +1,5 @@
+import {minimatch} from 'minimatch'
+
 export class Prompts {
   public review_beginning: string
   public review_patch: string
@@ -49,7 +51,7 @@ export class Inputs {
 
   public render(content: string): string {
     if (!content) {
-      return '';
+      return ''
     }
     return content
       .replaceAll('$title', this.title)
@@ -64,14 +66,62 @@ export class Options {
   public debug: boolean
   public chatgpt_reverse_proxy: string
   public review_comment_lgtm: boolean
+  public path_filters: PathFilter
 
   constructor(
     debug: boolean,
     chatgpt_reverse_proxy: string,
-    review_comment_lgtm: boolean = false
+    review_comment_lgtm: boolean = false,
+    path_filters: Array<string> | null = null
   ) {
     this.debug = debug
     this.chatgpt_reverse_proxy = chatgpt_reverse_proxy
     this.review_comment_lgtm = review_comment_lgtm
+    this.path_filters = new PathFilter(path_filters)
+  }
+
+  public check_path(path: string): boolean {
+    return this.path_filters.check(path)
+  }
+}
+
+export class PathFilter {
+  private rules: Array<[string /* rule */, boolean /* exclude */]>
+
+  constructor(rules: Array<string> | null = null) {
+    this.rules = []
+    if (rules) {
+      for (let rule of rules) {
+        let trimmed = rule?.trim()
+        if (trimmed) {
+          if (trimmed[0] == '!') {
+            this.rules.push([trimmed.substring(1).trim(), true])
+          } else {
+            this.rules.push([trimmed, false])
+          }
+        }
+      }
+    }
+  }
+
+  public check(path: string): boolean {
+    let include_all = this.rules.length == 0
+    let matched = false
+    for (const [rule, exclude] of this.rules) {
+      if (exclude) {
+        if (minimatch(path, rule)) {
+          return false
+        }
+        include_all = true
+      } else {
+        if (minimatch(path, rule)) {
+          matched = true
+          include_all = false
+        } else {
+          return false
+        }
+      }
+    }
+    return include_all || matched
   }
 }

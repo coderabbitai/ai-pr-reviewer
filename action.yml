@@ -10,6 +10,15 @@ inputs:
     required: false
     description: 'Enable debug mode'
     default: false
+  path_filters:
+    required: false
+    description: |
+      The path filters, e.g., "src/**.py", "!dist/**". See also
+
+      - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
+      - https://github.com/isaacs/minimatch
+    default:
+    - '!dist/**'
   chatgpt_reverse_proxy:
     required: false
     description: |
@@ -23,7 +32,7 @@ inputs:
     required: false
     description: "The beginning prompt of a code review dialog"
     default: |
-      Hi chatgpt, I have a pull request with title "$title" and the description is as follows,
+      Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
 
       > $description.
 
@@ -47,7 +56,7 @@ inputs:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      Hi chatgpt, I have a pull request with title "$title" and the description is as follows,
+      Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
 
       > $description
 
