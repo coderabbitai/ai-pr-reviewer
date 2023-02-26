@@ -25076,6 +25076,7 @@ minimatch.Minimatch = Minimatch;
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./lib/options.js
 
+
 class Prompts {
     review_beginning;
     review_patch;
@@ -25112,12 +25113,22 @@ class Inputs {
         if (!content) {
             return '';
         }
-        return content
-            .replaceAll('$title', this.title)
-            .replaceAll('$description', this.description)
-            .replaceAll('$filename', this.filename)
-            .replaceAll('$patch', this.patch)
-            .replaceAll('$diff', this.diff);
+        if (this.title) {
+            content = content.replace('$title', this.title);
+        }
+        if (this.description) {
+            content = content.replace('$description', this.description);
+        }
+        if (this.filename) {
+            content = content.replace('$filename', this.filename);
+        }
+        if (this.patch) {
+            content = content.replace('$patch', this.patch);
+        }
+        if (this.diff) {
+            content = content.replace('$diff', this.diff);
+        }
+        return content;
     }
 }
 class Options {
@@ -25132,7 +25143,9 @@ class Options {
         this.path_filters = new PathFilter(path_filters);
     }
     check_path(path) {
-        return this.path_filters.check(path);
+        let ok = this.path_filters.check(path);
+        core.info(`checking path: ${path} => ${ok}`);
+        return ok;
     }
 }
 class PathFilter {
