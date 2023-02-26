@@ -1,3 +1,5 @@
+import * as core from '@actions/core'
+
 import {minimatch} from 'minimatch'
 
 export class Prompts {

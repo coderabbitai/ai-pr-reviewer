@@ -5,6 +5,7 @@ import {Bot} from './bot.js'
 import {Prompts, Options} from './options.js'
 import {codeReview} from './review.js'
 import {scorePullRequest} from './score.js'
+import {exit} from 'process'
 
 async function run(): Promise<void> {
   const action: string = core.getInput('action')

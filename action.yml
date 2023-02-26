@@ -22,7 +22,7 @@ inputs:
       - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
       - https://github.com/isaacs/minimatch
     default: |
-      '!dist/**'
+      !dist/**
   chatgpt_reverse_proxy:
     type: boolean
     required: false
