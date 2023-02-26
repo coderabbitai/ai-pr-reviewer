@@ -66,7 +66,7 @@ There're already many [chatgpt-actions][1], why we need to reinvent the wheel?
 
   Prompt engineering is an _art_ to make ChatGPT success, we encourage the community
   to try discovering new, novel, and insightful prompts to make ChatGPT do
-  code review job better, _**without reinventing the wheel for a another chatgpt-action**_.
+  code review job better, _**without reinventing the wheel for another chatgpt-action**_.
 
   **ANY SUGGESTIONS AND IMPROVEMENTS ARE HIGHLY APPRECIATED!!!**
 
@@ -78,6 +78,7 @@ There're already many [chatgpt-actions][1], why we need to reinvent the wheel?
       - uses: unsafecoerce/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
@@ -90,6 +91,7 @@ There're already many [chatgpt-actions][1], why we need to reinvent the wheel?
       - uses: unsafecoerce/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
@@ -103,6 +105,7 @@ There're already many [chatgpt-actions][1], why we need to reinvent the wheel?
       - uses: unsafecoerce/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
@@ -149,6 +152,7 @@ jobs:
       - uses: unsafecoerce/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
@@ -157,6 +161,7 @@ jobs:
       - uses: unsafecoerce/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
@@ -171,11 +176,16 @@ See also: [./action.yml](./action.yml)
 #### Environment variables
 
 - `GITHUB_TOKEN`
-- `CHATGPT_ACCESS_TOKEN`: ChatGPT access token, see also: https://github.com/acheong08/ChatGPT
-- `OPENAI_API_KEY`: use this to authenticate with OpenAI API, mimic ChatGPT's behavior using `text-davinci-003`
+- `CHATGPT_ACCESS_TOKEN`: ChatGPT access token, see also: https://github.com/acheong08/ChatGPT.
+
+  The access token can be easily obtained from https://chat.openai.com/api/auth/session after
+  logging into ChatGPT.
+
+- `OPENAI_API_KEY`: use this to authenticate with OpenAI API, mimic ChatGPT's behavior using
+  `text-davinci-003`, see also: https://github.com/transitive-bullshit/chatgpt-api
 
 Inside this action, ChatGPT is preferred over mimic ChatGPT when `CHATGPT_ACCESS_TOKEN`
-presents, see also [#]
+presents. When using `CHATGPT_ACCESS_TOKEN`, `OPENAI_API_KEY` is not required.
 
 #### Inputs
 
