@@ -48,6 +48,9 @@ export class Inputs {
   }
 
   public render(content: string): string {
+    if (!content) {
+      return '';
+    }
     return content
       .replaceAll('$title', this.title)
       .replaceAll('$description', this.description)
