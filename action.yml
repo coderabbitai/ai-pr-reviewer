@@ -3,32 +3,39 @@ description: 'A collection of ChatGPT assistants, e.g., code viewer, labeler, as
 author: 'Tao He'
 inputs:
   action:
+    type: string
     required: false
     description: 'The action to run, currently can be "review", "score"'
-    default: 'code-review'
+    default: 'review'
   debug:
+    type: boolean
     required: false
     description: 'Enable debug mode'
     default: false
   path_filters:
+    type: string
     required: false
     description: |
-      The path filters, e.g., "src/**.py", "!dist/**". See also
+      The path filters, e.g., "src/**.py", "!dist/**", each line will be considered as one pattern.
+      See also
 
       - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
       - https://github.com/isaacs/minimatch
-    default:
-    - '!dist/**'
+    default: |
+      '!dist/**'
   chatgpt_reverse_proxy:
+    type: boolean
     required: false
     description: |
       The URL of the chatgpt reverse proxy, see also https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy
     default: https://chat.duti.tech/api/conversation
   review_comment_lgtm:
+    type: boolean
     required: false
     description: 'Leave comments even the patch is LGTM'
     default: false
   review_beginning:
+    type: string
     required: false
     description: "The beginning prompt of a code review dialog"
     default: |
@@ -44,6 +51,7 @@ inputs:
       You answer should be concise. Don't include the diff in your comment, and markdown format is
       preferred. Reply "OK" to confirm.
   review_patch:
+    type: string
     required: false
     description: 'The prompt for each chunks/patches'
     default: |
@@ -53,6 +61,7 @@ inputs:
       $patch
       ```
   scoring:
+    type: string
     required: false
     description: 'The prompt for the whole pull request'
     default: |
