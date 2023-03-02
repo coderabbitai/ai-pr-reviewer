@@ -30,7 +30,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
     "@octokit/action": "^5.0.2",
-    "chatgpt": "^4.7.2",
+    "chatgpt": "^4.8.3",
     "minimatch": "^7.4.1",
     "node-fetch": "^3.3.0"
   },
