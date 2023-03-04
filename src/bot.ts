@@ -1,5 +1,5 @@
+import {Options} from './options.js'
 import * as core from '@actions/core'
-
 import {
   ChatGPTAPI,
   ChatGPTUnofficialProxyAPI,
@@ -8,11 +8,9 @@ import {
   SendMessageBrowserOptions
 } from 'chatgpt'
 
-import {Options} from './options.js'
-
 export class Bot {
-  private bot: ChatGPTUnofficialProxyAPI | null = null  // free
-  private turbo: ChatGPTAPI | null = null  // not free
+  private bot: ChatGPTUnofficialProxyAPI | null = null // free
+  private turbo: ChatGPTAPI | null = null // not free
   private history: ChatMessage | null = null
   private MAX_PATCH_COUNT: number = 4000
 
@@ -54,7 +52,7 @@ export class Bot {
     }
   }
 
-  private chat_ = async (action: string, message: string, initial = false) =>  {
+  private chat_ = async (action: string, message: string, initial = false) => {
     if (!message) {
       return ''
     }
@@ -77,14 +75,22 @@ export class Bot {
       }
       core.info('opts: ' + JSON.stringify(opts))
       response = await this.bot.sendMessage(message, opts)
-      core.info('response: ' + JSON.stringify(response))
-    } else if (this.turbo) {
-      let opts: SendMessageOptions = {
+      try {
+        core.info('response: ' + JSON.stringify(response))
+      } catch (e) {
+        core.info('response: ' + response)
       }
+    } else if (this.turbo) {
+      let opts: SendMessageOptions = {}
       if (this.history && !initial) {
         opts.parentMessageId = this.history.id
       }
       response = await this.turbo.sendMessage(message, opts)
+      try {
+        core.info('response: ' + JSON.stringify(response))
+      } catch (e) {
+        core.info('response: ' + response)
+      }
     } else {
       core.setFailed('The chatgpt API is not initialized')
     }

@@ -1,3 +1,6 @@
+import {Bot} from './bot.js'
+import {Commenter} from './commenter.js'
+import {Prompts, Inputs, Options} from './options.js'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
@@ -8,10 +11,6 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-
-import {Bot} from './bot.js'
-import {Commenter} from './commenter.js'
-import {Prompts, Inputs, Options} from './options.js'
 
 export const scorePullRequest = async (
   bot: Bot,
@@ -64,12 +63,14 @@ export const scorePullRequest = async (
     return
   }
 
-  const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->'
-  let response = await bot.chat('score', prompts.render_scoring(inputs));
+  await bot.chat('score', prompts.render_scoring_beginning(inputs), true)
+  let response = await bot.chat('score', prompts.render_scoring(inputs))
   if (!response) {
-    core.info("score: nothing obtained from chatgpt")
-    return;
+    core.info('score: nothing obtained from chatgpt')
+    return
   }
+
+  const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->'
   const commenter = new Commenter()
   await commenter.comment(`:robot: ChatGPT score: ${response}`, tag, 'replace')
 }

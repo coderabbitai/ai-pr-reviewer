@@ -1,3 +1,6 @@
+import {Bot} from './bot.js'
+import {Commenter} from './commenter.js'
+import {Prompts, Inputs, Options} from './options.js'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
@@ -8,10 +11,6 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-
-import {Bot} from './bot.js'
-import {Commenter} from './commenter.js'
-import {Prompts, Inputs, Options} from './options.js'
 
 export const codeReview = async (
   bot: Bot,
@@ -101,7 +100,7 @@ export const codeReview = async (
       prompts.render_review_patch(inputs)
     )
     if (!response) {
-      core.info("review: nothing obtained from chatgpt")
+      core.info('review: nothing obtained from chatgpt')
       continue
     }
     if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {

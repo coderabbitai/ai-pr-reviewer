@@ -1,19 +1,21 @@
 import * as core from '@actions/core'
-
 import {minimatch} from 'minimatch'
 
 export class Prompts {
   public review_beginning: string
   public review_patch: string
+  public scoring_beginning: string
   public scoring: string
 
   constructor(
     review_beginning: string = '',
     review_patch: string = '',
+    scoring_beginning: string = '',
     scoring: string = ''
   ) {
     this.review_beginning = review_beginning
     this.review_patch = review_patch
+    this.scoring_beginning = scoring_beginning
     this.scoring = scoring
   }
 
@@ -23,6 +25,10 @@ export class Prompts {
 
   public render_review_patch(inputs: Inputs): string {
     return inputs.render(this.review_patch)
+  }
+
+  public render_scoring_beginning(inputs: Inputs): string {
+    return inputs.render(this.scoring_beginning)
   }
 
   public render_scoring(inputs: Inputs): string {

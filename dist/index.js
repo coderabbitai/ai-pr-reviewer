@@ -24885,7 +24885,12 @@ class Bot {
             }
             core.info('opts: ' + JSON.stringify(opts));
             response = await this.bot.sendMessage(message, opts);
-            core.info('response: ' + JSON.stringify(response));
+            try {
+                core.info('response: ' + JSON.stringify(response));
+            }
+            catch (e) {
+                core.info('response: ' + response);
+            }
         }
         else if (this.turbo) {
             let opts = {};
@@ -24893,6 +24898,12 @@ class Bot {
                 opts.parentMessageId = this.history.id;
             }
             response = await this.turbo.sendMessage(message, opts);
+            try {
+                core.info('response: ' + JSON.stringify(response));
+            }
+            catch (e) {
+                core.info('response: ' + response);
+            }
         }
         else {
             core.setFailed('The chatgpt API is not initialized');
@@ -27245,12 +27256,12 @@ if (!globalThis.fetch) {
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(9247);
 /* harmony import */ var _fetch_polyfill_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4667);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9247);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(744);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4231);
-/* harmony import */ var _score_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(3614);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4231);
+/* harmony import */ var _score_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3614);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(2186);
 
 
 
@@ -27258,36 +27269,45 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 async function run() {
-    const action = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('action');
-    let options = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
+    const action = _actions_core__WEBPACK_IMPORTED_MODULE_5__.getInput('action');
+    let options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_5__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_5__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_5__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_5__.getMultilineInput('path_filters'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_5__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_5__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_5__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_5__.getInput('scoring'));
     // initialize chatgpt bot
     let bot = null;
     try {
-        bot = new _bot_js__WEBPACK_IMPORTED_MODULE_2__/* .Bot */ .r(options);
+        bot = new _bot_js__WEBPACK_IMPORTED_MODULE_0__/* .Bot */ .r(options);
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_5__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}`);
         return;
     }
     try {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`running Github action: ${action}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_5__.info(`running Github action: ${action}`);
         if (action === 'score') {
-            await (0,_score_js__WEBPACK_IMPORTED_MODULE_5__/* .scorePullRequest */ .w)(bot, options, prompts);
+            await (0,_score_js__WEBPACK_IMPORTED_MODULE_4__/* .scorePullRequest */ .w)(bot, options, prompts);
         }
         else if (action === 'review') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(bot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown action: ${action}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_5__.warning(`Unknown action: ${action}`);
         }
     }
     catch (error) {
         if (error instanceof Error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
+            _actions_core__WEBPACK_IMPORTED_MODULE_5__.setFailed(error.message);
         }
     }
 }
+process
+    .on('unhandledRejection', (reason, p) => {
+    console.error(reason, 'Unhandled Rejection at Promise', p);
+    _actions_core__WEBPACK_IMPORTED_MODULE_5__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
+})
+    .on('uncaughtException', err => {
+    console.error(err, 'Uncaught Exception thrown');
+    _actions_core__WEBPACK_IMPORTED_MODULE_5__.warning(`Uncaught Exception thrown: ${err}`);
+});
 await run();
 
 __webpack_async_result__();
@@ -28797,10 +28817,12 @@ minimatch.unescape = unescape_unescape;
 class Prompts {
     review_beginning;
     review_patch;
+    scoring_beginning;
     scoring;
-    constructor(review_beginning = '', review_patch = '', scoring = '') {
+    constructor(review_beginning = '', review_patch = '', scoring_beginning = '', scoring = '') {
         this.review_beginning = review_beginning;
         this.review_patch = review_patch;
+        this.scoring_beginning = scoring_beginning;
         this.scoring = scoring;
     }
     render_review_beginning(inputs) {
@@ -28808,6 +28830,9 @@ class Prompts {
     }
     render_review_patch(inputs) {
         return inputs.render(this.review_patch);
+    }
+    render_scoring_beginning(inputs) {
+        return inputs.render(this.scoring_beginning);
     }
     render_scoring(inputs) {
         return inputs.render(this.scoring);
@@ -28916,33 +28941,33 @@ class PathFilter {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "z": () => (/* binding */ codeReview)
 /* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4571);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(744);
+/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4571);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(744);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5438);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1231);
 
 
 
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+
+
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_2__.getInput('token')
+    ? _actions_core__WEBPACK_IMPORTED_MODULE_2__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit */ .v({ auth: `token ${token}` });
-const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_4__/* .Octokit */ .v({ auth: `token ${token}` });
+const context = _actions_github__WEBPACK_IMPORTED_MODULE_3__.context;
 const repo = context.repo;
-
-
 const codeReview = async (bot, options, prompts) => {
     if (context.eventName != 'pull_request' &&
         context.eventName != 'pull_request_target') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
         return;
     }
     if (!context.payload.pull_request) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    let inputs = new _options_js__WEBPACK_IMPORTED_MODULE_4__/* .Inputs */ .kq();
+    let inputs = new _options_js__WEBPACK_IMPORTED_MODULE_1__/* .Inputs */ .kq();
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = context.payload.pull_request.body;
@@ -28959,7 +28984,7 @@ const codeReview = async (bot, options, prompts) => {
     });
     let { files, commits } = diff.data;
     if (!files) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Skipped: diff.data.files is null`);
         return;
     }
     // find existing comments
@@ -28974,7 +28999,7 @@ const codeReview = async (bot, options, prompts) => {
     let patches = [];
     for (let file of files) {
         if (!options.check_path(file.filename)) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for excluded path: ${file.filename}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_2__.info(`skip for excluded path: ${file.filename}`);
             continue;
         }
         for (let patch of split_patch(file.patch)) {
@@ -28983,7 +29008,7 @@ const codeReview = async (bot, options, prompts) => {
             if (comments_and_lines.some(comment => {
                 return comment.comment.path === file.filename && comment.line === line;
             })) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for existing comment: ${file.filename}, ${line}`);
+                _actions_core__WEBPACK_IMPORTED_MODULE_2__.info(`skip for existing comment: ${file.filename}, ${line}`);
                 continue;
             }
             patches.push([file.filename, line, patch]);
@@ -28992,14 +29017,14 @@ const codeReview = async (bot, options, prompts) => {
     if (patches.length > 0) {
         await bot.chat('review', prompts.render_review_beginning(inputs), true);
     }
-    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_3__/* .Commenter */ .E();
+    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_0__/* .Commenter */ .E();
     for (let [filename, line, patch] of patches) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with chatgpt ...`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.info(`Reviewing ${filename}:${line} with chatgpt ...`);
         inputs.filename = filename;
         inputs.patch = patch;
         const response = await bot.chat('review', prompts.render_review_patch(inputs));
         if (!response) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info("review: nothing obtained from chatgpt");
+            _actions_core__WEBPACK_IMPORTED_MODULE_2__.info('review: nothing obtained from chatgpt');
             continue;
         }
         if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
@@ -29011,7 +29036,7 @@ const codeReview = async (bot, options, prompts) => {
                 : `:robot: ChatGPT: ${response}`);
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to comment: ${e}, skip this comment.
+            _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Failed to comment: ${e}, skip this comment.
         filename: ${filename}
         line: ${line}
         patch: ${patch}`);
@@ -29081,34 +29106,34 @@ const ensure_line_number = (line) => {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "w": () => (/* binding */ scorePullRequest)
 /* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4571);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(744);
+/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4571);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(744);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5438);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1231);
 
 
 
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+
+
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_2__.getInput('token')
+    ? _actions_core__WEBPACK_IMPORTED_MODULE_2__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit */ .v({ auth: `token ${token}` });
-const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_4__/* .Octokit */ .v({ auth: `token ${token}` });
+const context = _actions_github__WEBPACK_IMPORTED_MODULE_3__.context;
 const repo = context.repo;
-
-
 const scorePullRequest = async (bot, options, prompts) => {
     if (context.eventName != 'pull_request' &&
         context.eventName != 'pull_request_target') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
         return;
     }
     // compute the diff
     if (!context.payload.pull_request) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_4__/* .Inputs */ .kq();
+    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_1__/* .Inputs */ .kq();
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = context.payload.pull_request.body;
@@ -29134,16 +29159,17 @@ const scorePullRequest = async (bot, options, prompts) => {
         inputs.diff = '';
     }
     if (!files) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Skipped: diff.data.files is null`);
+        return;
+    }
+    await bot.chat('score', prompts.render_scoring_beginning(inputs), true);
+    let response = await bot.chat('score', prompts.render_scoring(inputs));
+    if (!response) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_2__.info('score: nothing obtained from chatgpt');
         return;
     }
     const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
-    let response = await bot.chat('score', prompts.render_scoring(inputs));
-    if (!response) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info("score: nothing obtained from chatgpt");
-        return;
-    }
-    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_3__/* .Commenter */ .E();
+    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_0__/* .Commenter */ .E();
     await commenter.comment(`:robot: ChatGPT score: ${response}`, tag, 'replace');
 };
 

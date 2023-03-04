@@ -23,6 +23,7 @@ inputs:
       - https://github.com/isaacs/minimatch
     default: |
       !dist/**
+      **/package-lock.json
   chatgpt_reverse_proxy:
     type: boolean
     required: false
@@ -60,7 +61,7 @@ inputs:
       ```diff
       $patch
       ```
-  scoring:
+  scoring_beginning:
     type: string
     required: false
     description: 'The prompt for the whole pull request'
@@ -69,11 +70,15 @@ inputs:
 
       > $description
 
-      I would like to give you the whole diff of the pull request and you need to given a score after
-      reviewing the pull request. The score should be a number between 0 and 100 and 85 means the
-      the pull request is basically acceptable. You just need to reply a number between 0 and 100,
-      e.g., "85", and a comment within 30 words.
-
+      I would like score the pull request, the score should be a number between 0 and 100
+      and 85 means the the pull request is basically acceptable. You just need to reply a
+      number between 0 and 100, e.g., "85", and a comment within 30 words. Next, I would
+      give you the whole diff of the pull request. Reply "OK" to confirm.
+  scoring:
+    type: string
+    required: false
+    description: 'The prompt for the whole diff for scoring'
+    default: |
       The diff is as follows:
 
       ```diff

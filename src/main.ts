@@ -1,10 +1,9 @@
-import * as core from '@actions/core'
-
-import './fetch-polyfill.js'
 import {Bot} from './bot.js'
+import './fetch-polyfill.js'
 import {Prompts, Options} from './options.js'
 import {codeReview} from './review.js'
 import {scorePullRequest} from './score.js'
+import * as core from '@actions/core'
 
 async function run(): Promise<void> {
   const action: string = core.getInput('action')
@@ -17,6 +16,7 @@ async function run(): Promise<void> {
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),
     core.getInput('review_patch'),
+    core.getInput('scoring_beginning'),
     core.getInput('scoring')
   )
 
@@ -46,5 +46,15 @@ async function run(): Promise<void> {
     }
   }
 }
+
+process
+  .on('unhandledRejection', (reason, p) => {
+    console.error(reason, 'Unhandled Rejection at Promise', p)
+    core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
+  })
+  .on('uncaughtException', err => {
+    console.error(err, 'Uncaught Exception thrown')
+    core.warning(`Uncaught Exception thrown: ${err}`)
+  })
 
 await run()
