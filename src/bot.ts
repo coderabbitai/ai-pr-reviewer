@@ -11,8 +11,8 @@ import {
 import {Options} from './options.js'
 
 export class Bot {
-  private bot: ChatGPTUnofficialProxyAPI | null = null
-  private mimic: ChatGPTAPI | null = null
+  private bot: ChatGPTUnofficialProxyAPI | null = null  // free
+  private turbo: ChatGPTAPI | null = null  // not free
   private history: ChatMessage | null = null
   private MAX_PATCH_COUNT: number = 4000
 
@@ -27,7 +27,7 @@ export class Bot {
         debug: options.debug
       })
     } else if (process.env.OPENAI_API_KEY) {
-      this.mimic = new ChatGPTAPI({
+      this.turbo = new ChatGPTAPI({
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug
         // assistantLabel: " ",
@@ -42,10 +42,22 @@ export class Bot {
   }
 
   public chat = async (action: string, message: string, initial = false) => {
+    console.time(`chatgpt ${action} ${message.length} tokens cost`)
+    let response = null
+    try {
+      response = await this.chat_(action, message, initial)
+    } catch (e) {
+      core.warning(`Failed to chat: ${e}`)
+    } finally {
+      console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`)
+      return response
+    }
+  }
+
+  private chat_ = async (action: string, message: string, initial = false) =>  {
     if (!message) {
       return ''
     }
-    console.time(`chatgpt ${action} ${message.length} tokens cost`)
     if (message.length > this.MAX_PATCH_COUNT) {
       core.warning(
         `Message is too long, truncate to ${this.MAX_PATCH_COUNT} tokens`
@@ -66,16 +78,13 @@ export class Bot {
       core.info('opts: ' + JSON.stringify(opts))
       response = await this.bot.sendMessage(message, opts)
       core.info('response: ' + JSON.stringify(response))
-    } else if (this.mimic) {
+    } else if (this.turbo) {
       let opts: SendMessageOptions = {
-        promptPrefix: ' ', // use a space to avoid the prefix from the "chatgpt" library
-        promptSuffix: ' ' // use a space to avoid the suffix from the "chatgpt" library
       }
       if (this.history && !initial) {
         opts.parentMessageId = this.history.id
-        opts.conversationId = this.history.conversationId
       }
-      response = await this.mimic.sendMessage(message, opts)
+      response = await this.turbo.sendMessage(message, opts)
     } else {
       core.setFailed('The chatgpt API is not initialized')
     }
@@ -95,7 +104,6 @@ export class Bot {
     if (this.options.debug) {
       core.info(`chatgpt responses: ${response_text}`)
     }
-    console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`)
     return response_text
   }
 }

@@ -65,7 +65,11 @@ export const scorePullRequest = async (
   }
 
   const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->'
-  const response = await bot.chat('score', prompts.render_scoring(inputs))
+  let response = await bot.chat('score', prompts.render_scoring(inputs));
+  if (!response) {
+    core.info("score: nothing obtained from chatgpt")
+    return;
+  }
   const commenter = new Commenter()
   await commenter.comment(`:robot: ChatGPT score: ${response}`, tag, 'replace')
 }

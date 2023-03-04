@@ -21,7 +21,7 @@ jobs:
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
 
-      - uses: unsafecoerce/chatgpt-action@main
+      - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -30,7 +30,7 @@ jobs:
           debug: true
           action: score
 
-      - uses: unsafecoerce/chatgpt-action@main
+      - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

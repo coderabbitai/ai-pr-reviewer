@@ -181,11 +181,13 @@ See also: [./action.yml](./action.yml)
   The access token can be easily obtained from https://chat.openai.com/api/auth/session after
   logging into ChatGPT.
 
-- `OPENAI_API_KEY`: use this to authenticate with OpenAI API, mimic ChatGPT's behavior using
+- `OPENAI_API_KEY`: use this to authenticate with OpenAI API, official ChatGPT's behavior using
   `text-davinci-003`, see also: https://github.com/transitive-bullshit/chatgpt-api
 
-Inside this action, ChatGPT is preferred over mimic ChatGPT when `CHATGPT_ACCESS_TOKEN`
-presents. When using `CHATGPT_ACCESS_TOKEN`, `OPENAI_API_KEY` is not required.
+Note that `CHATGPT_ACCESS_TOKEN` and `OPENAI_API_KEY` are not both required. Inside this action,
+unofficial ChatGPT is preferred if `CHATGPT_ACCESS_TOKEN` exists. Note that the `CHATGPT_ACCESS_TOKEN`
+can expire frequently, so `OPENAI_API_KEY` should be more convenient if its cost is affordable
+to you.
 
 #### Inputs
 
@@ -289,10 +291,12 @@ See also: https://docs.github.com/en/actions/using-workflows/events-that-trigger
 
 The javascript's [chatgpt][2] package provides two implementations of the ChatGPT API:
 
-- `ChatGPTAPI`: mimic ChatGPT using the OpenAI's `text-davinci-003`.
+- `ChatGPTAPI`: official ChatGPT using the OpenAI's `text-davinci-003`.
+  - not free
   - requires `OPENAI_API_KEY`
-- `ChatGPTUnofficialProxyAPI`: real ChatGPT models, rely on third-party server and is
+- `ChatGPTUnofficialProxyAPI`: unofficial ChatGPT models, rely on third-party server and is
   rate limited.
+  - free
   - requires `CHATGPT_ACCESS_TOKEN`
   - the proxy server is configurable using `chatgpt_reverse_proxy`
 

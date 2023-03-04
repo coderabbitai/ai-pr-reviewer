@@ -69,6 +69,7 @@ export const codeReview = async (
   let patches: Array<[string, number, string]> = []
   for (let file of files) {
     if (!options.check_path(file.filename)) {
+      core.info(`skip for excluded path: ${file.filename}`)
       continue
     }
     for (let patch of split_patch(file.patch)) {
@@ -79,6 +80,7 @@ export const codeReview = async (
           return comment.comment.path === file.filename && comment.line === line
         })
       ) {
+        core.info(`skip for existing comment: ${file.filename}, ${line}`)
         continue
       }
       patches.push([file.filename, line, patch])
@@ -98,6 +100,10 @@ export const codeReview = async (
       'review',
       prompts.render_review_patch(inputs)
     )
+    if (!response) {
+      core.info("review: nothing obtained from chatgpt")
+      continue
+    }
     if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
       continue
     }
@@ -144,7 +150,7 @@ const split_patch = (patch: string | null | undefined): Array<string> => {
     return []
   }
 
-  let pattern: RegExp = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@ )/gm
+  let pattern: RegExp = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
 
   let result: Array<string> = []
   let last = -1
@@ -163,7 +169,7 @@ const split_patch = (patch: string | null | undefined): Array<string> => {
 }
 
 const patch_comment_line = (patch: string): number => {
-  let pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@ )/gm
+  let pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@)/gm
   let match = pattern.exec(patch)
   if (match && match.groups) {
     return parseInt(match.groups.begin) + parseInt(match.groups.diff) - 1
