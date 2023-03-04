@@ -1,3 +1,4 @@
+import './fetch-polyfill.js'
 import {Options} from './options.js'
 import * as core from '@actions/core'
 import {

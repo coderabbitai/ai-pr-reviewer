@@ -1,5 +1,4 @@
 import {Bot} from './bot.js'
-import './fetch-polyfill.js'
 import {Prompts, Options} from './options.js'
 import {codeReview} from './review.js'
 import {scorePullRequest} from './score.js'

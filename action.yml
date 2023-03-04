@@ -23,7 +23,7 @@ inputs:
       - https://github.com/isaacs/minimatch
     default: |
       !dist/**
-      **/package-lock.json
+      !**/package-lock.json
   chatgpt_reverse_proxy:
     type: boolean
     required: false
