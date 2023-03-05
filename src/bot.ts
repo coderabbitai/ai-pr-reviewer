@@ -45,8 +45,8 @@ export class Bot {
     let response = null
     try {
       response = await this.chat_(action, message, initial)
-    } catch (e) {
-      core.warning(`Failed to chat: ${e}`)
+    } catch (e: any) {
+      core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
     } finally {
       console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`)
       return response
@@ -77,9 +77,11 @@ export class Bot {
       core.info('opts: ' + JSON.stringify(opts))
       response = await this.bot.sendMessage(message, opts)
       try {
-        core.info('response: ' + JSON.stringify(response))
-      } catch (e) {
-        core.info('response: ' + response)
+        core.info(`response: ${JSON.stringify(response)}`)
+      } catch (e: any) {
+        core.info(
+          `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
+        )
       }
     } else if (this.turbo) {
       let opts: SendMessageOptions = {}
@@ -88,9 +90,11 @@ export class Bot {
       }
       response = await this.turbo.sendMessage(message, opts)
       try {
-        core.info('response: ' + JSON.stringify(response))
-      } catch (e) {
-        core.info('response: ' + response)
+        core.info(`response: ${JSON.stringify(response)}`)
+      } catch (e: any) {
+        core.info(
+          `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
+        )
       }
     } else {
       core.setFailed('The chatgpt API is not initialized')

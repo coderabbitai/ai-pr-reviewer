@@ -116,8 +116,9 @@ export const codeReview = async (
           ? `:robot: ${response}`
           : `:robot: ChatGPT: ${response}`
       )
-    } catch (e) {
-      core.warning(`Failed to comment: ${e}, skip this comment.
+    } catch (e: any) {
+      core.warning(`Failed to comment: ${e}, skipping.
+        backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)

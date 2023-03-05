@@ -23,9 +23,9 @@ async function run(): Promise<void> {
   let bot: Bot | null = null
   try {
     bot = new Bot(options)
-  } catch (e) {
+  } catch (e: any) {
     core.warning(
-      `Skipped: failed to create bot, please check your openai_api_key: ${e}`
+      `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
   }
@@ -39,9 +39,15 @@ async function run(): Promise<void> {
     } else {
       core.warning(`Unknown action: ${action}`)
     }
-  } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(error.message)
+  } catch (e: any) {
+    if (e instanceof Error) {
+      core.setFailed(
+        `Failed to run the chatgpt-actions: ${e.message}, backtrace: ${e.stack}`
+      )
+    } else {
+      core.setFailed(
+        `Failed to run the chatgpt-actions: ${e}, backtrace: ${e.stack}`
+      )
     }
   }
 }
@@ -51,9 +57,9 @@ process
     console.error(reason, 'Unhandled Rejection at Promise', p)
     core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
   })
-  .on('uncaughtException', err => {
-    console.error(err, 'Uncaught Exception thrown')
-    core.warning(`Uncaught Exception thrown: ${err}`)
+  .on('uncaughtException', (e: any) => {
+    console.error(e, 'Uncaught Exception thrown')
+    core.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
   })
 
 await run()

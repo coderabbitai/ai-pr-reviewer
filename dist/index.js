@@ -27017,7 +27017,7 @@ class Bot {
             response = await this.chat_(action, message, initial);
         }
         catch (e) {
-            core.warning(`Failed to chat: ${e}`);
+            core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
         }
         finally {
             console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`);
@@ -27045,10 +27045,10 @@ class Bot {
             core.info('opts: ' + JSON.stringify(opts));
             response = await this.bot.sendMessage(message, opts);
             try {
-                core.info('response: ' + JSON.stringify(response));
+                core.info(`response: ${JSON.stringify(response)}`);
             }
             catch (e) {
-                core.info('response: ' + response);
+                core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
             }
         }
         else if (this.turbo) {
@@ -27058,10 +27058,10 @@ class Bot {
             }
             response = await this.turbo.sendMessage(message, opts);
             try {
-                core.info('response: ' + JSON.stringify(response));
+                core.info(`response: ${JSON.stringify(response)}`);
             }
             catch (e) {
-                core.info('response: ' + response);
+                core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
             }
         }
         else {
@@ -27270,7 +27270,7 @@ async function run() {
         bot = new _bot_js__WEBPACK_IMPORTED_MODULE_0__/* .Bot */ .r(options);
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_4__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_4__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     try {
@@ -27285,9 +27285,12 @@ async function run() {
             _actions_core__WEBPACK_IMPORTED_MODULE_4__.warning(`Unknown action: ${action}`);
         }
     }
-    catch (error) {
-        if (error instanceof Error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_4__.setFailed(error.message);
+    catch (e) {
+        if (e instanceof Error) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_4__.setFailed(`Failed to run the chatgpt-actions: ${e.message}, backtrace: ${e.stack}`);
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_4__.setFailed(`Failed to run the chatgpt-actions: ${e}, backtrace: ${e.stack}`);
         }
     }
 }
@@ -27296,9 +27299,9 @@ process
     console.error(reason, 'Unhandled Rejection at Promise', p);
     _actions_core__WEBPACK_IMPORTED_MODULE_4__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
 })
-    .on('uncaughtException', err => {
-    console.error(err, 'Uncaught Exception thrown');
-    _actions_core__WEBPACK_IMPORTED_MODULE_4__.warning(`Uncaught Exception thrown: ${err}`);
+    .on('uncaughtException', (e) => {
+    console.error(e, 'Uncaught Exception thrown');
+    _actions_core__WEBPACK_IMPORTED_MODULE_4__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
 });
 await run();
 
@@ -29028,7 +29031,8 @@ const codeReview = async (bot, options, prompts) => {
                 : `:robot: ChatGPT: ${response}`);
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Failed to comment: ${e}, skip this comment.
+            _actions_core__WEBPACK_IMPORTED_MODULE_2__.warning(`Failed to comment: ${e}, skipping.
+        backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`);
