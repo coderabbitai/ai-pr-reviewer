@@ -56,7 +56,8 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      Let's start the review of changes made for $filename. It's exiting content is provided below. Individual diff patches will follow after this message.
+      Let's review of changes made to `$filename`. It's existing content is provided below. 
+      Next, I will send you a series of diff patches for this file to review. Reply "OK" to confirm.
 
       ```
       $file_content
