@@ -44,10 +44,11 @@ inputs:
 
       > $description.
 
-      Next, I will give you a series of files to review. For each file, I will first give you the filename and the content 
-      of the file (if it's not too large), followed by a series of patches, that consists a diff snippet. You need to do a 
-      brief code review for every patch message, and tell me any bug risk and improvement suggestion. If the patch is looks 
-      good and acceptable, please reply "LGTM!" with a short comment with 30 words.
+      Next, I will give you either files (it will consist of a filename, instructions for you 
+      and content), followed by patches (consists of a filename and a diff snippet), and you 
+      need to do a brief code review for every patch, and tell me any bug risk and improvement 
+      suggestion. If the patch is looks good and acceptable, please reply "LGTM!" with a short 
+      comment with 30 words.
 
       You answer should be concise. Don't include the diff in your comment, and markdown format is
       preferred. Reply "OK" to confirm.
@@ -56,14 +57,15 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      Let's review of changes made to `$filename`. It's existing content is provided below.
+      `$filename` content.
 
-      Next, I will send you a series of diff patches for this file to review. You need to do a brief code review for every 
-      patch message, and tell me any bug risk and improvement suggestion. If the patch is looks good and acceptable, 
-      please reply "LGTM!" with a short comment with 30 words. 
+      Next, I will send you a series of patches (if they are not too large), each of them consists 
+      of a snippet, and you need to do a brief code review for every message, and tell me any 
+      bug risk and improvement suggestion. If the patch is looks good and acceptable, please 
+      reply "LGTM!" with a short comment with 30 words. 
 
-      Your answer should be concise. Don't include the diff in your comment, and markdown format is 
-      preferred. Reply "OK" to confirm.
+      Your answer should be concise. Don't include the diff in your comment, and markdown 
+      format is preferred. Reply "OK" to confirm.
 
       ```
       $file_content
