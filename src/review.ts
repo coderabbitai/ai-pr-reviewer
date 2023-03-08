@@ -111,7 +111,7 @@ export const codeReview = async (
     inputs.filename = filename
     inputs.file_content = file_content
     // review file
-    await bot.chat('review', prompts.render_review_file(inputs), true)
+    await bot.chat('review', prompts.render_review_file(inputs))
 
     for (let [line, patch] of patches) {
       core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
