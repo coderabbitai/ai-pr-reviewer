@@ -1,9 +1,9 @@
-import {Bot} from './bot.js'
-import {Commenter} from './commenter.js'
-import {Prompts, Inputs, Options} from './options.js'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import {Bot} from './bot.js'
+import {Commenter} from './commenter.js'
+import {Inputs, Options, Prompts} from './options.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -65,12 +65,25 @@ export const codeReview = async (
   })
 
   // find patches to review
-  let patches: Array<[string, number, string]> = []
+  let files_to_review: Array<[string, string, Array<[number, string]>]> = []
   for (let file of files) {
     if (!options.check_path(file.filename)) {
       core.info(`skip for excluded path: ${file.filename}`)
       continue
     }
+    // retrieve file contents
+    let file_content = ''
+    const contents = await octokit.repos.getContent({
+      owner: repo.owner,
+      repo: repo.repo,
+      path: file.filename,
+      ref: context.payload.pull_request.head.sha
+    })
+    if (contents.data && contents.data.content) {
+      file_content = Buffer.from(contents.data.content, 'base64').toString()
+    }
+
+    let patches: Array<[number, string]> = []
     for (let patch of split_patch(file.patch)) {
       let line = patch_comment_line(patch)
       // skip existing comments
@@ -82,46 +95,55 @@ export const codeReview = async (
         core.info(`skip for existing comment: ${file.filename}, ${line}`)
         continue
       }
-      patches.push([file.filename, line, patch])
+      patches.push([line, patch])
+    }
+    if (patches.length > 0) {
+      files_to_review.push([file.filename, file_content, patches])
     }
   }
 
-  if (patches.length > 0) {
+  if (files_to_review.length == 0) {
     await bot.chat('review', prompts.render_review_beginning(inputs), true)
   }
 
   const commenter: Commenter = new Commenter()
-  for (let [filename, line, patch] of patches) {
-    core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
+  for (let [filename, file_content, patches] of files_to_review) {
     inputs.filename = filename
-    inputs.patch = patch
-    const response = await bot.chat(
-      'review',
-      prompts.render_review_patch(inputs)
-    )
-    if (!response) {
-      core.info('review: nothing obtained from chatgpt')
-      continue
-    }
-    if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
-      continue
-    }
-    try {
-      await commenter.review_comment(
-        context.payload.pull_request.number,
-        commits[commits.length - 1].sha,
-        filename,
-        line,
-        response.startsWith('ChatGPT')
-          ? `:robot: ${response}`
-          : `:robot: ChatGPT: ${response}`
+    inputs.file_content = file_content
+    // review file
+    await bot.chat('review', prompts.render_review_file(inputs), true)
+
+    for (let [line, patch] of patches) {
+      core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
+      inputs.patch = patch
+      const response = await bot.chat(
+        'review',
+        prompts.render_review_patch(inputs)
       )
-    } catch (e: any) {
-      core.warning(`Failed to comment: ${e}, skipping.
+      if (!response) {
+        core.info('review: nothing obtained from chatgpt')
+        continue
+      }
+      if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
+        continue
+      }
+      try {
+        await commenter.review_comment(
+          context.payload.pull_request.number,
+          commits[commits.length - 1].sha,
+          filename,
+          line,
+          response.startsWith('ChatGPT')
+            ? `:robot: ${response}`
+            : `:robot: ChatGPT: ${response}`
+        )
+      } catch (e: any) {
+        core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)
+      }
     }
   }
 }
