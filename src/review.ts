@@ -73,14 +73,25 @@ export const codeReview = async (
     }
     // retrieve file contents
     let file_content = ''
-    const contents = await octokit.repos.getContent({
-      owner: repo.owner,
-      repo: repo.repo,
-      path: file.filename,
-      ref: context.payload.pull_request.head.sha
-    })
-    if (contents.data && contents.data.content) {
-      file_content = Buffer.from(contents.data.content, 'base64').toString()
+    try {
+      const contents = await octokit.repos.getContent({
+        owner: repo.owner,
+        repo: repo.repo,
+        path: file.filename,
+        ref: context.payload.pull_request.head.sha
+      })
+      if (contents.data) {
+        if (!Array.isArray(contents.data)) {
+          if (contents.data.type === 'file' && contents.data.content) {
+            file_content = Buffer.from(
+              contents.data.content,
+              'base64'
+            ).toString()
+          }
+        }
+      }
+    } catch (error) {
+      core.warning(`Failed to get file contents: ${error}, skipping.`)
     }
 
     let patches: Array<[number, string]> = []
