@@ -45,9 +45,9 @@ inputs:
       > $description.
 
       Next, I will give you a series of files to review. For each file, I will first give you the filename and the content 
-      of the file, followed by a series of patches, that consists a diff snippet. You need to do a brief code review for 
-      every patch message, and tell me any bug risk and improvement suggestion. If the patch is looks good and acceptable, 
-      please reply "LGTM!" with a short comment with 30 words.
+      of the file (if it's not too large), followed by a series of patches, that consists a diff snippet. You need to do a 
+      brief code review for every patch message, and tell me any bug risk and improvement suggestion. If the patch is looks 
+      good and acceptable, please reply "LGTM!" with a short comment with 30 words.
 
       You answer should be concise. Don't include the diff in your comment, and markdown format is
       preferred. Reply "OK" to confirm.
