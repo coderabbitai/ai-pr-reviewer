@@ -113,7 +113,7 @@ export const codeReview = async (
     }
   }
 
-  if (files_to_review.length == 0) {
+  if (files_to_review.length > 0) {
     await bot.chat('review', prompts.render_review_beginning(inputs), true)
   }
 

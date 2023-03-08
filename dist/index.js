@@ -29017,7 +29017,7 @@ const codeReview = async (bot, options, prompts) => {
             files_to_review.push([file.filename, file_content, patches]);
         }
     }
-    if (files_to_review.length == 0) {
+    if (files_to_review.length > 0) {
         await bot.chat('review', prompts.render_review_beginning(inputs), true);
     }
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .E();
