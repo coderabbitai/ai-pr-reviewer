@@ -56,8 +56,14 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      Let's review of changes made to `$filename`. It's existing content is provided below. 
-      Next, I will send you a series of diff patches for this file to review. Reply "OK" to confirm.
+      Let's review of changes made to `$filename`. It's existing content is provided below.
+
+      Next, I will send you a series of diff patches for this file to review. You need to do a brief code review for every 
+      patch message, and tell me any bug risk and improvement suggestion. If the patch is looks good and acceptable, 
+      please reply "LGTM!" with a short comment with 30 words. 
+
+      Your answer should be concise. Don't include the diff in your comment, and markdown format is 
+      preferred. Reply "OK" to confirm.
 
       ```
       $file_content
