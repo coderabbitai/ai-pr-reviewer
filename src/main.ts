@@ -1,8 +1,8 @@
+import * as core from '@actions/core'
 import {Bot} from './bot.js'
-import {Prompts, Options} from './options.js'
+import {Options, Prompts} from './options.js'
 import {codeReview} from './review.js'
 import {scorePullRequest} from './score.js'
-import * as core from '@actions/core'
 
 async function run(): Promise<void> {
   const action: string = core.getInput('action')
@@ -14,6 +14,7 @@ async function run(): Promise<void> {
   )
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),
+    core.getInput('review_file'),
     core.getInput('review_patch'),
     core.getInput('scoring_beginning'),
     core.getInput('scoring')

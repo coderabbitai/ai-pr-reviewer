@@ -75,50 +75,50 @@ There're already many [chatgpt-actions][1], why we need to reinvent the wheel?
 - Scoring your pull requests
 
   ```yaml
-      - uses: unsafecoerce/chatgpt-action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: false
-          action: score
+  - uses: unsafecoerce/chatgpt-action@main
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    with:
+      debug: false
+      action: score
   ```
 
 - Code review your pull requests
 
   ```yaml
-      - uses: unsafecoerce/chatgpt-action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: false
-          action: review
-          review_comment_lgtm: true
+  - uses: unsafecoerce/chatgpt-action@main
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    with:
+      debug: false
+      action: review
+      review_comment_lgtm: true
   ```
 
 - Customizable prompt templates
 
   ```yaml
-      - uses: unsafecoerce/chatgpt-action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: false
-          action: score
-          scoring_beginning: |
-            Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
+  - uses: unsafecoerce/chatgpt-action@main
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    with:
+      debug: false
+      action: score
+      scoring_beginning: |
+        Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
 
-            > $description
+        > $description
 
-            I would like to give you the whole diff of the pull request and you need to given a score after
-            reviewing the pull request. The score should be a number between 0 and 100 and 85 means the
-            the pull request is basically acceptable. You just need to reply a number between 0 and 100,
-            e.g., "85", and a comment within 30 words. Reply "OK" to confirm.
+        I would like to give you the whole diff of the pull request and you need to given a score after
+        reviewing the pull request. The score should be a number between 0 and 100 and 85 means the
+        the pull request is basically acceptable. You just need to reply a number between 0 and 100,
+        e.g., "85", and a comment within 30 words. Reply "OK" to confirm.
   ```
 
 ## Usage
@@ -196,6 +196,7 @@ to you.
 See also: [./action.yml](./action.yml)
 
 - `review_beginning`: The beginning prompt of a code review dialog
+- `review_file`: The prompt for each file
 - `review_patch`: The prompt for each chunks/patches
 - `scoring_beginning`: The beginning prompt for scoring a pull request
 - `scoring`: The prompt for the whole pull request
