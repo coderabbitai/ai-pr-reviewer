@@ -36,7 +36,7 @@ export class Bot {
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
         completionParams: {
-          temperature: 0.1
+          temperature: 0.2
         }
         // assistantLabel: " ",
         // userLabel: " ",
