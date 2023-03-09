@@ -103,43 +103,32 @@ inputs:
     default: |
       We will be scoring a pull request in this session. 
 
-      You will need provide -
-      1. Overall Score
-      2. Overall Summary (within 50 words)
-      3. Table of Filename, Score and Summary (within 20 words) for each file's diff
+      You will provide -
+      - Overall score
+      - Overall summary of changes (within 100 words)
+      - Table containing filename, score and summary (within 30 words) for each file's diff
 
       I have a pull request with title "$title" and the description is as follows,
 
       > $description.
 
-      I will be providing you some files and diff for each file to help you build
-      context and score the diffs, in case their content is not too large. In every response, you will update 
-      the overall score, summary of the entire pull request, and the table for each file's score.
+      Next, I will be providing you diffs for each file for you to score and summarize. In every response, 
+      you will update the overall score, summary of the entire pull request, and the table for each file's score.
 
-      Reply "OK" to confirm that you are ready to receive the contents of files and score their diffs.
-  scoring_file:
-    type: string
-    required: false
-    description: 'The prompt for each file'
-    default: |
-      Providing `$filename` content as context. Reply "OK" to confirm.
-
-      ```
-      $file_content
-      ```
+      Reply "OK" to confirm that you are ready to receive the diffs for scoring.
   scoring_file_diff:
     type: string
     required: false
     description: 'The prompt for each file diff'
     default: |
-      Providing entire diff for `$filename`.
+      Providing diff for `$filename`.
 
       I would like you to score the diff, the score should be a number between 0 and 100
-      and 85 means the the pull request is basically acceptable. e.g., "85", and a comment 
-      within 20 words. You will add the score for this file and your comment in the table. 
+      and 85 means the the pull request is basically acceptable. e.g., "85", and a summary 
+      within 20 words. You will add the score for this file and your summary in the table. 
 
-      In response, please provide the updated overall summary, overall score and the score table 
-      for files we have reviewed so far.
+      In response, please provide the updated overall score, overall summary and the score 
+      table of the files we have reviewed so far.
 
       ```diff
       $file_diff
@@ -150,10 +139,10 @@ inputs:
     description: 'The prompt for final scoring response'
     default: |
       This is the end of scoring session. Please provide the final response as follows in 
-      the `markdown` format:
-        1. Overall Score
-        2. Overall Summary
-        3. Table of scores for each file
+      the `markdown` format with following table of content:
+        - Overall Score
+        - Overall Summary
+        - Table of scores for each file
 
 runs:
   using: 'node16'

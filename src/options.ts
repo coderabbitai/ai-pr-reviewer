@@ -8,7 +8,6 @@ export class Prompts {
   review_patch_begin: string
   review_patch: string
   scoring_beginning: string
-  scoring_file: string
   scoring_file_diff: string
   scoring: string
 
@@ -19,7 +18,6 @@ export class Prompts {
     review_patch_begin = '',
     review_patch = '',
     scoring_beginning = '',
-    scoring_file = '',
     scoring_file_diff = '',
     scoring = ''
   ) {
@@ -29,7 +27,6 @@ export class Prompts {
     this.review_patch_begin = review_patch_begin
     this.review_patch = review_patch
     this.scoring_beginning = scoring_beginning
-    this.scoring_file = scoring_file
     this.scoring_file_diff = scoring_file_diff
     this.scoring = scoring
   }
@@ -56,10 +53,6 @@ export class Prompts {
 
   render_scoring_beginning(inputs: Inputs): string {
     return inputs.render(this.scoring_beginning)
-  }
-
-  render_scoring_file(inputs: Inputs): string {
-    return inputs.render(this.scoring_file)
   }
 
   render_scoring_file_diff(inputs: Inputs): string {
