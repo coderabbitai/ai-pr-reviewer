@@ -1,22 +1,25 @@
-import {Bot} from './bot.js'
-import {Prompts, Options} from './options.js'
-import {codeReview} from './review.js'
-import {scorePullRequest} from './score.js'
 import * as core from '@actions/core'
+import {Bot} from './bot.js'
+import {Options, Prompts} from './options.js'
+import {codeReview} from './review.js'
 
 async function run(): Promise<void> {
-  const action: string = core.getInput('action')
   let options: Options = new Options(
     core.getBooleanInput('debug'),
     core.getInput('chatgpt_reverse_proxy'),
     core.getBooleanInput('review_comment_lgtm'),
-    core.getMultilineInput('path_filters')
+    core.getMultilineInput('path_filters'),
+    core.getInput('system_message')
   )
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),
+    core.getInput('review_file'),
+    core.getInput('review_file_diff'),
+    core.getInput('review_patch_begin'),
     core.getInput('review_patch'),
-    core.getInput('scoring_beginning'),
-    core.getInput('scoring')
+    core.getInput('summarize_beginning'),
+    core.getInput('summarize_file_diff'),
+    core.getInput('summarize')
   )
 
   // initialize chatgpt bot
@@ -31,14 +34,7 @@ async function run(): Promise<void> {
   }
 
   try {
-    core.info(`running Github action: ${action}`)
-    if (action === 'score') {
-      await scorePullRequest(bot, options, prompts)
-    } else if (action === 'review') {
-      await codeReview(bot, options, prompts)
-    } else {
-      core.warning(`Unknown action: ${action}`)
-    }
+    await codeReview(bot, options, prompts)
   } catch (e: any) {
     if (e instanceof Error) {
       core.setFailed(

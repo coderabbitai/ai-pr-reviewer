@@ -2,11 +2,6 @@ name: 'chatgpt-action'
 description: 'A collection of ChatGPT assistants, e.g., code viewer, labeler, assigner, etc.'
 author: 'Tao He'
 inputs:
-  action:
-    type: string
-    required: false
-    description: 'The action to run, currently can be "review", "score"'
-    default: 'review'
   debug:
     type: boolean
     required: false
@@ -24,6 +19,16 @@ inputs:
     default: |
       !dist/**
       **/package-lock.json
+  system_message:
+    type: string
+    required: false
+    description: 'System message to be sent to ChatGPT'
+    default: |
+      You are a very experienced software engineer. You are able to thoroughly review code and uncover 
+      issues, such as potential data races, livelocks, starvation, suspension, order violation, 
+      atomicity violation, consistency issues, complexity issues and so on. 
+
+      We will be doing code reviews today. Please prefer markdown format in your responses.
   chatgpt_reverse_proxy:
     type: boolean
     required: false
@@ -38,19 +43,49 @@ inputs:
   review_beginning:
     type: string
     required: false
-    description: "The beginning prompt of a code review dialog"
+    description: 'The beginning prompt of a code review dialog'
     default: |
-      Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
+      I will be providing you some files and entire diff to help you build
+      context, in case the content is not too large. Then I will be sending you each patch
+      from the diff for review.
+
+      I have a pull request with title "$title" and the description is as follows,
 
       > $description.
 
-      Next, I will given you a series of patches, each of them consists of a filename and a diff
-      snippet, and you need to do a brief code review for every message, and tell me any bug risk
-      and improvement suggestion. If the patch is looks good and acceptable, please reply "LGTM!"
-      with a short comment with 30 words.
+      Reply "OK" to confirm that you are ready for further instructions.
+  review_file:
+    type: string
+    required: false
+    description: 'The prompt for each file'
+    default: |
+      Providing `$filename` content as context. Reply "OK" to confirm.
 
-      You answer should be concise. Don't include the diff in your comment, and markdown format is
-      preferred. Reply "OK" to confirm.
+      ```
+      $file_content
+      ```
+  review_file_diff:
+    type: string
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
+      Providing entire diff for `$filename` as context. Reply "OK" to confirm.
+
+      ```diff
+      $file_diff
+      ```
+  review_patch_begin:
+    type: string
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
+      Next, I will send you a series of patches, each of them consists 
+      of a snippet, and you need to do a brief code review for every message, and tell me any 
+      bug risk and improvement suggestion. If the patch is looks good and acceptable, please 
+      reply "LGTM!" with a short comment with 30 words. 
+
+      Your answer should be concise. Don't include the diff in your comment, and markdown 
+      format is preferred. Reply "OK" to confirm.
   review_patch:
     type: string
     required: false
@@ -61,29 +96,51 @@ inputs:
       ```diff
       $patch
       ```
-  scoring_beginning:
+  summarize_beginning:
     type: string
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
+      We will be summarizing a pull request in this session. 
 
-      > $description
+      You will provide -
+      - Overall summary of changes (within 100 words)
+      - A table containing filename and short summary (within 30 words) for each file's diff
 
-      I would like score the pull request, the score should be a number between 0 and 100
-      and 85 means the the pull request is basically acceptable. You just need to reply a
-      number between 0 and 100, e.g., "85", and a comment within 30 words. Next, I would
-      give you the whole diff of the pull request. Reply "OK" to confirm.
-  scoring:
+      I have a pull request with title "$title" and the description is as follows,
+
+      > $description.
+
+      Next, I will be providing you diffs for each file for you to summarize. In every response, 
+      you will update the overall summary of the entire pull request, and the table for each file's 
+      diff summary.
+
+      Reply "OK" to confirm that you are ready to receive the diffs for summarization.
+  summarize_file_diff:
     type: string
     required: false
-    description: 'The prompt for the whole diff for scoring'
+    description: 'The prompt for each file diff'
     default: |
-      The diff is as follows:
+      Providing diff for `$filename`.
+
+      I would like you to summarize the diff and add the summary for this file in the table. 
+
+      In response, please provide the updated overall summary and the summary table of the files 
+      we have summarized so far.
 
       ```diff
-      $diff
+      $file_diff
       ```
+  summarize:
+    type: string
+    required: false
+    description: 'The prompt for final summarization response'
+    default: |
+      This is the end of summarization session. Please provide the final response as follows in 
+      the `markdown` format with the following content:
+        - Overall Summary
+        - Table of summaries
+
 runs:
   using: 'node16'
   main: 'dist/index.js'
