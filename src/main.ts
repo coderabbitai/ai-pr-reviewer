@@ -17,9 +17,9 @@ async function run(): Promise<void> {
     core.getInput('review_file_diff'),
     core.getInput('review_patch_begin'),
     core.getInput('review_patch'),
-    core.getInput('scoring_beginning'),
-    core.getInput('scoring_file_diff'),
-    core.getInput('scoring')
+    core.getInput('summarize_beginning'),
+    core.getInput('summarize_file_diff'),
+    core.getInput('summarize')
   )
 
   // initialize chatgpt bot

@@ -127,11 +127,11 @@ export const codeReview = async (
     )
     let next_review_ids = review_begin_ids
 
-    const [, scoring_begin_ids] = await bot.chat(
-      prompts.render_scoring_beginning(inputs),
+    const [, summarize_begin_ids] = await bot.chat(
+      prompts.render_summarize_beginning(inputs),
       {}
     )
-    let next_scoring_ids = scoring_begin_ids
+    let next_summarize_ids = summarize_begin_ids
 
     for (const [
       filename,
@@ -169,15 +169,15 @@ export const codeReview = async (
           next_review_ids = review_diff_ids
         }
 
-        // score diff
-        const [scoring_resp, scoring_diff_ids] = await bot.chat(
-          prompts.render_scoring_file_diff(inputs),
-          next_scoring_ids
+        // summarize diff
+        const [summarize_resp, summarize_diff_ids] = await bot.chat(
+          prompts.render_summarize_file_diff(inputs),
+          next_summarize_ids
         )
-        if (!scoring_resp) {
-          core.info('scoring: nothing obtained from chatgpt')
+        if (!summarize_resp) {
+          core.info('summarize: nothing obtained from chatgpt')
         } else {
-          next_scoring_ids = scoring_diff_ids
+          next_summarize_ids = summarize_diff_ids
         }
       }
 
@@ -222,19 +222,20 @@ export const codeReview = async (
         }
       }
     }
-    // final score
-    const [scoring_final_response] = await bot.chat(
-      prompts.render_scoring(inputs),
-      next_scoring_ids
+    // final summary
+    const [summarize_final_response] = await bot.chat(
+      prompts.render_summarize(inputs),
+      next_summarize_ids
     )
-    if (!scoring_final_response) {
-      core.info('scoring: nothing obtained from chatgpt')
+    if (!summarize_final_response) {
+      core.info('summarize: nothing obtained from chatgpt')
       return
     }
 
-    const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->'
+    const tag =
+      '<!-- This is an auto-generated comment: summarize by chatgpt -->'
     await commenter.comment(
-      `:robot: ChatGPT score: ${scoring_final_response}`,
+      `:robot: ChatGPT summary: ${summarize_final_response}`,
       tag,
       'replace'
     )

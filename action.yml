@@ -96,53 +96,50 @@ inputs:
       ```diff
       $patch
       ```
-  scoring_beginning:
+  summarize_beginning:
     type: string
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      We will be scoring a pull request in this session. 
+      We will be summarizing a pull request in this session. 
 
       You will provide -
-      - Overall score
       - Overall summary of changes (within 100 words)
-      - Table containing filename, score and summary (within 30 words) for each file's diff
+      - A table containing filename and short summary (within 30 words) for each file's diff
 
       I have a pull request with title "$title" and the description is as follows,
 
       > $description.
 
-      Next, I will be providing you diffs for each file for you to score and summarize. In every response, 
-      you will update the overall score, summary of the entire pull request, and the table for each file's score.
+      Next, I will be providing you diffs for each file for you to summarize. In every response, 
+      you will update the overall summary of the entire pull request, and the table for each file's 
+      diff summary.
 
-      Reply "OK" to confirm that you are ready to receive the diffs for scoring.
-  scoring_file_diff:
+      Reply "OK" to confirm that you are ready to receive the diffs for summarization.
+  summarize_file_diff:
     type: string
     required: false
     description: 'The prompt for each file diff'
     default: |
       Providing diff for `$filename`.
 
-      I would like you to score the diff, the score should be a number between 0 and 100
-      and 85 means the the pull request is basically acceptable. e.g., "85", and a summary 
-      within 20 words. You will add the score for this file and your summary in the table. 
+      I would like you to summarize the diff and add the summary for this file in the table. 
 
-      In response, please provide the updated overall score, overall summary and the score 
-      table of the files we have reviewed so far.
+      In response, please provide the updated overall summary and the summary table of the files 
+      we have summarized so far.
 
       ```diff
       $file_diff
       ```
-  scoring:
+  summarize:
     type: string
     required: false
-    description: 'The prompt for final scoring response'
+    description: 'The prompt for final summarization response'
     default: |
-      This is the end of scoring session. Please provide the final response as follows in 
-      the `markdown` format with following table of content:
-        - Overall Score
+      This is the end of summarization session. Please provide the final response as follows in 
+      the `markdown` format with the following content:
         - Overall Summary
-        - Table of scores for each file
+        - Table of summaries
 
 runs:
   using: 'node16'

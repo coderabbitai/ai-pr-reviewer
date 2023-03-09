@@ -27085,7 +27085,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 async function run() {
     let options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'));
     // initialize chatgpt bot
     let bot = null;
     try {
@@ -28628,18 +28628,18 @@ class Prompts {
     review_file_diff;
     review_patch_begin;
     review_patch;
-    scoring_beginning;
-    scoring_file_diff;
-    scoring;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', scoring_beginning = '', scoring_file_diff = '', scoring = '') {
+    summarize_beginning;
+    summarize_file_diff;
+    summarize;
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
         this.review_patch_begin = review_patch_begin;
         this.review_patch = review_patch;
-        this.scoring_beginning = scoring_beginning;
-        this.scoring_file_diff = scoring_file_diff;
-        this.scoring = scoring;
+        this.summarize_beginning = summarize_beginning;
+        this.summarize_file_diff = summarize_file_diff;
+        this.summarize = summarize;
     }
     render_review_beginning(inputs) {
         return inputs.render(this.review_beginning);
@@ -28656,14 +28656,14 @@ class Prompts {
     render_review_patch(inputs) {
         return inputs.render(this.review_patch);
     }
-    render_scoring_beginning(inputs) {
-        return inputs.render(this.scoring_beginning);
+    render_summarize_beginning(inputs) {
+        return inputs.render(this.summarize_beginning);
     }
-    render_scoring_file_diff(inputs) {
-        return inputs.render(this.scoring_file_diff);
+    render_summarize_file_diff(inputs) {
+        return inputs.render(this.summarize_file_diff);
     }
-    render_scoring(inputs) {
-        return inputs.render(this.scoring);
+    render_summarize(inputs) {
+        return inputs.render(this.summarize);
     }
 }
 class Inputs {
@@ -29042,8 +29042,8 @@ const codeReview = async (bot, options, prompts) => {
         const commenter = new Commenter();
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
         let next_review_ids = review_begin_ids;
-        const [, scoring_begin_ids] = await bot.chat(prompts.render_scoring_beginning(inputs), {});
-        let next_scoring_ids = scoring_begin_ids;
+        const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
+        let next_summarize_ids = summarize_begin_ids;
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
             // reset session for each file while reviewing
@@ -29069,13 +29069,13 @@ const codeReview = async (bot, options, prompts) => {
                 else {
                     next_review_ids = review_diff_ids;
                 }
-                // score diff
-                const [scoring_resp, scoring_diff_ids] = await bot.chat(prompts.render_scoring_file_diff(inputs), next_scoring_ids);
-                if (!scoring_resp) {
-                    core.info('scoring: nothing obtained from chatgpt');
+                // summarize diff
+                const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
+                if (!summarize_resp) {
+                    core.info('summarize: nothing obtained from chatgpt');
                 }
                 else {
-                    next_scoring_ids = scoring_diff_ids;
+                    next_summarize_ids = summarize_diff_ids;
                 }
             }
             // review_patch_begin
@@ -29107,14 +29107,14 @@ const codeReview = async (bot, options, prompts) => {
                 }
             }
         }
-        // final score
-        const [scoring_final_response] = await bot.chat(prompts.render_scoring(inputs), next_scoring_ids);
-        if (!scoring_final_response) {
-            core.info('scoring: nothing obtained from chatgpt');
+        // final summary
+        const [summarize_final_response] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+        if (!summarize_final_response) {
+            core.info('summarize: nothing obtained from chatgpt');
             return;
         }
-        const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
-        await commenter.comment(`:robot: ChatGPT score: ${scoring_final_response}`, tag, 'replace');
+        const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
+        await commenter.comment(`:robot: ChatGPT summary: ${summarize_final_response}`, tag, 'replace');
     }
 };
 // const list_review_comments = async (target: number, page: number = 1) => {

@@ -7,9 +7,9 @@ export class Prompts {
   review_file_diff: string
   review_patch_begin: string
   review_patch: string
-  scoring_beginning: string
-  scoring_file_diff: string
-  scoring: string
+  summarize_beginning: string
+  summarize_file_diff: string
+  summarize: string
 
   constructor(
     review_beginning = '',
@@ -17,18 +17,18 @@ export class Prompts {
     review_file_diff = '',
     review_patch_begin = '',
     review_patch = '',
-    scoring_beginning = '',
-    scoring_file_diff = '',
-    scoring = ''
+    summarize_beginning = '',
+    summarize_file_diff = '',
+    summarize = ''
   ) {
     this.review_beginning = review_beginning
     this.review_file = review_file
     this.review_file_diff = review_file_diff
     this.review_patch_begin = review_patch_begin
     this.review_patch = review_patch
-    this.scoring_beginning = scoring_beginning
-    this.scoring_file_diff = scoring_file_diff
-    this.scoring = scoring
+    this.summarize_beginning = summarize_beginning
+    this.summarize_file_diff = summarize_file_diff
+    this.summarize = summarize
   }
 
   render_review_beginning(inputs: Inputs): string {
@@ -51,16 +51,16 @@ export class Prompts {
     return inputs.render(this.review_patch)
   }
 
-  render_scoring_beginning(inputs: Inputs): string {
-    return inputs.render(this.scoring_beginning)
+  render_summarize_beginning(inputs: Inputs): string {
+    return inputs.render(this.summarize_beginning)
   }
 
-  render_scoring_file_diff(inputs: Inputs): string {
-    return inputs.render(this.scoring_file_diff)
+  render_summarize_file_diff(inputs: Inputs): string {
+    return inputs.render(this.summarize_file_diff)
   }
 
-  render_scoring(inputs: Inputs): string {
-    return inputs.render(this.scoring)
+  render_summarize(inputs: Inputs): string {
+    return inputs.render(this.summarize)
   }
 }
 
