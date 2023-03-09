@@ -133,19 +133,23 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
+  temperature: number
 
   constructor(
     debug: boolean,
     chatgpt_reverse_proxy: string,
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
-    system_message = ''
+    system_message = '',
+    temperature = '0.2'
   ) {
     this.debug = debug
     this.chatgpt_reverse_proxy = chatgpt_reverse_proxy
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
+    // convert temperature to number
+    this.temperature = parseFloat(temperature)
   }
 
   check_path(path: string): boolean {

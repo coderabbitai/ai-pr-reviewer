@@ -1,14 +1,15 @@
 name: 'chatgpt-action'
-description: 'A collection of ChatGPT assistants, e.g., code viewer, labeler, assigner, etc.'
-author: 'Tao He'
+description: 'ChatGPT based PR reviewer and summarizer'
 inputs:
   debug:
-    type: boolean
     required: false
     description: 'Enable debug mode'
-    default: false
+    default: 'false'
+  temperature:
+    required: false
+    description: 'Temperature for ChatGPT model'
+    default: '0.2'
   path_filters:
-    type: string
     required: false
     description: |
       The path filters, e.g., "src/**.py", "!dist/**", each line will be considered as one pattern.
@@ -20,7 +21,6 @@ inputs:
       !dist/**
       **/package-lock.json
   system_message:
-    type: string
     required: false
     description: 'System message to be sent to ChatGPT'
     default: |
@@ -30,18 +30,15 @@ inputs:
 
       We will be doing code reviews today. Please prefer markdown format in your responses.
   chatgpt_reverse_proxy:
-    type: boolean
     required: false
     description: |
       The URL of the chatgpt reverse proxy, see also https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy
     default: https://chat.duti.tech/api/conversation
   review_comment_lgtm:
-    type: boolean
     required: false
     description: 'Leave comments even the patch is LGTM'
     default: false
   review_beginning:
-    type: string
     required: false
     description: 'The beginning prompt of a code review dialog'
     default: |
@@ -55,7 +52,6 @@ inputs:
 
       Reply "OK" to confirm that you are ready for further instructions.
   review_file:
-    type: string
     required: false
     description: 'The prompt for each file'
     default: |
@@ -65,7 +61,6 @@ inputs:
       $file_content
       ```
   review_file_diff:
-    type: string
     required: false
     description: 'The prompt for each file diff'
     default: |
@@ -75,7 +70,6 @@ inputs:
       $file_diff
       ```
   review_patch_begin:
-    type: string
     required: false
     description: 'The prompt for each file diff'
     default: |
@@ -87,7 +81,6 @@ inputs:
       Your answer should be concise. Don't include the diff in your comment, and markdown 
       format is preferred. Reply "OK" to confirm.
   review_patch:
-    type: string
     required: false
     description: 'The prompt for each chunks/patches'
     default: |
@@ -97,7 +90,6 @@ inputs:
       $patch
       ```
   summarize_beginning:
-    type: string
     required: false
     description: 'The prompt for the whole pull request'
     default: |
@@ -117,7 +109,6 @@ inputs:
 
       Reply "OK" to confirm that you are ready to receive the diffs for summarization.
   summarize_file_diff:
-    type: string
     required: false
     description: 'The prompt for each file diff'
     default: |
@@ -132,7 +123,6 @@ inputs:
       $file_diff
       ```
   summarize:
-    type: string
     required: false
     description: 'The prompt for final summarization response'
     default: |
@@ -141,7 +131,6 @@ inputs:
         - High-level Summary
         - Table of files
   summarize_release_notes:
-    type: string
     required: false
     description: 'The prompt for generating release notes'
     default: |

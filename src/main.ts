@@ -4,12 +4,13 @@ import {Options, Prompts} from './options.js'
 import {codeReview} from './review.js'
 
 async function run(): Promise<void> {
-  let options: Options = new Options(
+  const options: Options = new Options(
     core.getBooleanInput('debug'),
     core.getInput('chatgpt_reverse_proxy'),
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
-    core.getInput('system_message')
+    core.getInput('system_message'),
+    core.getInput('temperature')
   )
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),
