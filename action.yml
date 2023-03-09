@@ -147,13 +147,14 @@ inputs:
   scoring:
     type: string
     required: false
-    description: 'The prompt for the whole diff for scoring'
+    description: 'The prompt for final scoring response'
     default: |
-      The diff is as follows:
+      This is the end of scoring session. Please provide the final response as follows in 
+      the `markdown` format:
+        1. Overall Score
+        2. Overall Summary
+        3. Table of scores for each file
 
-      ```diff
-      $diff
-      ```
 runs:
   using: 'node16'
   main: 'dist/index.js'
