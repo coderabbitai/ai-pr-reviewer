@@ -230,24 +230,23 @@ export const codeReview = async (
         patch: ${patch}`)
         }
       }
-      // final score
-      const [scoring_final_response] = await bot.chat(
-        prompts.render_scoring(inputs),
-        next_scoring_ids
-      )
-      if (!scoring_final_response) {
-        core.info('scoring: nothing obtained from chatgpt')
-        return
-      }
-
-      const tag =
-        '<!-- This is an auto-generated comment: scoring by chatgpt -->'
-      await commenter.comment(
-        `:robot: ChatGPT score: ${scoring_final_response}`,
-        tag,
-        'replace'
-      )
     }
+    // final score
+    const [scoring_final_response] = await bot.chat(
+      prompts.render_scoring(inputs),
+      next_scoring_ids
+    )
+    if (!scoring_final_response) {
+      core.info('scoring: nothing obtained from chatgpt')
+      return
+    }
+
+    const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->'
+    await commenter.comment(
+      `:robot: ChatGPT score: ${scoring_final_response}`,
+      tag,
+      'replace'
+    )
   }
 }
 
