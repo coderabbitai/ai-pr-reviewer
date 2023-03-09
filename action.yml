@@ -146,8 +146,11 @@ inputs:
     description: 'The prompt for generating release notes'
     default: |
       Next, release notes in `markdown` format for this pull request that focuses on the purpose
-      of this PR. Your response should be as concise as possible (40-80 words), without 
-      additional commentary as this response will be used as is in our release notes.
+      of this PR. If needed, you can classify the changes as "New Feature", "Bug fix", 
+      "Documentation", "Refactor", "Style", "Test", "Chore", "Revert" and provide a bullet point list,
+      e.g. "New Feature: An integrations page was added to the UI". Your response should be as 
+      concise as possible (50-100 words), without additional commentary as this response will be 
+      used as is in our release notes.
 runs:
   using: 'node16'
   main: 'dist/index.js'
