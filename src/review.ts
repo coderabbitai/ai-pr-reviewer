@@ -126,7 +126,7 @@ export const codeReview = async (
       {}
     )
 
-    const [, score_begin_ids] = await bot.chat(
+    const [, scoring_begin_ids] = await bot.chat(
       prompts.render_scoring_beginning(inputs),
       {}
     )
@@ -139,7 +139,7 @@ export const codeReview = async (
     ] of files_to_review) {
       inputs.filename = filename
       let next_review_ids = review_begin_ids
-      let next_score_ids = score_begin_ids
+      let next_scoring_ids = scoring_begin_ids
       if (file_content.length > 0) {
         inputs.file_content = file_content
         // review file
@@ -154,14 +154,14 @@ export const codeReview = async (
         }
 
         // score file
-        const [score_resp, score_file_ids] = await bot.chat(
+        const [scoring_resp, scoring_file_ids] = await bot.chat(
           prompts.render_scoring_file(inputs),
-          score_begin_ids
+          scoring_begin_ids
         )
-        if (!score_resp) {
+        if (!scoring_resp) {
           core.info('scoring: nothing obtained from chatgpt')
         } else {
-          next_score_ids = score_file_ids
+          next_scoring_ids = scoring_file_ids
         }
       }
 
@@ -179,21 +179,21 @@ export const codeReview = async (
         }
 
         // score diff
-        const [score_resp, score_diff_ids] = await bot.chat(
+        const [scoring_resp, scoring_diff_ids] = await bot.chat(
           prompts.render_scoring_file_diff(inputs),
-          next_score_ids
+          next_scoring_ids
         )
-        if (!score_resp) {
+        if (!scoring_resp) {
           core.info('scoring: nothing obtained from chatgpt')
         } else {
-          next_score_ids = score_diff_ids
+          next_scoring_ids = scoring_diff_ids
         }
         // final score
-        const [score_final_response] = await bot.chat(
+        const [scoring_final_response] = await bot.chat(
           prompts.render_scoring(inputs),
-          next_score_ids
+          next_scoring_ids
         )
-        if (!score_final_response) {
+        if (!scoring_final_response) {
           core.info('scoring: nothing obtained from chatgpt')
           return
         }
@@ -201,7 +201,7 @@ export const codeReview = async (
         const tag =
           '<!-- This is an auto-generated comment: scoring by chatgpt -->'
         await commenter.comment(
-          `:robot: ChatGPT score: ${score_final_response}`,
+          `:robot: ChatGPT score: ${scoring_final_response}`,
           tag,
           'replace'
         )

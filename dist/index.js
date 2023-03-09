@@ -29046,11 +29046,11 @@ const codeReview = async (bot, options, prompts) => {
     if (files_to_review.length > 0) {
         const commenter = new Commenter();
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
-        const [, score_begin_ids] = await bot.chat(prompts.render_scoring_beginning(inputs), {});
+        const [, scoring_begin_ids] = await bot.chat(prompts.render_scoring_beginning(inputs), {});
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
             let next_review_ids = review_begin_ids;
-            let next_score_ids = score_begin_ids;
+            let next_scoring_ids = scoring_begin_ids;
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 // review file
@@ -29062,12 +29062,12 @@ const codeReview = async (bot, options, prompts) => {
                     next_review_ids = review_file_ids;
                 }
                 // score file
-                const [score_resp, score_file_ids] = await bot.chat(prompts.render_scoring_file(inputs), score_begin_ids);
-                if (!score_resp) {
+                const [scoring_resp, scoring_file_ids] = await bot.chat(prompts.render_scoring_file(inputs), scoring_begin_ids);
+                if (!scoring_resp) {
                     core.info('scoring: nothing obtained from chatgpt');
                 }
                 else {
-                    next_score_ids = score_file_ids;
+                    next_scoring_ids = scoring_file_ids;
                 }
             }
             if (file_diff.length > 0) {
@@ -29081,21 +29081,21 @@ const codeReview = async (bot, options, prompts) => {
                     next_review_ids = review_diff_ids;
                 }
                 // score diff
-                const [score_resp, score_diff_ids] = await bot.chat(prompts.render_scoring_file_diff(inputs), next_score_ids);
-                if (!score_resp) {
+                const [scoring_resp, scoring_diff_ids] = await bot.chat(prompts.render_scoring_file_diff(inputs), next_scoring_ids);
+                if (!scoring_resp) {
                     core.info('scoring: nothing obtained from chatgpt');
                 }
                 else {
-                    next_score_ids = score_diff_ids;
+                    next_scoring_ids = scoring_diff_ids;
                 }
                 // final score
-                const [score_final_response] = await bot.chat(prompts.render_scoring(inputs), next_score_ids);
-                if (!score_final_response) {
+                const [scoring_final_response] = await bot.chat(prompts.render_scoring(inputs), next_scoring_ids);
+                if (!scoring_final_response) {
                     core.info('scoring: nothing obtained from chatgpt');
                     return;
                 }
                 const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
-                await commenter.comment(`:robot: ChatGPT score: ${score_final_response}`, tag, 'replace');
+                await commenter.comment(`:robot: ChatGPT score: ${scoring_final_response}`, tag, 'replace');
             }
             // review_patch_begin
             const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
