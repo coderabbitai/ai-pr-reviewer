@@ -23610,1189 +23610,6 @@ __nccwpck_require__.d(__webpack_exports__, {
   "r": () => (/* binding */ Bot)
 });
 
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(2186);
-// EXTERNAL MODULE: ./node_modules/keyv/src/index.js
-var src = __nccwpck_require__(1531);
-;// CONCATENATED MODULE: ./node_modules/p-timeout/index.js
-class TimeoutError extends Error {
-	constructor(message) {
-		super(message);
-		this.name = 'TimeoutError';
-	}
-}
-
-/**
-An error to be thrown when the request is aborted by AbortController.
-DOMException is thrown instead of this Error when DOMException is available.
-*/
-class AbortError extends Error {
-	constructor(message) {
-		super();
-		this.name = 'AbortError';
-		this.message = message;
-	}
-}
-
-/**
-TODO: Remove AbortError and just throw DOMException when targeting Node 18.
-*/
-const getDOMException = errorMessage => globalThis.DOMException === undefined
-	? new AbortError(errorMessage)
-	: new DOMException(errorMessage);
-
-/**
-TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
-*/
-const getAbortedReason = signal => {
-	const reason = signal.reason === undefined
-		? getDOMException('This operation was aborted.')
-		: signal.reason;
-
-	return reason instanceof Error ? reason : getDOMException(reason);
-};
-
-function pTimeout(promise, options) {
-	const {
-		milliseconds,
-		fallback,
-		message,
-		customTimers = {setTimeout, clearTimeout},
-	} = options;
-
-	let timer;
-
-	const cancelablePromise = new Promise((resolve, reject) => {
-		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
-			throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
-		}
-
-		if (milliseconds === Number.POSITIVE_INFINITY) {
-			resolve(promise);
-			return;
-		}
-
-		if (options.signal) {
-			const {signal} = options;
-			if (signal.aborted) {
-				reject(getAbortedReason(signal));
-			}
-
-			signal.addEventListener('abort', () => {
-				reject(getAbortedReason(signal));
-			});
-		}
-
-		// We create the error outside of `setTimeout` to preserve the stack trace.
-		const timeoutError = new TimeoutError();
-
-		timer = customTimers.setTimeout.call(undefined, () => {
-			if (fallback) {
-				try {
-					resolve(fallback());
-				} catch (error) {
-					reject(error);
-				}
-
-				return;
-			}
-
-			if (typeof promise.cancel === 'function') {
-				promise.cancel();
-			}
-
-			if (message === false) {
-				resolve();
-			} else if (message instanceof Error) {
-				reject(message);
-			} else {
-				timeoutError.message = message ?? `Promise timed out after ${milliseconds} milliseconds`;
-				reject(timeoutError);
-			}
-		}, milliseconds);
-
-		(async () => {
-			try {
-				resolve(await promise);
-			} catch (error) {
-				reject(error);
-			} finally {
-				customTimers.clearTimeout.call(undefined, timer);
-			}
-		})();
-	});
-
-	cancelablePromise.clear = () => {
-		customTimers.clearTimeout.call(undefined, timer);
-		timer = undefined;
-	};
-
-	return cancelablePromise;
-}
-
-;// CONCATENATED MODULE: ./node_modules/quick-lru/index.js
-class QuickLRU extends Map {
-	constructor(options = {}) {
-		super();
-
-		if (!(options.maxSize && options.maxSize > 0)) {
-			throw new TypeError('`maxSize` must be a number greater than 0');
-		}
-
-		if (typeof options.maxAge === 'number' && options.maxAge === 0) {
-			throw new TypeError('`maxAge` must be a number greater than 0');
-		}
-
-		// TODO: Use private class fields when ESLint supports them.
-		this.maxSize = options.maxSize;
-		this.maxAge = options.maxAge || Number.POSITIVE_INFINITY;
-		this.onEviction = options.onEviction;
-		this.cache = new Map();
-		this.oldCache = new Map();
-		this._size = 0;
-	}
-
-	// TODO: Use private class methods when targeting Node.js 16.
-	_emitEvictions(cache) {
-		if (typeof this.onEviction !== 'function') {
-			return;
-		}
-
-		for (const [key, item] of cache) {
-			this.onEviction(key, item.value);
-		}
-	}
-
-	_deleteIfExpired(key, item) {
-		if (typeof item.expiry === 'number' && item.expiry <= Date.now()) {
-			if (typeof this.onEviction === 'function') {
-				this.onEviction(key, item.value);
-			}
-
-			return this.delete(key);
-		}
-
-		return false;
-	}
-
-	_getOrDeleteIfExpired(key, item) {
-		const deleted = this._deleteIfExpired(key, item);
-		if (deleted === false) {
-			return item.value;
-		}
-	}
-
-	_getItemValue(key, item) {
-		return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
-	}
-
-	_peek(key, cache) {
-		const item = cache.get(key);
-
-		return this._getItemValue(key, item);
-	}
-
-	_set(key, value) {
-		this.cache.set(key, value);
-		this._size++;
-
-		if (this._size >= this.maxSize) {
-			this._size = 0;
-			this._emitEvictions(this.oldCache);
-			this.oldCache = this.cache;
-			this.cache = new Map();
-		}
-	}
-
-	_moveToRecent(key, item) {
-		this.oldCache.delete(key);
-		this._set(key, item);
-	}
-
-	* _entriesAscending() {
-		for (const item of this.oldCache) {
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield item;
-				}
-			}
-		}
-
-		for (const item of this.cache) {
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield item;
-			}
-		}
-	}
-
-	get(key) {
-		if (this.cache.has(key)) {
-			const item = this.cache.get(key);
-
-			return this._getItemValue(key, item);
-		}
-
-		if (this.oldCache.has(key)) {
-			const item = this.oldCache.get(key);
-			if (this._deleteIfExpired(key, item) === false) {
-				this._moveToRecent(key, item);
-				return item.value;
-			}
-		}
-	}
-
-	set(key, value, {maxAge = this.maxAge} = {}) {
-		const expiry =
-			typeof maxAge === 'number' && maxAge !== Number.POSITIVE_INFINITY ?
-				Date.now() + maxAge :
-				undefined;
-		if (this.cache.has(key)) {
-			this.cache.set(key, {
-				value,
-				expiry
-			});
-		} else {
-			this._set(key, {value, expiry});
-		}
-	}
-
-	has(key) {
-		if (this.cache.has(key)) {
-			return !this._deleteIfExpired(key, this.cache.get(key));
-		}
-
-		if (this.oldCache.has(key)) {
-			return !this._deleteIfExpired(key, this.oldCache.get(key));
-		}
-
-		return false;
-	}
-
-	peek(key) {
-		if (this.cache.has(key)) {
-			return this._peek(key, this.cache);
-		}
-
-		if (this.oldCache.has(key)) {
-			return this._peek(key, this.oldCache);
-		}
-	}
-
-	delete(key) {
-		const deleted = this.cache.delete(key);
-		if (deleted) {
-			this._size--;
-		}
-
-		return this.oldCache.delete(key) || deleted;
-	}
-
-	clear() {
-		this.cache.clear();
-		this.oldCache.clear();
-		this._size = 0;
-	}
-
-	resize(newSize) {
-		if (!(newSize && newSize > 0)) {
-			throw new TypeError('`maxSize` must be a number greater than 0');
-		}
-
-		const items = [...this._entriesAscending()];
-		const removeCount = items.length - newSize;
-		if (removeCount < 0) {
-			this.cache = new Map(items);
-			this.oldCache = new Map();
-			this._size = items.length;
-		} else {
-			if (removeCount > 0) {
-				this._emitEvictions(items.slice(0, removeCount));
-			}
-
-			this.oldCache = new Map(items.slice(removeCount));
-			this.cache = new Map();
-			this._size = 0;
-		}
-
-		this.maxSize = newSize;
-	}
-
-	* keys() {
-		for (const [key] of this) {
-			yield key;
-		}
-	}
-
-	* values() {
-		for (const [, value] of this) {
-			yield value;
-		}
-	}
-
-	* [Symbol.iterator]() {
-		for (const item of this.cache) {
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield [key, value.value];
-			}
-		}
-
-		for (const item of this.oldCache) {
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield [key, value.value];
-				}
-			}
-		}
-	}
-
-	* entriesDescending() {
-		let items = [...this.cache];
-		for (let i = items.length - 1; i >= 0; --i) {
-			const item = items[i];
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield [key, value.value];
-			}
-		}
-
-		items = [...this.oldCache];
-		for (let i = items.length - 1; i >= 0; --i) {
-			const item = items[i];
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield [key, value.value];
-				}
-			}
-		}
-	}
-
-	* entriesAscending() {
-		for (const [key, value] of this._entriesAscending()) {
-			yield [key, value.value];
-		}
-	}
-
-	get size() {
-		if (!this._size) {
-			return this.oldCache.size;
-		}
-
-		let oldCacheSize = 0;
-		for (const key of this.oldCache.keys()) {
-			if (!this.cache.has(key)) {
-				oldCacheSize++;
-			}
-		}
-
-		return Math.min(this._size + oldCacheSize, this.maxSize);
-	}
-
-	entries() {
-		return this.entriesAscending();
-	}
-
-	forEach(callbackFunction, thisArgument = this) {
-		for (const [key, value] of this.entriesAscending()) {
-			callbackFunction.call(thisArgument, value, key, this);
-		}
-	}
-
-	get [Symbol.toStringTag]() {
-		return JSON.stringify([...this.entriesAscending()]);
-	}
-}
-
-// EXTERNAL MODULE: ./node_modules/uuid/dist/index.js
-var dist = __nccwpck_require__(5840);
-;// CONCATENATED MODULE: ./node_modules/uuid/wrapper.mjs
-
-const v1 = dist.v1;
-const v3 = dist.v3;
-const v4 = dist.v4;
-const v5 = dist.v5;
-const NIL = dist/* NIL */.zR;
-const version = dist/* version */.i8;
-const validate = dist/* validate */.Gu;
-const stringify = dist/* stringify */.Pz;
-const parse = dist/* parse */.Qc;
-
-// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
-var _tiktoken = __nccwpck_require__(4083);
-;// CONCATENATED MODULE: ./node_modules/eventsource-parser/dist/index.mjs
-function createParser(onParse) {
-  let isFirstChunk;
-  let buffer;
-  let startingPosition;
-  let startingFieldLength;
-  let eventId;
-  let eventName;
-  let data;
-  reset();
-  return {
-    feed,
-    reset
-  };
-
-  function reset() {
-    isFirstChunk = true;
-    buffer = "";
-    startingPosition = 0;
-    startingFieldLength = -1;
-    eventId = void 0;
-    eventName = void 0;
-    data = "";
-  }
-
-  function feed(chunk) {
-    buffer = buffer ? buffer + chunk : chunk;
-
-    if (isFirstChunk && hasBom(buffer)) {
-      buffer = buffer.slice(BOM.length);
-    }
-
-    isFirstChunk = false;
-    const length = buffer.length;
-    let position = 0;
-    let discardTrailingNewline = false;
-
-    while (position < length) {
-      if (discardTrailingNewline) {
-        if (buffer[position] === "\n") {
-          ++position;
-        }
-
-        discardTrailingNewline = false;
-      }
-
-      let lineLength = -1;
-      let fieldLength = startingFieldLength;
-      let character;
-
-      for (let index = startingPosition; lineLength < 0 && index < length; ++index) {
-        character = buffer[index];
-
-        if (character === ":" && fieldLength < 0) {
-          fieldLength = index - position;
-        } else if (character === "\r") {
-          discardTrailingNewline = true;
-          lineLength = index - position;
-        } else if (character === "\n") {
-          lineLength = index - position;
-        }
-      }
-
-      if (lineLength < 0) {
-        startingPosition = length - position;
-        startingFieldLength = fieldLength;
-        break;
-      } else {
-        startingPosition = 0;
-        startingFieldLength = -1;
-      }
-
-      parseEventStreamLine(buffer, position, fieldLength, lineLength);
-      position += lineLength + 1;
-    }
-
-    if (position === length) {
-      buffer = "";
-    } else if (position > 0) {
-      buffer = buffer.slice(position);
-    }
-  }
-
-  function parseEventStreamLine(lineBuffer, index, fieldLength, lineLength) {
-    if (lineLength === 0) {
-      if (data.length > 0) {
-        onParse({
-          type: "event",
-          id: eventId,
-          event: eventName || void 0,
-          data: data.slice(0, -1)
-        });
-        data = "";
-        eventId = void 0;
-      }
-
-      eventName = void 0;
-      return;
-    }
-
-    const noValue = fieldLength < 0;
-    const field = lineBuffer.slice(index, index + (noValue ? lineLength : fieldLength));
-    let step = 0;
-
-    if (noValue) {
-      step = lineLength;
-    } else if (lineBuffer[index + fieldLength + 1] === " ") {
-      step = fieldLength + 2;
-    } else {
-      step = fieldLength + 1;
-    }
-
-    const position = index + step;
-    const valueLength = lineLength - step;
-    const value = lineBuffer.slice(position, position + valueLength).toString();
-
-    if (field === "data") {
-      data += value ? "".concat(value, "\n") : "\n";
-    } else if (field === "event") {
-      eventName = value;
-    } else if (field === "id" && !value.includes("\0")) {
-      eventId = value;
-    } else if (field === "retry") {
-      const retry = parseInt(value, 10);
-
-      if (!Number.isNaN(retry)) {
-        onParse({
-          type: "reconnect-interval",
-          value: retry
-        });
-      }
-    }
-  }
-}
-
-const BOM = [239, 187, 191];
-
-function hasBom(buffer) {
-  return BOM.every((charCode, index) => buffer.charCodeAt(index) === charCode);
-}
-
-
-//# sourceMappingURL=index.mjs.map
-
-;// CONCATENATED MODULE: ./node_modules/chatgpt/build/index.js
-// src/chatgpt-api.ts
-
-
-
-
-
-// src/tokenizer.ts
-
-var tokenizer = (0,_tiktoken.get_encoding)("cl100k_base");
-function encode(input) {
-  return tokenizer.encode(input);
-}
-
-// src/types.ts
-var ChatGPTError = class extends Error {
-};
-var openai;
-((openai2) => {
-})(openai || (openai = {}));
-
-// src/fetch.ts
-var fetch = globalThis.fetch;
-
-// src/fetch-sse.ts
-
-
-// src/stream-async-iterable.ts
-async function* streamAsyncIterable(stream) {
-  const reader = stream.getReader();
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        return;
-      }
-      yield value;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
-// src/fetch-sse.ts
-async function fetchSSE(url, options, fetch2 = fetch) {
-  const { onMessage, ...fetchOptions } = options;
-  const res = await fetch2(url, fetchOptions);
-  if (!res.ok) {
-    let reason;
-    try {
-      reason = await res.text();
-    } catch (err) {
-      reason = res.statusText;
-    }
-    const msg = `ChatGPT error ${res.status}: ${reason}`;
-    const error = new ChatGPTError(msg, { cause: res });
-    error.statusCode = res.status;
-    error.statusText = res.statusText;
-    throw error;
-  }
-  const parser = createParser((event) => {
-    if (event.type === "event") {
-      onMessage(event.data);
-    }
-  });
-  if (!res.body.getReader) {
-    const body = res.body;
-    if (!body.on || !body.read) {
-      throw new ChatGPTError('unsupported "fetch" implementation');
-    }
-    body.on("readable", () => {
-      let chunk;
-      while (null !== (chunk = body.read())) {
-        parser.feed(chunk.toString());
-      }
-    });
-  } else {
-    for await (const chunk of streamAsyncIterable(res.body)) {
-      const str = new TextDecoder().decode(chunk);
-      parser.feed(str);
-    }
-  }
-}
-
-// src/chatgpt-api.ts
-var CHATGPT_MODEL = "gpt-3.5-turbo";
-var USER_LABEL_DEFAULT = "User";
-var ASSISTANT_LABEL_DEFAULT = "ChatGPT";
-var ChatGPTAPI = class {
-  /**
-   * Creates a new client wrapper around OpenAI's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
-   *
-   * @param apiKey - OpenAI API key (required).
-   * @param apiBaseUrl - Optional override for the OpenAI API base URL.
-   * @param debug - Optional enables logging debugging info to stdout.
-   * @param completionParams - Param overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
-   * @param maxModelTokens - Optional override for the maximum number of tokens allowed by the model's context. Defaults to 4096.
-   * @param maxResponseTokens - Optional override for the minimum number of tokens allowed for the model's response. Defaults to 1000.
-   * @param messageStore - Optional [Keyv](https://github.com/jaredwray/keyv) store to persist chat messages to. If not provided, messages will be lost when the process exits.
-   * @param getMessageById - Optional function to retrieve a message by its ID. If not provided, the default implementation will be used (using an in-memory `messageStore`).
-   * @param upsertMessage - Optional function to insert or update a message. If not provided, the default implementation will be used (using an in-memory `messageStore`).
-   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
-   */
-  constructor(opts) {
-    const {
-      apiKey,
-      apiBaseUrl = "https://api.openai.com",
-      debug = false,
-      messageStore,
-      completionParams,
-      systemMessage,
-      maxModelTokens = 4e3,
-      maxResponseTokens = 1e3,
-      getMessageById,
-      upsertMessage,
-      fetch: fetch2 = fetch
-    } = opts;
-    this._apiKey = apiKey;
-    this._apiBaseUrl = apiBaseUrl;
-    this._debug = !!debug;
-    this._fetch = fetch2;
-    this._completionParams = {
-      model: CHATGPT_MODEL,
-      temperature: 0.8,
-      top_p: 1,
-      presence_penalty: 1,
-      ...completionParams
-    };
-    this._systemMessage = systemMessage;
-    if (this._systemMessage === void 0) {
-      const currentDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-      this._systemMessage = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
-Knowledge cutoff: 2021-09-01
-Current date: ${currentDate}`;
-    }
-    this._maxModelTokens = maxModelTokens;
-    this._maxResponseTokens = maxResponseTokens;
-    this._getMessageById = getMessageById ?? this._defaultGetMessageById;
-    this._upsertMessage = upsertMessage ?? this._defaultUpsertMessage;
-    if (messageStore) {
-      this._messageStore = messageStore;
-    } else {
-      this._messageStore = new src({
-        store: new QuickLRU({ maxSize: 1e4 })
-      });
-    }
-    if (!this._apiKey) {
-      throw new Error("OpenAI missing required apiKey");
-    }
-    if (!this._fetch) {
-      throw new Error("Invalid environment; fetch is not defined");
-    }
-    if (typeof this._fetch !== "function") {
-      throw new Error('Invalid "fetch" is not a function');
-    }
-  }
-  /**
-   * Sends a message to the OpenAI chat completions endpoint, waits for the response
-   * to resolve, and returns the response.
-   *
-   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
-   *
-   * If you want to receive a stream of partial responses, use `opts.onProgress`.
-   *
-   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI chat completions API. You can override the `systemMessage` in `opts` to customize the assistant's instructions.
-   *
-   * @param message - The prompt message to send
-   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
-   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
-   * @param opts.systemMessage - Optional override for the chat "system message" which acts as instructions to the model (defaults to the ChatGPT system message)
-   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
-   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
-   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   *
-   * @returns The response from ChatGPT
-   */
-  async sendMessage(text, opts = {}) {
-    const {
-      parentMessageId,
-      messageId = v4(),
-      timeoutMs,
-      onProgress,
-      stream = onProgress ? true : false
-    } = opts;
-    let { abortSignal } = opts;
-    let abortController = null;
-    if (timeoutMs && !abortSignal) {
-      abortController = new AbortController();
-      abortSignal = abortController.signal;
-    }
-    const message = {
-      role: "user",
-      id: messageId,
-      parentMessageId,
-      text
-    };
-    await this._upsertMessage(message);
-    const { messages, maxTokens, numTokens } = await this._buildMessages(
-      text,
-      opts
-    );
-    const result = {
-      role: "assistant",
-      id: v4(),
-      parentMessageId: messageId,
-      text: ""
-    };
-    const responseP = new Promise(
-      async (resolve, reject) => {
-        var _a, _b;
-        const url = `${this._apiBaseUrl}/v1/chat/completions`;
-        const headers = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this._apiKey}`
-        };
-        const body = {
-          max_tokens: maxTokens,
-          ...this._completionParams,
-          messages,
-          stream
-        };
-        if (this._debug) {
-          console.log(`sendMessage (${numTokens} tokens)`, body);
-        }
-        if (stream) {
-          fetchSSE(
-            url,
-            {
-              method: "POST",
-              headers,
-              body: JSON.stringify(body),
-              signal: abortSignal,
-              onMessage: (data) => {
-                var _a2;
-                if (data === "[DONE]") {
-                  result.text = result.text.trim();
-                  return resolve(result);
-                }
-                try {
-                  const response = JSON.parse(data);
-                  if (response.id) {
-                    result.id = response.id;
-                  }
-                  if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
-                    const delta = response.choices[0].delta;
-                    if (delta == null ? void 0 : delta.content) {
-                      result.delta = delta.content;
-                      result.text += delta.content;
-                      result.detail = response;
-                      if (delta.role) {
-                        result.role = delta.role;
-                      }
-                      onProgress == null ? void 0 : onProgress(result);
-                    }
-                  }
-                } catch (err) {
-                  console.warn("OpenAI stream SEE event unexpected error", err);
-                  return reject(err);
-                }
-              }
-            },
-            this._fetch
-          ).catch(reject);
-        } else {
-          try {
-            const res = await this._fetch(url, {
-              method: "POST",
-              headers,
-              body: JSON.stringify(body),
-              signal: abortSignal
-            });
-            if (!res.ok) {
-              const reason = await res.text();
-              const msg = `OpenAI error ${res.status || res.statusText}: ${reason}`;
-              const error = new ChatGPTError(msg, { cause: res });
-              error.statusCode = res.status;
-              error.statusText = res.statusText;
-              return reject(error);
-            }
-            const response = await res.json();
-            if (this._debug) {
-              console.log(response);
-            }
-            if (response == null ? void 0 : response.id) {
-              result.id = response.id;
-            }
-            if ((_a = response == null ? void 0 : response.choices) == null ? void 0 : _a.length) {
-              const message2 = response.choices[0].message;
-              result.text = message2.content;
-              if (message2.role) {
-                result.role = message2.role;
-              }
-            } else {
-              const res2 = response;
-              return reject(
-                new Error(
-                  `OpenAI error: ${((_b = res2 == null ? void 0 : res2.detail) == null ? void 0 : _b.message) || (res2 == null ? void 0 : res2.detail) || "unknown"}`
-                )
-              );
-            }
-            result.detail = response;
-            return resolve(result);
-          } catch (err) {
-            return reject(err);
-          }
-        }
-      }
-    ).then((message2) => {
-      return this._upsertMessage(message2).then(() => message2);
-    });
-    if (timeoutMs) {
-      if (abortController) {
-        ;
-        responseP.cancel = () => {
-          abortController.abort();
-        };
-      }
-      return pTimeout(responseP, {
-        milliseconds: timeoutMs,
-        message: "OpenAI timed out waiting for response"
-      });
-    } else {
-      return responseP;
-    }
-  }
-  get apiKey() {
-    return this._apiKey;
-  }
-  set apiKey(apiKey) {
-    this._apiKey = apiKey;
-  }
-  async _buildMessages(text, opts) {
-    const { systemMessage = this._systemMessage } = opts;
-    let { parentMessageId } = opts;
-    const userLabel = USER_LABEL_DEFAULT;
-    const assistantLabel = ASSISTANT_LABEL_DEFAULT;
-    const maxNumTokens = this._maxModelTokens - this._maxResponseTokens;
-    let messages = [];
-    if (systemMessage) {
-      messages.push({
-        role: "system",
-        content: systemMessage
-      });
-    }
-    const systemMessageOffset = messages.length;
-    let nextMessages = messages.concat([
-      {
-        ...{
-          role: "user",
-          content: text,
-          name: opts.name
-        }
-      }
-    ]);
-    let numTokens = 0;
-    do {
-      const prompt = nextMessages.reduce((prompt2, message) => {
-        switch (message.role) {
-          case "system":
-            return [prompt2, `Instructions:
-${message.content}`];
-          case "user":
-            return [prompt2, `${userLabel}:
-${message.content}`];
-          default:
-            return [prompt2, `${assistantLabel}:
-${message.content}`];
-        }
-      }, []).join("\n\n");
-      const nextNumTokensEstimate = await this._getTokenCount(prompt);
-      const isValidPrompt = nextNumTokensEstimate <= maxNumTokens;
-      if (prompt && !isValidPrompt) {
-        break;
-      }
-      messages = nextMessages;
-      numTokens = nextNumTokensEstimate;
-      if (!isValidPrompt) {
-        break;
-      }
-      if (!parentMessageId) {
-        break;
-      }
-      const parentMessage = await this._getMessageById(parentMessageId);
-      if (!parentMessage) {
-        break;
-      }
-      const parentMessageRole = parentMessage.role || "user";
-      nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
-        {
-          ...{
-            role: parentMessageRole,
-            content: parentMessage.text,
-            name: parentMessage.name
-          }
-        },
-        ...nextMessages.slice(systemMessageOffset)
-      ]);
-      parentMessageId = parentMessage.parentMessageId;
-    } while (true);
-    const maxTokens = Math.max(
-      1,
-      Math.min(this._maxModelTokens - numTokens, this._maxResponseTokens)
-    );
-    return { messages, maxTokens, numTokens };
-  }
-  async _getTokenCount(text) {
-    text = text.replace(/<\|endoftext\|>/g, "");
-    return encode(text).length;
-  }
-  async _defaultGetMessageById(id) {
-    const res = await this._messageStore.get(id);
-    return res;
-  }
-  async _defaultUpsertMessage(message) {
-    await this._messageStore.set(message.id, message);
-  }
-};
-
-// src/chatgpt-unofficial-proxy-api.ts
-
-
-
-// src/utils.ts
-var uuidv4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-function isValidUUIDv4(str) {
-  return str && uuidv4Re.test(str);
-}
-
-// src/chatgpt-unofficial-proxy-api.ts
-var ChatGPTUnofficialProxyAPI = class {
-  /**
-   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
-   */
-  constructor(opts) {
-    const {
-      accessToken,
-      apiReverseProxyUrl = "https://chat.duti.tech/api/conversation",
-      model = "text-davinci-002-render-sha",
-      debug = false,
-      headers,
-      fetch: fetch2 = fetch
-    } = opts;
-    this._accessToken = accessToken;
-    this._apiReverseProxyUrl = apiReverseProxyUrl;
-    this._debug = !!debug;
-    this._model = model;
-    this._fetch = fetch2;
-    this._headers = headers;
-    if (!this._accessToken) {
-      throw new Error("ChatGPT invalid accessToken");
-    }
-    if (!this._fetch) {
-      throw new Error("Invalid environment; fetch is not defined");
-    }
-    if (typeof this._fetch !== "function") {
-      throw new Error('Invalid "fetch" is not a function');
-    }
-  }
-  get accessToken() {
-    return this._accessToken;
-  }
-  set accessToken(value) {
-    this._accessToken = value;
-  }
-  /**
-   * Sends a message to ChatGPT, waits for the response to resolve, and returns
-   * the response.
-   *
-   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
-   *
-   * If you want to receive a stream of partial responses, use `opts.onProgress`.
-   * If you want to receive the full response, including message and conversation IDs,
-   * you can use `opts.onConversationResponse` or use the `ChatGPTAPI.getConversation`
-   * helper.
-   *
-   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI completions API. You can override the `promptPrefix` and `promptSuffix` in `opts` to customize the prompt.
-   *
-   * @param message - The prompt message to send
-   * @param opts.conversationId - Optional ID of a conversation to continue (defaults to a random UUID)
-   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
-   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
-   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
-   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
-   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   *
-   * @returns The response from ChatGPT
-   */
-  async sendMessage(text, opts = {}) {
-    if (!!opts.conversationId !== !!opts.parentMessageId) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId and parentMessageId must both be set or both be undefined"
-      );
-    }
-    if (opts.conversationId && !isValidUUIDv4(opts.conversationId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId is not a valid v4 UUID"
-      );
-    }
-    if (opts.parentMessageId && !isValidUUIDv4(opts.parentMessageId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: parentMessageId is not a valid v4 UUID"
-      );
-    }
-    if (opts.messageId && !isValidUUIDv4(opts.messageId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: messageId is not a valid v4 UUID"
-      );
-    }
-    const {
-      conversationId,
-      parentMessageId = v4(),
-      messageId = v4(),
-      action = "next",
-      timeoutMs,
-      onProgress
-    } = opts;
-    let { abortSignal } = opts;
-    let abortController = null;
-    if (timeoutMs && !abortSignal) {
-      abortController = new AbortController();
-      abortSignal = abortController.signal;
-    }
-    const body = {
-      action,
-      messages: [
-        {
-          id: messageId,
-          role: "user",
-          content: {
-            content_type: "text",
-            parts: [text]
-          }
-        }
-      ],
-      model: this._model,
-      parent_message_id: parentMessageId
-    };
-    if (conversationId) {
-      body.conversation_id = conversationId;
-    }
-    const result = {
-      role: "assistant",
-      id: v4(),
-      parentMessageId: messageId,
-      conversationId,
-      text: ""
-    };
-    const responseP = new Promise((resolve, reject) => {
-      const url = this._apiReverseProxyUrl;
-      const headers = {
-        ...this._headers,
-        Authorization: `Bearer ${this._accessToken}`,
-        Accept: "text/event-stream",
-        "Content-Type": "application/json"
-      };
-      if (this._debug) {
-        console.log("POST", url, { body, headers });
-      }
-      fetchSSE(
-        url,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: abortSignal,
-          onMessage: (data) => {
-            var _a, _b, _c;
-            if (data === "[DONE]") {
-              return resolve(result);
-            }
-            try {
-              const convoResponseEvent = JSON.parse(data);
-              if (convoResponseEvent.conversation_id) {
-                result.conversationId = convoResponseEvent.conversation_id;
-              }
-              if ((_a = convoResponseEvent.message) == null ? void 0 : _a.id) {
-                result.id = convoResponseEvent.message.id;
-              }
-              const message = convoResponseEvent.message;
-              if (message) {
-                let text2 = (_c = (_b = message == null ? void 0 : message.content) == null ? void 0 : _b.parts) == null ? void 0 : _c[0];
-                if (text2) {
-                  result.text = text2;
-                  if (onProgress) {
-                    onProgress(result);
-                  }
-                }
-              }
-            } catch (err) {
-            }
-          }
-        },
-        this._fetch
-      ).catch((err) => {
-        const errMessageL = err.toString().toLowerCase();
-        if (result.text && (errMessageL === "error: typeerror: terminated" || errMessageL === "typeerror: terminated")) {
-          return resolve(result);
-        } else {
-          return reject(err);
-        }
-      });
-    });
-    if (timeoutMs) {
-      if (abortController) {
-        ;
-        responseP.cancel = () => {
-          abortController.abort();
-        };
-      }
-      return pTimeout(responseP, {
-        milliseconds: timeoutMs,
-        message: "ChatGPT timed out waiting for response"
-      });
-    } else {
-      return responseP;
-    }
-  }
-};
-
-//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
 ;// CONCATENATED MODULE: external "node:https"
@@ -24855,7 +23672,7 @@ function dataUriToBuffer(uri) {
     buffer.charset = charset;
     return buffer;
 }
-/* harmony default export */ const data_uri_to_buffer_dist = (dataUriToBuffer);
+/* harmony default export */ const dist = (dataUriToBuffer);
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: external "node:util"
 const external_node_util_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:util");
@@ -26522,7 +25339,7 @@ const getNodeRequestOptions = request => {
 /**
  * AbortError interface for cancelled requests
  */
-class abort_error_AbortError extends FetchBaseError {
+class AbortError extends FetchBaseError {
 	constructor(message, type = 'aborted') {
 		super(message, type);
 	}
@@ -26571,7 +25388,7 @@ const supportedSchemas = new Set(['data:', 'http:', 'https:']);
  * @param   {*} [options_] - Fetch options
  * @return  {Promise<import('./response').default>}
  */
-async function src_fetch(url, options_) {
+async function fetch(url, options_) {
 	return new Promise((resolve, reject) => {
 		// Build request object
 		const request = new Request(url, options_);
@@ -26581,7 +25398,7 @@ async function src_fetch(url, options_) {
 		}
 
 		if (parsedURL.protocol === 'data:') {
-			const data = data_uri_to_buffer_dist(request.url);
+			const data = dist(request.url);
 			const response = new Response(data, {headers: {'Content-Type': data.typeFull}});
 			resolve(response);
 			return;
@@ -26593,7 +25410,7 @@ async function src_fetch(url, options_) {
 		let response = null;
 
 		const abort = () => {
-			const error = new abort_error_AbortError('The operation was aborted.');
+			const error = new AbortError('The operation was aborted.');
 			reject(error);
 			if (request.body && request.body instanceof external_node_stream_namespaceObject.Readable) {
 				request.body.destroy(error);
@@ -26759,7 +25576,7 @@ async function src_fetch(url, options_) {
 						}
 
 						// HTTP-redirect fetch step 15
-						resolve(src_fetch(new Request(locationURL, requestOptions)));
+						resolve(fetch(new Request(locationURL, requestOptions)));
 						finalize();
 						return;
 					}
@@ -26945,12 +25762,1195 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 ;// CONCATENATED MODULE: ./lib/fetch-polyfill.js
 
 if (!globalThis.fetch) {
-    globalThis.fetch = src_fetch;
+    globalThis.fetch = fetch;
     globalThis.Headers = Headers;
     globalThis.Request = Request;
     globalThis.Response = Response;
 }
 
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(2186);
+// EXTERNAL MODULE: ./node_modules/keyv/src/index.js
+var src = __nccwpck_require__(1531);
+;// CONCATENATED MODULE: ./node_modules/p-timeout/index.js
+class TimeoutError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'TimeoutError';
+	}
+}
+
+/**
+An error to be thrown when the request is aborted by AbortController.
+DOMException is thrown instead of this Error when DOMException is available.
+*/
+class p_timeout_AbortError extends Error {
+	constructor(message) {
+		super();
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+/**
+TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+*/
+const getDOMException = errorMessage => globalThis.DOMException === undefined
+	? new p_timeout_AbortError(errorMessage)
+	: new DOMException(errorMessage);
+
+/**
+TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
+*/
+const getAbortedReason = signal => {
+	const reason = signal.reason === undefined
+		? getDOMException('This operation was aborted.')
+		: signal.reason;
+
+	return reason instanceof Error ? reason : getDOMException(reason);
+};
+
+function pTimeout(promise, options) {
+	const {
+		milliseconds,
+		fallback,
+		message,
+		customTimers = {setTimeout, clearTimeout},
+	} = options;
+
+	let timer;
+
+	const cancelablePromise = new Promise((resolve, reject) => {
+		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
+			throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
+		}
+
+		if (milliseconds === Number.POSITIVE_INFINITY) {
+			resolve(promise);
+			return;
+		}
+
+		if (options.signal) {
+			const {signal} = options;
+			if (signal.aborted) {
+				reject(getAbortedReason(signal));
+			}
+
+			signal.addEventListener('abort', () => {
+				reject(getAbortedReason(signal));
+			});
+		}
+
+		// We create the error outside of `setTimeout` to preserve the stack trace.
+		const timeoutError = new TimeoutError();
+
+		timer = customTimers.setTimeout.call(undefined, () => {
+			if (fallback) {
+				try {
+					resolve(fallback());
+				} catch (error) {
+					reject(error);
+				}
+
+				return;
+			}
+
+			if (typeof promise.cancel === 'function') {
+				promise.cancel();
+			}
+
+			if (message === false) {
+				resolve();
+			} else if (message instanceof Error) {
+				reject(message);
+			} else {
+				timeoutError.message = message ?? `Promise timed out after ${milliseconds} milliseconds`;
+				reject(timeoutError);
+			}
+		}, milliseconds);
+
+		(async () => {
+			try {
+				resolve(await promise);
+			} catch (error) {
+				reject(error);
+			} finally {
+				customTimers.clearTimeout.call(undefined, timer);
+			}
+		})();
+	});
+
+	cancelablePromise.clear = () => {
+		customTimers.clearTimeout.call(undefined, timer);
+		timer = undefined;
+	};
+
+	return cancelablePromise;
+}
+
+;// CONCATENATED MODULE: ./node_modules/quick-lru/index.js
+class QuickLRU extends Map {
+	constructor(options = {}) {
+		super();
+
+		if (!(options.maxSize && options.maxSize > 0)) {
+			throw new TypeError('`maxSize` must be a number greater than 0');
+		}
+
+		if (typeof options.maxAge === 'number' && options.maxAge === 0) {
+			throw new TypeError('`maxAge` must be a number greater than 0');
+		}
+
+		// TODO: Use private class fields when ESLint supports them.
+		this.maxSize = options.maxSize;
+		this.maxAge = options.maxAge || Number.POSITIVE_INFINITY;
+		this.onEviction = options.onEviction;
+		this.cache = new Map();
+		this.oldCache = new Map();
+		this._size = 0;
+	}
+
+	// TODO: Use private class methods when targeting Node.js 16.
+	_emitEvictions(cache) {
+		if (typeof this.onEviction !== 'function') {
+			return;
+		}
+
+		for (const [key, item] of cache) {
+			this.onEviction(key, item.value);
+		}
+	}
+
+	_deleteIfExpired(key, item) {
+		if (typeof item.expiry === 'number' && item.expiry <= Date.now()) {
+			if (typeof this.onEviction === 'function') {
+				this.onEviction(key, item.value);
+			}
+
+			return this.delete(key);
+		}
+
+		return false;
+	}
+
+	_getOrDeleteIfExpired(key, item) {
+		const deleted = this._deleteIfExpired(key, item);
+		if (deleted === false) {
+			return item.value;
+		}
+	}
+
+	_getItemValue(key, item) {
+		return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
+	}
+
+	_peek(key, cache) {
+		const item = cache.get(key);
+
+		return this._getItemValue(key, item);
+	}
+
+	_set(key, value) {
+		this.cache.set(key, value);
+		this._size++;
+
+		if (this._size >= this.maxSize) {
+			this._size = 0;
+			this._emitEvictions(this.oldCache);
+			this.oldCache = this.cache;
+			this.cache = new Map();
+		}
+	}
+
+	_moveToRecent(key, item) {
+		this.oldCache.delete(key);
+		this._set(key, item);
+	}
+
+	* _entriesAscending() {
+		for (const item of this.oldCache) {
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield item;
+				}
+			}
+		}
+
+		for (const item of this.cache) {
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield item;
+			}
+		}
+	}
+
+	get(key) {
+		if (this.cache.has(key)) {
+			const item = this.cache.get(key);
+
+			return this._getItemValue(key, item);
+		}
+
+		if (this.oldCache.has(key)) {
+			const item = this.oldCache.get(key);
+			if (this._deleteIfExpired(key, item) === false) {
+				this._moveToRecent(key, item);
+				return item.value;
+			}
+		}
+	}
+
+	set(key, value, {maxAge = this.maxAge} = {}) {
+		const expiry =
+			typeof maxAge === 'number' && maxAge !== Number.POSITIVE_INFINITY ?
+				Date.now() + maxAge :
+				undefined;
+		if (this.cache.has(key)) {
+			this.cache.set(key, {
+				value,
+				expiry
+			});
+		} else {
+			this._set(key, {value, expiry});
+		}
+	}
+
+	has(key) {
+		if (this.cache.has(key)) {
+			return !this._deleteIfExpired(key, this.cache.get(key));
+		}
+
+		if (this.oldCache.has(key)) {
+			return !this._deleteIfExpired(key, this.oldCache.get(key));
+		}
+
+		return false;
+	}
+
+	peek(key) {
+		if (this.cache.has(key)) {
+			return this._peek(key, this.cache);
+		}
+
+		if (this.oldCache.has(key)) {
+			return this._peek(key, this.oldCache);
+		}
+	}
+
+	delete(key) {
+		const deleted = this.cache.delete(key);
+		if (deleted) {
+			this._size--;
+		}
+
+		return this.oldCache.delete(key) || deleted;
+	}
+
+	clear() {
+		this.cache.clear();
+		this.oldCache.clear();
+		this._size = 0;
+	}
+
+	resize(newSize) {
+		if (!(newSize && newSize > 0)) {
+			throw new TypeError('`maxSize` must be a number greater than 0');
+		}
+
+		const items = [...this._entriesAscending()];
+		const removeCount = items.length - newSize;
+		if (removeCount < 0) {
+			this.cache = new Map(items);
+			this.oldCache = new Map();
+			this._size = items.length;
+		} else {
+			if (removeCount > 0) {
+				this._emitEvictions(items.slice(0, removeCount));
+			}
+
+			this.oldCache = new Map(items.slice(removeCount));
+			this.cache = new Map();
+			this._size = 0;
+		}
+
+		this.maxSize = newSize;
+	}
+
+	* keys() {
+		for (const [key] of this) {
+			yield key;
+		}
+	}
+
+	* values() {
+		for (const [, value] of this) {
+			yield value;
+		}
+	}
+
+	* [Symbol.iterator]() {
+		for (const item of this.cache) {
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield [key, value.value];
+			}
+		}
+
+		for (const item of this.oldCache) {
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield [key, value.value];
+				}
+			}
+		}
+	}
+
+	* entriesDescending() {
+		let items = [...this.cache];
+		for (let i = items.length - 1; i >= 0; --i) {
+			const item = items[i];
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield [key, value.value];
+			}
+		}
+
+		items = [...this.oldCache];
+		for (let i = items.length - 1; i >= 0; --i) {
+			const item = items[i];
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield [key, value.value];
+				}
+			}
+		}
+	}
+
+	* entriesAscending() {
+		for (const [key, value] of this._entriesAscending()) {
+			yield [key, value.value];
+		}
+	}
+
+	get size() {
+		if (!this._size) {
+			return this.oldCache.size;
+		}
+
+		let oldCacheSize = 0;
+		for (const key of this.oldCache.keys()) {
+			if (!this.cache.has(key)) {
+				oldCacheSize++;
+			}
+		}
+
+		return Math.min(this._size + oldCacheSize, this.maxSize);
+	}
+
+	entries() {
+		return this.entriesAscending();
+	}
+
+	forEach(callbackFunction, thisArgument = this) {
+		for (const [key, value] of this.entriesAscending()) {
+			callbackFunction.call(thisArgument, value, key, this);
+		}
+	}
+
+	get [Symbol.toStringTag]() {
+		return JSON.stringify([...this.entriesAscending()]);
+	}
+}
+
+// EXTERNAL MODULE: ./node_modules/uuid/dist/index.js
+var uuid_dist = __nccwpck_require__(5840);
+;// CONCATENATED MODULE: ./node_modules/uuid/wrapper.mjs
+
+const v1 = uuid_dist.v1;
+const v3 = uuid_dist.v3;
+const v4 = uuid_dist.v4;
+const v5 = uuid_dist.v5;
+const NIL = uuid_dist/* NIL */.zR;
+const version = uuid_dist/* version */.i8;
+const validate = uuid_dist/* validate */.Gu;
+const stringify = uuid_dist/* stringify */.Pz;
+const parse = uuid_dist/* parse */.Qc;
+
+// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
+var _tiktoken = __nccwpck_require__(4083);
+;// CONCATENATED MODULE: ./node_modules/eventsource-parser/dist/index.mjs
+function createParser(onParse) {
+  let isFirstChunk;
+  let buffer;
+  let startingPosition;
+  let startingFieldLength;
+  let eventId;
+  let eventName;
+  let data;
+  reset();
+  return {
+    feed,
+    reset
+  };
+
+  function reset() {
+    isFirstChunk = true;
+    buffer = "";
+    startingPosition = 0;
+    startingFieldLength = -1;
+    eventId = void 0;
+    eventName = void 0;
+    data = "";
+  }
+
+  function feed(chunk) {
+    buffer = buffer ? buffer + chunk : chunk;
+
+    if (isFirstChunk && hasBom(buffer)) {
+      buffer = buffer.slice(BOM.length);
+    }
+
+    isFirstChunk = false;
+    const length = buffer.length;
+    let position = 0;
+    let discardTrailingNewline = false;
+
+    while (position < length) {
+      if (discardTrailingNewline) {
+        if (buffer[position] === "\n") {
+          ++position;
+        }
+
+        discardTrailingNewline = false;
+      }
+
+      let lineLength = -1;
+      let fieldLength = startingFieldLength;
+      let character;
+
+      for (let index = startingPosition; lineLength < 0 && index < length; ++index) {
+        character = buffer[index];
+
+        if (character === ":" && fieldLength < 0) {
+          fieldLength = index - position;
+        } else if (character === "\r") {
+          discardTrailingNewline = true;
+          lineLength = index - position;
+        } else if (character === "\n") {
+          lineLength = index - position;
+        }
+      }
+
+      if (lineLength < 0) {
+        startingPosition = length - position;
+        startingFieldLength = fieldLength;
+        break;
+      } else {
+        startingPosition = 0;
+        startingFieldLength = -1;
+      }
+
+      parseEventStreamLine(buffer, position, fieldLength, lineLength);
+      position += lineLength + 1;
+    }
+
+    if (position === length) {
+      buffer = "";
+    } else if (position > 0) {
+      buffer = buffer.slice(position);
+    }
+  }
+
+  function parseEventStreamLine(lineBuffer, index, fieldLength, lineLength) {
+    if (lineLength === 0) {
+      if (data.length > 0) {
+        onParse({
+          type: "event",
+          id: eventId,
+          event: eventName || void 0,
+          data: data.slice(0, -1)
+        });
+        data = "";
+        eventId = void 0;
+      }
+
+      eventName = void 0;
+      return;
+    }
+
+    const noValue = fieldLength < 0;
+    const field = lineBuffer.slice(index, index + (noValue ? lineLength : fieldLength));
+    let step = 0;
+
+    if (noValue) {
+      step = lineLength;
+    } else if (lineBuffer[index + fieldLength + 1] === " ") {
+      step = fieldLength + 2;
+    } else {
+      step = fieldLength + 1;
+    }
+
+    const position = index + step;
+    const valueLength = lineLength - step;
+    const value = lineBuffer.slice(position, position + valueLength).toString();
+
+    if (field === "data") {
+      data += value ? "".concat(value, "\n") : "\n";
+    } else if (field === "event") {
+      eventName = value;
+    } else if (field === "id" && !value.includes("\0")) {
+      eventId = value;
+    } else if (field === "retry") {
+      const retry = parseInt(value, 10);
+
+      if (!Number.isNaN(retry)) {
+        onParse({
+          type: "reconnect-interval",
+          value: retry
+        });
+      }
+    }
+  }
+}
+
+const BOM = [239, 187, 191];
+
+function hasBom(buffer) {
+  return BOM.every((charCode, index) => buffer.charCodeAt(index) === charCode);
+}
+
+
+//# sourceMappingURL=index.mjs.map
+
+;// CONCATENATED MODULE: ./node_modules/chatgpt/build/index.js
+// src/chatgpt-api.ts
+
+
+
+
+
+// src/tokenizer.ts
+
+var tokenizer = (0,_tiktoken.get_encoding)("cl100k_base");
+function encode(input) {
+  return tokenizer.encode(input);
+}
+
+// src/types.ts
+var ChatGPTError = class extends Error {
+};
+var openai;
+((openai2) => {
+})(openai || (openai = {}));
+
+// src/fetch.ts
+var build_fetch = globalThis.fetch;
+
+// src/fetch-sse.ts
+
+
+// src/stream-async-iterable.ts
+async function* streamAsyncIterable(stream) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return;
+      }
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// src/fetch-sse.ts
+async function fetchSSE(url, options, fetch2 = build_fetch) {
+  const { onMessage, ...fetchOptions } = options;
+  const res = await fetch2(url, fetchOptions);
+  if (!res.ok) {
+    let reason;
+    try {
+      reason = await res.text();
+    } catch (err) {
+      reason = res.statusText;
+    }
+    const msg = `ChatGPT error ${res.status}: ${reason}`;
+    const error = new ChatGPTError(msg, { cause: res });
+    error.statusCode = res.status;
+    error.statusText = res.statusText;
+    throw error;
+  }
+  const parser = createParser((event) => {
+    if (event.type === "event") {
+      onMessage(event.data);
+    }
+  });
+  if (!res.body.getReader) {
+    const body = res.body;
+    if (!body.on || !body.read) {
+      throw new ChatGPTError('unsupported "fetch" implementation');
+    }
+    body.on("readable", () => {
+      let chunk;
+      while (null !== (chunk = body.read())) {
+        parser.feed(chunk.toString());
+      }
+    });
+  } else {
+    for await (const chunk of streamAsyncIterable(res.body)) {
+      const str = new TextDecoder().decode(chunk);
+      parser.feed(str);
+    }
+  }
+}
+
+// src/chatgpt-api.ts
+var CHATGPT_MODEL = "gpt-3.5-turbo";
+var USER_LABEL_DEFAULT = "User";
+var ASSISTANT_LABEL_DEFAULT = "ChatGPT";
+var ChatGPTAPI = class {
+  /**
+   * Creates a new client wrapper around OpenAI's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
+   *
+   * @param apiKey - OpenAI API key (required).
+   * @param apiBaseUrl - Optional override for the OpenAI API base URL.
+   * @param debug - Optional enables logging debugging info to stdout.
+   * @param completionParams - Param overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+   * @param maxModelTokens - Optional override for the maximum number of tokens allowed by the model's context. Defaults to 4096.
+   * @param maxResponseTokens - Optional override for the minimum number of tokens allowed for the model's response. Defaults to 1000.
+   * @param messageStore - Optional [Keyv](https://github.com/jaredwray/keyv) store to persist chat messages to. If not provided, messages will be lost when the process exits.
+   * @param getMessageById - Optional function to retrieve a message by its ID. If not provided, the default implementation will be used (using an in-memory `messageStore`).
+   * @param upsertMessage - Optional function to insert or update a message. If not provided, the default implementation will be used (using an in-memory `messageStore`).
+   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
+   */
+  constructor(opts) {
+    const {
+      apiKey,
+      apiBaseUrl = "https://api.openai.com",
+      debug = false,
+      messageStore,
+      completionParams,
+      systemMessage,
+      maxModelTokens = 4e3,
+      maxResponseTokens = 1e3,
+      getMessageById,
+      upsertMessage,
+      fetch: fetch2 = build_fetch
+    } = opts;
+    this._apiKey = apiKey;
+    this._apiBaseUrl = apiBaseUrl;
+    this._debug = !!debug;
+    this._fetch = fetch2;
+    this._completionParams = {
+      model: CHATGPT_MODEL,
+      temperature: 0.8,
+      top_p: 1,
+      presence_penalty: 1,
+      ...completionParams
+    };
+    this._systemMessage = systemMessage;
+    if (this._systemMessage === void 0) {
+      const currentDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      this._systemMessage = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
+Knowledge cutoff: 2021-09-01
+Current date: ${currentDate}`;
+    }
+    this._maxModelTokens = maxModelTokens;
+    this._maxResponseTokens = maxResponseTokens;
+    this._getMessageById = getMessageById ?? this._defaultGetMessageById;
+    this._upsertMessage = upsertMessage ?? this._defaultUpsertMessage;
+    if (messageStore) {
+      this._messageStore = messageStore;
+    } else {
+      this._messageStore = new src({
+        store: new QuickLRU({ maxSize: 1e4 })
+      });
+    }
+    if (!this._apiKey) {
+      throw new Error("OpenAI missing required apiKey");
+    }
+    if (!this._fetch) {
+      throw new Error("Invalid environment; fetch is not defined");
+    }
+    if (typeof this._fetch !== "function") {
+      throw new Error('Invalid "fetch" is not a function');
+    }
+  }
+  /**
+   * Sends a message to the OpenAI chat completions endpoint, waits for the response
+   * to resolve, and returns the response.
+   *
+   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
+   *
+   * If you want to receive a stream of partial responses, use `opts.onProgress`.
+   *
+   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI chat completions API. You can override the `systemMessage` in `opts` to customize the assistant's instructions.
+   *
+   * @param message - The prompt message to send
+   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
+   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
+   * @param opts.systemMessage - Optional override for the chat "system message" which acts as instructions to the model (defaults to the ChatGPT system message)
+   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
+   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
+   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   *
+   * @returns The response from ChatGPT
+   */
+  async sendMessage(text, opts = {}) {
+    const {
+      parentMessageId,
+      messageId = v4(),
+      timeoutMs,
+      onProgress,
+      stream = onProgress ? true : false
+    } = opts;
+    let { abortSignal } = opts;
+    let abortController = null;
+    if (timeoutMs && !abortSignal) {
+      abortController = new AbortController();
+      abortSignal = abortController.signal;
+    }
+    const message = {
+      role: "user",
+      id: messageId,
+      parentMessageId,
+      text
+    };
+    await this._upsertMessage(message);
+    const { messages, maxTokens, numTokens } = await this._buildMessages(
+      text,
+      opts
+    );
+    const result = {
+      role: "assistant",
+      id: v4(),
+      parentMessageId: messageId,
+      text: ""
+    };
+    const responseP = new Promise(
+      async (resolve, reject) => {
+        var _a, _b;
+        const url = `${this._apiBaseUrl}/v1/chat/completions`;
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this._apiKey}`
+        };
+        const body = {
+          max_tokens: maxTokens,
+          ...this._completionParams,
+          messages,
+          stream
+        };
+        if (this._debug) {
+          console.log(`sendMessage (${numTokens} tokens)`, body);
+        }
+        if (stream) {
+          fetchSSE(
+            url,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+              signal: abortSignal,
+              onMessage: (data) => {
+                var _a2;
+                if (data === "[DONE]") {
+                  result.text = result.text.trim();
+                  return resolve(result);
+                }
+                try {
+                  const response = JSON.parse(data);
+                  if (response.id) {
+                    result.id = response.id;
+                  }
+                  if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
+                    const delta = response.choices[0].delta;
+                    if (delta == null ? void 0 : delta.content) {
+                      result.delta = delta.content;
+                      result.text += delta.content;
+                      result.detail = response;
+                      if (delta.role) {
+                        result.role = delta.role;
+                      }
+                      onProgress == null ? void 0 : onProgress(result);
+                    }
+                  }
+                } catch (err) {
+                  console.warn("OpenAI stream SEE event unexpected error", err);
+                  return reject(err);
+                }
+              }
+            },
+            this._fetch
+          ).catch(reject);
+        } else {
+          try {
+            const res = await this._fetch(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+              signal: abortSignal
+            });
+            if (!res.ok) {
+              const reason = await res.text();
+              const msg = `OpenAI error ${res.status || res.statusText}: ${reason}`;
+              const error = new ChatGPTError(msg, { cause: res });
+              error.statusCode = res.status;
+              error.statusText = res.statusText;
+              return reject(error);
+            }
+            const response = await res.json();
+            if (this._debug) {
+              console.log(response);
+            }
+            if (response == null ? void 0 : response.id) {
+              result.id = response.id;
+            }
+            if ((_a = response == null ? void 0 : response.choices) == null ? void 0 : _a.length) {
+              const message2 = response.choices[0].message;
+              result.text = message2.content;
+              if (message2.role) {
+                result.role = message2.role;
+              }
+            } else {
+              const res2 = response;
+              return reject(
+                new Error(
+                  `OpenAI error: ${((_b = res2 == null ? void 0 : res2.detail) == null ? void 0 : _b.message) || (res2 == null ? void 0 : res2.detail) || "unknown"}`
+                )
+              );
+            }
+            result.detail = response;
+            return resolve(result);
+          } catch (err) {
+            return reject(err);
+          }
+        }
+      }
+    ).then((message2) => {
+      return this._upsertMessage(message2).then(() => message2);
+    });
+    if (timeoutMs) {
+      if (abortController) {
+        ;
+        responseP.cancel = () => {
+          abortController.abort();
+        };
+      }
+      return pTimeout(responseP, {
+        milliseconds: timeoutMs,
+        message: "OpenAI timed out waiting for response"
+      });
+    } else {
+      return responseP;
+    }
+  }
+  get apiKey() {
+    return this._apiKey;
+  }
+  set apiKey(apiKey) {
+    this._apiKey = apiKey;
+  }
+  async _buildMessages(text, opts) {
+    const { systemMessage = this._systemMessage } = opts;
+    let { parentMessageId } = opts;
+    const userLabel = USER_LABEL_DEFAULT;
+    const assistantLabel = ASSISTANT_LABEL_DEFAULT;
+    const maxNumTokens = this._maxModelTokens - this._maxResponseTokens;
+    let messages = [];
+    if (systemMessage) {
+      messages.push({
+        role: "system",
+        content: systemMessage
+      });
+    }
+    const systemMessageOffset = messages.length;
+    let nextMessages = messages.concat([
+      {
+        ...{
+          role: "user",
+          content: text,
+          name: opts.name
+        }
+      }
+    ]);
+    let numTokens = 0;
+    do {
+      const prompt = nextMessages.reduce((prompt2, message) => {
+        switch (message.role) {
+          case "system":
+            return [prompt2, `Instructions:
+${message.content}`];
+          case "user":
+            return [prompt2, `${userLabel}:
+${message.content}`];
+          default:
+            return [prompt2, `${assistantLabel}:
+${message.content}`];
+        }
+      }, []).join("\n\n");
+      const nextNumTokensEstimate = await this._getTokenCount(prompt);
+      const isValidPrompt = nextNumTokensEstimate <= maxNumTokens;
+      if (prompt && !isValidPrompt) {
+        break;
+      }
+      messages = nextMessages;
+      numTokens = nextNumTokensEstimate;
+      if (!isValidPrompt) {
+        break;
+      }
+      if (!parentMessageId) {
+        break;
+      }
+      const parentMessage = await this._getMessageById(parentMessageId);
+      if (!parentMessage) {
+        break;
+      }
+      const parentMessageRole = parentMessage.role || "user";
+      nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
+        {
+          ...{
+            role: parentMessageRole,
+            content: parentMessage.text,
+            name: parentMessage.name
+          }
+        },
+        ...nextMessages.slice(systemMessageOffset)
+      ]);
+      parentMessageId = parentMessage.parentMessageId;
+    } while (true);
+    const maxTokens = Math.max(
+      1,
+      Math.min(this._maxModelTokens - numTokens, this._maxResponseTokens)
+    );
+    return { messages, maxTokens, numTokens };
+  }
+  async _getTokenCount(text) {
+    text = text.replace(/<\|endoftext\|>/g, "");
+    return encode(text).length;
+  }
+  async _defaultGetMessageById(id) {
+    const res = await this._messageStore.get(id);
+    return res;
+  }
+  async _defaultUpsertMessage(message) {
+    await this._messageStore.set(message.id, message);
+  }
+};
+
+// src/chatgpt-unofficial-proxy-api.ts
+
+
+
+// src/utils.ts
+var uuidv4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isValidUUIDv4(str) {
+  return str && uuidv4Re.test(str);
+}
+
+// src/chatgpt-unofficial-proxy-api.ts
+var ChatGPTUnofficialProxyAPI = class {
+  /**
+   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
+   */
+  constructor(opts) {
+    const {
+      accessToken,
+      apiReverseProxyUrl = "https://chat.duti.tech/api/conversation",
+      model = "text-davinci-002-render-sha",
+      debug = false,
+      headers,
+      fetch: fetch2 = build_fetch
+    } = opts;
+    this._accessToken = accessToken;
+    this._apiReverseProxyUrl = apiReverseProxyUrl;
+    this._debug = !!debug;
+    this._model = model;
+    this._fetch = fetch2;
+    this._headers = headers;
+    if (!this._accessToken) {
+      throw new Error("ChatGPT invalid accessToken");
+    }
+    if (!this._fetch) {
+      throw new Error("Invalid environment; fetch is not defined");
+    }
+    if (typeof this._fetch !== "function") {
+      throw new Error('Invalid "fetch" is not a function');
+    }
+  }
+  get accessToken() {
+    return this._accessToken;
+  }
+  set accessToken(value) {
+    this._accessToken = value;
+  }
+  /**
+   * Sends a message to ChatGPT, waits for the response to resolve, and returns
+   * the response.
+   *
+   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
+   *
+   * If you want to receive a stream of partial responses, use `opts.onProgress`.
+   * If you want to receive the full response, including message and conversation IDs,
+   * you can use `opts.onConversationResponse` or use the `ChatGPTAPI.getConversation`
+   * helper.
+   *
+   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI completions API. You can override the `promptPrefix` and `promptSuffix` in `opts` to customize the prompt.
+   *
+   * @param message - The prompt message to send
+   * @param opts.conversationId - Optional ID of a conversation to continue (defaults to a random UUID)
+   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
+   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
+   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
+   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
+   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   *
+   * @returns The response from ChatGPT
+   */
+  async sendMessage(text, opts = {}) {
+    if (!!opts.conversationId !== !!opts.parentMessageId) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId and parentMessageId must both be set or both be undefined"
+      );
+    }
+    if (opts.conversationId && !isValidUUIDv4(opts.conversationId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId is not a valid v4 UUID"
+      );
+    }
+    if (opts.parentMessageId && !isValidUUIDv4(opts.parentMessageId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: parentMessageId is not a valid v4 UUID"
+      );
+    }
+    if (opts.messageId && !isValidUUIDv4(opts.messageId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: messageId is not a valid v4 UUID"
+      );
+    }
+    const {
+      conversationId,
+      parentMessageId = v4(),
+      messageId = v4(),
+      action = "next",
+      timeoutMs,
+      onProgress
+    } = opts;
+    let { abortSignal } = opts;
+    let abortController = null;
+    if (timeoutMs && !abortSignal) {
+      abortController = new AbortController();
+      abortSignal = abortController.signal;
+    }
+    const body = {
+      action,
+      messages: [
+        {
+          id: messageId,
+          role: "user",
+          content: {
+            content_type: "text",
+            parts: [text]
+          }
+        }
+      ],
+      model: this._model,
+      parent_message_id: parentMessageId
+    };
+    if (conversationId) {
+      body.conversation_id = conversationId;
+    }
+    const result = {
+      role: "assistant",
+      id: v4(),
+      parentMessageId: messageId,
+      conversationId,
+      text: ""
+    };
+    const responseP = new Promise((resolve, reject) => {
+      const url = this._apiReverseProxyUrl;
+      const headers = {
+        ...this._headers,
+        Authorization: `Bearer ${this._accessToken}`,
+        Accept: "text/event-stream",
+        "Content-Type": "application/json"
+      };
+      if (this._debug) {
+        console.log("POST", url, { body, headers });
+      }
+      fetchSSE(
+        url,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: abortSignal,
+          onMessage: (data) => {
+            var _a, _b, _c;
+            if (data === "[DONE]") {
+              return resolve(result);
+            }
+            try {
+              const convoResponseEvent = JSON.parse(data);
+              if (convoResponseEvent.conversation_id) {
+                result.conversationId = convoResponseEvent.conversation_id;
+              }
+              if ((_a = convoResponseEvent.message) == null ? void 0 : _a.id) {
+                result.id = convoResponseEvent.message.id;
+              }
+              const message = convoResponseEvent.message;
+              if (message) {
+                let text2 = (_c = (_b = message == null ? void 0 : message.content) == null ? void 0 : _b.parts) == null ? void 0 : _c[0];
+                if (text2) {
+                  result.text = text2;
+                  if (onProgress) {
+                    onProgress(result);
+                  }
+                }
+              }
+            } catch (err) {
+            }
+          }
+        },
+        this._fetch
+      ).catch((err) => {
+        const errMessageL = err.toString().toLowerCase();
+        if (result.text && (errMessageL === "error: typeerror: terminated" || errMessageL === "typeerror: terminated")) {
+          return resolve(result);
+        } else {
+          return reject(err);
+        }
+      });
+    });
+    if (timeoutMs) {
+      if (abortController) {
+        ;
+        responseP.cancel = () => {
+          abortController.abort();
+        };
+      }
+      return pTimeout(responseP, {
+        milliseconds: timeoutMs,
+        message: "ChatGPT timed out waiting for response"
+      });
+    } else {
+      return responseP;
+    }
+  }
+};
+
+//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./lib/bot.js
 
 
