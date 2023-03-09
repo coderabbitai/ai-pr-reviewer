@@ -28984,13 +28984,15 @@ const codeReview = async (bot, options, prompts) => {
         return;
     }
     // find existing comments
-    const comments = await list_review_comments(context.payload.pull_request.number);
-    const comments_and_lines = comments.map(comment => {
-        return {
-            comment,
-            line: ensure_line_number(comment.line)
-        };
-    });
+    // const comments = await list_review_comments(
+    //   context.payload.pull_request.number
+    // )
+    // const comments_and_lines = comments.map(comment => {
+    //   return {
+    //     comment,
+    //     line: ensure_line_number(comment.line)
+    //   }
+    // })
     // find patches to review
     const files_to_review = [];
     for (const file of files) {
@@ -29027,12 +29029,14 @@ const codeReview = async (bot, options, prompts) => {
         for (const patch of split_patch(file.patch)) {
             const line = patch_comment_line(patch);
             // skip existing comments
-            if (comments_and_lines.some(comment => {
-                return comment.comment.path === file.filename && comment.line === line;
-            })) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for existing comment: ${file.filename}, ${line}`);
-                continue;
-            }
+            // if (
+            //   comments_and_lines.some(comment => {
+            //     return comment.comment.path === file.filename && comment.line === line
+            //   })
+            // ) {
+            //   core.info(`skip for existing comment: ${file.filename}, ${line}`)
+            //   continue
+            // }
             patches.push([line, patch]);
         }
         if (patches.length > 0) {
