@@ -123,17 +123,21 @@ export const codeReview = async (
     const commenter: Commenter = new Commenter()
     for (const [filename, file_content, patches] of files_to_review) {
       inputs.filename = filename
-      inputs.file_content = file_content
-      // review file
-      const [resp, file_ids] = await bot.chat(
-        'review',
-        prompts.render_review_file(inputs),
-        begin_ids
-      )
-      let next_patch_ids = file_ids
-      if (!resp) {
-        core.info('review: nothing obtained from chatgpt')
-        next_patch_ids = begin_ids
+      let next_patch_ids = begin_ids
+      if (file_content.length > 0) {
+        inputs.file_content = file_content
+        // review file
+        const [resp, file_ids] = await bot.chat(
+          'review',
+          prompts.render_review_file(inputs),
+          begin_ids
+        )
+        if (!resp) {
+          core.info('review: nothing obtained from chatgpt')
+          next_patch_ids = begin_ids
+        } else {
+          next_patch_ids = file_ids
+        }
       }
 
       for (const [line, patch] of patches) {
