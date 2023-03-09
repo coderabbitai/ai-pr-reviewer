@@ -29153,7 +29153,7 @@ const codeReview = async (bot, options, prompts) => {
                 if (tag_index === -1 || tag_end_index === -1) {
                     let new_description = description;
                     new_description += tag;
-                    new_description += '\n### ChatGPT Release Notes\n';
+                    new_description += '\n### Summary by ChatGPT\n';
                     new_description += release_notes_response;
                     new_description += '\n';
                     new_description += tag_end;
@@ -29167,7 +29167,7 @@ const codeReview = async (bot, options, prompts) => {
                 else {
                     let new_description = description.substring(0, tag_index);
                     new_description += tag;
-                    new_description += '\n### ChatGPT Release Notes\n';
+                    new_description += '\n### Summary by ChatGPT\n';
                     new_description += release_notes_response;
                     new_description += '\n';
                     new_description += tag_end;

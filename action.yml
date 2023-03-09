@@ -145,9 +145,9 @@ inputs:
     required: false
     description: 'The prompt for generating release notes'
     default: |
-      Next, release notes in `markdown` format for this pull request that focuses on the purpose, 
-      intent, business value and end user facing technical summary. Be as concise as possible, 
-      without additional commentary as this response will be used as is in our release notes.
+      Next, release notes in `markdown` format for this pull request that focuses on the purpose
+      of this PR. Your response should be as concise as possible (40-80 words), without 
+      additional commentary as this response will be used as is in our release notes.
 runs:
   using: 'node16'
   main: 'dist/index.js'
