@@ -1,84 +1,23 @@
 # ChatGPT actions
 
-A collection of ChatGPT assistants, e.g., code viewer, labeler, assigner, etc.
-
-- [Overview](#overview)
-  - [Why reinvent the wheel?](#why-reinvent-the-wheel)
-  - [Features](#features)
-- [Usage](#usage)
-  - [Configuration](#configuration)
-    - [Environment variables](#environment-variables)
-    - [Inputs](#inputs)
-  - [Prompt templates](#prompt-templates)
-    - [Variables available in prompt templates](#variables-available-in-prompt-templates)
-- [Developing](#developing)
-- [FAQs](#faqs)
-  - [Review pull request from forks](#review-pull-request-from-forks)
-  - [Choose the ChatGPT API implementation](#choose-the-chatgpt-api-implementation)
-  - [Inspect the messages between ChatGPT server](#inspect-the-messages-between-chatgpt-server)
-- [License](#license)
-
-![https://github.com/unsafecoerce/chatgpt-action/pull/13](./docs/images/chatgpt-example.jpg)
+ChatGPT based PR reviewer and summarizer. Based on [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action)
+by [Tao He](https://github.com/sighingnow)
 
 ## Overview
-
-### Why reinvent the wheel?
-
-There're already many [chatgpt-actions][1], why we need to reinvent the wheel?
-
-- Code review is not pull request changeset summarization
-
-  Some of existing actions send the whole pull request diff to ChatGPT, and
-  ask ChatGPT to summarize the pull request, or summarize each hunks. In
-  practice, the summarize has already done by the proposer and the code reviewer
-  is responsible for reviewing the changes, evaluate the quality, and decide
-  whether to merge the pull request.
-
-- Leave too much comments on Github pull requests
-
-  Some of existing actions send each hunks in a pull request diff to ChatGPT,
-  and yields a comment (or comment snippet) for each hunk. That makes them in
-  practically unusable, as receiving 20+ email notification after submitting
-  a pull request is not a good experience. For the reviewer's perspective, we
-  usually just focus on the hunks that are "too good" or "too bad".
-
-  **This actions take such experience into consideration, and only leave comments
-  for the hunks that are not "LGTM".** (We do have an option to leave comments
-  for good hunks as well).
-
-- Lack of customization of the prompt
-
-  All of existing actions hard-coded the prompt template inside the source code
-  and there's no chance to customize the prompt. When the built-in prompt is
-  not good enough, ChatGPT responses with useless comments.
-
-  At the same time, someone may have good prompt ideas, he/she want to try using
-  ChatGPT as an AI assistant for code quality evaluation and review, but he/she
-  needs to reinvent the wheel for a new action to play on Github.
-
-  **This action makes the prompt template configurable.** With a set of variables
-  like `$title`, `$description`, `$filename`, `$patch`, you can customize the
-  message sent to ChatGPT for better experience.
-
-  Prompt engineering is an _art_ to make ChatGPT success, we encourage the community
-  to try discovering new, novel, and insightful prompts to make ChatGPT do
-  code review job better, _**without reinventing the wheel for another chatgpt-action**_.
-
-  **ANY SUGGESTIONS AND IMPROVEMENTS ARE HIGHLY APPRECIATED!!!**
 
 ### Features
 
 - Code review your pull requests
 
   ```yaml
-  - uses: unsafecoerce/chatgpt-action@main
+  - uses: fluxninja/chatgpt-action@main
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     with:
       debug: false
-      review_comment_lgtm: true
+      review_comment_lgtm: false
   ```
 
 ## Usage
@@ -102,16 +41,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
-
-      - uses: unsafecoerce/chatgpt-action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: false
-
-      - uses: unsafecoerce/chatgpt-action@main
+      - uses: fluxninja/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
@@ -134,7 +64,7 @@ See also: [./action.yml](./action.yml)
   logging into ChatGPT.
 
 - `OPENAI_API_KEY`: use this to authenticate with OpenAI API, official ChatGPT's behavior using
-  `text-davinci-003`, see also: https://github.com/transitive-bullshit/chatgpt-api
+  `gpt-3.5-turbo`, see also: https://github.com/transitive-bullshit/chatgpt-api
 
 Note that `CHATGPT_ACCESS_TOKEN` and `OPENAI_API_KEY` are not both required. Inside this action,
 unofficial ChatGPT is preferred if `CHATGPT_ACCESS_TOKEN` exists. Note that the `CHATGPT_ACCESS_TOKEN`
@@ -143,11 +73,12 @@ to you.
 
 #### Inputs
 
-- `action`: The action to run, currently can be `review`, `score`
 - `debug`: Enable debug mode, will show messages and responses between ChatGPT server in CI logs.
 - `chatgpt_reverse_proxy`: The URL of the ChatGPT reverse proxy
 - `review_comment_lgtm`: Leave comments even the patch is LGTM
 - `path_filters`: Rules to filter files to be reviewed.
+- `temperature`: Temperature of the GPT-3 model.
+- `system_message`: The message to be sent to ChatGPT to start a conversation.
 
 ### Prompt templates:
 
@@ -175,7 +106,7 @@ $ npm run build && npm run package
 
 ### Review pull request from forks
 
-Github Actions limits the access of secrets from forked repositories. To enable
+GitHub Actions limits the access of secrets from forked repositories. To enable
 this feature, you need to use the `pull_request_target` event instead of
 `pull_request` in your workflow file. Note that with `pull_request_target`, you
 need extra configuration to ensure checking out the right commit:
@@ -200,22 +131,12 @@ jobs:
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
 
-      - uses: unsafecoerce/chatgpt-action@main
+      - uses: fluxninja/chatgpt-action@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
-          action: score
-
-      - uses: unsafecoerce/chatgpt-action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: false
-          action: review
-          review_comment_lgtm: true
 ```
 
 See also: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
@@ -224,7 +145,7 @@ See also: https://docs.github.com/en/actions/using-workflows/events-that-trigger
 
 The javascript's [chatgpt][2] package provides two implementations of the ChatGPT API:
 
-- `ChatGPTAPI`: official ChatGPT using the OpenAI's `text-davinci-003`.
+- `ChatGPTAPI`: official ChatGPT using the OpenAI's `gpt-3.5-turbo`.
   - not free
   - requires `OPENAI_API_KEY`
 - `ChatGPTUnofficialProxyAPI`: unofficial ChatGPT models, rely on third-party server and is
@@ -242,7 +163,3 @@ Set `debug: true` in the workflow file to enable debug mode, which will show the
 
 [1]: https://github.com/marketplace?type=&verification=&query=chatgpt-action+
 [2]: https://www.npmjs.com/package/chatgpt
-
-## License
-
-The MIT License (MIT), Copyright (c) 2023 Tao He.

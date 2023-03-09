@@ -18,8 +18,21 @@ inputs:
       - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
       - https://github.com/isaacs/minimatch
     default: |
-      !dist/**
-      **/package-lock.json
+      !**/*.pb.go
+      !**/*.lock
+      !**/*.yaml
+      !**/*.yml
+      !**/*.cfg
+      !**/*.ini
+      !**/*.mod
+      !**/*.sum
+      !**/*.json
+      !**/*.mmd
+      !**/*.svg
+      !**/*.png
+      !**/*.dot
+      !**/gen/**
+      !**/vendor/**
   system_message:
     required: false
     description: 'System message to be sent to ChatGPT'
@@ -130,6 +143,8 @@ inputs:
       the `markdown` format with the following content:
         - High-level Summary
         - Table of files
+
+      Do not provide additional commentary as this summary will be added as a comment on the PR.
   summarize_release_notes:
     required: false
     description: 'The prompt for generating release notes'
