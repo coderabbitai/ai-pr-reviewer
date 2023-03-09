@@ -145,7 +145,7 @@ export const codeReview = async (
         // review file
         const [resp, review_file_ids] = await bot.chat(
           prompts.render_review_file(inputs),
-          review_begin_ids
+          next_review_ids
         )
         if (!resp) {
           core.info('review: nothing obtained from chatgpt')
@@ -156,7 +156,7 @@ export const codeReview = async (
         // score file
         const [scoring_resp, scoring_file_ids] = await bot.chat(
           prompts.render_scoring_file(inputs),
-          scoring_begin_ids
+          next_scoring_ids
         )
         if (!scoring_resp) {
           core.info('scoring: nothing obtained from chatgpt')

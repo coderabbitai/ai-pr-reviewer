@@ -29054,7 +29054,7 @@ const codeReview = async (bot, options, prompts) => {
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 // review file
-                const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), review_begin_ids);
+                const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
                 if (!resp) {
                     core.info('review: nothing obtained from chatgpt');
                 }
@@ -29062,7 +29062,7 @@ const codeReview = async (bot, options, prompts) => {
                     next_review_ids = review_file_ids;
                 }
                 // score file
-                const [scoring_resp, scoring_file_ids] = await bot.chat(prompts.render_scoring_file(inputs), scoring_begin_ids);
+                const [scoring_resp, scoring_file_ids] = await bot.chat(prompts.render_scoring_file(inputs), next_scoring_ids);
                 if (!scoring_resp) {
                     core.info('scoring: nothing obtained from chatgpt');
                 }
