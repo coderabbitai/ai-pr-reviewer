@@ -96,6 +96,7 @@ export const codeReview = async (
 
     let file_diff = ''
     if (file.patch) {
+      core.info(`diff for ${file.filename}: ${file.patch}`)
       file_diff = file.patch
     }
 
@@ -126,7 +127,12 @@ export const codeReview = async (
     )
 
     const commenter: Commenter = new Commenter()
-    for (const [filename, file_content, file_diff, patches] of files_to_review) {
+    for (const [
+      filename,
+      file_content,
+      file_diff,
+      patches
+    ] of files_to_review) {
       inputs.filename = filename
       let next_patch_ids = begin_ids
       if (file_content.length > 0) {
@@ -158,6 +164,14 @@ export const codeReview = async (
           next_patch_ids = diff_ids
         }
       }
+
+      // review_patch_begin
+      const [, patch_begin_ids] = await bot.chat(
+        'review',
+        prompts.render_review_patch_begin(inputs),
+        next_patch_ids
+      )
+      next_patch_ids = patch_begin_ids
 
       for (const [line, patch] of patches) {
         core.info(`Reviewing ${filename}:${line} with chatgpt ...`)

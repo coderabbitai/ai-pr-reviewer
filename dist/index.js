@@ -28789,13 +28789,15 @@ class Prompts {
     review_beginning;
     review_file;
     review_file_diff;
+    review_patch_begin;
     review_patch;
     scoring_beginning;
     scoring;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch = '', scoring_beginning = '', scoring = '') {
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', scoring_beginning = '', scoring = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
+        this.review_patch_begin = review_patch_begin;
         this.review_patch = review_patch;
         this.scoring_beginning = scoring_beginning;
         this.scoring = scoring;
@@ -28808,6 +28810,9 @@ class Prompts {
     }
     render_review_file_diff(inputs) {
         return inputs.render(this.review_file_diff);
+    }
+    render_review_patch_begin(inputs) {
+        return inputs.render(this.review_patch_begin);
     }
     render_review_patch(inputs) {
         return inputs.render(this.review_patch);
@@ -28876,7 +28881,7 @@ class Options {
         this.path_filters = new PathFilter(path_filters);
     }
     check_path(path) {
-        let ok = this.path_filters.check(path);
+        const ok = this.path_filters.check(path);
         core.info(`checking path: ${path} => ${ok}`);
         return ok;
     }
@@ -28886,10 +28891,10 @@ class PathFilter {
     constructor(rules = null) {
         this.rules = [];
         if (rules) {
-            for (let rule of rules) {
-                let trimmed = rule?.trim();
+            for (const rule of rules) {
+                const trimmed = rule?.trim();
                 if (trimmed) {
-                    if (trimmed[0] == '!') {
+                    if (trimmed.startsWith('!')) {
                         this.rules.push([trimmed.substring(1).trim(), true]);
                     }
                     else {
@@ -29015,6 +29020,7 @@ const codeReview = async (bot, options, prompts) => {
         }
         let file_diff = '';
         if (file.patch) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
         }
         const patches = [];
@@ -29061,6 +29067,9 @@ const codeReview = async (bot, options, prompts) => {
                     next_patch_ids = diff_ids;
                 }
             }
+            // review_patch_begin
+            const [, patch_begin_ids] = await bot.chat('review', prompts.render_review_patch_begin(inputs), next_patch_ids);
+            next_patch_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with chatgpt ...`);
                 inputs.patch = patch;

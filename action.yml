@@ -67,7 +67,7 @@ inputs:
     required: false
     description: 'The prompt for each file diff'
     default: |
-      Providing `$filename` entire diff as context. Reply "OK" to confirm.
+      Providing entire diff for `$filename` as context. Reply "OK" to confirm.
 
       ```diff
       $file_diff
