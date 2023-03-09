@@ -29144,44 +29144,42 @@ const codeReview = async (bot, options, prompts) => {
                 repo: review_repo.repo,
                 pull_number: review_context.payload.pull_request.number
             });
-            const description = pr.body;
-            if (!description) {
-                core.info('release notes: no description found in the PR');
+            let description = '';
+            if (pr.body) {
+                description = pr.body;
+            }
+            // find the tag in the description and replace the content between the tag and the tag_end
+            // if not found, add the tag and the content to the end of the description
+            const tag_index = description.indexOf(tag);
+            const tag_end_index = description.indexOf(tag_end);
+            if (tag_index === -1 || tag_end_index === -1) {
+                let new_description = description;
+                new_description += tag;
+                new_description += '\n### Summary by ChatGPT\n';
+                new_description += release_notes_response;
+                new_description += '\n';
+                new_description += tag_end;
+                await review_octokit.pulls.update({
+                    owner: review_repo.owner,
+                    repo: review_repo.repo,
+                    pull_number: review_context.payload.pull_request.number,
+                    body: new_description
+                });
             }
             else {
-                // find the tag in the description and replace the content between the tag and the tag_end
-                // if not found, add the tag and the content to the end of the description
-                const tag_index = description.indexOf(tag);
-                const tag_end_index = description.indexOf(tag_end);
-                if (tag_index === -1 || tag_end_index === -1) {
-                    let new_description = description;
-                    new_description += tag;
-                    new_description += '\n### Summary by ChatGPT\n';
-                    new_description += release_notes_response;
-                    new_description += '\n';
-                    new_description += tag_end;
-                    await review_octokit.pulls.update({
-                        owner: review_repo.owner,
-                        repo: review_repo.repo,
-                        pull_number: review_context.payload.pull_request.number,
-                        body: new_description
-                    });
-                }
-                else {
-                    let new_description = description.substring(0, tag_index);
-                    new_description += tag;
-                    new_description += '\n### Summary by ChatGPT\n';
-                    new_description += release_notes_response;
-                    new_description += '\n';
-                    new_description += tag_end;
-                    new_description += description.substring(tag_end_index + tag_end.length);
-                    await review_octokit.pulls.update({
-                        owner: review_repo.owner,
-                        repo: review_repo.repo,
-                        pull_number: review_context.payload.pull_request.number,
-                        body: new_description
-                    });
-                }
+                let new_description = description.substring(0, tag_index);
+                new_description += tag;
+                new_description += '\n### Summary by ChatGPT\n';
+                new_description += release_notes_response;
+                new_description += '\n';
+                new_description += tag_end;
+                new_description += description.substring(tag_end_index + tag_end.length);
+                await review_octokit.pulls.update({
+                    owner: review_repo.owner,
+                    repo: review_repo.repo,
+                    pull_number: review_context.payload.pull_request.number,
+                    body: new_description
+                });
             }
         }
     }
