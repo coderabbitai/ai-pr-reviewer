@@ -26973,7 +26973,10 @@ class Bot {
             this.turbo = new ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
-                debug: options.debug
+                debug: options.debug,
+                completionParams: {
+                    temperature: 0.1
+                }
                 // assistantLabel: " ",
                 // userLabel: " ",
             });

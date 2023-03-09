@@ -4,7 +4,9 @@ import * as core from '@actions/core'
 import {
   ChatGPTAPI,
   ChatGPTUnofficialProxyAPI,
-  ChatMessage, SendMessageBrowserOptions, SendMessageOptions
+  ChatMessage,
+  SendMessageBrowserOptions,
+  SendMessageOptions
 } from 'chatgpt'
 
 // define type to save parentMessageId and conversationId
@@ -32,7 +34,10 @@ export class Bot {
       this.turbo = new ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
-        debug: options.debug
+        debug: options.debug,
+        completionParams: {
+          temperature: 0.1
+        }
         // assistantLabel: " ",
         // userLabel: " ",
       })
