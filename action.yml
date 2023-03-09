@@ -104,7 +104,7 @@ inputs:
       We will be summarizing a pull request in this session. 
 
       You will provide -
-      - Overall summary of changes (within 100 words)
+      - High-level summary of changes that focuses on the purpose and intent (within 100 words)
       - A table containing filename and short summary (within 30 words) for each file's diff
 
       I have a pull request with title "$title" and the description is as follows,
@@ -112,7 +112,7 @@ inputs:
       > $description.
 
       Next, I will be providing you diffs for each file for you to summarize. In every response, 
-      you will update the overall summary of the entire pull request, and the table for each file's 
+      you will update the high-level summary of the entire pull request, and the table for each file's 
       diff summary.
 
       Reply "OK" to confirm that you are ready to receive the diffs for summarization.
@@ -125,7 +125,7 @@ inputs:
 
       I would like you to summarize the diff and add the summary for this file in the table. 
 
-      In response, please provide the updated overall summary and the summary table of the files 
+      In response, please provide the updated high-level summary and the summary table of the files 
       we have summarized so far.
 
       ```diff
@@ -138,9 +138,17 @@ inputs:
     default: |
       This is the end of summarization session. Please provide the final response as follows in 
       the `markdown` format with the following content:
-        - Overall Summary
-        - Table of summaries
-
+        - High-level Summary
+        - Table of files
+  summarize_release_notes:
+    type: string
+    required: false
+    description: 'The prompt for generating release notes'
+    default: |
+      Next, please provide a high-level, release notes style summary in `markdown` formar 
+      of this pull request that focuses on the purpose, intent, business value and end user facing 
+      technical summary. Be as concise as possible, without additional commentary as this response 
+      will be used as is in our release notes.
 runs:
   using: 'node16'
   main: 'dist/index.js'

@@ -223,22 +223,80 @@ export const codeReview = async (
       }
     }
     // final summary
-    const [summarize_final_response] = await bot.chat(
-      prompts.render_summarize(inputs),
-      next_summarize_ids
-    )
+    const [summarize_final_response, summarize_final_response_ids] =
+      await bot.chat(prompts.render_summarize(inputs), next_summarize_ids)
     if (!summarize_final_response) {
       core.info('summarize: nothing obtained from chatgpt')
-      return
+    } else {
+      next_summarize_ids = summarize_final_response_ids
+      const tag =
+        '<!-- This is an auto-generated comment: summarize by chatgpt -->'
+      await commenter.comment(
+        `:robot: ChatGPT summary: 
+        ${summarize_final_response}`,
+        tag,
+        'replace'
+      )
     }
 
-    const tag =
-      '<!-- This is an auto-generated comment: summarize by chatgpt -->'
-    await commenter.comment(
-      `:robot: ChatGPT summary: ${summarize_final_response}`,
-      tag,
-      'replace'
+    // final release notes
+    const [release_notes_response, release_notes_ids] = await bot.chat(
+      prompts.render_summarize_release_notes(inputs),
+      next_summarize_ids
     )
+    if (!release_notes_response) {
+      core.info('release notes: nothing obtained from chatgpt')
+    } else {
+      next_summarize_ids = release_notes_ids
+      // add this response to the description field of the PR as release notes by looking
+      // for the tag (marker)
+      const tag =
+        '<!-- This is an auto-generated comment: release notes by chatgpt -->'
+      const tag_end =
+        '<!-- end of auto-generated comment: release notes by chatgpt -->'
+      // get the description of the PR
+      const {data: pr} = await octokit.pulls.get({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: context.payload.pull_request.number
+      })
+      const description = pr.body
+      if (!description) {
+        core.info('release notes: no description found in the PR')
+      } else {
+        // find the tag in the description and replace the content between the tag and the tag_end
+        // if not found, add the tag and the content to the end of the description
+        const tag_index = description.indexOf(tag)
+        const tag_end_index = description.indexOf(tag_end)
+        if (tag_index === -1 || tag_end_index === -1) {
+          let new_description = description
+          new_description += tag
+          new_description += '\n### ChatGPT Release Notes\n'
+          new_description += release_notes_response
+          new_description += '\n'
+          new_description += tag_end
+          await octokit.pulls.update({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number: context.payload.pull_request.number,
+            body: new_description
+          })
+        } else {
+          let new_description = description.substring(0, tag_index)
+          new_description += tag
+          new_description += '\n### ChatGPT Release Notes\n'
+          new_description += release_notes_response
+          new_description += '\n'
+          new_description += tag_end
+          new_description += description.substring(tag_end_index + tag_end.length)
+          await octokit.pulls.update({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number: context.payload.pull_request.number,
+            body: new_description
+          })
+      }
+    }
   }
 }
 

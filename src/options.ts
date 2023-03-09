@@ -10,6 +10,7 @@ export class Prompts {
   summarize_beginning: string
   summarize_file_diff: string
   summarize: string
+  summarize_release_notes: string
 
   constructor(
     review_beginning = '',
@@ -20,6 +21,7 @@ export class Prompts {
     summarize_beginning = '',
     summarize_file_diff = '',
     summarize = ''
+    summarize_release_notes = ''
   ) {
     this.review_beginning = review_beginning
     this.review_file = review_file
@@ -29,6 +31,7 @@ export class Prompts {
     this.summarize_beginning = summarize_beginning
     this.summarize_file_diff = summarize_file_diff
     this.summarize = summarize
+    this.summarize_release_notes = summarize_release_notes
   }
 
   render_review_beginning(inputs: Inputs): string {
@@ -61,6 +64,10 @@ export class Prompts {
 
   render_summarize(inputs: Inputs): string {
     return inputs.render(this.summarize)
+  }
+
+  render_summarize_release_notes(inputs: Inputs): string {
+    return inputs.render(this.summarize_release_notes)
   }
 }
 

@@ -29114,7 +29114,8 @@ const codeReview = async (bot, options, prompts) => {
             return;
         }
         const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
-        await commenter.comment(`:robot: ChatGPT summary: ${summarize_final_response}`, tag, 'replace');
+        await commenter.comment(`:robot: ChatGPT summary: 
+      ${summarize_final_response}`, tag, 'replace');
     }
 };
 // const list_review_comments = async (target: number, page: number = 1) => {
