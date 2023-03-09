@@ -140,6 +140,8 @@ export const codeReview = async (
       patches
     ] of files_to_review) {
       inputs.filename = filename
+      // reset session for each file while reviewing
+      next_review_ids = review_begin_ids
       if (file_content.length > 0) {
         inputs.file_content = file_content
         // review file

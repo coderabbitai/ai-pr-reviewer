@@ -29051,6 +29051,8 @@ const codeReview = async (bot, options, prompts) => {
         let next_scoring_ids = scoring_begin_ids;
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
+            // reset session for each file while reviewing
+            next_review_ids = review_begin_ids;
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 // review file
