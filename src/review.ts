@@ -125,11 +125,13 @@ export const codeReview = async (
       prompts.render_review_beginning(inputs),
       {}
     )
+    let next_review_ids = review_begin_ids
 
     const [, scoring_begin_ids] = await bot.chat(
       prompts.render_scoring_beginning(inputs),
       {}
     )
+    let next_scoring_ids = scoring_begin_ids
 
     for (const [
       filename,
@@ -138,8 +140,6 @@ export const codeReview = async (
       patches
     ] of files_to_review) {
       inputs.filename = filename
-      let next_review_ids = review_begin_ids
-      let next_scoring_ids = scoring_begin_ids
       if (file_content.length > 0) {
         inputs.file_content = file_content
         // review file
