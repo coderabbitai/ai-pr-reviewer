@@ -117,7 +117,7 @@ inputs:
       the overall score, summary of the entire pull request, and the table for each file's score.
 
       Reply "OK" to confirm that you are ready to receive the contents of files and score their diffs.
-  score_file:
+  scoring_file:
     type: string
     required: false
     description: 'The prompt for each file'
