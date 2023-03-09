@@ -29046,11 +29046,11 @@ const codeReview = async (bot, options, prompts) => {
     if (files_to_review.length > 0) {
         const commenter = new Commenter();
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
+        let next_review_ids = review_begin_ids;
         const [, scoring_begin_ids] = await bot.chat(prompts.render_scoring_beginning(inputs), {});
+        let next_scoring_ids = scoring_begin_ids;
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
-            let next_review_ids = review_begin_ids;
-            let next_scoring_ids = scoring_begin_ids;
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 // review file
@@ -29088,14 +29088,6 @@ const codeReview = async (bot, options, prompts) => {
                 else {
                     next_scoring_ids = scoring_diff_ids;
                 }
-                // final score
-                const [scoring_final_response] = await bot.chat(prompts.render_scoring(inputs), next_scoring_ids);
-                if (!scoring_final_response) {
-                    core.info('scoring: nothing obtained from chatgpt');
-                    return;
-                }
-                const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
-                await commenter.comment(`:robot: ChatGPT score: ${scoring_final_response}`, tag, 'replace');
             }
             // review_patch_begin
             const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
@@ -29126,6 +29118,14 @@ const codeReview = async (bot, options, prompts) => {
                 }
             }
         }
+        // final score
+        const [scoring_final_response] = await bot.chat(prompts.render_scoring(inputs), next_scoring_ids);
+        if (!scoring_final_response) {
+            core.info('scoring: nothing obtained from chatgpt');
+            return;
+        }
+        const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
+        await commenter.comment(`:robot: ChatGPT score: ${scoring_final_response}`, tag, 'replace');
     }
 };
 // const list_review_comments = async (target: number, page: number = 1) => {
