@@ -16,8 +16,8 @@ async function run(): Promise<void> {
     core.getInput('review_beginning'),
     core.getInput('review_file'),
     core.getInput('review_file_diff'),
-    core.getInput('review_patch'),
     core.getInput('review_patch_begin'),
+    core.getInput('review_patch'),
     core.getInput('scoring_beginning'),
     core.getInput('scoring')
   )
