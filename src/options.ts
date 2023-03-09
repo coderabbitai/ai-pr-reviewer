@@ -118,17 +118,20 @@ export class Options {
   chatgpt_reverse_proxy: string
   review_comment_lgtm: boolean
   path_filters: PathFilter
+  system_message: string
 
   constructor(
     debug: boolean,
     chatgpt_reverse_proxy: string,
     review_comment_lgtm = false,
-    path_filters: string[] | null = null
+    path_filters: string[] | null = null,
+    system_message = ''
   ) {
     this.debug = debug
     this.chatgpt_reverse_proxy = chatgpt_reverse_proxy
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
+    this.system_message = system_message
   }
 
   check_path(path: string): boolean {

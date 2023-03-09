@@ -26971,6 +26971,7 @@ class Bot {
         }
         else if (process.env.OPENAI_API_KEY) {
             this.turbo = new ChatGPTAPI({
+                systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug
                 // assistantLabel: " ",
@@ -27238,7 +27239,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 async function run() {
     const action = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('action');
-    let options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'));
+    let options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'));
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
     // initialize chatgpt bot
     let bot = null;
@@ -28874,11 +28875,13 @@ class Options {
     chatgpt_reverse_proxy;
     review_comment_lgtm;
     path_filters;
-    constructor(debug, chatgpt_reverse_proxy, review_comment_lgtm = false, path_filters = null) {
+    system_message;
+    constructor(debug, chatgpt_reverse_proxy, review_comment_lgtm = false, path_filters = null, system_message = '') {
         this.debug = debug;
         this.chatgpt_reverse_proxy = chatgpt_reverse_proxy;
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
+        this.system_message = system_message;
     }
     check_path(path) {
         const ok = this.path_filters.check(path);

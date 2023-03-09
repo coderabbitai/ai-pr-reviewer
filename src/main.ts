@@ -10,7 +10,8 @@ async function run(): Promise<void> {
     core.getBooleanInput('debug'),
     core.getInput('chatgpt_reverse_proxy'),
     core.getBooleanInput('review_comment_lgtm'),
-    core.getMultilineInput('path_filters')
+    core.getMultilineInput('path_filters'),
+    core.getInput('system_message')
   )
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),

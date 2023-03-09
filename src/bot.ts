@@ -4,9 +4,7 @@ import * as core from '@actions/core'
 import {
   ChatGPTAPI,
   ChatGPTUnofficialProxyAPI,
-  ChatMessage,
-  SendMessageOptions,
-  SendMessageBrowserOptions
+  ChatMessage, SendMessageBrowserOptions, SendMessageOptions
 } from 'chatgpt'
 
 // define type to save parentMessageId and conversationId
@@ -32,6 +30,7 @@ export class Bot {
       })
     } else if (process.env.OPENAI_API_KEY) {
       this.turbo = new ChatGPTAPI({
+        systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug
         // assistantLabel: " ",

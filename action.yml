@@ -24,6 +24,16 @@ inputs:
     default: |
       !dist/**
       **/package-lock.json
+  system_message:
+    type: string
+    required: false
+    description: 'System message to be sent to ChatGPT'
+    default: |
+      You are a very experienced software engineer. You are able to thoroughly review code and uncover 
+      issues, such as potential data races, livelocks, starvation, suspension, order violation, 
+      atomicity violation, consistency issues, complexity issues and so on. 
+
+      We will be doing code reviews today. Please prefer markdown format in your responses.
   chatgpt_reverse_proxy:
     type: boolean
     required: false
@@ -40,17 +50,14 @@ inputs:
     required: false
     description: 'The beginning prompt of a code review dialog'
     default: |
-      Hi ChatGPT, 
-      
-      I want you to act as an expert software developer. We will be doing code reviews
-      in this session. I will be providing you some files and entire diff to help you build
+      I will be providing you some files and entire diff to help you build
       context, in case the content is not too large. Then I will be sending you each patch
       from the diff for review.
 
       I have a pull request with title "$title" and the description is as follows,
 
       > $description.
-      
+
       Reply "OK" to confirm that you are ready for further instructions.
   review_file:
     type: string
@@ -99,7 +106,7 @@ inputs:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
+      I have a pull request with title "$title" and the description is as follows,
 
       > $description
 
