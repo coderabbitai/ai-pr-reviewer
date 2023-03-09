@@ -2,11 +2,6 @@ name: 'chatgpt-action'
 description: 'A collection of ChatGPT assistants, e.g., code viewer, labeler, assigner, etc.'
 author: 'Tao He'
 inputs:
-  action:
-    type: string
-    required: false
-    description: 'The action to run, currently can be "review", "score"'
-    default: 'review'
   debug:
     type: boolean
     required: false
@@ -106,14 +101,49 @@ inputs:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
+      We will be scoring a pull request in this session. 
+
+      You will need provide -
+      1. Overall Score
+      2. Overall Summary (within 50 words)
+      3. Table of Filename, Score and Summary (within 20 words) for each file's diff
+
       I have a pull request with title "$title" and the description is as follows,
 
-      > $description
+      > $description.
 
-      I would like score the pull request, the score should be a number between 0 and 100
-      and 85 means the the pull request is basically acceptable. You just need to reply a
-      number between 0 and 100, e.g., "85", and a comment within 30 words. Next, I would
-      give you the whole diff of the pull request. Reply "OK" to confirm.
+      I will be providing you some files and diff for each file to help you build
+      context and score the diffs, in case their content is not too large. In every response, you will update 
+      the overall score, summary of the entire pull request, and the table for each file's score.
+
+      Reply "OK" to confirm that you are ready to receive the contents of files and score their diffs.
+  score_file:
+    type: string
+    required: false
+    description: 'The prompt for each file'
+    default: |
+      Providing `$filename` content as context. Reply "OK" to confirm.
+
+      ```
+      $file_content
+      ```
+  scoring_file_diff:
+    type: string
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
+      Providing entire diff for `$filename`.
+
+      I would like you to score the diff, the score should be a number between 0 and 100
+      and 85 means the the pull request is basically acceptable. e.g., "85", and a comment 
+      within 20 words. You will add the score for this file and your comment in the table. 
+
+      In response, please provide the updated overall summary, overall score and the score table 
+      for files we have reviewed so far.
+
+      ```diff
+      $file_diff
+      ```
   scoring:
     type: string
     required: false

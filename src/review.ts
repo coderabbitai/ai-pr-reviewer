@@ -18,8 +18,8 @@ export const codeReview = async (
   prompts: Prompts
 ) => {
   if (
-    context.eventName != 'pull_request' &&
-    context.eventName != 'pull_request_target'
+    context.eventName !== 'pull_request' &&
+    context.eventName !== 'pull_request_target'
   ) {
     core.warning(
       `Skipped: current event is ${context.eventName}, only support pull_request event`
@@ -120,13 +120,17 @@ export const codeReview = async (
   }
 
   if (files_to_review.length > 0) {
-    const [, begin_ids] = await bot.chat(
-      'review',
+    const commenter: Commenter = new Commenter()
+    const [, review_begin_ids] = await bot.chat(
       prompts.render_review_beginning(inputs),
       {}
     )
 
-    const commenter: Commenter = new Commenter()
+    const [, score_begin_ids] = await bot.chat(
+      prompts.render_scoring_beginning(inputs),
+      {}
+    )
+
     for (const [
       filename,
       file_content,
@@ -134,58 +138,94 @@ export const codeReview = async (
       patches
     ] of files_to_review) {
       inputs.filename = filename
-      let next_patch_ids = begin_ids
+      let next_review_ids = review_begin_ids
+      let next_score_ids = score_begin_ids
       if (file_content.length > 0) {
         inputs.file_content = file_content
         // review file
-        const [resp, file_ids] = await bot.chat(
-          'review',
+        const [resp, review_file_ids] = await bot.chat(
           prompts.render_review_file(inputs),
-          begin_ids
+          review_begin_ids
         )
         if (!resp) {
           core.info('review: nothing obtained from chatgpt')
         } else {
-          next_patch_ids = file_ids
+          next_review_ids = review_file_ids
+        }
+
+        // score file
+        const [score_resp, score_file_ids] = await bot.chat(
+          prompts.render_scoring_file(inputs),
+          score_begin_ids
+        )
+        if (!score_resp) {
+          core.info('scoring: nothing obtained from chatgpt')
+        } else {
+          next_score_ids = score_file_ids
         }
       }
 
       if (file_diff.length > 0) {
         inputs.file_diff = file_diff
         // review diff
-        const [resp, diff_ids] = await bot.chat(
-          'review',
+        const [resp, review_diff_ids] = await bot.chat(
           prompts.render_review_file_diff(inputs),
-          next_patch_ids
+          next_review_ids
         )
         if (!resp) {
           core.info('review: nothing obtained from chatgpt')
         } else {
-          next_patch_ids = diff_ids
+          next_review_ids = review_diff_ids
         }
+
+        // score diff
+        const [score_resp, score_diff_ids] = await bot.chat(
+          prompts.render_scoring_file_diff(inputs),
+          next_score_ids
+        )
+        if (!score_resp) {
+          core.info('scoring: nothing obtained from chatgpt')
+        } else {
+          next_score_ids = score_diff_ids
+        }
+        // final score
+        const [score_final_response] = await bot.chat(
+          prompts.render_scoring(inputs),
+          next_score_ids
+        )
+        if (!score_final_response) {
+          core.info('scoring: nothing obtained from chatgpt')
+          return
+        }
+
+        const tag =
+          '<!-- This is an auto-generated comment: scoring by chatgpt -->'
+        await commenter.comment(
+          `:robot: ChatGPT score: ${score_final_response}`,
+          tag,
+          'replace'
+        )
       }
 
       // review_patch_begin
       const [, patch_begin_ids] = await bot.chat(
-        'review',
         prompts.render_review_patch_begin(inputs),
-        next_patch_ids
+        next_review_ids
       )
-      next_patch_ids = patch_begin_ids
+      next_review_ids = patch_begin_ids
 
       for (const [line, patch] of patches) {
         core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
         inputs.patch = patch
         const [response, patch_ids] = await bot.chat(
-          'review',
           prompts.render_review_patch(inputs),
-          next_patch_ids
+          next_review_ids
         )
         if (!response) {
           core.info('review: nothing obtained from chatgpt')
           continue
         }
-        next_patch_ids = patch_ids
+        next_review_ids = patch_ids
         if (!options.review_comment_lgtm && response.includes('LGTM!')) {
           continue
         }
@@ -211,51 +251,51 @@ export const codeReview = async (
   }
 }
 
-const list_review_comments = async (target: number, page: number = 1) => {
-  let {data: comments} = await octokit.pulls.listReviewComments({
-    owner: repo.owner,
-    repo: repo.repo,
-    pull_number: target,
-    page: page,
-    per_page: 100
-  })
-  if (!comments) {
-    return []
-  }
-  if (comments.length >= 100) {
-    comments = comments.concat(await list_review_comments(target, page + 1))
-    return comments
-  } else {
-    return comments
-  }
-}
+// const list_review_comments = async (target: number, page: number = 1) => {
+//   let {data: comments} = await octokit.pulls.listReviewComments({
+//     owner: repo.owner,
+//     repo: repo.repo,
+//     pull_number: target,
+//     page: page,
+//     per_page: 100
+//   })
+//   if (!comments) {
+//     return []
+//   }
+//   if (comments.length >= 100) {
+//     comments = comments.concat(await list_review_comments(target, page + 1))
+//     return comments
+//   } else {
+//     return comments
+//   }
+// }
 
-const split_patch = (patch: string | null | undefined): Array<string> => {
+const split_patch = (patch: string | null | undefined): string[] => {
   if (!patch) {
     return []
   }
 
-  let pattern: RegExp = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
+  const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
 
-  let result: Array<string> = []
+  const result: string[] = []
   let last = -1
   let match: RegExpExecArray | null
   while ((match = pattern.exec(patch)) !== null) {
-    if (last == -1) {
+    if (last === -1) {
       last = match.index
     } else {
       result.push(patch.substring(last, match.index))
     }
   }
-  if (last != -1) {
+  if (last !== -1) {
     result.push(patch.substring(last))
   }
   return result
 }
 
 const patch_comment_line = (patch: string): number => {
-  let pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@)/gm
-  let match = pattern.exec(patch)
+  const pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@)/gm
+  const match = pattern.exec(patch)
   if (match && match.groups) {
     return parseInt(match.groups.begin) + parseInt(match.groups.diff) - 1
   } else {
@@ -263,6 +303,6 @@ const patch_comment_line = (patch: string): number => {
   }
 }
 
-const ensure_line_number = (line: number | null | undefined): number => {
-  return line === null || line === undefined ? 0 : line
-}
+// const ensure_line_number = (line: number | null | undefined): number => {
+//   return line === null || line === undefined ? 0 : line
+// }

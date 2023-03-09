@@ -2,10 +2,8 @@ import * as core from '@actions/core'
 import {Bot} from './bot.js'
 import {Options, Prompts} from './options.js'
 import {codeReview} from './review.js'
-import {scorePullRequest} from './score.js'
 
 async function run(): Promise<void> {
-  const action: string = core.getInput('action')
   let options: Options = new Options(
     core.getBooleanInput('debug'),
     core.getInput('chatgpt_reverse_proxy'),
@@ -20,6 +18,8 @@ async function run(): Promise<void> {
     core.getInput('review_patch_begin'),
     core.getInput('review_patch'),
     core.getInput('scoring_beginning'),
+    core.getInput('scoring_file'),
+    core.getInput('scoring_file_diff'),
     core.getInput('scoring')
   )
 
@@ -35,14 +35,7 @@ async function run(): Promise<void> {
   }
 
   try {
-    core.info(`running Github action: ${action}`)
-    if (action === 'score') {
-      await scorePullRequest(bot, options, prompts)
-    } else if (action === 'review') {
-      await codeReview(bot, options, prompts)
-    } else {
-      core.warning(`Unknown action: ${action}`)
-    }
+    await codeReview(bot, options, prompts)
   } catch (e: any) {
     if (e instanceof Error) {
       core.setFailed(

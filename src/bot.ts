@@ -49,29 +49,21 @@ export class Bot {
     }
   }
 
-  chat = async (
-    action: string,
-    message: string,
-    ids: Ids
-  ): Promise<[string, Ids]> => {
-    console.time(`chatgpt ${action} ${message.length} tokens cost`)
+  chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
+    console.time(`chatgpt ${message.length} tokens cost`)
     let new_ids: Ids = {}
     let response = ''
     try {
-      ;[response, new_ids] = await this.chat_(action, message, ids)
+      ;[response, new_ids] = await this.chat_(message, ids)
     } catch (e: any) {
       core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
     } finally {
-      console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`)
+      console.timeEnd(`chatgpt ${message.length} tokens cost`)
       return [response, new_ids]
     }
   }
 
-  private chat_ = async (
-    action: string,
-    message: string,
-    ids: Ids
-  ): Promise<[string, Ids]> => {
+  private chat_ = async (message: string, ids: Ids): Promise<[string, Ids]> => {
     if (!message) {
       return ['', {}]
     }

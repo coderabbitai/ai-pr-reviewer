@@ -26987,23 +26987,23 @@ class Bot {
             throw new Error(err);
         }
     }
-    chat = async (action, message, ids) => {
-        console.time(`chatgpt ${action} ${message.length} tokens cost`);
+    chat = async (message, ids) => {
+        console.time(`chatgpt ${message.length} tokens cost`);
         let new_ids = {};
         let response = '';
         try {
             ;
-            [response, new_ids] = await this.chat_(action, message, ids);
+            [response, new_ids] = await this.chat_(message, ids);
         }
         catch (e) {
             core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
         }
         finally {
-            console.timeEnd(`chatgpt ${action} ${message.length} tokens cost`);
+            console.timeEnd(`chatgpt ${message.length} tokens cost`);
             return [response, new_ids];
         }
     };
-    chat_ = async (action, message, ids) => {
+    chat_ = async (message, ids) => {
         if (!message) {
             return ['', {}];
         }
@@ -27071,161 +27071,6 @@ class Bot {
 
 /***/ }),
 
-/***/ 4571:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "E": () => (/* binding */ Commenter)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
-
-
-
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit */ .v({ auth: `token ${token}` });
-const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
-const repo = context.repo;
-const DEFAULT_TAG = '<!-- This is an auto-generated comment -->';
-class Commenter {
-    /**
-     * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
-     */
-    async comment(message, tag, mode) {
-        await comment(message, tag, mode);
-    }
-    async review_comment(pull_number, commit_id, path, line, message) {
-        await octokit.pulls.createReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: pull_number,
-            body: message,
-            commit_id: commit_id,
-            path: path,
-            line: line
-        });
-    }
-}
-const comment = async (message, tag, mode) => {
-    let target;
-    if (context.payload.pull_request) {
-        target = context.payload.pull_request.number;
-    }
-    else if (context.payload.issue) {
-        target = context.payload.issue.number;
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
-        return;
-    }
-    if (!tag) {
-        tag = DEFAULT_TAG;
-    }
-    const body = `${message}
-
-${tag}`;
-    if (mode == 'create') {
-        await create(body, tag, target);
-    }
-    else if (mode == 'replace') {
-        await replace(body, tag, target);
-    }
-    else if (mode == 'append') {
-        await append(body, tag, target);
-    }
-    else if (mode == 'prepend') {
-        await prepend(body, tag, target);
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
-        await replace(body, tag, target);
-    }
-};
-const create = async (body, tag, target) => {
-    await octokit.issues.createComment({
-        owner: repo.owner,
-        repo: repo.repo,
-        issue_number: target,
-        body: body
-    });
-};
-const replace = async (body, tag, target) => {
-    const comment = await find_comment_with_tag(tag, target);
-    if (comment) {
-        await octokit.issues.updateComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            comment_id: comment.id,
-            body: body
-        });
-    }
-    else {
-        await create(body, tag, target);
-    }
-};
-const append = async (body, tag, target) => {
-    const comment = await find_comment_with_tag(tag, target);
-    if (comment) {
-        await octokit.issues.updateComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            comment_id: comment.id,
-            body: `${comment.body} ${body}`
-        });
-    }
-    else {
-        await create(body, tag, target);
-    }
-};
-const prepend = async (body, tag, target) => {
-    const comment = await find_comment_with_tag(tag, target);
-    if (comment) {
-        await octokit.issues.updateComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            comment_id: comment.id,
-            body: `${body} ${comment.body}`
-        });
-    }
-    else {
-        await create(body, tag, target);
-    }
-};
-const find_comment_with_tag = async (tag, target) => {
-    const comments = await list_comments(target);
-    for (let comment of comments) {
-        if (comment.body && comment.body.includes(tag)) {
-            return comment;
-        }
-    }
-    return null;
-};
-const list_comments = async (target, page = 1) => {
-    let { data: comments } = await octokit.issues.listComments({
-        owner: repo.owner,
-        repo: repo.repo,
-        issue_number: target,
-        page: page,
-        per_page: 100
-    });
-    if (!comments) {
-        return [];
-    }
-    if (comments.length >= 100) {
-        comments = comments.concat(await list_comments(target, page + 1));
-        return comments;
-    }
-    else {
-        return comments;
-    }
-};
-
-
-/***/ }),
-
 /***/ 2092:
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
@@ -27233,17 +27078,14 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4231);
-/* harmony import */ var _score_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3614);
-
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1278);
 
 
 
 
 async function run() {
-    const action = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('action');
     let options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
     // initialize chatgpt bot
     let bot = null;
     try {
@@ -27254,16 +27096,7 @@ async function run() {
         return;
     }
     try {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`running Github action: ${action}`);
-        if (action === 'score') {
-            await (0,_score_js__WEBPACK_IMPORTED_MODULE_4__/* .scorePullRequest */ .w)(bot, options, prompts);
-        }
-        else if (action === 'review') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(bot, options, prompts);
-        }
-        else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown action: ${action}`);
-        }
+        await (0,_review_js__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(bot, options, prompts);
     }
     catch (e) {
         if (e instanceof Error) {
@@ -28796,14 +28629,18 @@ class Prompts {
     review_patch_begin;
     review_patch;
     scoring_beginning;
+    scoring_file;
+    scoring_file_diff;
     scoring;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', scoring_beginning = '', scoring = '') {
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', scoring_beginning = '', scoring_file = '', scoring_file_diff = '', scoring = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
         this.review_patch_begin = review_patch_begin;
         this.review_patch = review_patch;
         this.scoring_beginning = scoring_beginning;
+        this.scoring_file = scoring_file;
+        this.scoring_file_diff = scoring_file_diff;
         this.scoring = scoring;
     }
     render_review_beginning(inputs) {
@@ -28823,6 +28660,12 @@ class Prompts {
     }
     render_scoring_beginning(inputs) {
         return inputs.render(this.scoring_beginning);
+    }
+    render_scoring_file(inputs) {
+        return inputs.render(this.scoring_file);
+    }
+    render_scoring_file_diff(inputs) {
+        return inputs.render(this.scoring_file_diff);
     }
     render_scoring(inputs) {
         return inputs.render(this.scoring);
@@ -28937,56 +28780,207 @@ class PathFilter {
 
 /***/ }),
 
-/***/ 4231:
+/***/ 1278:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "z": () => (/* binding */ codeReview)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1231);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4571);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(744);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "z": () => (/* binding */ codeReview)
+});
+
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(2186);
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(5438);
+// EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
+var dist_node = __nccwpck_require__(1231);
+;// CONCATENATED MODULE: ./lib/commenter.js
 
 
 
-
-
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+const token = core.getInput('token')
+    ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_4__/* .Octokit */ .v({ auth: `token ${token}` });
-const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
+const context = github.context;
 const repo = context.repo;
-const codeReview = async (bot, options, prompts) => {
-    if (context.eventName != 'pull_request' &&
-        context.eventName != 'pull_request_target') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
-        return;
+const DEFAULT_TAG = '<!-- This is an auto-generated comment -->';
+class Commenter {
+    /**
+     * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
+     */
+    async comment(message, tag, mode) {
+        await comment(message, tag, mode);
     }
-    if (!context.payload.pull_request) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
-        return;
+    async review_comment(pull_number, commit_id, path, line, message) {
+        await octokit.pulls.createReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number: pull_number,
+            body: message,
+            commit_id: commit_id,
+            path: path,
+            line: line
+        });
     }
-    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
-    inputs.title = context.payload.pull_request.title;
-    if (context.payload.pull_request.body) {
-        inputs.description = context.payload.pull_request.body;
+}
+const comment = async (message, tag, mode) => {
+    let target;
+    if (context.payload.pull_request) {
+        target = context.payload.pull_request.number;
+    }
+    else if (context.payload.issue) {
+        target = context.payload.issue.number;
     }
     else {
-        inputs.description = context.payload.pull_request.title;
+        core.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
+        return;
     }
-    // collect diff chunks
-    const diff = await octokit.repos.compareCommits({
+    if (!tag) {
+        tag = DEFAULT_TAG;
+    }
+    const body = `${message}
+
+${tag}`;
+    if (mode == 'create') {
+        await create(body, tag, target);
+    }
+    else if (mode == 'replace') {
+        await replace(body, tag, target);
+    }
+    else if (mode == 'append') {
+        await append(body, tag, target);
+    }
+    else if (mode == 'prepend') {
+        await prepend(body, tag, target);
+    }
+    else {
+        core.warning(`Unknown mode: ${mode}, use "replace" instead`);
+        await replace(body, tag, target);
+    }
+};
+const create = async (body, tag, target) => {
+    await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
-        base: context.payload.pull_request.base.sha,
-        head: context.payload.pull_request.head.sha
+        issue_number: target,
+        body: body
+    });
+};
+const replace = async (body, tag, target) => {
+    const comment = await find_comment_with_tag(tag, target);
+    if (comment) {
+        await octokit.issues.updateComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: body
+        });
+    }
+    else {
+        await create(body, tag, target);
+    }
+};
+const append = async (body, tag, target) => {
+    const comment = await find_comment_with_tag(tag, target);
+    if (comment) {
+        await octokit.issues.updateComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: `${comment.body} ${body}`
+        });
+    }
+    else {
+        await create(body, tag, target);
+    }
+};
+const prepend = async (body, tag, target) => {
+    const comment = await find_comment_with_tag(tag, target);
+    if (comment) {
+        await octokit.issues.updateComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: `${body} ${comment.body}`
+        });
+    }
+    else {
+        await create(body, tag, target);
+    }
+};
+const find_comment_with_tag = async (tag, target) => {
+    const comments = await list_comments(target);
+    for (let comment of comments) {
+        if (comment.body && comment.body.includes(tag)) {
+            return comment;
+        }
+    }
+    return null;
+};
+const list_comments = async (target, page = 1) => {
+    let { data: comments } = await octokit.issues.listComments({
+        owner: repo.owner,
+        repo: repo.repo,
+        issue_number: target,
+        page: page,
+        per_page: 100
+    });
+    if (!comments) {
+        return [];
+    }
+    if (comments.length >= 100) {
+        comments = comments.concat(await list_comments(target, page + 1));
+        return comments;
+    }
+    else {
+        return comments;
+    }
+};
+
+// EXTERNAL MODULE: ./lib/options.js + 4 modules
+var lib_options = __nccwpck_require__(744);
+;// CONCATENATED MODULE: ./lib/review.js
+
+
+
+
+
+const review_token = core.getInput('token')
+    ? core.getInput('token')
+    : process.env.GITHUB_TOKEN;
+const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
+const review_context = github.context;
+const review_repo = review_context.repo;
+const codeReview = async (bot, options, prompts) => {
+    if (review_context.eventName !== 'pull_request' &&
+        review_context.eventName !== 'pull_request_target') {
+        core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
+        return;
+    }
+    if (!review_context.payload.pull_request) {
+        core.warning(`Skipped: context.payload.pull_request is null`);
+        return;
+    }
+    const inputs = new lib_options/* Inputs */.kq();
+    inputs.title = review_context.payload.pull_request.title;
+    if (review_context.payload.pull_request.body) {
+        inputs.description = review_context.payload.pull_request.body;
+    }
+    else {
+        inputs.description = review_context.payload.pull_request.title;
+    }
+    // collect diff chunks
+    const diff = await review_octokit.repos.compareCommits({
+        owner: review_repo.owner,
+        repo: review_repo.repo,
+        base: review_context.payload.pull_request.base.sha,
+        head: review_context.payload.pull_request.head.sha
     });
     const { files, commits } = diff.data;
     if (!files) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
+        core.warning(`Skipped: diff.data.files is null`);
         return;
     }
     // find existing comments
@@ -29003,17 +28997,17 @@ const codeReview = async (bot, options, prompts) => {
     const files_to_review = [];
     for (const file of files) {
         if (!options.check_path(file.filename)) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for excluded path: ${file.filename}`);
+            core.info(`skip for excluded path: ${file.filename}`);
             continue;
         }
         // retrieve file contents
         let file_content = '';
         try {
-            const contents = await octokit.repos.getContent({
-                owner: repo.owner,
-                repo: repo.repo,
+            const contents = await review_octokit.repos.getContent({
+                owner: review_repo.owner,
+                repo: review_repo.repo,
                 path: file.filename,
-                ref: context.payload.pull_request.base.sha
+                ref: review_context.payload.pull_request.base.sha
             });
             if (contents.data) {
                 if (!Array.isArray(contents.data)) {
@@ -29024,11 +29018,11 @@ const codeReview = async (bot, options, prompts) => {
             }
         }
         catch (error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
+            core.warning(`Failed to get file contents: ${error}, skipping.`);
         }
         let file_diff = '';
         if (file.patch) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`diff for ${file.filename}: ${file.patch}`);
+            core.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
         }
         const patches = [];
@@ -29050,55 +29044,81 @@ const codeReview = async (bot, options, prompts) => {
         }
     }
     if (files_to_review.length > 0) {
-        const [, begin_ids] = await bot.chat('review', prompts.render_review_beginning(inputs), {});
-        const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .E();
+        const commenter = new Commenter();
+        const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
+        const [, score_begin_ids] = await bot.chat(prompts.render_scoring_beginning(inputs), {});
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
-            let next_patch_ids = begin_ids;
+            let next_review_ids = review_begin_ids;
+            let next_score_ids = score_begin_ids;
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 // review file
-                const [resp, file_ids] = await bot.chat('review', prompts.render_review_file(inputs), begin_ids);
+                const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), review_begin_ids);
                 if (!resp) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from chatgpt');
+                    core.info('review: nothing obtained from chatgpt');
                 }
                 else {
-                    next_patch_ids = file_ids;
+                    next_review_ids = review_file_ids;
+                }
+                // score file
+                const [score_resp, score_file_ids] = await bot.chat(prompts.render_scoring_file(inputs), score_begin_ids);
+                if (!score_resp) {
+                    core.info('scoring: nothing obtained from chatgpt');
+                }
+                else {
+                    next_score_ids = score_file_ids;
                 }
             }
             if (file_diff.length > 0) {
                 inputs.file_diff = file_diff;
                 // review diff
-                const [resp, diff_ids] = await bot.chat('review', prompts.render_review_file_diff(inputs), next_patch_ids);
+                const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
                 if (!resp) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from chatgpt');
+                    core.info('review: nothing obtained from chatgpt');
                 }
                 else {
-                    next_patch_ids = diff_ids;
+                    next_review_ids = review_diff_ids;
                 }
+                // score diff
+                const [score_resp, score_diff_ids] = await bot.chat(prompts.render_scoring_file_diff(inputs), next_score_ids);
+                if (!score_resp) {
+                    core.info('scoring: nothing obtained from chatgpt');
+                }
+                else {
+                    next_score_ids = score_diff_ids;
+                }
+                // final score
+                const [score_final_response] = await bot.chat(prompts.render_scoring(inputs), next_score_ids);
+                if (!score_final_response) {
+                    core.info('scoring: nothing obtained from chatgpt');
+                    return;
+                }
+                const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
+                await commenter.comment(`:robot: ChatGPT score: ${score_final_response}`, tag, 'replace');
             }
             // review_patch_begin
-            const [, patch_begin_ids] = await bot.chat('review', prompts.render_review_patch_begin(inputs), next_patch_ids);
-            next_patch_ids = patch_begin_ids;
+            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
+            next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with chatgpt ...`);
+                core.info(`Reviewing ${filename}:${line} with chatgpt ...`);
                 inputs.patch = patch;
-                const [response, patch_ids] = await bot.chat('review', prompts.render_review_patch(inputs), next_patch_ids);
+                const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from chatgpt');
+                    core.info('review: nothing obtained from chatgpt');
                     continue;
                 }
-                next_patch_ids = patch_ids;
+                next_review_ids = patch_ids;
                 if (!options.review_comment_lgtm && response.includes('LGTM!')) {
                     continue;
                 }
                 try {
-                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, response.startsWith('ChatGPT')
+                    await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, response.startsWith('ChatGPT')
                         ? `:robot: ${response}`
                         : `:robot: ChatGPT: ${response}`);
                 }
                 catch (e) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to comment: ${e}, skipping.
+                    core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
@@ -29108,49 +29128,48 @@ const codeReview = async (bot, options, prompts) => {
         }
     }
 };
-const list_review_comments = async (target, page = 1) => {
-    let { data: comments } = await octokit.pulls.listReviewComments({
-        owner: repo.owner,
-        repo: repo.repo,
-        pull_number: target,
-        page: page,
-        per_page: 100
-    });
-    if (!comments) {
-        return [];
-    }
-    if (comments.length >= 100) {
-        comments = comments.concat(await list_review_comments(target, page + 1));
-        return comments;
-    }
-    else {
-        return comments;
-    }
-};
+// const list_review_comments = async (target: number, page: number = 1) => {
+//   let {data: comments} = await octokit.pulls.listReviewComments({
+//     owner: repo.owner,
+//     repo: repo.repo,
+//     pull_number: target,
+//     page: page,
+//     per_page: 100
+//   })
+//   if (!comments) {
+//     return []
+//   }
+//   if (comments.length >= 100) {
+//     comments = comments.concat(await list_review_comments(target, page + 1))
+//     return comments
+//   } else {
+//     return comments
+//   }
+// }
 const split_patch = (patch) => {
     if (!patch) {
         return [];
     }
-    let pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm;
-    let result = [];
+    const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm;
+    const result = [];
     let last = -1;
     let match;
     while ((match = pattern.exec(patch)) !== null) {
-        if (last == -1) {
+        if (last === -1) {
             last = match.index;
         }
         else {
             result.push(patch.substring(last, match.index));
         }
     }
-    if (last != -1) {
+    if (last !== -1) {
         result.push(patch.substring(last));
     }
     return result;
 };
 const patch_comment_line = (patch) => {
-    let pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@)/gm;
-    let match = pattern.exec(patch);
+    const pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@)/gm;
+    const match = pattern.exec(patch);
     if (match && match.groups) {
         return parseInt(match.groups.begin) + parseInt(match.groups.diff) - 1;
     }
@@ -29158,85 +29177,9 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
-const ensure_line_number = (line) => {
-    return line === null || line === undefined ? 0 : line;
-};
-
-
-/***/ }),
-
-/***/ 3614:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "w": () => (/* binding */ scorePullRequest)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1231);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4571);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(744);
-
-
-
-
-
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_4__/* .Octokit */ .v({ auth: `token ${token}` });
-const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
-const repo = context.repo;
-const scorePullRequest = async (bot, options, prompts) => {
-    if (context.eventName != 'pull_request' &&
-        context.eventName != 'pull_request_target') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
-        return;
-    }
-    // compute the diff
-    if (!context.payload.pull_request) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
-        return;
-    }
-    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
-    inputs.title = context.payload.pull_request.title;
-    if (context.payload.pull_request.body) {
-        inputs.description = context.payload.pull_request.body;
-    }
-    else {
-        inputs.description = context.payload.pull_request.title;
-    }
-    // collect diff chunks
-    const diff = await octokit.repos.compareCommits({
-        owner: repo.owner,
-        repo: repo.repo,
-        base: context.payload.pull_request.base.sha,
-        head: context.payload.pull_request.head.sha
-    });
-    let { files, commits } = diff.data;
-    if (files) {
-        inputs.diff = files
-            .filter(file => options.check_path(file.filename))
-            .map(file => file.patch)
-            .join('\n\n');
-    }
-    else {
-        inputs.diff = '';
-    }
-    if (!files) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
-        return;
-    }
-    const [, begin_ids] = await bot.chat('score', prompts.render_scoring_beginning(inputs), {});
-    const [response] = await bot.chat('score', prompts.render_scoring(inputs), begin_ids);
-    if (!response) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('score: nothing obtained from chatgpt');
-        return;
-    }
-    const tag = '<!-- This is an auto-generated comment: scoring by chatgpt -->';
-    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .E();
-    await commenter.comment(`:robot: ChatGPT score: ${response}`, tag, 'replace');
-};
+// const ensure_line_number = (line: number | null | undefined): number => {
+//   return line === null || line === undefined ? 0 : line
+// }
 
 
 /***/ }),
