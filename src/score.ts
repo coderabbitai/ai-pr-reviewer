@@ -1,9 +1,9 @@
-import {Bot} from './bot.js'
-import {Commenter} from './commenter.js'
-import {Prompts, Inputs, Options} from './options.js'
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import {Bot} from './bot.js'
+import {Commenter} from './commenter.js'
+import {Inputs, Options, Prompts} from './options.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -63,8 +63,16 @@ export const scorePullRequest = async (
     return
   }
 
-  await bot.chat('score', prompts.render_scoring_beginning(inputs), true)
-  let response = await bot.chat('score', prompts.render_scoring(inputs))
+  const [, begin_ids] = await bot.chat(
+    'score',
+    prompts.render_scoring_beginning(inputs),
+    {}
+  )
+  const [response] = await bot.chat(
+    'score',
+    prompts.render_scoring(inputs),
+    begin_ids
+  )
   if (!response) {
     core.info('score: nothing obtained from chatgpt')
     return

@@ -65,7 +65,7 @@ export const codeReview = async (
   })
 
   // find patches to review
-  let files_to_review: Array<[string, string, Array<[number, string]>]> = []
+  const files_to_review: Array<[string, string, Array<[number, string]>]> = []
   for (let file of files) {
     if (!options.check_path(file.filename)) {
       core.info(`skip for excluded path: ${file.filename}`)
@@ -114,46 +114,57 @@ export const codeReview = async (
   }
 
   if (files_to_review.length > 0) {
-    await bot.chat('review', prompts.render_review_beginning(inputs), true)
-  }
+    const [, begin_ids] = await bot.chat(
+      'review',
+      prompts.render_review_beginning(inputs),
+      {}
+    )
 
-  const commenter: Commenter = new Commenter()
-  for (let [filename, file_content, patches] of files_to_review) {
-    inputs.filename = filename
-    inputs.file_content = file_content
-    // review file
-    await bot.chat('review', prompts.render_review_file(inputs))
-
-    for (let [line, patch] of patches) {
-      core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
-      inputs.patch = patch
-      const response = await bot.chat(
+    const commenter: Commenter = new Commenter()
+    for (const [filename, file_content, patches] of files_to_review) {
+      inputs.filename = filename
+      inputs.file_content = file_content
+      // review file
+      const [, file_ids] = await bot.chat(
         'review',
-        prompts.render_review_patch(inputs)
+        prompts.render_review_file(inputs),
+        begin_ids
       )
-      if (!response) {
-        core.info('review: nothing obtained from chatgpt')
-        continue
-      }
-      if (!options.review_comment_lgtm && response.indexOf('LGTM!') != -1) {
-        continue
-      }
-      try {
-        await commenter.review_comment(
-          context.payload.pull_request.number,
-          commits[commits.length - 1].sha,
-          filename,
-          line,
-          response.startsWith('ChatGPT')
-            ? `:robot: ${response}`
-            : `:robot: ChatGPT: ${response}`
+      let next_patch_ids = file_ids
+
+      for (const [line, patch] of patches) {
+        core.info(`Reviewing ${filename}:${line} with chatgpt ...`)
+        inputs.patch = patch
+        const [response, patch_ids] = await bot.chat(
+          'review',
+          prompts.render_review_patch(inputs),
+          next_patch_ids
         )
-      } catch (e: any) {
-        core.warning(`Failed to comment: ${e}, skipping.
+        if (!response) {
+          core.info('review: nothing obtained from chatgpt')
+          continue
+        }
+        next_patch_ids = patch_ids
+        if (!options.review_comment_lgtm && response.includes('LGTM!')) {
+          continue
+        }
+        try {
+          await commenter.review_comment(
+            context.payload.pull_request.number,
+            commits[commits.length - 1].sha,
+            filename,
+            line,
+            response.startsWith('ChatGPT')
+              ? `:robot: ${response}`
+              : `:robot: ChatGPT: ${response}`
+          )
+        } catch (e: any) {
+          core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)
+        }
       }
     }
   }
