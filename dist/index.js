@@ -28990,7 +28990,7 @@ const codeReview = async (bot, options, prompts) => {
                 owner: repo.owner,
                 repo: repo.repo,
                 path: file.filename,
-                ref: context.payload.pull_request.head.sha
+                ref: context.payload.pull_request.base.sha
             });
             if (contents.data) {
                 if (!Array.isArray(contents.data)) {
