@@ -4,6 +4,7 @@ import {minimatch} from 'minimatch'
 export class Prompts {
   public review_beginning: string
   public review_file: string
+  public review_file_diff: string
   public review_patch: string
   public scoring_beginning: string
   public scoring: string
@@ -11,12 +12,14 @@ export class Prompts {
   constructor(
     review_beginning: string = '',
     review_file: string = '',
+    review_file_diff: string = '',
     review_patch: string = '',
     scoring_beginning: string = '',
     scoring: string = ''
   ) {
     this.review_beginning = review_beginning
     this.review_file = review_file
+    this.review_file_diff = review_file_diff
     this.review_patch = review_patch
     this.scoring_beginning = scoring_beginning
     this.scoring = scoring
@@ -28,6 +31,10 @@ export class Prompts {
 
   public render_review_file(inputs: Inputs): string {
     return inputs.render(this.review_file)
+  }
+
+  public render_review_file_diff(inputs: Inputs): string {
+    return inputs.render(this.review_file_diff)
   }
 
   public render_review_patch(inputs: Inputs): string {
@@ -48,6 +55,7 @@ export class Inputs {
   public description: string
   public filename: string
   public file_content: string
+  public file_diff: string
   public patch: string
   public diff: string
 
@@ -56,6 +64,7 @@ export class Inputs {
     description: string = '',
     filename: string = '',
     file_content: string = '',
+    file_diff: string = '',
     patch: string = '',
     diff: string = ''
   ) {
@@ -63,6 +72,7 @@ export class Inputs {
     this.description = description
     this.filename = filename
     this.file_content = file_content
+    this.file_diff = file_diff
     this.patch = patch
     this.diff = diff
   }
@@ -82,6 +92,9 @@ export class Inputs {
     }
     if (this.file_content) {
       content = content.replace('$file_content', this.file_content)
+    }
+    if (this.file_diff) {
+      content = content.replace('$file_diff', this.file_diff)
     }
     if (this.patch) {
       content = content.replace('$patch', this.patch)

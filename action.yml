@@ -40,36 +40,50 @@ inputs:
     required: false
     description: 'The beginning prompt of a code review dialog'
     default: |
-      Hi ChatGPT, I have a pull request with title "$title" and the description is as follows,
+      Hi ChatGPT, 
+      
+      I want you to act as an expert software developer. We will be doing code reviews
+      in this session. I will be providing you some files and entire diff to help you build
+      context, in case the content is not too large. Then I will be sending you each patch
+      from the diff for review.
+
+      I have a pull request with title "$title" and the description is as follows,
 
       > $description.
-
-      Next, I will give you either files (it will consist of a filename, instructions for you 
-      and content), followed by patches (consists of a filename and a diff snippet), and you 
-      need to do a brief code review for every patch, and tell me any bug risk and improvement 
-      suggestion. If the patch is looks good and acceptable, please reply "LGTM!" with a short 
-      comment with 30 words.
-
-      You answer should be concise. Don't include the diff in your comment, and markdown format is
-      preferred. Reply "OK" to confirm.
+      
+      Reply "OK" to confirm that you are ready for further instructions.
   review_file:
     type: string
     required: false
     description: 'The prompt for each file'
     default: |
-      Sharing `$filename` content as context. Reply "OK" to confirm.
+      Providing `$filename` content as context. Reply "OK" to confirm.
 
+      ```
+      $file_content
+      ```
+  review_file_diff:
+    type: string
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
+      Providing `$filename` entire diff as context. Reply "OK" to confirm.
+
+      ```diff
+      $file_diff
+      ```
+  review_patch_begin:
+    type: string
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
       Next, I will send you a series of patches, each of them consists 
       of a snippet, and you need to do a brief code review for every message, and tell me any 
       bug risk and improvement suggestion. If the patch is looks good and acceptable, please 
       reply "LGTM!" with a short comment with 30 words. 
 
       Your answer should be concise. Don't include the diff in your comment, and markdown 
-      format is preferred.
-
-      ```
-      $file_content
-      ```
+      format is preferred. Reply "OK" to confirm.
   review_patch:
     type: string
     required: false

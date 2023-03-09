@@ -32,7 +32,7 @@ export const codeReview = async (
     return
   }
 
-  let inputs: Inputs = new Inputs()
+  const inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body) {
     inputs.description = context.payload.pull_request.body
@@ -47,7 +47,7 @@ export const codeReview = async (
     base: context.payload.pull_request.base.sha,
     head: context.payload.pull_request.head.sha
   })
-  let {files, commits} = diff.data
+  const {files, commits} = diff.data
   if (!files) {
     core.warning(`Skipped: diff.data.files is null`)
     return
@@ -59,14 +59,14 @@ export const codeReview = async (
   )
   const comments_and_lines = comments.map(comment => {
     return {
-      comment: comment,
+      comment,
       line: ensure_line_number(comment.line)
     }
   })
 
   // find patches to review
-  const files_to_review: Array<[string, string, Array<[number, string]>]> = []
-  for (let file of files) {
+  const files_to_review: [string, string, string, [number, string][]][] = []
+  for (const file of files) {
     if (!options.check_path(file.filename)) {
       core.info(`skip for excluded path: ${file.filename}`)
       continue
@@ -94,9 +94,14 @@ export const codeReview = async (
       core.warning(`Failed to get file contents: ${error}, skipping.`)
     }
 
-    let patches: Array<[number, string]> = []
-    for (let patch of split_patch(file.patch)) {
-      let line = patch_comment_line(patch)
+    let file_diff = ''
+    if (file.patch) {
+      file_diff = file.patch
+    }
+
+    const patches: [number, string][] = []
+    for (const patch of split_patch(file.patch)) {
+      const line = patch_comment_line(patch)
       // skip existing comments
       if (
         comments_and_lines.some(comment => {
@@ -109,7 +114,7 @@ export const codeReview = async (
       patches.push([line, patch])
     }
     if (patches.length > 0) {
-      files_to_review.push([file.filename, file_content, patches])
+      files_to_review.push([file.filename, file_content, file_diff, patches])
     }
   }
 
@@ -121,7 +126,7 @@ export const codeReview = async (
     )
 
     const commenter: Commenter = new Commenter()
-    for (const [filename, file_content, patches] of files_to_review) {
+    for (const [filename, file_content, file_diff, patches] of files_to_review) {
       inputs.filename = filename
       let next_patch_ids = begin_ids
       if (file_content.length > 0) {
@@ -134,9 +139,23 @@ export const codeReview = async (
         )
         if (!resp) {
           core.info('review: nothing obtained from chatgpt')
-          next_patch_ids = begin_ids
         } else {
           next_patch_ids = file_ids
+        }
+      }
+
+      if (file_diff.length > 0) {
+        inputs.file_diff = file_diff
+        // review diff
+        const [resp, diff_ids] = await bot.chat(
+          'review',
+          prompts.render_review_file_diff(inputs),
+          next_patch_ids
+        )
+        if (!resp) {
+          core.info('review: nothing obtained from chatgpt')
+        } else {
+          next_patch_ids = diff_ids
         }
       }
 

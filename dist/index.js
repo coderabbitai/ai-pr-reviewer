@@ -27239,7 +27239,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 async function run() {
     const action = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('action');
     let options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('scoring'));
     // initialize chatgpt bot
     let bot = null;
     try {
@@ -28788,12 +28788,14 @@ minimatch.unescape = unescape_unescape;
 class Prompts {
     review_beginning;
     review_file;
+    review_file_diff;
     review_patch;
     scoring_beginning;
     scoring;
-    constructor(review_beginning = '', review_file = '', review_patch = '', scoring_beginning = '', scoring = '') {
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch = '', scoring_beginning = '', scoring = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
+        this.review_file_diff = review_file_diff;
         this.review_patch = review_patch;
         this.scoring_beginning = scoring_beginning;
         this.scoring = scoring;
@@ -28803,6 +28805,9 @@ class Prompts {
     }
     render_review_file(inputs) {
         return inputs.render(this.review_file);
+    }
+    render_review_file_diff(inputs) {
+        return inputs.render(this.review_file_diff);
     }
     render_review_patch(inputs) {
         return inputs.render(this.review_patch);
@@ -28819,13 +28824,15 @@ class Inputs {
     description;
     filename;
     file_content;
+    file_diff;
     patch;
     diff;
-    constructor(title = '', description = '', filename = '', file_content = '', patch = '', diff = '') {
+    constructor(title = '', description = '', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
         this.title = title;
         this.description = description;
         this.filename = filename;
         this.file_content = file_content;
+        this.file_diff = file_diff;
         this.patch = patch;
         this.diff = diff;
     }
@@ -28844,6 +28851,9 @@ class Inputs {
         }
         if (this.file_content) {
             content = content.replace('$file_content', this.file_content);
+        }
+        if (this.file_diff) {
+            content = content.replace('$file_diff', this.file_diff);
         }
         if (this.patch) {
             content = content.replace('$patch', this.patch);
@@ -28948,7 +28958,7 @@ const codeReview = async (bot, options, prompts) => {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    let inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
+    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = context.payload.pull_request.body;
@@ -28963,7 +28973,7 @@ const codeReview = async (bot, options, prompts) => {
         base: context.payload.pull_request.base.sha,
         head: context.payload.pull_request.head.sha
     });
-    let { files, commits } = diff.data;
+    const { files, commits } = diff.data;
     if (!files) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
         return;
@@ -28972,13 +28982,13 @@ const codeReview = async (bot, options, prompts) => {
     const comments = await list_review_comments(context.payload.pull_request.number);
     const comments_and_lines = comments.map(comment => {
         return {
-            comment: comment,
+            comment,
             line: ensure_line_number(comment.line)
         };
     });
     // find patches to review
     const files_to_review = [];
-    for (let file of files) {
+    for (const file of files) {
         if (!options.check_path(file.filename)) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for excluded path: ${file.filename}`);
             continue;
@@ -29003,9 +29013,13 @@ const codeReview = async (bot, options, prompts) => {
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
         }
-        let patches = [];
-        for (let patch of split_patch(file.patch)) {
-            let line = patch_comment_line(patch);
+        let file_diff = '';
+        if (file.patch) {
+            file_diff = file.patch;
+        }
+        const patches = [];
+        for (const patch of split_patch(file.patch)) {
+            const line = patch_comment_line(patch);
             // skip existing comments
             if (comments_and_lines.some(comment => {
                 return comment.comment.path === file.filename && comment.line === line;
@@ -29016,13 +29030,13 @@ const codeReview = async (bot, options, prompts) => {
             patches.push([line, patch]);
         }
         if (patches.length > 0) {
-            files_to_review.push([file.filename, file_content, patches]);
+            files_to_review.push([file.filename, file_content, file_diff, patches]);
         }
     }
     if (files_to_review.length > 0) {
         const [, begin_ids] = await bot.chat('review', prompts.render_review_beginning(inputs), {});
         const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .E();
-        for (const [filename, file_content, patches] of files_to_review) {
+        for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
             let next_patch_ids = begin_ids;
             if (file_content.length > 0) {
@@ -29031,10 +29045,20 @@ const codeReview = async (bot, options, prompts) => {
                 const [resp, file_ids] = await bot.chat('review', prompts.render_review_file(inputs), begin_ids);
                 if (!resp) {
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from chatgpt');
-                    next_patch_ids = begin_ids;
                 }
                 else {
                     next_patch_ids = file_ids;
+                }
+            }
+            if (file_diff.length > 0) {
+                inputs.file_diff = file_diff;
+                // review diff
+                const [resp, diff_ids] = await bot.chat('review', prompts.render_review_file_diff(inputs), next_patch_ids);
+                if (!resp) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from chatgpt');
+                }
+                else {
+                    next_patch_ids = diff_ids;
                 }
             }
             for (const [line, patch] of patches) {
