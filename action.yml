@@ -57,15 +57,15 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      `$filename` content.
+      Sharing `$filename` content as context. Reply "OK" to confirm.
 
-      Next, I will send you a series of patches (if they are not too large), each of them consists 
+      Next, I will send you a series of patches, each of them consists 
       of a snippet, and you need to do a brief code review for every message, and tell me any 
       bug risk and improvement suggestion. If the patch is looks good and acceptable, please 
       reply "LGTM!" with a short comment with 30 words. 
 
       Your answer should be concise. Don't include the diff in your comment, and markdown 
-      format is preferred. Reply "OK" to confirm.
+      format is preferred.
 
       ```
       $file_content

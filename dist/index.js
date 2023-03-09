@@ -29026,8 +29026,12 @@ const codeReview = async (bot, options, prompts) => {
             inputs.filename = filename;
             inputs.file_content = file_content;
             // review file
-            const [, file_ids] = await bot.chat('review', prompts.render_review_file(inputs), begin_ids);
+            const [resp, file_ids] = await bot.chat('review', prompts.render_review_file(inputs), begin_ids);
             let next_patch_ids = file_ids;
+            if (!resp) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from chatgpt');
+                next_patch_ids = begin_ids;
+            }
             for (const [line, patch] of patches) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with chatgpt ...`);
                 inputs.patch = patch;
