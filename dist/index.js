@@ -28631,7 +28631,8 @@ class Prompts {
     summarize_beginning;
     summarize_file_diff;
     summarize;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '') {
+    summarize_release_notes;
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
@@ -28640,6 +28641,7 @@ class Prompts {
         this.summarize_beginning = summarize_beginning;
         this.summarize_file_diff = summarize_file_diff;
         this.summarize = summarize;
+        this.summarize_release_notes = summarize_release_notes;
     }
     render_review_beginning(inputs) {
         return inputs.render(this.review_beginning);
@@ -28664,6 +28666,9 @@ class Prompts {
     }
     render_summarize(inputs) {
         return inputs.render(this.summarize);
+    }
+    render_summarize_release_notes(inputs) {
+        return inputs.render(this.summarize_release_notes);
     }
 }
 class Inputs {
@@ -29108,14 +29113,74 @@ const codeReview = async (bot, options, prompts) => {
             }
         }
         // final summary
-        const [summarize_final_response] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+        const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
             core.info('summarize: nothing obtained from chatgpt');
-            return;
         }
-        const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
-        await commenter.comment(`:robot: ChatGPT summary: 
-      ${summarize_final_response}`, tag, 'replace');
+        else {
+            next_summarize_ids = summarize_final_response_ids;
+            const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
+            await commenter.comment(`:robot: ChatGPT summary:
+
+        ${summarize_final_response}`, tag, 'replace');
+        }
+        // final release notes
+        const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
+        if (!release_notes_response) {
+            core.info('release notes: nothing obtained from chatgpt');
+        }
+        else {
+            next_summarize_ids = release_notes_ids;
+            // add this response to the description field of the PR as release notes by looking
+            // for the tag (marker)
+            const tag = '<!-- This is an auto-generated comment: release notes by chatgpt -->';
+            const tag_end = '<!-- end of auto-generated comment: release notes by chatgpt -->';
+            // get the description of the PR
+            const { data: pr } = await review_octokit.pulls.get({
+                owner: review_repo.owner,
+                repo: review_repo.repo,
+                pull_number: review_context.payload.pull_request.number
+            });
+            const description = pr.body;
+            if (!description) {
+                core.info('release notes: no description found in the PR');
+            }
+            else {
+                // find the tag in the description and replace the content between the tag and the tag_end
+                // if not found, add the tag and the content to the end of the description
+                const tag_index = description.indexOf(tag);
+                const tag_end_index = description.indexOf(tag_end);
+                if (tag_index === -1 || tag_end_index === -1) {
+                    let new_description = description;
+                    new_description += tag;
+                    new_description += '\n### ChatGPT Release Notes\n';
+                    new_description += release_notes_response;
+                    new_description += '\n';
+                    new_description += tag_end;
+                    await review_octokit.pulls.update({
+                        owner: review_repo.owner,
+                        repo: review_repo.repo,
+                        pull_number: review_context.payload.pull_request.number,
+                        body: new_description
+                    });
+                }
+                else {
+                    let new_description = description.substring(0, tag_index);
+                    new_description += tag;
+                    new_description += '\n### ChatGPT Release Notes\n';
+                    new_description += release_notes_response;
+                    new_description += '\n';
+                    new_description += tag_end;
+                    new_description += description.substring(tag_end_index + tag_end.length);
+                    await review_octokit.pulls.update({
+                        owner: review_repo.owner,
+                        repo: review_repo.repo,
+                        pull_number: review_context.payload.pull_request.number,
+                        body: new_description
+                    });
+                }
+            }
+        }
     }
 };
 // const list_review_comments = async (target: number, page: number = 1) => {

@@ -232,7 +232,8 @@ export const codeReview = async (
       const tag =
         '<!-- This is an auto-generated comment: summarize by chatgpt -->'
       await commenter.comment(
-        `:robot: ChatGPT summary: 
+        `:robot: ChatGPT summary:
+
         ${summarize_final_response}`,
         tag,
         'replace'
@@ -288,13 +289,16 @@ export const codeReview = async (
           new_description += release_notes_response
           new_description += '\n'
           new_description += tag_end
-          new_description += description.substring(tag_end_index + tag_end.length)
+          new_description += description.substring(
+            tag_end_index + tag_end.length
+          )
           await octokit.pulls.update({
             owner: repo.owner,
             repo: repo.repo,
             pull_number: context.payload.pull_request.number,
             body: new_description
           })
+        }
       }
     }
   }

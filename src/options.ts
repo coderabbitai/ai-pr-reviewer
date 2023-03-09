@@ -20,7 +20,7 @@ export class Prompts {
     review_patch = '',
     summarize_beginning = '',
     summarize_file_diff = '',
-    summarize = ''
+    summarize = '',
     summarize_release_notes = ''
   ) {
     this.review_beginning = review_beginning
