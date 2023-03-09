@@ -1,7 +1,7 @@
-# ChatGPT actions
+# ChatGPT based PR reviewer and summarizer
 
-ChatGPT based PR reviewer and summarizer. Based on [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action)
-by [Tao He](https://github.com/sighingnow)
+Based on [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action)
+by [Tao He](https://github.com/sighingnow).
 
 ## Overview
 
