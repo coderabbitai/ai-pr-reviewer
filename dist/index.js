@@ -26576,15 +26576,14 @@ Current date: ${currentDate}`;
                   }
                   if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
                     const delta = response.choices[0].delta;
-                    if (delta == null ? void 0 : delta.content) {
-                      result.delta = delta.content;
+                    result.delta = delta.content;
+                    if (delta == null ? void 0 : delta.content)
                       result.text += delta.content;
-                      result.detail = response;
-                      if (delta.role) {
-                        result.role = delta.role;
-                      }
-                      onProgress == null ? void 0 : onProgress(result);
+                    result.detail = response;
+                    if (delta.role) {
+                      result.role = delta.role;
                     }
+                    onProgress == null ? void 0 : onProgress(result);
                   }
                 } catch (err) {
                   console.warn("OpenAI stream SEE event unexpected error", err);
@@ -26676,28 +26675,26 @@ Current date: ${currentDate}`;
       });
     }
     const systemMessageOffset = messages.length;
-    let nextMessages = messages.concat([
+    let nextMessages = text ? messages.concat([
       {
-        ...{
-          role: "user",
-          content: text,
-          name: opts.name
-        }
+        role: "user",
+        content: text,
+        name: opts.name
       }
-    ]);
+    ]) : messages;
     let numTokens = 0;
     do {
       const prompt = nextMessages.reduce((prompt2, message) => {
         switch (message.role) {
           case "system":
-            return [prompt2, `Instructions:
-${message.content}`];
+            return prompt2.concat([`Instructions:
+${message.content}`]);
           case "user":
-            return [prompt2, `${userLabel}:
-${message.content}`];
+            return prompt2.concat([`${userLabel}:
+${message.content}`]);
           default:
-            return [prompt2, `${assistantLabel}:
-${message.content}`];
+            return prompt2.concat([`${assistantLabel}:
+${message.content}`]);
         }
       }, []).join("\n\n");
       const nextNumTokensEstimate = await this._getTokenCount(prompt);
@@ -26720,11 +26717,9 @@ ${message.content}`];
       const parentMessageRole = parentMessage.role || "user";
       nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
         {
-          ...{
-            role: parentMessageRole,
-            content: parentMessage.text,
-            name: parentMessage.name
-          }
+          role: parentMessageRole,
+          content: parentMessage.text,
+          name: parentMessage.name
         },
         ...nextMessages.slice(systemMessageOffset)
       ]);
