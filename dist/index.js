@@ -29023,9 +29023,6 @@ const codeReview = async (bot, options, prompts) => {
     if (review_context.payload.pull_request.body) {
         inputs.description = review_context.payload.pull_request.body;
     }
-    else {
-        inputs.description = review_context.payload.pull_request.title;
-    }
     // collect diff chunks
     const diff = await review_octokit.repos.compareCommits({
         owner: review_repo.owner,
@@ -29169,48 +29166,44 @@ const codeReview = async (bot, options, prompts) => {
             // for the tag (marker)
             const tag = '<!-- This is an auto-generated comment: release notes by chatgpt -->';
             const tag_end = '<!-- end of auto-generated comment: release notes by chatgpt -->';
-            // get the description of the PR
-            const { data: pr } = await review_octokit.pulls.get({
-                owner: review_repo.owner,
-                repo: review_repo.repo,
-                pull_number: review_context.payload.pull_request.number
-            });
-            let description = '';
-            if (pr.body) {
-                description = pr.body;
+            try {
+                const description = inputs.description;
+                // find the tag in the description and replace the content between the tag and the tag_end
+                // if not found, add the tag and the content to the end of the description
+                const tag_index = description.indexOf(tag);
+                const tag_end_index = description.indexOf(tag_end);
+                if (tag_index === -1 || tag_end_index === -1) {
+                    let new_description = description;
+                    new_description += tag;
+                    new_description += '\n### Summary by ChatGPT\n';
+                    new_description += release_notes_response;
+                    new_description += '\n';
+                    new_description += tag_end;
+                    await review_octokit.pulls.update({
+                        owner: review_repo.owner,
+                        repo: review_repo.repo,
+                        pull_number: review_context.payload.pull_request.number,
+                        body: new_description
+                    });
+                }
+                else {
+                    let new_description = description.substring(0, tag_index);
+                    new_description += tag;
+                    new_description += '\n### Summary by ChatGPT\n';
+                    new_description += release_notes_response;
+                    new_description += '\n';
+                    new_description += tag_end;
+                    new_description += description.substring(tag_end_index + tag_end.length);
+                    await review_octokit.pulls.update({
+                        owner: review_repo.owner,
+                        repo: review_repo.repo,
+                        pull_number: review_context.payload.pull_request.number,
+                        body: new_description
+                    });
+                }
             }
-            // find the tag in the description and replace the content between the tag and the tag_end
-            // if not found, add the tag and the content to the end of the description
-            const tag_index = description.indexOf(tag);
-            const tag_end_index = description.indexOf(tag_end);
-            if (tag_index === -1 || tag_end_index === -1) {
-                let new_description = description;
-                new_description += tag;
-                new_description += '\n### Summary by ChatGPT\n';
-                new_description += release_notes_response;
-                new_description += '\n';
-                new_description += tag_end;
-                await review_octokit.pulls.update({
-                    owner: review_repo.owner,
-                    repo: review_repo.repo,
-                    pull_number: review_context.payload.pull_request.number,
-                    body: new_description
-                });
-            }
-            else {
-                let new_description = description.substring(0, tag_index);
-                new_description += tag;
-                new_description += '\n### Summary by ChatGPT\n';
-                new_description += release_notes_response;
-                new_description += '\n';
-                new_description += tag_end;
-                new_description += description.substring(tag_end_index + tag_end.length);
-                await review_octokit.pulls.update({
-                    owner: review_repo.owner,
-                    repo: review_repo.repo,
-                    pull_number: review_context.payload.pull_request.number,
-                    body: new_description
-                });
+            catch (e) {
+                core.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
             }
         }
     }
