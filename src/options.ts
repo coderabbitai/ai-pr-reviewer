@@ -72,6 +72,7 @@ export class Prompts {
 }
 
 export class Inputs {
+  system_message: string
   title: string
   description: string
   filename: string
@@ -81,6 +82,7 @@ export class Inputs {
   diff: string
 
   constructor(
+    system_message = '',
     title = '',
     description = '',
     filename = '',
@@ -89,6 +91,7 @@ export class Inputs {
     patch = '',
     diff = ''
   ) {
+    this.system_message = system_message
     this.title = title
     this.description = description
     this.filename = filename
@@ -101,6 +104,9 @@ export class Inputs {
   render(content: string): string {
     if (!content) {
       return ''
+    }
+    if (this.system_message) {
+      content = content.replace('$system_message', this.system_message)
     }
     if (this.title) {
       content = content.replace('$title', this.title)

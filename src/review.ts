@@ -53,17 +53,6 @@ export const codeReview = async (
     return
   }
 
-  // find existing comments
-  // const comments = await list_review_comments(
-  //   context.payload.pull_request.number
-  // )
-  // const comments_and_lines = comments.map(comment => {
-  //   return {
-  //     comment,
-  //     line: ensure_line_number(comment.line)
-  //   }
-  // })
-
   // find patches to review
   const files_to_review: [string, string, string, [number, string][]][] = []
   for (const file of files) {
@@ -103,15 +92,6 @@ export const codeReview = async (
     const patches: [number, string][] = []
     for (const patch of split_patch(file.patch)) {
       const line = patch_comment_line(patch)
-      // skip existing comments
-      // if (
-      //   comments_and_lines.some(comment => {
-      //     return comment.comment.path === file.filename && comment.line === line
-      //   })
-      // ) {
-      //   core.info(`skip for existing comment: ${file.filename}, ${line}`)
-      //   continue
-      // }
       patches.push([line, patch])
     }
     if (patches.length > 0) {
@@ -121,6 +101,10 @@ export const codeReview = async (
 
   if (files_to_review.length > 0) {
     const commenter: Commenter = new Commenter()
+
+    // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
+    inputs.system_message = options.system_message
+
     const [, review_begin_ids] = await bot.chat(
       prompts.render_review_beginning(inputs),
       {}
@@ -209,9 +193,7 @@ export const codeReview = async (
             commits[commits.length - 1].sha,
             filename,
             line,
-            response.startsWith('ChatGPT')
-              ? `:robot: ${response}`
-              : `:robot: ChatGPT: ${response}`
+            `${response}`
           )
         } catch (e: any) {
           core.warning(`Failed to comment: ${e}, skipping.
@@ -231,13 +213,7 @@ export const codeReview = async (
       next_summarize_ids = summarize_final_response_ids
       const tag =
         '<!-- This is an auto-generated comment: summarize by chatgpt -->'
-      await commenter.comment(
-        `:robot: ChatGPT summary:
-
-        ${summarize_final_response}`,
-        tag,
-        'replace'
-      )
+      await commenter.comment(`${summarize_final_response}`, tag, 'replace')
     }
 
     // final release notes
@@ -301,25 +277,6 @@ export const codeReview = async (
   }
 }
 
-// const list_review_comments = async (target: number, page: number = 1) => {
-//   let {data: comments} = await octokit.pulls.listReviewComments({
-//     owner: repo.owner,
-//     repo: repo.repo,
-//     pull_number: target,
-//     page: page,
-//     per_page: 100
-//   })
-//   if (!comments) {
-//     return []
-//   }
-//   if (comments.length >= 100) {
-//     comments = comments.concat(await list_review_comments(target, page + 1))
-//     return comments
-//   } else {
-//     return comments
-//   }
-// }
-
 const split_patch = (patch: string | null | undefined): string[] => {
   if (!patch) {
     return []
@@ -352,7 +309,3 @@ const patch_comment_line = (patch: string): number => {
     return -1
   }
 }
-
-// const ensure_line_number = (line: number | null | undefined): number => {
-//   return line === null || line === undefined ? 0 : line
-// }

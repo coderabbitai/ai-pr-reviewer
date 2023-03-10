@@ -28672,6 +28672,7 @@ class Prompts {
     }
 }
 class Inputs {
+    system_message;
     title;
     description;
     filename;
@@ -28679,7 +28680,8 @@ class Inputs {
     file_diff;
     patch;
     diff;
-    constructor(title = '', description = '', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
+    constructor(system_message = '', title = '', description = '', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
+        this.system_message = system_message;
         this.title = title;
         this.description = description;
         this.filename = filename;
@@ -28691,6 +28693,9 @@ class Inputs {
     render(content) {
         if (!content) {
             return '';
+        }
+        if (this.system_message) {
+            content = content.replace('$system_message', this.system_message);
         }
         if (this.title) {
             content = content.replace('$title', this.title);
@@ -28808,7 +28813,8 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const DEFAULT_TAG = '<!-- This is an auto-generated comment -->';
+const COMMENT_GREETING = `:robot: ChatGPT`;
+const DEFAULT_TAG = '<!-- This is an auto-generated comment by ChatGPT -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
@@ -28817,17 +28823,61 @@ class Commenter {
         await comment(message, tag, mode);
     }
     async review_comment(pull_number, commit_id, path, line, message) {
+        const tag = DEFAULT_TAG;
+        message = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`;
+        // replace comment made by this action
+        const comments = await list_review_comments(pull_number);
+        for (const comment of comments) {
+            if (comment.path === path && comment.position === line) {
+                // look for tag
+                if (comment.body &&
+                    (comment.body.includes(tag) ||
+                        comment.body.startsWith(COMMENT_GREETING))) {
+                    await octokit.pulls.updateReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        comment_id: comment.id,
+                        body: message
+                    });
+                    return;
+                }
+            }
+        }
         await octokit.pulls.createReviewComment({
             owner: repo.owner,
             repo: repo.repo,
-            pull_number: pull_number,
+            pull_number,
             body: message,
-            commit_id: commit_id,
-            path: path,
-            line: line
+            commit_id,
+            path,
+            line
         });
     }
 }
+// recursively list review comments
+const list_review_comments = async (target, page = 1) => {
+    let { data: comments } = await octokit.pulls.listReviewComments({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: target,
+        page: page,
+        per_page: 100
+    });
+    if (!comments) {
+        return [];
+    }
+    if (comments.length >= 100) {
+        comments = comments.concat(await list_review_comments(target, page + 1));
+        return comments;
+    }
+    else {
+        return comments;
+    }
+};
 const comment = async (message, tag, mode) => {
     let target;
     if (context.payload.pull_request) {
@@ -28843,7 +28893,9 @@ const comment = async (message, tag, mode) => {
     if (!tag) {
         tag = DEFAULT_TAG;
     }
-    const body = `${message}
+    const body = `${COMMENT_GREETING}
+
+${message}
 
 ${tag}`;
     if (mode == 'create') {
@@ -28986,16 +29038,6 @@ const codeReview = async (bot, options, prompts) => {
         core.warning(`Skipped: diff.data.files is null`);
         return;
     }
-    // find existing comments
-    // const comments = await list_review_comments(
-    //   context.payload.pull_request.number
-    // )
-    // const comments_and_lines = comments.map(comment => {
-    //   return {
-    //     comment,
-    //     line: ensure_line_number(comment.line)
-    //   }
-    // })
     // find patches to review
     const files_to_review = [];
     for (const file of files) {
@@ -29031,15 +29073,6 @@ const codeReview = async (bot, options, prompts) => {
         const patches = [];
         for (const patch of split_patch(file.patch)) {
             const line = patch_comment_line(patch);
-            // skip existing comments
-            // if (
-            //   comments_and_lines.some(comment => {
-            //     return comment.comment.path === file.filename && comment.line === line
-            //   })
-            // ) {
-            //   core.info(`skip for existing comment: ${file.filename}, ${line}`)
-            //   continue
-            // }
             patches.push([line, patch]);
         }
         if (patches.length > 0) {
@@ -29048,6 +29081,8 @@ const codeReview = async (bot, options, prompts) => {
     }
     if (files_to_review.length > 0) {
         const commenter = new Commenter();
+        // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
+        inputs.system_message = options.system_message;
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
         let next_review_ids = review_begin_ids;
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
@@ -29102,9 +29137,7 @@ const codeReview = async (bot, options, prompts) => {
                     continue;
                 }
                 try {
-                    await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, response.startsWith('ChatGPT')
-                        ? `:robot: ${response}`
-                        : `:robot: ChatGPT: ${response}`);
+                    await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
                 }
                 catch (e) {
                     core.warning(`Failed to comment: ${e}, skipping.
@@ -29123,9 +29156,7 @@ const codeReview = async (bot, options, prompts) => {
         else {
             next_summarize_ids = summarize_final_response_ids;
             const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
-            await commenter.comment(`:robot: ChatGPT summary:
-
-        ${summarize_final_response}`, tag, 'replace');
+            await commenter.comment(`${summarize_final_response}`, tag, 'replace');
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
@@ -29184,24 +29215,6 @@ const codeReview = async (bot, options, prompts) => {
         }
     }
 };
-// const list_review_comments = async (target: number, page: number = 1) => {
-//   let {data: comments} = await octokit.pulls.listReviewComments({
-//     owner: repo.owner,
-//     repo: repo.repo,
-//     pull_number: target,
-//     page: page,
-//     per_page: 100
-//   })
-//   if (!comments) {
-//     return []
-//   }
-//   if (comments.length >= 100) {
-//     comments = comments.concat(await list_review_comments(target, page + 1))
-//     return comments
-//   } else {
-//     return comments
-//   }
-// }
 const split_patch = (patch) => {
     if (!patch) {
         return [];
@@ -29233,9 +29246,6 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
-// const ensure_line_number = (line: number | null | undefined): number => {
-//   return line === null || line === undefined ? 0 : line
-// }
 
 
 /***/ }),

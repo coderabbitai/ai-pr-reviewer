@@ -9,32 +9,81 @@ const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 
-const DEFAULT_TAG = '<!-- This is an auto-generated comment -->'
+const COMMENT_GREETING = `:robot: ChatGPT`
+
+const DEFAULT_TAG = '<!-- This is an auto-generated comment by ChatGPT -->'
 
 export class Commenter {
   /**
    * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
    */
-  public async comment(message: string, tag: string, mode: string) {
+  async comment(message: string, tag: string, mode: string) {
     await comment(message, tag, mode)
   }
 
-  public async review_comment(
+  async review_comment(
     pull_number: number,
     commit_id: string,
     path: string,
     line: number,
     message: string
   ) {
+    const tag = DEFAULT_TAG
+    message = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`
+    // replace comment made by this action
+    const comments = await list_review_comments(pull_number)
+    for (const comment of comments) {
+      if (comment.path === path && comment.position === line) {
+        // look for tag
+        if (
+          comment.body &&
+          (comment.body.includes(tag) ||
+            comment.body.startsWith(COMMENT_GREETING))
+        ) {
+          await octokit.pulls.updateReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: message
+          })
+          return
+        }
+      }
+    }
+
     await octokit.pulls.createReviewComment({
       owner: repo.owner,
       repo: repo.repo,
-      pull_number: pull_number,
+      pull_number,
       body: message,
-      commit_id: commit_id,
-      path: path,
-      line: line
+      commit_id,
+      path,
+      line
     })
+  }
+}
+
+// recursively list review comments
+const list_review_comments = async (target: number, page: number = 1) => {
+  let {data: comments} = await octokit.pulls.listReviewComments({
+    owner: repo.owner,
+    repo: repo.repo,
+    pull_number: target,
+    page: page,
+    per_page: 100
+  })
+  if (!comments) {
+    return []
+  }
+  if (comments.length >= 100) {
+    comments = comments.concat(await list_review_comments(target, page + 1))
+    return comments
+  } else {
+    return comments
   }
 }
 
@@ -55,7 +104,9 @@ const comment = async (message: string, tag: string, mode: string) => {
     tag = DEFAULT_TAG
   }
 
-  const body = `${message}
+  const body = `${COMMENT_GREETING}
+
+${message}
 
 ${tag}`
 
