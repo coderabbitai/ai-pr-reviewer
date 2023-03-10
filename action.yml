@@ -111,9 +111,8 @@ inputs:
 
       We will be summarizing a pull request in this session. 
 
-      You will provide -
-      - High-level summary of changes that focuses on the purpose and intent (within 100 words)
-      - A table containing filename and short summary (within 30 words) for each file's diff
+      You will provide with a table containing filename and a short summary (within 30 words) 
+      for each file's diff.
 
       I have a pull request with title "$title" and the description is as follows,
 
@@ -144,8 +143,8 @@ inputs:
     default: |
       This is the end of summarization session. Please provide the final response as follows in 
       the `markdown` format with the following content:
-        - High-level Summary
-        - Table of files
+        - High-level summary (focus on the purpose and intent within 50 words)
+        - Table of files and their summaries
 
       Do not provide additional commentary as this summary will be added as a comment on the PR.
   summarize_release_notes:
