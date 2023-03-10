@@ -83,7 +83,7 @@ inputs:
     required: false
     description: 'The prompt for each file diff'
     default: |
-      Providing entire diff for `$filename` as context. Please use this context when revieweing patches.
+      Providing entire diff for `$filename` as context. Please use this context when reviewing patches.
 
       ```diff
       $file_diff
@@ -95,9 +95,10 @@ inputs:
       Next, I will send you a series of patches, each of them consists 
       of a snippet, and you need to do a brief code review for every message, and tell me any 
       bug risk or improvement suggestion. If the patch is looks good and acceptable, please 
-      reply "LGTM!" with a short comment with 30 words. 
+      reply "LGTM!" with a short comment with 30 words. Your responses will be recorded as review 
+      comments on the pull request.
 
-      Markdown format is preferred for your response. Reply "OK" to confirm.
+      Markdown format is preferred for your responses. Reply "OK" to confirm.
   review_patch:
     required: false
     description: 'The prompt for each chunks/patches'
@@ -153,7 +154,8 @@ inputs:
         - Your feedback to the developer (within 50 words)
         - Table of files and their summaries
 
-      Do not provide any additional commentary as this summary will be added as a comment on the PR.
+      Do not provide any additional commentary as this summary will be added as a comment on the pull 
+      request.
   summarize_release_notes:
     required: false
     description: 'The prompt for generating release notes'
