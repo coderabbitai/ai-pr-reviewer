@@ -1,4 +1,4 @@
-name: 'chatgpt-action'
+name: 'chatgpt-pr-reviewer'
 description: 'ChatGPT based PR reviewer and summarizer'
 inputs:
   debug:

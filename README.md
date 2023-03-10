@@ -1,6 +1,6 @@
 # ChatGPT based PR reviewer and summarizer
 
-Based on [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action)
+Based on [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-pr-reviewer)
 by [Tao He](https://github.com/sighingnow).
 
 ## Overview
@@ -10,7 +10,7 @@ by [Tao He](https://github.com/sighingnow).
 - Code review your pull requests
 
   ```yaml
-  - uses: fluxninja/chatgpt-action@main
+  - uses: fluxninja/chatgpt-pr-reviewer@main
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
@@ -41,7 +41,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
-      - uses: fluxninja/chatgpt-action@main
+      - uses: fluxninja/chatgpt-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
@@ -131,7 +131,7 @@ jobs:
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
 
-      - uses: fluxninja/chatgpt-action@main
+      - uses: fluxninja/chatgpt-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -161,5 +161,5 @@ prefer the `ChatGPTUnofficialProxyAPI` implementation.
 
 Set `debug: true` in the workflow file to enable debug mode, which will show the messages
 
-[1]: https://github.com/marketplace?type=&verification=&query=chatgpt-action+
+[1]: https://github.com/marketplace?type=&verification=&query=chatgpt-pr-reviewer+
 [2]: https://www.npmjs.com/package/chatgpt

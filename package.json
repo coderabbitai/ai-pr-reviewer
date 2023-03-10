@@ -1,5 +1,5 @@
 {
-  "name": "chatgpt-action",
+  "name": "chatgpt-pr-reviewer",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -17,14 +17,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/unsafecoerce/chatgpt-action.git"
+    "url": "git+https://github.com/fluxninja/chatgpt-pr-reviewer.git"
   },
   "keywords": [
     "actions",
     "node",
     "setup"
   ],
-  "author": "Tao He <sighingnow@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.0",
