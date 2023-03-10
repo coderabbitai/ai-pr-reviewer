@@ -8,7 +8,7 @@ inputs:
   temperature:
     required: false
     description: 'Temperature for ChatGPT model'
-    default: '0.2'
+    default: '0.1'
   path_filters:
     required: false
     description: |
