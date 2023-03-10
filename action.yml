@@ -90,11 +90,10 @@ inputs:
     default: |
       Next, I will send you a series of patches, each of them consists 
       of a snippet, and you need to do a brief code review for every message, and tell me any 
-      bug risk and improvement suggestion. If the patch is looks good and acceptable, please 
+      bug risk or improvement suggestion. If the patch is looks good and acceptable, please 
       reply "LGTM!" with a short comment with 30 words. 
 
-      Your answer should be concise. Don't include the diff in your comment, and markdown 
-      format is preferred. Reply "OK" to confirm.
+      Markdown format is preferred for your response. Reply "OK" to confirm.
   review_patch:
     required: false
     description: 'The prompt for each chunks/patches'

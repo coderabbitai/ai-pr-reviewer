@@ -37,6 +37,8 @@ export const codeReview = async (
   if (context.payload.pull_request.body) {
     inputs.description = context.payload.pull_request.body
   }
+  // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
+  inputs.system_message = options.system_message
 
   // collect diff chunks
   const diff = await octokit.repos.compareCommits({
@@ -100,9 +102,6 @@ export const codeReview = async (
   if (files_to_review.length > 0) {
     const commenter: Commenter = new Commenter()
 
-    // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
-    inputs.system_message = options.system_message
-
     const [, review_begin_ids] = await bot.chat(
       prompts.render_review_beginning(inputs),
       {}
@@ -122,10 +121,13 @@ export const codeReview = async (
       patches
     ] of files_to_review) {
       inputs.filename = filename
-      // reset session for each file while reviewing
+      inputs.file_content = file_content
+      inputs.file_diff = file_diff
+
+      // reset chat session for each file while reviewing
       next_review_ids = review_begin_ids
-      if (file_content.length > 0) {
-        inputs.file_content = file_content
+
+      if (file_content.length > 0 && file_content.length < 3000) {
         // review file
         const [resp, review_file_ids] = await bot.chat(
           prompts.render_review_file(inputs),
@@ -138,8 +140,7 @@ export const codeReview = async (
         }
       }
 
-      if (file_diff.length > 0) {
-        inputs.file_diff = file_diff
+      if (file_diff.length > 0 && file_diff.length < 3000) {
         // review diff
         const [resp, review_diff_ids] = await bot.chat(
           prompts.render_review_file_diff(inputs),
