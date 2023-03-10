@@ -49,7 +49,7 @@ inputs:
     default: https://chat.duti.tech/api/conversation
   review_comment_lgtm:
     required: false
-    description: 'Leave comments even the patch is LGTM'
+    description: 'Leave comments even if the patch is LGTM'
     default: false
   review_beginning:
     required: false

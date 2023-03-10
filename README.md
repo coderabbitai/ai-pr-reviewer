@@ -1,9 +1,8 @@
 # ChatGPT based PR reviewer and summarizer
 
-Based on [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-pr-reviewer)
-by [Tao He](https://github.com/sighingnow).
-
 ## Overview
+
+This [ChatGPT](https://platform.openai.com/docs/guides/chat) based GitHub Action provides a summary, release notes and review of pull requests. The prompts have been tuned for concise response. To prevent excessive notifications, this action can be configured to skip adding review comments when the changes look good for the most part.
 
 ### Features
 
@@ -50,6 +49,14 @@ jobs:
           debug: false
           review_comment_lgtm: true
 ```
+
+### Screenshots
+
+![PR Summary](./docs/images/chatgpt-pr-summary.png)
+
+![PR Release Notes](./docs/images/chatgpt-pr-release-notes.png)
+
+![PR Review](./docs/images/chatgpt-pr-review.png)
 
 ### Configuration
 
@@ -163,3 +170,10 @@ Set `debug: true` in the workflow file to enable debug mode, which will show the
 
 [1]: https://github.com/marketplace?type=&verification=&query=chatgpt-pr-reviewer+
 [2]: https://www.npmjs.com/package/chatgpt
+
+### Special Thanks
+
+This GitHub Action is based on 
+[ChatGPT Action](https://github.com/unsafecoerce/chatgpt-pr-reviewer)
+by [Tao He](https://github.com/sighingnow).
+
