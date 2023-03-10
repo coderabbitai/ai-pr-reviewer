@@ -1,13 +1,10 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {get_encoding} from '@dqbd/tiktoken'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
 import {Commenter} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
-
-// TODO: make this configurable
-const tokenizer = get_encoding('cl100k_base')
+import * as tokenizer from './tokenizer'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -134,7 +131,7 @@ export const codeReview = async (
       next_review_ids = review_begin_ids
 
       if (file_content.length > 0) {
-        const file_content_tokens = await get_token_count(file_content)
+        const file_content_tokens = tokenizer.get_token_count(file_content)
         if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           // review file
           const [resp, review_file_ids] = await bot.chat(
@@ -154,7 +151,7 @@ export const codeReview = async (
       }
 
       if (file_diff.length > 0) {
-        const file_diff_tokens = await get_token_count(file_diff)
+        const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           // review diff
           const [resp, review_diff_ids] = await bot.chat(
@@ -327,9 +324,4 @@ const patch_comment_line = (patch: string): number => {
   } else {
     return -1
   }
-}
-
-const get_token_count = async (text: string): Promise<number> => {
-  text = text.replace(/<\|endoftext\|>/g, '')
-  return tokenizer.encode(text).length
 }

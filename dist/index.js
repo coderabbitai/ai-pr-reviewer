@@ -23395,6 +23395,14 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 2017:
+/***/ ((module) => {
+
+module.exports = eval("require")("./tokenizer");
+
+
+/***/ }),
+
 /***/ 2877:
 /***/ ((module) => {
 
@@ -26946,7 +26954,10 @@ var ChatGPTUnofficialProxyAPI = class {
 };
 
 //# sourceMappingURL=index.js.map
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?./tokenizer
+var _notfoundtokenizer = __nccwpck_require__(2017);
 ;// CONCATENATED MODULE: ./lib/bot.js
+
 
 
 
@@ -26982,7 +26993,8 @@ class Bot {
         }
     }
     chat = async (message, ids) => {
-        console.time(`chatgpt ${message.length} tokens cost`);
+        const tokens = _notfoundtokenizer.get_token_count(message);
+        console.time(`chatgpt ${tokens} tokens cost`);
         let new_ids = {};
         let response = '';
         try {
@@ -26993,7 +27005,7 @@ class Bot {
             core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
         }
         finally {
-            console.timeEnd(`chatgpt ${message.length} tokens cost`);
+            console.timeEnd(`chatgpt ${tokens} tokens cost`);
             return [response, new_ids];
         }
     };
@@ -28791,8 +28803,6 @@ __nccwpck_require__.d(__webpack_exports__, {
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
-// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
-var _tiktoken = __nccwpck_require__(4083);
 // EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
 var dist_node = __nccwpck_require__(1231);
 ;// CONCATENATED MODULE: ./lib/commenter.js
@@ -28988,6 +28998,8 @@ const list_comments = async (target, page = 1) => {
 
 // EXTERNAL MODULE: ./lib/options.js + 4 modules
 var lib_options = __nccwpck_require__(744);
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?./tokenizer
+var _notfoundtokenizer = __nccwpck_require__(2017);
 ;// CONCATENATED MODULE: ./lib/review.js
 
 
@@ -28995,8 +29007,6 @@ var lib_options = __nccwpck_require__(744);
 
 
 
-// TODO: make this configurable
-const tokenizer = (0,_tiktoken.get_encoding)('cl100k_base');
 const review_token = core.getInput('token')
     ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
@@ -29087,7 +29097,7 @@ const codeReview = async (bot, options, prompts) => {
             // reset chat session for each file while reviewing
             next_review_ids = review_begin_ids;
             if (file_content.length > 0) {
-                const file_content_tokens = await get_token_count(file_content);
+                const file_content_tokens = _notfoundtokenizer.get_token_count(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
@@ -29103,7 +29113,7 @@ const codeReview = async (bot, options, prompts) => {
                 }
             }
             if (file_diff.length > 0) {
-                const file_diff_tokens = await get_token_count(file_diff);
+                const file_diff_tokens = _notfoundtokenizer.get_token_count(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
@@ -29246,10 +29256,6 @@ const patch_comment_line = (patch) => {
     else {
         return -1;
     }
-};
-const get_token_count = async (text) => {
-    text = text.replace(/<\|endoftext\|>/g, '');
-    return tokenizer.encode(text).length;
 };
 
 

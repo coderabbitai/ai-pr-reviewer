@@ -8,6 +8,7 @@ import {
   SendMessageBrowserOptions,
   SendMessageOptions
 } from 'chatgpt'
+import * as tokenizer from './tokenizer'
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
@@ -49,7 +50,8 @@ export class Bot {
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-    console.time(`chatgpt ${message.length} tokens cost`)
+    const tokens = tokenizer.get_token_count(message)
+    console.time(`chatgpt ${tokens} tokens cost`)
     let new_ids: Ids = {}
     let response = ''
     try {
@@ -57,7 +59,7 @@ export class Bot {
     } catch (e: any) {
       core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
     } finally {
-      console.timeEnd(`chatgpt ${message.length} tokens cost`)
+      console.timeEnd(`chatgpt ${tokens} tokens cost`)
       return [response, new_ids]
     }
   }
