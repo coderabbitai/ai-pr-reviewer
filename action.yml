@@ -92,13 +92,13 @@ inputs:
     required: false
     description: 'The prompt for each file diff'
     default: |
-      Next, I will send you a series of patches, each of them consists 
-      of a snippet, and you need to do a brief code review for every message, and tell me any 
-      bug risk or improvement suggestion. If the patch is looks good and acceptable, please 
-      reply "LGTM!" with a short comment with 30 words. Your responses will be recorded as review 
-      comments on the pull request.
+      Next, I will send you a series of patches, each of them consists of a diff snippet, and you 
+      need to do a brief code review for every patch, and tell me any bug risk or improvement 
+      suggestion. If the patch looks good and acceptable, please reply "LGTM!" with a short 
+      comment within 30 words. 
 
-      Markdown format is preferred for your responses. Reply "OK" to confirm.
+      Your responses will be recorded as review comments on the pull request. Markdown format is 
+      preferred for your responses. Reply "OK" to confirm.
   review_patch:
     required: false
     description: 'The prompt for each chunks/patches'

@@ -212,7 +212,7 @@ export const codeReview = async (
           continue
         }
         next_review_ids = patch_ids
-        if (!options.review_comment_lgtm && response.includes('LGTM!')) {
+        if (!options.review_comment_lgtm && response.includes('LGTM')) {
           continue
         }
         try {
