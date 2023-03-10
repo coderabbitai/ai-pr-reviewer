@@ -1,6 +1,5 @@
 import './fetch-polyfill.js'
 import {Options} from './options.js'
-import * as tokenizer from './tokenizer.js'
 import * as core from '@actions/core'
 import {
   ChatGPTAPI,
@@ -50,8 +49,6 @@ export class Bot {
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-    const tokens = tokenizer.get_token_count(message)
-    console.time(`chatgpt ${tokens} tokens cost`)
     let new_ids: Ids = {}
     let response = ''
     try {
@@ -59,7 +56,6 @@ export class Bot {
     } catch (e: any) {
       core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
     } finally {
-      console.timeEnd(`chatgpt ${tokens} tokens cost`)
       return [response, new_ids]
     }
   }

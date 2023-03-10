@@ -25768,8 +25768,6 @@ if (!globalThis.fetch) {
     globalThis.Response = Response;
 }
 
-// EXTERNAL MODULE: ./lib/tokenizer.js
-var tokenizer = __nccwpck_require__(6153);
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/keyv/src/index.js
@@ -26342,9 +26340,9 @@ function hasBom(buffer) {
 
 // src/tokenizer.ts
 
-var build_tokenizer = (0,_tiktoken.get_encoding)("cl100k_base");
+var tokenizer = (0,_tiktoken.get_encoding)("cl100k_base");
 function encode(input) {
-  return build_tokenizer.encode(input);
+  return tokenizer.encode(input);
 }
 
 // src/types.ts
@@ -26952,7 +26950,6 @@ var ChatGPTUnofficialProxyAPI = class {
 
 
 
-
 class Bot {
     bot = null; // free
     turbo = null; // not free
@@ -26985,8 +26982,6 @@ class Bot {
         }
     }
     chat = async (message, ids) => {
-        const tokens = tokenizer/* get_token_count */.u(message);
-        console.time(`chatgpt ${tokens} tokens cost`);
         let new_ids = {};
         let response = '';
         try {
@@ -26997,7 +26992,6 @@ class Bot {
             core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
         }
         finally {
-            console.timeEnd(`chatgpt ${tokens} tokens cost`);
             return [response, new_ids];
         }
     };
@@ -27072,7 +27066,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1278);
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3174);
 
 
 
@@ -28782,7 +28776,7 @@ class PathFilter {
 
 /***/ }),
 
-/***/ 1278:
+/***/ 3174:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -28990,8 +28984,19 @@ const list_comments = async (target, page = 1) => {
 
 // EXTERNAL MODULE: ./lib/options.js + 4 modules
 var lib_options = __nccwpck_require__(744);
-// EXTERNAL MODULE: ./lib/tokenizer.js
-var tokenizer = __nccwpck_require__(6153);
+// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
+var _tiktoken = __nccwpck_require__(4083);
+;// CONCATENATED MODULE: ./lib/tokenizer.js
+
+const tokenizer = (0,_tiktoken.get_encoding)('cl100k_base');
+function encode(input) {
+    return tokenizer.encode(input);
+}
+function get_token_count(input) {
+    input = input.replace(/<\|endoftext\|>/g, '');
+    return encode(input).length;
+}
+
 ;// CONCATENATED MODULE: ./lib/review.js
 
 
@@ -29089,7 +29094,7 @@ const codeReview = async (bot, options, prompts) => {
             // reset chat session for each file while reviewing
             next_review_ids = review_begin_ids;
             if (file_content.length > 0) {
-                const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
+                const file_content_tokens = get_token_count(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
@@ -29105,7 +29110,7 @@ const codeReview = async (bot, options, prompts) => {
                 }
             }
             if (file_diff.length > 0) {
-                const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
+                const file_diff_tokens = get_token_count(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
@@ -29249,27 +29254,6 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
-
-
-/***/ }),
-
-/***/ 6153:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "u": () => (/* binding */ get_token_count)
-/* harmony export */ });
-/* unused harmony export encode */
-/* harmony import */ var _dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4083);
-
-const tokenizer = (0,_dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__.get_encoding)('cl100k_base');
-function encode(input) {
-    return tokenizer.encode(input);
-}
-function get_token_count(input) {
-    input = input.replace(/<\|endoftext\|>/g, '');
-    return encode(input).length;
-}
 
 
 /***/ }),
