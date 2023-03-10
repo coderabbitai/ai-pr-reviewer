@@ -1,4 +1,4 @@
-name: 'chatgpt-pr-reviewer'
+name: 'ChatGPT PR Reviewer & Summarizer'
 description: 'ChatGPT based PR reviewer and summarizer'
 branding:
   icon: 'aperture'
