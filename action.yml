@@ -145,7 +145,7 @@ inputs:
       This is the end of summarization session. Please provide the final response as follows in 
       the `markdown` format with the following content:
         - Thank the user for letting you participate in the code review.
-        - High-level summary (focus on the purpose and intent within 50 words)
+        - High-level summary (focus on the purpose and intent within 80 words)
         - Your feedback to the developer (within 50 words)
         - Table of files and their summaries
 
