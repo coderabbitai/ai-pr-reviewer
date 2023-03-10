@@ -1,5 +1,9 @@
 name: 'chatgpt-pr-reviewer'
 description: 'ChatGPT based PR reviewer and summarizer'
+branding:
+  icon: 'aperture'
+  color: 'orange'
+author: 'FluxNinja, Inc.'
 inputs:
   debug:
     required: false
