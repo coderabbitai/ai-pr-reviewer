@@ -18,7 +18,6 @@ export type Ids = {
 export class Bot {
   private bot: ChatGPTUnofficialProxyAPI | null = null // free
   private turbo: ChatGPTAPI | null = null // not free
-  private MAX_PATCH_COUNT: number = 4000
 
   private options: Options
 
@@ -66,12 +65,6 @@ export class Bot {
   private chat_ = async (message: string, ids: Ids): Promise<[string, Ids]> => {
     if (!message) {
       return ['', {}]
-    }
-    if (message.length > this.MAX_PATCH_COUNT) {
-      core.warning(
-        `Message is too long, truncate to ${this.MAX_PATCH_COUNT} tokens`
-      )
-      message = message.substring(0, this.MAX_PATCH_COUNT)
     }
     if (this.options.debug) {
       core.info(`sending to chatgpt: ${message}`)

@@ -26953,7 +26953,6 @@ var ChatGPTUnofficialProxyAPI = class {
 class Bot {
     bot = null; // free
     turbo = null; // not free
-    MAX_PATCH_COUNT = 4000;
     options;
     constructor(options) {
         this.options = options;
@@ -27001,10 +27000,6 @@ class Bot {
     chat_ = async (message, ids) => {
         if (!message) {
             return ['', {}];
-        }
-        if (message.length > this.MAX_PATCH_COUNT) {
-            core.warning(`Message is too long, truncate to ${this.MAX_PATCH_COUNT} tokens`);
-            message = message.substring(0, this.MAX_PATCH_COUNT);
         }
         if (this.options.debug) {
             core.info(`sending to chatgpt: ${message}`);
@@ -28796,6 +28791,8 @@ __nccwpck_require__.d(__webpack_exports__, {
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
+// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
+var _tiktoken = __nccwpck_require__(4083);
 // EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
 var dist_node = __nccwpck_require__(1231);
 ;// CONCATENATED MODULE: ./lib/commenter.js
@@ -28997,12 +28994,16 @@ var lib_options = __nccwpck_require__(744);
 
 
 
+
+// TODO: make this configurable
+const tokenizer = (0,_tiktoken.get_encoding)('cl100k_base');
 const review_token = core.getInput('token')
     ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
 const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
 const review_context = github.context;
 const review_repo = review_context.repo;
+const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
     if (review_context.eventName !== 'pull_request' &&
         review_context.eventName !== 'pull_request_target') {
@@ -29085,32 +29086,44 @@ const codeReview = async (bot, options, prompts) => {
             inputs.file_diff = file_diff;
             // reset chat session for each file while reviewing
             next_review_ids = review_begin_ids;
-            if (file_content.length > 0 && file_content.length < 3000) {
-                // review file
-                const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
-                if (!resp) {
-                    core.info('review: nothing obtained from chatgpt');
+            if (file_content.length > 0) {
+                const file_content_tokens = await get_token_count(file_content);
+                if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    // review file
+                    const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
+                    if (!resp) {
+                        core.info('review: nothing obtained from chatgpt');
+                    }
+                    else {
+                        next_review_ids = review_file_ids;
+                    }
                 }
                 else {
-                    next_review_ids = review_file_ids;
+                    core.info(`skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`);
                 }
             }
-            if (file_diff.length > 0 && file_diff.length < 3000) {
-                // review diff
-                const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
-                if (!resp) {
-                    core.info('review: nothing obtained from chatgpt');
+            if (file_diff.length > 0) {
+                const file_diff_tokens = await get_token_count(file_diff);
+                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    // review diff
+                    const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
+                    if (!resp) {
+                        core.info('review: nothing obtained from chatgpt');
+                    }
+                    else {
+                        next_review_ids = review_diff_ids;
+                    }
+                    // summarize diff
+                    const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
+                    if (!summarize_resp) {
+                        core.info('summarize: nothing obtained from chatgpt');
+                    }
+                    else {
+                        next_summarize_ids = summarize_diff_ids;
+                    }
                 }
                 else {
-                    next_review_ids = review_diff_ids;
-                }
-                // summarize diff
-                const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
-                if (!summarize_resp) {
-                    core.info('summarize: nothing obtained from chatgpt');
-                }
-                else {
-                    next_summarize_ids = summarize_diff_ids;
+                    core.info(`skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`);
                 }
             }
             // review_patch_begin
@@ -29233,6 +29246,10 @@ const patch_comment_line = (patch) => {
     else {
         return -1;
     }
+};
+const get_token_count = async (text) => {
+    text = text.replace(/<\|endoftext\|>/g, '');
+    return tokenizer.encode(text).length;
 };
 
 

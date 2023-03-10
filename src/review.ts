@@ -1,9 +1,13 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import {get_encoding} from '@dqbd/tiktoken'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
 import {Commenter} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
+
+// TODO: make this configurable
+const tokenizer = get_encoding('cl100k_base')
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -11,6 +15,8 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
+
+const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
 export const codeReview = async (
   bot: Bot,
@@ -127,40 +133,54 @@ export const codeReview = async (
       // reset chat session for each file while reviewing
       next_review_ids = review_begin_ids
 
-      if (file_content.length > 0 && file_content.length < 3000) {
-        // review file
-        const [resp, review_file_ids] = await bot.chat(
-          prompts.render_review_file(inputs),
-          next_review_ids
-        )
-        if (!resp) {
-          core.info('review: nothing obtained from chatgpt')
+      if (file_content.length > 0) {
+        const file_content_tokens = await get_token_count(file_content)
+        if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+          // review file
+          const [resp, review_file_ids] = await bot.chat(
+            prompts.render_review_file(inputs),
+            next_review_ids
+          )
+          if (!resp) {
+            core.info('review: nothing obtained from chatgpt')
+          } else {
+            next_review_ids = review_file_ids
+          }
         } else {
-          next_review_ids = review_file_ids
+          core.info(
+            `skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`
+          )
         }
       }
 
-      if (file_diff.length > 0 && file_diff.length < 3000) {
-        // review diff
-        const [resp, review_diff_ids] = await bot.chat(
-          prompts.render_review_file_diff(inputs),
-          next_review_ids
-        )
-        if (!resp) {
-          core.info('review: nothing obtained from chatgpt')
-        } else {
-          next_review_ids = review_diff_ids
-        }
+      if (file_diff.length > 0) {
+        const file_diff_tokens = await get_token_count(file_diff)
+        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+          // review diff
+          const [resp, review_diff_ids] = await bot.chat(
+            prompts.render_review_file_diff(inputs),
+            next_review_ids
+          )
+          if (!resp) {
+            core.info('review: nothing obtained from chatgpt')
+          } else {
+            next_review_ids = review_diff_ids
+          }
 
-        // summarize diff
-        const [summarize_resp, summarize_diff_ids] = await bot.chat(
-          prompts.render_summarize_file_diff(inputs),
-          next_summarize_ids
-        )
-        if (!summarize_resp) {
-          core.info('summarize: nothing obtained from chatgpt')
+          // summarize diff
+          const [summarize_resp, summarize_diff_ids] = await bot.chat(
+            prompts.render_summarize_file_diff(inputs),
+            next_summarize_ids
+          )
+          if (!summarize_resp) {
+            core.info('summarize: nothing obtained from chatgpt')
+          } else {
+            next_summarize_ids = summarize_diff_ids
+          }
         } else {
-          next_summarize_ids = summarize_diff_ids
+          core.info(
+            `skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`
+          )
         }
       }
 
@@ -307,4 +327,9 @@ const patch_comment_line = (patch: string): number => {
   } else {
     return -1
   }
+}
+
+const get_token_count = async (text: string): Promise<number> => {
+  text = text.replace(/<\|endoftext\|>/g, '')
+  return tokenizer.encode(text).length
 }
