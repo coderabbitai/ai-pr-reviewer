@@ -12,6 +12,10 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
+const description_tag =
+  '<!-- This is an auto-generated comment: release notes by chatgpt -->'
+const description_tag_end =
+  '<!-- end of auto-generated comment: release notes by chatgpt -->'
 
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
@@ -39,6 +43,14 @@ export const codeReview = async (
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body) {
     inputs.description = context.payload.pull_request.body
+    // remove our summary from description by looking for description_tag and description_tag_end
+    const start = inputs.description.indexOf(description_tag)
+    const end = inputs.description.indexOf(description_tag_end)
+    if (start >= 0 && end >= 0) {
+      inputs.description =
+        inputs.description.slice(0, start) +
+        inputs.description.slice(end + description_tag_end.length)
+    }
   }
   // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
   inputs.system_message = options.system_message
@@ -243,24 +255,20 @@ export const codeReview = async (
       next_summarize_ids = release_notes_ids
       // add this response to the description field of the PR as release notes by looking
       // for the tag (marker)
-      const tag =
-        '<!-- This is an auto-generated comment: release notes by chatgpt -->'
-      const tag_end =
-        '<!-- end of auto-generated comment: release notes by chatgpt -->'
       try {
         const description = inputs.description
 
         // find the tag in the description and replace the content between the tag and the tag_end
         // if not found, add the tag and the content to the end of the description
-        const tag_index = description.indexOf(tag)
-        const tag_end_index = description.indexOf(tag_end)
+        const tag_index = description.indexOf(description_tag)
+        const tag_end_index = description.indexOf(description_tag_end)
         if (tag_index === -1 || tag_end_index === -1) {
           let new_description = description
-          new_description += tag
+          new_description += description_tag
           new_description += '\n### Summary by ChatGPT\n'
           new_description += release_notes_response
           new_description += '\n'
-          new_description += tag_end
+          new_description += description_tag_end
           await octokit.pulls.update({
             owner: repo.owner,
             repo: repo.repo,
@@ -269,13 +277,13 @@ export const codeReview = async (
           })
         } else {
           let new_description = description.substring(0, tag_index)
-          new_description += tag
+          new_description += description_tag
           new_description += '\n### Summary by ChatGPT\n'
           new_description += release_notes_response
           new_description += '\n'
-          new_description += tag_end
+          new_description += description_tag_end
           new_description += description.substring(
-            tag_end_index + tag_end.length
+            tag_end_index + description_tag_end.length
           )
           await octokit.pulls.update({
             owner: repo.owner,
