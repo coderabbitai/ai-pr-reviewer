@@ -1,5 +1,6 @@
 import './fetch-polyfill.js'
 import {Options} from './options.js'
+import * as tokenizer from './tokenizer.js'
 import * as core from '@actions/core'
 import {
   ChatGPTAPI,
@@ -8,7 +9,6 @@ import {
   SendMessageBrowserOptions,
   SendMessageOptions
 } from 'chatgpt'
-import * as tokenizer from './tokenizer'
 
 // define type to save parentMessageId and conversationId
 export type Ids = {

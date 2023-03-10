@@ -4,7 +4,7 @@ import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
 import {Commenter} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
-import * as tokenizer from './tokenizer'
+import * as tokenizer from './tokenizer.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')

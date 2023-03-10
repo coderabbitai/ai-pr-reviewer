@@ -23395,14 +23395,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 2017:
-/***/ ((module) => {
-
-module.exports = eval("require")("./tokenizer");
-
-
-/***/ }),
-
 /***/ 2877:
 /***/ ((module) => {
 
@@ -25776,6 +25768,8 @@ if (!globalThis.fetch) {
     globalThis.Response = Response;
 }
 
+// EXTERNAL MODULE: ./lib/tokenizer.js
+var tokenizer = __nccwpck_require__(6153);
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/keyv/src/index.js
@@ -26348,9 +26342,9 @@ function hasBom(buffer) {
 
 // src/tokenizer.ts
 
-var tokenizer = (0,_tiktoken.get_encoding)("cl100k_base");
+var build_tokenizer = (0,_tiktoken.get_encoding)("cl100k_base");
 function encode(input) {
-  return tokenizer.encode(input);
+  return build_tokenizer.encode(input);
 }
 
 // src/types.ts
@@ -26954,8 +26948,6 @@ var ChatGPTUnofficialProxyAPI = class {
 };
 
 //# sourceMappingURL=index.js.map
-// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?./tokenizer
-var _notfoundtokenizer = __nccwpck_require__(2017);
 ;// CONCATENATED MODULE: ./lib/bot.js
 
 
@@ -26993,7 +26985,7 @@ class Bot {
         }
     }
     chat = async (message, ids) => {
-        const tokens = _notfoundtokenizer.get_token_count(message);
+        const tokens = tokenizer/* get_token_count */.u(message);
         console.time(`chatgpt ${tokens} tokens cost`);
         let new_ids = {};
         let response = '';
@@ -28998,8 +28990,8 @@ const list_comments = async (target, page = 1) => {
 
 // EXTERNAL MODULE: ./lib/options.js + 4 modules
 var lib_options = __nccwpck_require__(744);
-// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?./tokenizer
-var _notfoundtokenizer = __nccwpck_require__(2017);
+// EXTERNAL MODULE: ./lib/tokenizer.js
+var tokenizer = __nccwpck_require__(6153);
 ;// CONCATENATED MODULE: ./lib/review.js
 
 
@@ -29097,7 +29089,7 @@ const codeReview = async (bot, options, prompts) => {
             // reset chat session for each file while reviewing
             next_review_ids = review_begin_ids;
             if (file_content.length > 0) {
-                const file_content_tokens = _notfoundtokenizer.get_token_count(file_content);
+                const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
@@ -29113,7 +29105,7 @@ const codeReview = async (bot, options, prompts) => {
                 }
             }
             if (file_diff.length > 0) {
-                const file_diff_tokens = _notfoundtokenizer.get_token_count(file_diff);
+                const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
@@ -29257,6 +29249,27 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
+
+
+/***/ }),
+
+/***/ 6153:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "u": () => (/* binding */ get_token_count)
+/* harmony export */ });
+/* unused harmony export encode */
+/* harmony import */ var _dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4083);
+
+const tokenizer = (0,_dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__.get_encoding)('cl100k_base');
+function encode(input) {
+    return tokenizer.encode(input);
+}
+function get_token_count(input) {
+    input = input.replace(/<\|endoftext\|>/g, '');
+    return encode(input).length;
+}
 
 
 /***/ }),
