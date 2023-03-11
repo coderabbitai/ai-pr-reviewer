@@ -301,12 +301,15 @@ export const codeReview = async (
   }
 }
 
+// Write a function that takes diff for a single file as a string 
+// and splits the diff into separate patches
+
 const split_patch = (patch: string | null | undefined): string[] => {
   if (!patch) {
     return []
   }
 
-  const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
+  const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@).*$/gm
 
   const result: string[] = []
   let last = -1
@@ -316,6 +319,7 @@ const split_patch = (patch: string | null | undefined): string[] => {
       last = match.index
     } else {
       result.push(patch.substring(last, match.index))
+      last = match.index
     }
   }
   if (last !== -1) {
@@ -325,10 +329,12 @@ const split_patch = (patch: string | null | undefined): string[] => {
 }
 
 const patch_comment_line = (patch: string): number => {
-  const pattern = /(^@@ -(\d+),(\d+) \+(?<begin>\d+),(?<diff>\d+) @@)/gm
+  const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
   const match = pattern.exec(patch)
-  if (match && match.groups) {
-    return parseInt(match.groups.begin) + parseInt(match.groups.diff) - 1
+  if (match) {
+    const begin = parseInt(match[4])
+    const diff = parseInt(match[5])
+    return begin + diff - 1
   } else {
     return -1
   }
