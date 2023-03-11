@@ -288,8 +288,7 @@ export const codeReview = async (
           continue
         }
         next_review_ids = patch_ids
-        // if the response contains LGTM (case insensitive), then skip commenting
-        if (!options.review_comment_lgtm && response.match(/lgtm/i) !== null) {
+        if (!options.review_comment_lgtm && response.includes('LGTM')) {
           continue
         }
         try {
