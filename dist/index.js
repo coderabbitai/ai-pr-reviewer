@@ -28808,12 +28808,59 @@ const context = github.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: ChatGPT`;
 const DEFAULT_TAG = '<!-- This is an auto-generated comment by ChatGPT -->';
+const description_tag = '<!-- This is an auto-generated comment: release notes by chatgpt -->';
+const description_tag_end = '<!-- end of auto-generated comment: release notes by chatgpt -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
      */
     async comment(message, tag, mode) {
         await comment(message, tag, mode);
+    }
+    get_description(description) {
+        // remove our summary from description by looking for description_tag and description_tag_end
+        const start = description.indexOf(description_tag);
+        const end = description.indexOf(description_tag_end);
+        if (start >= 0 && end >= 0) {
+            return (description.slice(0, start) +
+                description.slice(end + description_tag_end.length));
+        }
+        return description;
+    }
+    async update_description(pull_number, description, message) {
+        // add this response to the description field of the PR as release notes by looking
+        // for the tag (marker)
+        try {
+            // find the tag in the description and replace the content between the tag and the tag_end
+            // if not found, add the tag and the content to the end of the description
+            const tag_index = description.indexOf(description_tag);
+            const tag_end_index = description.indexOf(description_tag_end);
+            const comment = `\n\n${description_tag}\n${message}\n${description_tag_end}`;
+            if (tag_index === -1 || tag_end_index === -1) {
+                let new_description = description;
+                new_description += comment;
+                await octokit.pulls.update({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: new_description
+                });
+            }
+            else {
+                let new_description = description.substring(0, tag_index);
+                new_description += comment;
+                new_description += description.substring(tag_end_index + description_tag_end.length);
+                await octokit.pulls.update({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: new_description
+                });
+            }
+        }
+        catch (e) {
+            core.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
+        }
     }
     async review_comment(pull_number, commit_id, path, line, message) {
         const tag = DEFAULT_TAG;
@@ -29015,8 +29062,6 @@ const review_token = core.getInput('token')
 const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
 const review_context = github.context;
 const review_repo = review_context.repo;
-const description_tag = '<!-- This is an auto-generated comment: release notes by chatgpt -->';
-const description_tag_end = '<!-- end of auto-generated comment: release notes by chatgpt -->';
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
     if (review_context.eventName !== 'pull_request' &&
@@ -29028,18 +29073,11 @@ const codeReview = async (bot, options, prompts) => {
         core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
+    const commenter = new Commenter();
     const inputs = new lib_options/* Inputs */.kq();
     inputs.title = review_context.payload.pull_request.title;
     if (review_context.payload.pull_request.body) {
-        inputs.description = review_context.payload.pull_request.body;
-        // remove our summary from description by looking for description_tag and description_tag_end
-        const start = inputs.description.indexOf(description_tag);
-        const end = inputs.description.indexOf(description_tag_end);
-        if (start >= 0 && end >= 0) {
-            inputs.description =
-                inputs.description.slice(0, start) +
-                    inputs.description.slice(end + description_tag_end.length);
-        }
+        inputs.description = commenter.get_description(review_context.payload.pull_request.body);
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
@@ -29097,7 +29135,6 @@ const codeReview = async (bot, options, prompts) => {
         }
     }
     if (files_to_review.length > 0) {
-        const commenter = new Commenter();
         // Summary Stage
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
         let next_summarize_ids = summarize_begin_ids;
@@ -29106,13 +29143,16 @@ const codeReview = async (bot, options, prompts) => {
             inputs.file_content = file_content;
             inputs.file_diff = file_diff;
             if (file_diff.length > 0) {
-                // summarize diff
-                const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
-                if (!summarize_resp) {
-                    core.info('summarize: nothing obtained from chatgpt');
-                }
-                else {
-                    next_summarize_ids = summarize_diff_ids;
+                const file_diff_tokens = get_token_count(file_diff);
+                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    // summarize diff
+                    const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
+                    if (!summarize_resp) {
+                        core.info('summarize: nothing obtained from chatgpt');
+                    }
+                    else {
+                        next_summarize_ids = summarize_diff_ids;
+                    }
                 }
             }
         }
@@ -29134,47 +29174,10 @@ const codeReview = async (bot, options, prompts) => {
         }
         else {
             next_summarize_ids = release_notes_ids;
-            // add this response to the description field of the PR as release notes by looking
-            // for the tag (marker)
-            try {
-                const description = inputs.description;
-                // find the tag in the description and replace the content between the tag and the tag_end
-                // if not found, add the tag and the content to the end of the description
-                const tag_index = description.indexOf(description_tag);
-                const tag_end_index = description.indexOf(description_tag_end);
-                if (tag_index === -1 || tag_end_index === -1) {
-                    let new_description = description;
-                    new_description += description_tag;
-                    new_description += '\n### Summary by ChatGPT\n';
-                    new_description += release_notes_response;
-                    new_description += '\n';
-                    new_description += description_tag_end;
-                    await review_octokit.pulls.update({
-                        owner: review_repo.owner,
-                        repo: review_repo.repo,
-                        pull_number: review_context.payload.pull_request.number,
-                        body: new_description
-                    });
-                }
-                else {
-                    let new_description = description.substring(0, tag_index);
-                    new_description += description_tag;
-                    new_description += '\n### Summary by ChatGPT\n';
-                    new_description += release_notes_response;
-                    new_description += '\n';
-                    new_description += description_tag_end;
-                    new_description += description.substring(tag_end_index + description_tag_end.length);
-                    await review_octokit.pulls.update({
-                        owner: review_repo.owner,
-                        repo: review_repo.repo,
-                        pull_number: review_context.payload.pull_request.number,
-                        body: new_description
-                    });
-                }
-            }
-            catch (e) {
-                core.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
-            }
+            const description = inputs.description;
+            let message = '### Summary by ChatGPT\n\n';
+            message += release_notes_response;
+            commenter.update_description(review_context.payload.pull_request.number, description, message);
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
