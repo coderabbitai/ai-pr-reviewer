@@ -176,5 +176,5 @@ Set `debug: true` in the workflow file to enable debug mode, which will show the
 ### Special Thanks
 
 This GitHub Action is based on
-[ChatGPT Action](https://github.com/unsafecoerce/chatgpt-pr-reviewer)
+[ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action)
 by [Tao He](https://github.com/sighingnow).
