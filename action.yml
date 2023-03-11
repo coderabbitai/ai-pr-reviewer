@@ -8,15 +8,15 @@ inputs:
   debug:
     required: false
     description: 'Enable debug mode'
-    default: 'false'
+    default: false
   temperature:
     required: false
     description: 'Temperature for ChatGPT model'
-    default: '0.0'
+    default: 0.0
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
-    default: 'false'
+    default: false
   path_filters:
     required: false
     description: |
