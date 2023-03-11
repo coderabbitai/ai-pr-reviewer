@@ -153,7 +153,7 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    temperature = '0.2'
+    temperature = '0.0'
   ) {
     this.debug = debug
     this.chatgpt_reverse_proxy = chatgpt_reverse_proxy
