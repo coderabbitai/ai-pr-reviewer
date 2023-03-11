@@ -13,12 +13,72 @@ const COMMENT_GREETING = `:robot: ChatGPT`
 
 const DEFAULT_TAG = '<!-- This is an auto-generated comment by ChatGPT -->'
 
+const description_tag =
+  '<!-- This is an auto-generated comment: release notes by chatgpt -->'
+const description_tag_end =
+  '<!-- end of auto-generated comment: release notes by chatgpt -->'
+
 export class Commenter {
   /**
    * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
    */
   async comment(message: string, tag: string, mode: string) {
     await comment(message, tag, mode)
+  }
+
+  get_description(description: string) {
+    // remove our summary from description by looking for description_tag and description_tag_end
+    const start = description.indexOf(description_tag)
+    const end = description.indexOf(description_tag_end)
+    if (start >= 0 && end >= 0) {
+      return (
+        description.slice(0, start) +
+        description.slice(end + description_tag_end.length)
+      )
+    }
+    return description
+  }
+
+  async update_description(
+    pull_number: number,
+    description: string,
+    message: string
+  ) {
+    // add this response to the description field of the PR as release notes by looking
+    // for the tag (marker)
+    try {
+      // find the tag in the description and replace the content between the tag and the tag_end
+      // if not found, add the tag and the content to the end of the description
+      const tag_index = description.indexOf(description_tag)
+      const tag_end_index = description.indexOf(description_tag_end)
+      const comment = `\n\n${description_tag}\n${message}\n${description_tag_end}`
+      if (tag_index === -1 || tag_end_index === -1) {
+        let new_description = description
+        new_description += comment
+        await octokit.pulls.update({
+          owner: repo.owner,
+          repo: repo.repo,
+          pull_number,
+          body: new_description
+        })
+      } else {
+        let new_description = description.substring(0, tag_index)
+        new_description += comment
+        new_description += description.substring(
+          tag_end_index + description_tag_end.length
+        )
+        await octokit.pulls.update({
+          owner: repo.owner,
+          repo: repo.repo,
+          pull_number,
+          body: new_description
+        })
+      }
+    } catch (e: any) {
+      core.warning(
+        `Failed to get PR: ${e}, skipping adding release notes to description.`
+      )
+    }
   }
 
   async review_comment(

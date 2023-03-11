@@ -12,10 +12,6 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-const description_tag =
-  '<!-- This is an auto-generated comment: release notes by chatgpt -->'
-const description_tag_end =
-  '<!-- end of auto-generated comment: release notes by chatgpt -->'
 
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
@@ -39,18 +35,14 @@ export const codeReview = async (
     return
   }
 
+  const commenter: Commenter = new Commenter()
+
   const inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body) {
-    inputs.description = context.payload.pull_request.body
-    // remove our summary from description by looking for description_tag and description_tag_end
-    const start = inputs.description.indexOf(description_tag)
-    const end = inputs.description.indexOf(description_tag_end)
-    if (start >= 0 && end >= 0) {
-      inputs.description =
-        inputs.description.slice(0, start) +
-        inputs.description.slice(end + description_tag_end.length)
-    }
+    inputs.description = commenter.get_description(
+      context.payload.pull_request.body
+    )
   }
   // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
   inputs.system_message = options.system_message
@@ -115,8 +107,6 @@ export const codeReview = async (
   }
 
   if (files_to_review.length > 0) {
-    const commenter: Commenter = new Commenter()
-
     // Summary Stage
     const [, summarize_begin_ids] = await bot.chat(
       prompts.render_summarize_beginning(inputs),
@@ -128,15 +118,18 @@ export const codeReview = async (
       inputs.file_content = file_content
       inputs.file_diff = file_diff
       if (file_diff.length > 0) {
-        // summarize diff
-        const [summarize_resp, summarize_diff_ids] = await bot.chat(
-          prompts.render_summarize_file_diff(inputs),
-          next_summarize_ids
-        )
-        if (!summarize_resp) {
-          core.info('summarize: nothing obtained from chatgpt')
-        } else {
-          next_summarize_ids = summarize_diff_ids
+        const file_diff_tokens = tokenizer.get_token_count(file_diff)
+        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+          // summarize diff
+          const [summarize_resp, summarize_diff_ids] = await bot.chat(
+            prompts.render_summarize_file_diff(inputs),
+            next_summarize_ids
+          )
+          if (!summarize_resp) {
+            core.info('summarize: nothing obtained from chatgpt')
+          } else {
+            next_summarize_ids = summarize_diff_ids
+          }
         }
       }
     }
@@ -163,50 +156,14 @@ export const codeReview = async (
       core.info('release notes: nothing obtained from chatgpt')
     } else {
       next_summarize_ids = release_notes_ids
-      // add this response to the description field of the PR as release notes by looking
-      // for the tag (marker)
-      try {
-        const description = inputs.description
-
-        // find the tag in the description and replace the content between the tag and the tag_end
-        // if not found, add the tag and the content to the end of the description
-        const tag_index = description.indexOf(description_tag)
-        const tag_end_index = description.indexOf(description_tag_end)
-        if (tag_index === -1 || tag_end_index === -1) {
-          let new_description = description
-          new_description += description_tag
-          new_description += '\n### Summary by ChatGPT\n'
-          new_description += release_notes_response
-          new_description += '\n'
-          new_description += description_tag_end
-          await octokit.pulls.update({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: context.payload.pull_request.number,
-            body: new_description
-          })
-        } else {
-          let new_description = description.substring(0, tag_index)
-          new_description += description_tag
-          new_description += '\n### Summary by ChatGPT\n'
-          new_description += release_notes_response
-          new_description += '\n'
-          new_description += description_tag_end
-          new_description += description.substring(
-            tag_end_index + description_tag_end.length
-          )
-          await octokit.pulls.update({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: context.payload.pull_request.number,
-            body: new_description
-          })
-        }
-      } catch (e: any) {
-        core.warning(
-          `Failed to get PR: ${e}, skipping adding release notes to description.`
-        )
-      }
+      const description = inputs.description
+      let message = '### Summary by ChatGPT\n\n'
+      message += release_notes_response
+      commenter.update_description(
+        context.payload.pull_request.number,
+        description,
+        message
+      )
     }
 
     // Review Stage
