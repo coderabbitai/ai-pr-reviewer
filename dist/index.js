@@ -26762,7 +26762,7 @@ var ChatGPTUnofficialProxyAPI = class {
   constructor(opts) {
     const {
       accessToken,
-      apiReverseProxyUrl = "https://chat.duti.tech/api/conversation",
+      apiReverseProxyUrl = "https://bypass.duti.tech/api/conversation",
       model = "text-davinci-002-render-sha",
       debug = false,
       headers,
@@ -28663,15 +28663,17 @@ class Inputs {
     system_message;
     title;
     description;
+    summary;
     filename;
     file_content;
     file_diff;
     patch;
     diff;
-    constructor(system_message = '', title = '', description = '', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
+    constructor(system_message = '', title = '', description = '', summary = '', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
+        this.summary = summary;
         this.filename = filename;
         this.file_content = file_content;
         this.file_diff = file_diff;
@@ -28690,6 +28692,9 @@ class Inputs {
         }
         if (this.description) {
             content = content.replace('$description', this.description);
+        }
+        if (this.summary) {
+            content = content.replace('$summary', this.summary);
         }
         if (this.filename) {
             content = content.replace('$filename', this.filename);
@@ -28716,7 +28721,7 @@ class Options {
     path_filters;
     system_message;
     temperature;
-    constructor(debug, chatgpt_reverse_proxy, review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.2') {
+    constructor(debug, chatgpt_reverse_proxy, review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
         this.debug = debug;
         this.chatgpt_reverse_proxy = chatgpt_reverse_proxy;
         this.review_comment_lgtm = review_comment_lgtm;
@@ -29093,80 +29098,21 @@ const codeReview = async (bot, options, prompts) => {
     }
     if (files_to_review.length > 0) {
         const commenter = new Commenter();
-        const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
-        let next_review_ids = review_begin_ids;
+        // Summary Stage
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
         let next_summarize_ids = summarize_begin_ids;
-        for (const [filename, file_content, file_diff, patches] of files_to_review) {
+        for (const [filename, file_content, file_diff] of files_to_review) {
             inputs.filename = filename;
             inputs.file_content = file_content;
             inputs.file_diff = file_diff;
-            // reset chat session for each file while reviewing
-            next_review_ids = review_begin_ids;
-            if (file_content.length > 0) {
-                const file_content_tokens = get_token_count(file_content);
-                if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-                    // review file
-                    const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
-                    if (!resp) {
-                        core.info('review: nothing obtained from chatgpt');
-                    }
-                    else {
-                        next_review_ids = review_file_ids;
-                    }
-                }
-                else {
-                    core.info(`skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`);
-                }
-            }
             if (file_diff.length > 0) {
-                const file_diff_tokens = get_token_count(file_diff);
-                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-                    // review diff
-                    const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
-                    if (!resp) {
-                        core.info('review: nothing obtained from chatgpt');
-                    }
-                    else {
-                        next_review_ids = review_diff_ids;
-                    }
-                    // summarize diff
-                    const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
-                    if (!summarize_resp) {
-                        core.info('summarize: nothing obtained from chatgpt');
-                    }
-                    else {
-                        next_summarize_ids = summarize_diff_ids;
-                    }
+                // summarize diff
+                const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
+                if (!summarize_resp) {
+                    core.info('summarize: nothing obtained from chatgpt');
                 }
                 else {
-                    core.info(`skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`);
-                }
-            }
-            // review_patch_begin
-            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
-            next_review_ids = patch_begin_ids;
-            for (const [line, patch] of patches) {
-                core.info(`Reviewing ${filename}:${line} with chatgpt ...`);
-                inputs.patch = patch;
-                const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
-                if (!response) {
-                    core.info('review: nothing obtained from chatgpt');
-                    continue;
-                }
-                next_review_ids = patch_ids;
-                if (!options.review_comment_lgtm && response.includes('LGTM')) {
-                    continue;
-                }
-                try {
-                    await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
-                }
-                catch (e) {
-                    core.warning(`Failed to comment: ${e}, skipping.
-        backtrace: ${e.stack}
-        filename: ${filename}
-        line: ${line}
-        patch: ${patch}`);
+                    next_summarize_ids = summarize_diff_ids;
                 }
             }
         }
@@ -29176,6 +29122,7 @@ const codeReview = async (bot, options, prompts) => {
             core.info('summarize: nothing obtained from chatgpt');
         }
         else {
+            inputs.summary = summarize_final_response;
             next_summarize_ids = summarize_final_response_ids;
             const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
             await commenter.comment(`${summarize_final_response}`, tag, 'replace');
@@ -29229,9 +29176,77 @@ const codeReview = async (bot, options, prompts) => {
                 core.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
             }
         }
+        // Review Stage
+        const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
+        let next_review_ids = review_begin_ids;
+        for (const [filename, file_content, file_diff, patches] of files_to_review) {
+            inputs.filename = filename;
+            inputs.file_content = file_content;
+            inputs.file_diff = file_diff;
+            // reset chat session for each file while reviewing
+            next_review_ids = review_begin_ids;
+            if (file_content.length > 0) {
+                const file_content_tokens = get_token_count(file_content);
+                if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    // review file
+                    const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
+                    if (!resp) {
+                        core.info('review: nothing obtained from chatgpt');
+                    }
+                    else {
+                        next_review_ids = review_file_ids;
+                    }
+                }
+                else {
+                    core.info(`skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`);
+                }
+            }
+            if (file_diff.length > 0) {
+                const file_diff_tokens = get_token_count(file_diff);
+                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    // review diff
+                    const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
+                    if (!resp) {
+                        core.info('review: nothing obtained from chatgpt');
+                    }
+                    else {
+                        next_review_ids = review_diff_ids;
+                    }
+                }
+                else {
+                    core.info(`skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`);
+                }
+            }
+            // review_patch_begin
+            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
+            next_review_ids = patch_begin_ids;
+            for (const [line, patch] of patches) {
+                core.info(`Reviewing ${filename}:${line} with chatgpt ...`);
+                inputs.patch = patch;
+                const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
+                if (!response) {
+                    core.info('review: nothing obtained from chatgpt');
+                    continue;
+                }
+                next_review_ids = patch_ids;
+                if (!options.review_comment_lgtm && response.includes('LGTM')) {
+                    continue;
+                }
+                try {
+                    await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
+                }
+                catch (e) {
+                    core.warning(`Failed to comment: ${e}, skipping.
+        backtrace: ${e.stack}
+        filename: ${filename}
+        line: ${line}
+        patch: ${patch}`);
+                }
+            }
+        }
     }
 };
-// Write a function that takes diff for a single file as a string 
+// Write a function that takes diff for a single file as a string
 // and splits the diff into separate patches
 const split_patch = (patch) => {
     if (!patch) {

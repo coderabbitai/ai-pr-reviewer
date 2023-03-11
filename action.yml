@@ -12,7 +12,11 @@ inputs:
   temperature:
     required: false
     description: 'Temperature for ChatGPT model'
-    default: '0.1'
+    default: '0.0'
+  review_comment_lgtm:
+    required: false
+    description: 'Leave comments even if the patch is LGTM'
+    default: 'false'
   path_filters:
     required: false
     description: |
@@ -22,6 +26,7 @@ inputs:
       - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
       - https://github.com/isaacs/minimatch
     default: |
+      !dist/**
       !**/*.pb.go
       !**/*.lock
       !**/*.yaml
@@ -51,63 +56,6 @@ inputs:
     description: |
       The URL of the chatgpt reverse proxy, see also https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy
     default: https://chat.duti.tech/api/conversation
-  review_comment_lgtm:
-    required: false
-    description: 'Leave comments even if the patch is LGTM'
-    default: false
-  review_beginning:
-    required: false
-    description: 'The beginning prompt of a code review dialog'
-    default: |
-      $system_message
-
-      I will be providing you some files and entire diff to help you build
-      context, in case the content is not too large. Then I will be sending you each patch
-      from the diff for review.
-
-      I have a pull request with title "$title" and the description is as follows,
-
-      > $description.
-
-      Reply "OK" to confirm that you are ready for further instructions.
-  review_file:
-    required: false
-    description: 'The prompt for each file'
-    default: |
-      Providing `$filename` content as context. Please use this context when reviewing patches.
-
-      ```
-      $file_content
-      ```
-  review_file_diff:
-    required: false
-    description: 'The prompt for each file diff'
-    default: |
-      Providing entire diff for `$filename` as context. Please use this context when reviewing patches.
-
-      ```diff
-      $file_diff
-      ```
-  review_patch_begin:
-    required: false
-    description: 'The prompt for each file diff'
-    default: |
-      Next, I will send you a series of patches, each of them consists of a diff snippet, and you 
-      need to do a brief code review for every patch, and tell me any bug risk or improvement 
-      suggestion. If the patch looks good and acceptable, please reply "LGTM!" with a short 
-      comment within 30 words. 
-
-      Your responses will be recorded as review comments on the pull request. Markdown format is 
-      preferred for your responses. Reply "OK" to confirm.
-  review_patch:
-    required: false
-    description: 'The prompt for each chunks/patches'
-    default: |
-      $filename
-
-      ```diff
-      $patch
-      ```
   summarize_beginning:
     required: false
     description: 'The prompt for the whole pull request'
@@ -166,6 +114,63 @@ inputs:
       e.g. "New Feature: An integrations page was added to the UI". Your response should be as 
       concise as possible (50-100 words), without additional commentary as this response will be 
       used as is in our release notes.
+  review_beginning:
+    required: false
+    description: 'The beginning prompt of a code review dialog'
+    default: |
+      $system_message
+
+      I will be providing you some files and entire diff to help you build
+      context, in case the content is not too large. Then I will be sending you each patch
+      from the diff for review.
+
+      I have a pull request with title "$title" and the description is as follows,
+
+      > $description.
+
+      ChatGPT generated summary is as follows,
+
+      > $summary
+
+      Reply "OK" to confirm that you are ready for further instructions.
+  review_file:
+    required: false
+    description: 'The prompt for each file'
+    default: |
+      Providing `$filename` content as context. Please use this context when reviewing patches.
+
+      ```
+      $file_content
+      ```
+  review_file_diff:
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
+      Providing entire diff for `$filename` as context. Please use this context when reviewing patches.
+
+      ```diff
+      $file_diff
+      ```
+  review_patch_begin:
+    required: false
+    description: 'The prompt for each file diff'
+    default: |
+      Next, I will send you a series of patches, each of them consists of a diff snippet, and you 
+      need to do a brief code review for every patch, and tell me any bug risk or improvement 
+      suggestion. If the patch looks good and acceptable, please reply "LGTM!" with a short 
+      comment within 30 words. 
+
+      Your responses will be recorded as review comments on the pull request. Markdown format is 
+      preferred for your responses. Reply "OK" to confirm.
+  review_patch:
+    required: false
+    description: 'The prompt for each chunks/patches'
+    default: |
+      $filename
+
+      ```diff
+      $patch
+      ```
 runs:
   using: 'node16'
   main: 'dist/index.js'

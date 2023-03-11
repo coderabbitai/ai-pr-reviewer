@@ -1,5 +1,7 @@
 # ChatGPT based PR reviewer and summarizer
 
+![AI](./docs/images/ai.png)
+
 ## Overview
 
 This [ChatGPT](https://platform.openai.com/docs/guides/chat) based GitHub Action provides a summary, release notes and review of pull requests. The prompts have been tuned for concise response. To prevent excessive notifications, this action can be configured to skip adding review comments when the changes look good for the most part.
@@ -173,7 +175,6 @@ Set `debug: true` in the workflow file to enable debug mode, which will show the
 
 ### Special Thanks
 
-This GitHub Action is based on 
+This GitHub Action is based on
 [ChatGPT Action](https://github.com/unsafecoerce/chatgpt-pr-reviewer)
 by [Tao He](https://github.com/sighingnow).
-

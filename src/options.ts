@@ -75,6 +75,7 @@ export class Inputs {
   system_message: string
   title: string
   description: string
+  summary: string
   filename: string
   file_content: string
   file_diff: string
@@ -85,6 +86,7 @@ export class Inputs {
     system_message = '',
     title = '',
     description = '',
+    summary = '',
     filename = '',
     file_content = '',
     file_diff = '',
@@ -94,6 +96,7 @@ export class Inputs {
     this.system_message = system_message
     this.title = title
     this.description = description
+    this.summary = summary
     this.filename = filename
     this.file_content = file_content
     this.file_diff = file_diff
@@ -113,6 +116,9 @@ export class Inputs {
     }
     if (this.description) {
       content = content.replace('$description', this.description)
+    }
+    if (this.summary) {
+      content = content.replace('$summary', this.summary)
     }
     if (this.filename) {
       content = content.replace('$filename', this.filename)
@@ -147,7 +153,7 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    temperature = '0.2'
+    temperature = '0.0'
   ) {
     this.debug = debug
     this.chatgpt_reverse_proxy = chatgpt_reverse_proxy
