@@ -25760,6 +25760,7 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 }
 
 ;// CONCATENATED MODULE: ./lib/fetch-polyfill.js
+// fetch-polyfill.js
 
 if (!globalThis.fetch) {
     globalThis.fetch = fetch;
@@ -26968,7 +26969,7 @@ class Bot {
             });
         }
         else {
-            const err = "Unable to initialize the chatgpt API, both 'OPENAI_API_KEY' environment variable are not available";
+            const err = "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available";
             throw new Error(err);
         }
     }
@@ -26990,7 +26991,7 @@ class Bot {
             return ["", {}];
         }
         if (this.options.debug) {
-            core.info(`sending to chatgpt: ${message}`);
+            core.info(`sending to openai: ${message}`);
         }
         let response = null;
         if (this.turbo) {
@@ -27007,21 +27008,21 @@ class Bot {
             }
         }
         else {
-            core.setFailed("The chatgpt API is not initialized");
+            core.setFailed("The OpenAI API is not initialized");
         }
         let response_text = "";
         if (response) {
             response_text = response.text;
         }
         else {
-            core.warning("chatgpt response is null");
+            core.warning("openai response is null");
         }
         // remove the prefix "with " in the response
         if (response_text.startsWith("with ")) {
             response_text = response_text.substring(5);
         }
         if (this.options.debug) {
-            core.info(`chatgpt responses: ${response_text}`);
+            core.info(`openai responses: ${response_text}`);
         }
         const new_ids = {
             parentMessageId: response?.id,
@@ -27047,9 +27048,9 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('chatgpt_reverse_proxy'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('temperature'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
-    // initialize chatgpt bot
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput("debug"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput("review_comment_lgtm"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput("path_filters"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("system_message"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("temperature"));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_beginning"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_file"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_file_diff"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_patch_begin"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_patch"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize_beginning"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize_file_diff"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize_release_notes"));
+    // initialize openai bot
     let bot = null;
     try {
         bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options);
@@ -27063,20 +27064,20 @@ async function run() {
     }
     catch (e) {
         if (e instanceof Error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run the chatgpt-actions: ${e.message}, backtrace: ${e.stack}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run the chatgpt-actions: ${e}, backtrace: ${e.stack}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`);
         }
     }
 }
 process
-    .on('unhandledRejection', (reason, p) => {
-    console.error(reason, 'Unhandled Rejection at Promise', p);
+    .on("unhandledRejection", (reason, p) => {
+    console.error(reason, "Unhandled Rejection at Promise", p);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
 })
-    .on('uncaughtException', (e) => {
-    console.error(e, 'Uncaught Exception thrown');
+    .on("uncaughtException", (e) => {
+    console.error(e, "Uncaught Exception thrown");
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
 });
 await run();
@@ -28595,7 +28596,7 @@ class Prompts {
     summarize_file_diff;
     summarize;
     summarize_release_notes;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '') {
+    constructor(review_beginning = "", review_file = "", review_file_diff = "", review_patch_begin = "", review_patch = "", summarize_beginning = "", summarize_file_diff = "", summarize = "", summarize_release_notes = "") {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
@@ -28644,7 +28645,7 @@ class Inputs {
     file_diff;
     patch;
     diff;
-    constructor(system_message = '', title = '', description = '', summary = '', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
+    constructor(system_message = "", title = "", description = "", summary = "", filename = "", file_content = "", file_diff = "", patch = "", diff = "") {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -28657,48 +28658,46 @@ class Inputs {
     }
     render(content) {
         if (!content) {
-            return '';
+            return "";
         }
         if (this.system_message) {
-            content = content.replace('$system_message', this.system_message);
+            content = content.replace("$system_message", this.system_message);
         }
         if (this.title) {
-            content = content.replace('$title', this.title);
+            content = content.replace("$title", this.title);
         }
         if (this.description) {
-            content = content.replace('$description', this.description);
+            content = content.replace("$description", this.description);
         }
         if (this.summary) {
-            content = content.replace('$summary', this.summary);
+            content = content.replace("$summary", this.summary);
         }
         if (this.filename) {
-            content = content.replace('$filename', this.filename);
+            content = content.replace("$filename", this.filename);
         }
         if (this.file_content) {
-            content = content.replace('$file_content', this.file_content);
+            content = content.replace("$file_content", this.file_content);
         }
         if (this.file_diff) {
-            content = content.replace('$file_diff', this.file_diff);
+            content = content.replace("$file_diff", this.file_diff);
         }
         if (this.patch) {
-            content = content.replace('$patch', this.patch);
+            content = content.replace("$patch", this.patch);
         }
         if (this.diff) {
-            content = content.replace('$diff', this.diff);
+            content = content.replace("$diff", this.diff);
         }
         return content;
     }
 }
 class Options {
     debug;
-    chatgpt_reverse_proxy;
     review_comment_lgtm;
     path_filters;
     system_message;
     temperature;
-    constructor(debug, chatgpt_reverse_proxy, review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
+    constructor(debug, review_comment_lgtm = false, path_filters = null, system_message = "", temperature = "0.0") {
         this.debug = debug;
-        this.chatgpt_reverse_proxy = chatgpt_reverse_proxy;
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
@@ -28719,7 +28718,7 @@ class PathFilter {
             for (const rule of rules) {
                 const trimmed = rule?.trim();
                 if (trimmed) {
-                    if (trimmed.startsWith('!')) {
+                    if (trimmed.startsWith("!")) {
                         this.rules.push([trimmed.substring(1).trim(), true]);
                     }
                     else {
@@ -28775,16 +28774,16 @@ var dist_node = __nccwpck_require__(1231);
 
 
 
-const token = core.getInput('token')
-    ? core.getInput('token')
+const token = core.getInput("token")
+    ? core.getInput("token")
     : process.env.GITHUB_TOKEN;
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const COMMENT_GREETING = `:robot: ChatGPT`;
-const DEFAULT_TAG = '<!-- This is an auto-generated comment by ChatGPT -->';
-const description_tag = '<!-- This is an auto-generated comment: release notes by chatgpt -->';
-const description_tag_end = '<!-- end of auto-generated comment: release notes by chatgpt -->';
+const COMMENT_GREETING = `:robot: OpenAI`;
+const DEFAULT_TAG = "<!-- This is an auto-generated comment by OpenAI -->";
+const description_tag = "<!-- This is an auto-generated comment: release notes by openai -->";
+const description_tag_end = "<!-- end of auto-generated comment: release notes by openai -->";
 class Commenter {
     /**
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
@@ -28818,7 +28817,7 @@ class Commenter {
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
-                    body: new_description
+                    body: new_description,
                 });
             }
             else {
@@ -28829,7 +28828,7 @@ class Commenter {
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
-                    body: new_description
+                    body: new_description,
                 });
             }
         }
@@ -28856,7 +28855,7 @@ ${tag}`;
                         owner: repo.owner,
                         repo: repo.repo,
                         comment_id: comment.id,
-                        body: message
+                        body: message,
                     });
                     return;
                 }
@@ -28869,7 +28868,7 @@ ${tag}`;
             body: message,
             commit_id,
             path,
-            line
+            line,
         });
     }
 }
@@ -28880,7 +28879,7 @@ const list_review_comments = async (target, page = 1) => {
         repo: repo.repo,
         pull_number: target,
         page: page,
-        per_page: 100
+        per_page: 100,
     });
     if (!comments) {
         return [];
@@ -28913,16 +28912,16 @@ const comment = async (message, tag, mode) => {
 ${message}
 
 ${tag}`;
-    if (mode == 'create') {
+    if (mode == "create") {
         await create(body, tag, target);
     }
-    else if (mode == 'replace') {
+    else if (mode == "replace") {
         await replace(body, tag, target);
     }
-    else if (mode == 'append') {
+    else if (mode == "append") {
         await append(body, tag, target);
     }
-    else if (mode == 'prepend') {
+    else if (mode == "prepend") {
         await prepend(body, tag, target);
     }
     else {
@@ -28935,7 +28934,7 @@ const create = async (body, tag, target) => {
         owner: repo.owner,
         repo: repo.repo,
         issue_number: target,
-        body: body
+        body: body,
     });
 };
 const replace = async (body, tag, target) => {
@@ -28945,7 +28944,7 @@ const replace = async (body, tag, target) => {
             owner: repo.owner,
             repo: repo.repo,
             comment_id: comment.id,
-            body: body
+            body: body,
         });
     }
     else {
@@ -28959,7 +28958,7 @@ const append = async (body, tag, target) => {
             owner: repo.owner,
             repo: repo.repo,
             comment_id: comment.id,
-            body: `${comment.body} ${body}`
+            body: `${comment.body} ${body}`,
         });
     }
     else {
@@ -28973,7 +28972,7 @@ const prepend = async (body, tag, target) => {
             owner: repo.owner,
             repo: repo.repo,
             comment_id: comment.id,
-            body: `${body} ${comment.body}`
+            body: `${body} ${comment.body}`,
         });
     }
     else {
@@ -28995,7 +28994,7 @@ const list_comments = async (target, page = 1) => {
         repo: repo.repo,
         issue_number: target,
         page: page,
-        per_page: 100
+        per_page: 100,
     });
     if (!comments) {
         return [];
@@ -29031,16 +29030,16 @@ function get_token_count(input) {
 
 
 
-const review_token = core.getInput('token')
-    ? core.getInput('token')
+const review_token = core.getInput("token")
+    ? core.getInput("token")
     : process.env.GITHUB_TOKEN;
 const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
 const review_context = github.context;
 const review_repo = review_context.repo;
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
-    if (review_context.eventName !== 'pull_request' &&
-        review_context.eventName !== 'pull_request_target') {
+    if (review_context.eventName !== "pull_request" &&
+        review_context.eventName !== "pull_request_target") {
         core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
         return;
     }
@@ -29061,7 +29060,7 @@ const codeReview = async (bot, options, prompts) => {
         owner: review_repo.owner,
         repo: review_repo.repo,
         base: review_context.payload.pull_request.base.sha,
-        head: review_context.payload.pull_request.head.sha
+        head: review_context.payload.pull_request.head.sha,
     });
     const { files, commits } = diff.data;
     if (!files) {
@@ -29076,18 +29075,18 @@ const codeReview = async (bot, options, prompts) => {
             continue;
         }
         // retrieve file contents
-        let file_content = '';
+        let file_content = "";
         try {
             const contents = await review_octokit.repos.getContent({
                 owner: review_repo.owner,
                 repo: review_repo.repo,
                 path: file.filename,
-                ref: review_context.payload.pull_request.base.sha
+                ref: review_context.payload.pull_request.base.sha,
             });
             if (contents.data) {
                 if (!Array.isArray(contents.data)) {
-                    if (contents.data.type === 'file' && contents.data.content) {
-                        file_content = Buffer.from(contents.data.content, 'base64').toString();
+                    if (contents.data.type === "file" && contents.data.content) {
+                        file_content = Buffer.from(contents.data.content, "base64").toString();
                     }
                 }
             }
@@ -29095,7 +29094,7 @@ const codeReview = async (bot, options, prompts) => {
         catch (error) {
             core.warning(`Failed to get file contents: ${error}, skipping.`);
         }
-        let file_diff = '';
+        let file_diff = "";
         if (file.patch) {
             core.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
@@ -29123,7 +29122,7 @@ const codeReview = async (bot, options, prompts) => {
                     // summarize diff
                     const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
                     if (!summarize_resp) {
-                        core.info('summarize: nothing obtained from chatgpt');
+                        core.info("summarize: nothing obtained from openai");
                     }
                     else {
                         next_summarize_ids = summarize_diff_ids;
@@ -29134,30 +29133,30 @@ const codeReview = async (bot, options, prompts) => {
         // final summary
         const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
-            core.info('summarize: nothing obtained from chatgpt');
+            core.info("summarize: nothing obtained from openai");
         }
         else {
             inputs.summary = summarize_final_response;
             next_summarize_ids = summarize_final_response_ids;
-            const tag = '<!-- This is an auto-generated comment: summarize by chatgpt -->';
-            await commenter.comment(`${summarize_final_response}`, tag, 'replace');
+            const tag = "<!-- This is an auto-generated comment: summarize by openai -->";
+            await commenter.comment(`${summarize_final_response}`, tag, "replace");
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
-            core.info('release notes: nothing obtained from chatgpt');
+            core.info("release notes: nothing obtained from openai");
         }
         else {
             next_summarize_ids = release_notes_ids;
             const description = inputs.description;
-            let message = '### Summary by ChatGPT\n\n';
+            let message = "### Summary by OpenAI\n\n";
             message += release_notes_response;
             commenter.update_description(review_context.payload.pull_request.number, description, message);
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
         let next_review_ids = review_begin_ids;
-        for (const [filename, file_content, file_diff, patches] of files_to_review) {
+        for (const [filename, file_content, file_diff, patches,] of files_to_review) {
             inputs.filename = filename;
             inputs.file_content = file_content;
             inputs.file_diff = file_diff;
@@ -29169,7 +29168,7 @@ const codeReview = async (bot, options, prompts) => {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
                     if (!resp) {
-                        core.info('review: nothing obtained from chatgpt');
+                        core.info("review: nothing obtained from openai");
                     }
                     else {
                         next_review_ids = review_file_ids;
@@ -29185,7 +29184,7 @@ const codeReview = async (bot, options, prompts) => {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
                     if (!resp) {
-                        core.info('review: nothing obtained from chatgpt');
+                        core.info("review: nothing obtained from openai");
                     }
                     else {
                         next_review_ids = review_diff_ids;
@@ -29199,15 +29198,15 @@ const codeReview = async (bot, options, prompts) => {
             const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
             next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
-                core.info(`Reviewing ${filename}:${line} with chatgpt ...`);
+                core.info(`Reviewing ${filename}:${line} with openai ...`);
                 inputs.patch = patch;
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {
-                    core.info('review: nothing obtained from chatgpt');
+                    core.info("review: nothing obtained from openai");
                     continue;
                 }
                 next_review_ids = patch_ids;
-                if (!options.review_comment_lgtm && response.includes('LGTM')) {
+                if (!options.review_comment_lgtm && response.includes("LGTM")) {
                     continue;
                 }
                 try {
