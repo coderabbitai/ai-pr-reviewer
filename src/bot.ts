@@ -1,7 +1,7 @@
-import "./fetch-polyfill.js";
-import { Options } from "./options.js";
 import * as core from "@actions/core";
-import { ChatGPTAPI, ChatMessage, SendMessageOptions } from "chatgpt";
+import * as chatgpt from "chatgpt";
+import "./fetch-polyfill.js";
+import * as optionsJs from "./options.js";
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
@@ -10,14 +10,14 @@ export type Ids = {
 };
 
 export class Bot {
-  private turbo: ChatGPTAPI | null = null; // not free
+  private turbo: chatgpt.ChatGPTAPI | null = null; // not free
 
-  private options: Options;
+  private options: optionsJs.Options;
 
-  constructor(options: Options) {
+  constructor(options: optionsJs.Options) {
     this.options = options;
     if (process.env.OPENAI_API_KEY) {
-      this.turbo = new ChatGPTAPI({
+      this.turbo = new chatgpt.ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
@@ -54,9 +54,9 @@ export class Bot {
       core.info(`sending to chatgpt: ${message}`);
     }
 
-    let response: ChatMessage | null = null;
+    let response: chatgpt.ChatMessage | null = null;
     if (this.turbo) {
-      let opts: SendMessageOptions = {};
+      let opts: chatgpt.SendMessageOptions = {};
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId;
       }
