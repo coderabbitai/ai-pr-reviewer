@@ -26836,8 +26836,8 @@ var ChatGPTUnofficialProxyAPI = class {
     }
     const {
       conversationId,
-      parentMessageId = v4(),
-      messageId = v4(),
+      parentMessageId = uuidv42(),
+      messageId = uuidv42(),
       action = "next",
       timeoutMs,
       onProgress
@@ -26868,7 +26868,7 @@ var ChatGPTUnofficialProxyAPI = class {
     }
     const result = {
       role: "assistant",
-      id: v4(),
+      id: uuidv42(),
       parentMessageId: messageId,
       conversationId,
       text: ""
@@ -26935,7 +26935,7 @@ var ChatGPTUnofficialProxyAPI = class {
           abortController.abort();
         };
       }
-      return pTimeout(responseP, {
+      return pTimeout2(responseP, {
         milliseconds: timeoutMs,
         message: "ChatGPT timed out waiting for response"
       });
@@ -26951,41 +26951,31 @@ var ChatGPTUnofficialProxyAPI = class {
 
 
 class Bot {
-    bot = null; // free
     turbo = null; // not free
     options;
     constructor(options) {
         this.options = options;
-        if (process.env.CHATGPT_ACCESS_TOKEN) {
-            this.bot = new ChatGPTUnofficialProxyAPI({
-                accessToken: process.env.CHATGPT_ACCESS_TOKEN,
-                apiReverseProxyUrl: options.chatgpt_reverse_proxy,
-                debug: options.debug
-            });
-        }
-        else if (process.env.OPENAI_API_KEY) {
+        if (process.env.OPENAI_API_KEY) {
             this.turbo = new ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
                 completionParams: {
-                    temperature: options.temperature
-                }
+                    temperature: options.temperature,
+                },
                 // assistantLabel: " ",
                 // userLabel: " ",
             });
         }
         else {
-            const err = "Unable to initialize the chatgpt API, both 'CHATGPT_ACCESS_TOKEN' " +
-                "and 'OPENAI_API_KEY' environment variable are not available";
+            const err = "Unable to initialize the chatgpt API, both 'OPENAI_API_KEY' environment variable are not available";
             throw new Error(err);
         }
     }
     chat = async (message, ids) => {
         let new_ids = {};
-        let response = '';
+        let response = "";
         try {
-            ;
             [response, new_ids] = await this.chat_(message, ids);
         }
         catch (e) {
@@ -26997,28 +26987,13 @@ class Bot {
     };
     chat_ = async (message, ids) => {
         if (!message) {
-            return ['', {}];
+            return ["", {}];
         }
         if (this.options.debug) {
             core.info(`sending to chatgpt: ${message}`);
         }
         let response = null;
-        if (this.bot) {
-            let opts = {};
-            if (ids.parentMessageId && ids.conversationId) {
-                opts.parentMessageId = ids.parentMessageId;
-                opts.conversationId = ids.conversationId;
-            }
-            core.info('opts: ' + JSON.stringify(opts));
-            response = await this.bot.sendMessage(message, opts);
-            try {
-                core.info(`response: ${JSON.stringify(response)}`);
-            }
-            catch (e) {
-                core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
-            }
-        }
-        else if (this.turbo) {
+        if (this.turbo) {
             let opts = {};
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
@@ -27032,17 +27007,17 @@ class Bot {
             }
         }
         else {
-            core.setFailed('The chatgpt API is not initialized');
+            core.setFailed("The chatgpt API is not initialized");
         }
-        let response_text = '';
+        let response_text = "";
         if (response) {
             response_text = response.text;
         }
         else {
-            core.warning('chatgpt response is null');
+            core.warning("chatgpt response is null");
         }
         // remove the prefix "with " in the response
-        if (response_text.startsWith('with ')) {
+        if (response_text.startsWith("with ")) {
             response_text = response_text.substring(5);
         }
         if (this.options.debug) {
@@ -27050,7 +27025,7 @@ class Bot {
         }
         const new_ids = {
             parentMessageId: response?.id,
-            conversationId: response?.conversationId
+            conversationId: response?.conversationId,
         };
         return [response_text, new_ids];
     };

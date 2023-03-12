@@ -18,7 +18,6 @@ good for the most part.
   - uses: fluxninja/chatgpt-pr-reviewer@main
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     with:
       debug: false
@@ -49,7 +48,6 @@ jobs:
       - uses: fluxninja/chatgpt-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_ACCESS_TOKEN: ${{ secrets.CHATGPT_ACCESS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
@@ -70,21 +68,11 @@ See also: [./action.yml](./action.yml)
 
 #### Environment variables
 
-- `GITHUB_TOKEN`
-- `CHATGPT_ACCESS_TOKEN`: ChatGPT access token, see also:
-  https://github.com/acheong08/ChatGPT.
-
-  The access token can be easily obtained from
-  https://chat.openai.com/api/auth/session after logging into ChatGPT.
-
-- `OPENAI_API_KEY`: use this to authenticate with OpenAI API, official ChatGPT's
-  behavior using `gpt-3.5-turbo`, see also:
-  https://github.com/transitive-bullshit/chatgpt-api
-
-Note that `CHATGPT_ACCESS_TOKEN` and `OPENAI_API_KEY` are not both required.
-Inside this action, unofficial ChatGPT is preferred if `CHATGPT_ACCESS_TOKEN`
-exists. Note that the `CHATGPT_ACCESS_TOKEN` can expire frequently, so
-`OPENAI_API_KEY` should be more convenient if its cost is affordable to you.
+- `GITHUB_TOKEN`: This should already be available to the GitHub Action
+  environment. This is used to add comments to the pull request.
+- `OPENAI_API_KEY`: use this to authenticate with OpenAI API. You can get one
+  [here](https://platform.openai.com/account/api-keys). Please add this key to
+  your GitHub Action secrets.
 
 #### Inputs
 
@@ -159,23 +147,6 @@ jobs:
 
 See also:
 https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
-
-### Choose the ChatGPT API implementation
-
-The javascript's [chatgpt][2] package provides two implementations of the
-ChatGPT API:
-
-- `ChatGPTAPI`: official ChatGPT using the OpenAI's `gpt-3.5-turbo`.
-  - not free
-  - requires `OPENAI_API_KEY`
-- `ChatGPTUnofficialProxyAPI`: unofficial ChatGPT models, rely on third-party
-  server and is rate limited.
-  - free
-  - requires `CHATGPT_ACCESS_TOKEN`
-  - the proxy server is configurable using `chatgpt_reverse_proxy`
-
-If both environment variables `OPENAI_API_KEY` and `CHATGPT_ACCESS_TOKEN`
-exists, we prefer the `ChatGPTUnofficialProxyAPI` implementation.
 
 ### Inspect the messages between ChatGPT server
 
