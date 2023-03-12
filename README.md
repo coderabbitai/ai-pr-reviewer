@@ -69,9 +69,10 @@ See also: [./action.yml](./action.yml)
 #### Environment variables
 
 - `GITHUB_TOKEN`
-- `OPENAI_API_KEY`: use this to authenticate with OpenAI API, official ChatGPT's
-  behavior using `gpt-3.5-turbo`, see also:
-  https://github.com/transitive-bullshit/chatgpt-api
+- `OPENAI_API_KEY`: use this to authenticate with OpenAI API. You can get one
+  [here](https://platform.openai.com/account/api-keys). Please add this key to
+ 
+  your GitHub Action secrets.
 
 #### Inputs
 
