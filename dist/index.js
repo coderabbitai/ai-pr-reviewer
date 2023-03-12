@@ -29149,7 +29149,7 @@ const codeReview = async (bot, options, prompts) => {
         else {
             next_summarize_ids = release_notes_ids;
             const description = inputs.description;
-            let message = "### Summary by openai\n\n";
+            let message = "### Summary by OpenAI\n\n";
             message += release_notes_response;
             commenter.update_description(review_context.payload.pull_request.number, description, message);
         }
