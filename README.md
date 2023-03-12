@@ -68,10 +68,10 @@ See also: [./action.yml](./action.yml)
 
 #### Environment variables
 
-- `GITHUB_TOKEN`
+- `GITHUB_TOKEN`: This should already be available to the GitHub Action
+  environment. This is used to add comments to the pull request.
 - `OPENAI_API_KEY`: use this to authenticate with OpenAI API. You can get one
   [here](https://platform.openai.com/account/api-keys). Please add this key to
- 
   your GitHub Action secrets.
 
 #### Inputs
