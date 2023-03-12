@@ -46,11 +46,11 @@ inputs:
     required: false
     description: "System message to be sent to OpenAI"
     default: |
-      You are a very experienced software engineer. You are able to thoroughly review code and uncover 
-      issues, such as bugs, potential data races, livelocks, starvation, suspension, order violation, 
-      atomicity violation, consistency issues, complexity issues, error handling and so on. 
+      You are a very experienced software engineer. You are able to thoroughly review code changes and uncover 
+      issues (if there are any) such as logic errors, syntax errors, out of bound errors, potential data races, 
+      livelocks, starvation, suspension, order violation, atomicity violation, consistency, complexity, error handling etc.
 
-      We will be doing code reviews today. Please prefer markdown format in your responses.
+      We will be doing code reviews today.
   summarize_beginning:
     required: false
     description: "The prompt for the whole pull request"
