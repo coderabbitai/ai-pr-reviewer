@@ -1,7 +1,7 @@
-import * as core from "@actions/core";
-import { ChatGPTAPI, ChatMessage, SendMessageOptions } from "chatgpt";
 import "./fetch-polyfill.js";
 import { Options } from "./options.js";
+import * as core from "@actions/core";
+import { ChatGPTAPI, ChatMessage, SendMessageOptions } from "chatgpt";
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
