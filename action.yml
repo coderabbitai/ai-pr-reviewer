@@ -1,22 +1,22 @@
-name: 'ChatGPT PR Reviewer & Summarizer'
-description: 'ChatGPT based PR reviewer and summarizer'
+name: "OpenAI-based PR Reviewer & Summarizer"
+description: "OpenAI-based PR Reviewer and Summarizer"
 branding:
-  icon: 'aperture'
-  color: 'orange'
-author: 'FluxNinja, Inc.'
+  icon: "aperture"
+  color: "orange"
+author: "FluxNinja, Inc."
 inputs:
   debug:
     required: false
-    description: 'Enable debug mode'
-    default: 'false'
+    description: "Enable debug mode"
+    default: "false"
   temperature:
     required: false
-    description: 'Temperature for ChatGPT model'
-    default: '0.0'
+    description: "Temperature for GPT model"
+    default: "0.0"
   review_comment_lgtm:
     required: false
-    description: 'Leave comments even if the patch is LGTM'
-    default: 'false'
+    description: "Leave comments even if the patch is LGTM"
+    default: "false"
   path_filters:
     required: false
     description: |
@@ -44,21 +44,16 @@ inputs:
       !**/vendor/**
   system_message:
     required: false
-    description: 'System message to be sent to ChatGPT'
+    description: "System message to be sent to OpenAI"
     default: |
       You are a very experienced software engineer. You are able to thoroughly review code and uncover 
       issues, such as bugs, potential data races, livelocks, starvation, suspension, order violation, 
       atomicity violation, consistency issues, complexity issues, error handling and so on. 
 
       We will be doing code reviews today. Please prefer markdown format in your responses.
-  chatgpt_reverse_proxy:
-    required: false
-    description: |
-      The URL of the chatgpt reverse proxy, see also https://github.com/transitive-bullshit/chatgpt-api#reverse-proxy
-    default: https://chat.duti.tech/api/conversation
   summarize_beginning:
     required: false
-    description: 'The prompt for the whole pull request'
+    description: "The prompt for the whole pull request"
     default: |
       $system_message
 
@@ -79,7 +74,7 @@ inputs:
       Reply "OK" to confirm that you are ready to receive the diffs for summarization.
   summarize_file_diff:
     required: false
-    description: 'The prompt for each file diff'
+    description: "The prompt for each file diff"
     default: |
       Providing diff for `$filename`.
 
@@ -93,7 +88,7 @@ inputs:
       ```
   summarize:
     required: false
-    description: 'The prompt for final summarization response'
+    description: "The prompt for final summarization response"
     default: |
       This is the end of summarization session. Please provide the final response as follows in 
       the `markdown` format with the following content:
@@ -106,7 +101,7 @@ inputs:
       request.
   summarize_release_notes:
     required: false
-    description: 'The prompt for generating release notes'
+    description: "The prompt for generating release notes"
     default: |
       Next, release notes in `markdown` format for this pull request that focuses on the purpose
       of this PR. If needed, you can classify the changes as "New Feature", "Bug fix", 
@@ -116,7 +111,7 @@ inputs:
       used as is in our release notes.
   review_beginning:
     required: false
-    description: 'The beginning prompt of a code review dialog'
+    description: "The beginning prompt of a code review dialog"
     default: |
       $system_message
 
@@ -128,14 +123,14 @@ inputs:
 
       > $description.
 
-      ChatGPT generated summary is as follows,
+      OpenAI generated summary is as follows,
 
       > $summary
 
       Reply "OK" to confirm that you are ready for further instructions.
   review_file:
     required: false
-    description: 'The prompt for each file'
+    description: "The prompt for each file"
     default: |
       Providing `$filename` content as context. Please use this context when reviewing patches.
 
@@ -144,7 +139,7 @@ inputs:
       ```
   review_file_diff:
     required: false
-    description: 'The prompt for each file diff'
+    description: "The prompt for each file diff"
     default: |
       Providing entire diff for `$filename` as context. Please use this context when reviewing patches.
 
@@ -153,7 +148,7 @@ inputs:
       ```
   review_patch_begin:
     required: false
-    description: 'The prompt for each file diff'
+    description: "The prompt for each file diff"
     default: |
       Next, I will send you a series of patches, each of them consists of a diff snippet, and you 
       need to do a brief code review for every patch, and tell me any bug risk or improvement 
@@ -164,7 +159,7 @@ inputs:
       preferred for your responses. Reply "OK" to confirm.
   review_patch:
     required: false
-    description: 'The prompt for each chunks/patches'
+    description: "The prompt for each chunks/patches"
     default: |
       $filename
 
@@ -172,5 +167,5 @@ inputs:
       $patch
       ```
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "node16"
+  main: "dist/index.js"

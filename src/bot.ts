@@ -1,7 +1,7 @@
-import * as core from "@actions/core";
-import * as chatgpt from "chatgpt";
 import "./fetch-polyfill.js";
 import * as optionsJs from "./options.js";
+import * as core from "@actions/core";
+import * as openai from "chatgpt";
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
@@ -10,14 +10,14 @@ export type Ids = {
 };
 
 export class Bot {
-  private turbo: chatgpt.ChatGPTAPI | null = null; // not free
+  private turbo: openai.ChatGPTAPI | null = null; // not free
 
   private options: optionsJs.Options;
 
   constructor(options: optionsJs.Options) {
     this.options = options;
     if (process.env.OPENAI_API_KEY) {
-      this.turbo = new chatgpt.ChatGPTAPI({
+      this.turbo = new openai.ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
@@ -29,7 +29,7 @@ export class Bot {
       });
     } else {
       const err =
-        "Unable to initialize the chatgpt API, both 'OPENAI_API_KEY' environment variable are not available";
+        "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available";
       throw new Error(err);
     }
   }
@@ -51,12 +51,12 @@ export class Bot {
       return ["", {}];
     }
     if (this.options.debug) {
-      core.info(`sending to chatgpt: ${message}`);
+      core.info(`sending to openai: ${message}`);
     }
 
-    let response: chatgpt.ChatMessage | null = null;
+    let response: openai.ChatMessage | null = null;
     if (this.turbo) {
-      let opts: chatgpt.SendMessageOptions = {};
+      let opts: openai.SendMessageOptions = {};
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId;
       }
@@ -69,20 +69,20 @@ export class Bot {
         );
       }
     } else {
-      core.setFailed("The chatgpt API is not initialized");
+      core.setFailed("The OpenAI API is not initialized");
     }
     let response_text = "";
     if (response) {
       response_text = response.text;
     } else {
-      core.warning("chatgpt response is null");
+      core.warning("openai response is null");
     }
     // remove the prefix "with " in the response
     if (response_text.startsWith("with ")) {
       response_text = response_text.substring(5);
     }
     if (this.options.debug) {
-      core.info(`chatgpt responses: ${response_text}`);
+      core.info(`openai responses: ${response_text}`);
     }
     const new_ids: Ids = {
       parentMessageId: response?.id,

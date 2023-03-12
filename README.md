@@ -1,14 +1,14 @@
-# ChatGPT-based PR reviewer and summarizer
+# OpenAI GPT based PR reviewer and summarizer
 
 ![AI](./docs/images/ai.png)
 
 ## Overview
 
-This [ChatGPT](https://platform.openai.com/docs/guides/chat) based GitHub Action
-provides a summary, release notes and review of pull requests. The prompts have
-been tuned for a concise response. To prevent excessive notifications, this
-action can be configured to skip adding review comments when the changes look
-good for the most part.
+This [OpenAI Chat](https://platform.openai.com/docs/guides/chat) based GitHub
+Action provides a summary, release notes and review of pull requests. The
+prompts have been tuned for a concise response. To prevent excessive
+notifications, this action can be configured to skip adding review comments when
+the changes look good for the most part.
 
 NOTES:
 
@@ -18,14 +18,14 @@ NOTES:
 - OpenAI's API is used instead of ChatGPT session on their portal. OpenAI API
   has a
   [more conservative data usage policy](https://openai.com/policies/api-data-usage-policies)
-  compared to ChatGPT.
+  compared to their ChatGPT offering.
 
 ### Features
 
 - Code review your pull requests
 
   ```yaml
-  - uses: fluxninja/chatgpt-pr-reviewer@main
+  - uses: fluxninja/openai-pr-reviewer@main
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -55,7 +55,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
-      - uses: fluxninja/chatgpt-pr-reviewer@main
+      - uses: fluxninja/openai-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -66,11 +66,11 @@ jobs:
 
 ### Screenshots
 
-![PR Summary](./docs/images/chatgpt-pr-summary.png)
+![PR Summary](./docs/images/openai-pr-summary.png)
 
-![PR Release Notes](./docs/images/chatgpt-pr-release-notes.png)
+![PR Release Notes](./docs/images/openai-pr-release-notes.png)
 
-![PR Review](./docs/images/chatgpt-pr-review.png)
+![PR Review](./docs/images/openai-pr-review.png)
 
 ### Configuration
 
@@ -86,12 +86,12 @@ See also: [./action.yml](./action.yml)
 
 #### Inputs
 
-- `debug`: Enable debug mode, will show messages and responses between ChatGPT
+- `debug`: Enable debug mode, will show messages and responses between OpenAI
   server in CI logs.
 - `review_comment_lgtm`: Leave comments even the patch is LGTM
 - `path_filters`: Rules to filter files to be reviewed.
 - `temperature`: Temperature of the GPT-3 model.
-- `system_message`: The message to be sent to ChatGPT to start a conversation.
+- `system_message`: The message to be sent to OpenAI to start a conversation.
 
 ### Prompt templates:
 
@@ -146,7 +146,7 @@ jobs:
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
 
-      - uses: fluxninja/chatgpt-pr-reviewer@main
+      - uses: fluxninja/openai-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -157,14 +157,10 @@ jobs:
 See also:
 https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
 
-### Inspect the messages between ChatGPT server
+### Inspect the messages between OpenAI server
 
 Set `debug: true` in the workflow file to enable debug mode, which will show the
 messages
-
-[1]:
-  https://github.com/marketplace?type=&verification=&query=chatgpt-pr-reviewer+
-[2]: https://www.npmjs.com/package/chatgpt
 
 ### Special Thanks
 
