@@ -1,4 +1,4 @@
-# ChatGPT based PR reviewer and summarizer
+# ChatGPT-based PR reviewer and summarizer
 
 ![AI](./docs/images/ai.png)
 
@@ -9,6 +9,16 @@ provides a summary, release notes and review of pull requests. The prompts have
 been tuned for a concise response. To prevent excessive notifications, this
 action can be configured to skip adding review comments when the changes look
 good for the most part.
+
+NOTES:
+
+- Your code (files, diff, PR title/description) will be sent to OpenAI's servers
+  for processing. Please check with your compliance team before using this on
+  your private code repositories.
+- OpenAI's API is used instead of ChatGPT session on their portal. OpenAI API
+  has a
+  [more conservative data usage policy](https://openai.com/policies/api-data-usage-policies)
+  compared to ChatGPT.
 
 ### Features
 
@@ -78,7 +88,6 @@ See also: [./action.yml](./action.yml)
 
 - `debug`: Enable debug mode, will show messages and responses between ChatGPT
   server in CI logs.
-- `chatgpt_reverse_proxy`: The URL of the ChatGPT reverse proxy
 - `review_comment_lgtm`: Leave comments even the patch is LGTM
 - `path_filters`: Rules to filter files to be reviewed.
 - `temperature`: Temperature of the GPT-3 model.
