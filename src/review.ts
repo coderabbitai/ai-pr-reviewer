@@ -159,14 +159,9 @@ export const codeReview = async (
       core.info('release notes: nothing obtained from openai')
     } else {
       next_summarize_ids = release_notes_ids
-      const description = inputs.description
       let message = '### Summary by OpenAI\n\n'
       message += release_notes_response
-      commenter.update_description(
-        context.payload.pull_request.number,
-        description,
-        message
-      )
+      commenter.update_description(context.payload.pull_request.number, message)
     }
 
     // Review Stage
