@@ -27049,8 +27049,8 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput("debug"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput("review_comment_lgtm"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput("path_filters"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("system_message"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("temperature"));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_beginning"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_file"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_file_diff"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_patch_begin"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("review_patch"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize_beginning"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize_file_diff"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize"), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("summarize_release_notes"));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('temperature'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
     // initialize openai bot
     let bot = null;
     try {
@@ -27073,12 +27073,12 @@ async function run() {
     }
 }
 process
-    .on("unhandledRejection", (reason, p) => {
-    console.error(reason, "Unhandled Rejection at Promise", p);
+    .on('unhandledRejection', (reason, p) => {
+    console.error(reason, 'Unhandled Rejection at Promise', p);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
 })
-    .on("uncaughtException", (e) => {
-    console.error(e, "Uncaught Exception thrown");
+    .on('uncaughtException', (e) => {
+    console.error(e, 'Uncaught Exception thrown');
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
 });
 await run();
