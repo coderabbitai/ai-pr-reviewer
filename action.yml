@@ -66,6 +66,11 @@ inputs:
 
       > $description.
 
+      Summary provided by you so far from our earlier conversation, is as follows and you can use 
+      this summary as a basis for your response.
+
+      > $summary
+
       Next, I will be providing you diffs for each file for you to summarize. In every response, 
       you will update the high-level summary of the entire pull request, the table for each file's 
       diff summary and any feedback you might want to give to the developer, including compliments 
@@ -76,9 +81,8 @@ inputs:
     required: false
     description: "The prompt for each file diff"
     default: |
-      Providing diff for `$filename`.
-
-      I would like you to summarize the diff and add the summary for this file in the table. 
+      I am providing diff for `$filename` below. I would like you to summarize the diff and add the summary 
+      for this file in the table. 
 
       In response, please provide the updated high-level summary, the summary table of the files 
       we have summarized so far and your overall feedback to the developer.
