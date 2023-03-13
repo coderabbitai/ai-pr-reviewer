@@ -26962,8 +26962,8 @@ class Bot {
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
                 completionParams: {
-                    temperature: options.temperature,
-                },
+                    temperature: options.temperature
+                }
                 // assistantLabel: " ",
                 // userLabel: " ",
             });
@@ -26975,8 +26975,9 @@ class Bot {
     }
     chat = async (message, ids) => {
         let new_ids = {};
-        let response = "";
+        let response = '';
         try {
+            ;
             [response, new_ids] = await this.chat_(message, ids);
         }
         catch (e) {
@@ -26988,7 +26989,7 @@ class Bot {
     };
     chat_ = async (message, ids) => {
         if (!message) {
-            return ["", {}];
+            return ['', {}];
         }
         if (this.options.debug) {
             core.info(`sending to openai: ${message}`);
@@ -27008,17 +27009,17 @@ class Bot {
             }
         }
         else {
-            core.setFailed("The OpenAI API is not initialized");
+            core.setFailed('The OpenAI API is not initialized');
         }
-        let response_text = "";
+        let response_text = '';
         if (response) {
             response_text = response.text;
         }
         else {
-            core.warning("openai response is null");
+            core.warning('openai response is null');
         }
         // remove the prefix "with " in the response
-        if (response_text.startsWith("with ")) {
+        if (response_text.startsWith('with ')) {
             response_text = response_text.substring(5);
         }
         if (this.options.debug) {
@@ -27026,7 +27027,7 @@ class Bot {
         }
         const new_ids = {
             parentMessageId: response?.id,
-            conversationId: response?.conversationId,
+            conversationId: response?.conversationId
         };
         return [response_text, new_ids];
     };
@@ -28774,16 +28775,16 @@ var dist_node = __nccwpck_require__(1231);
 
 
 
-const token = core.getInput("token")
-    ? core.getInput("token")
+const token = core.getInput('token')
+    ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
-const DEFAULT_TAG = "<!-- This is an auto-generated comment by OpenAI -->";
-const description_tag = "<!-- This is an auto-generated comment: release notes by openai -->";
-const description_tag_end = "<!-- end of auto-generated comment: release notes by openai -->";
+const DEFAULT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
+const description_tag = '<!-- This is an auto-generated comment: release notes by openai -->';
+const description_tag_end = '<!-- end of auto-generated comment: release notes by openai -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
@@ -28801,10 +28802,21 @@ class Commenter {
         }
         return description;
     }
-    async update_description(pull_number, description, message) {
+    async update_description(pull_number, message) {
         // add this response to the description field of the PR as release notes by looking
         // for the tag (marker)
         try {
+            // get latest description from PR
+            const pr = await octokit.pulls.get({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number
+            });
+            let body = '';
+            if (pr.data.body) {
+                body = pr.data.body;
+            }
+            const description = this.get_description(body);
             // find the tag in the description and replace the content between the tag and the tag_end
             // if not found, add the tag and the content to the end of the description
             const tag_index = description.indexOf(description_tag);
@@ -28817,7 +28829,7 @@ class Commenter {
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
-                    body: new_description,
+                    body: new_description
                 });
             }
             else {
@@ -28828,7 +28840,7 @@ class Commenter {
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
-                    body: new_description,
+                    body: new_description
                 });
             }
         }
@@ -28855,7 +28867,7 @@ ${tag}`;
                         owner: repo.owner,
                         repo: repo.repo,
                         comment_id: comment.id,
-                        body: message,
+                        body: message
                     });
                     return;
                 }
@@ -28868,7 +28880,7 @@ ${tag}`;
             body: message,
             commit_id,
             path,
-            line,
+            line
         });
     }
 }
@@ -28879,7 +28891,7 @@ const list_review_comments = async (target, page = 1) => {
         repo: repo.repo,
         pull_number: target,
         page: page,
-        per_page: 100,
+        per_page: 100
     });
     if (!comments) {
         return [];
@@ -28912,16 +28924,16 @@ const comment = async (message, tag, mode) => {
 ${message}
 
 ${tag}`;
-    if (mode == "create") {
+    if (mode == 'create') {
         await create(body, tag, target);
     }
-    else if (mode == "replace") {
+    else if (mode == 'replace') {
         await replace(body, tag, target);
     }
-    else if (mode == "append") {
+    else if (mode == 'append') {
         await append(body, tag, target);
     }
-    else if (mode == "prepend") {
+    else if (mode == 'prepend') {
         await prepend(body, tag, target);
     }
     else {
@@ -28934,7 +28946,7 @@ const create = async (body, tag, target) => {
         owner: repo.owner,
         repo: repo.repo,
         issue_number: target,
-        body: body,
+        body: body
     });
 };
 const replace = async (body, tag, target) => {
@@ -28944,7 +28956,7 @@ const replace = async (body, tag, target) => {
             owner: repo.owner,
             repo: repo.repo,
             comment_id: comment.id,
-            body: body,
+            body: body
         });
     }
     else {
@@ -28958,7 +28970,7 @@ const append = async (body, tag, target) => {
             owner: repo.owner,
             repo: repo.repo,
             comment_id: comment.id,
-            body: `${comment.body} ${body}`,
+            body: `${comment.body} ${body}`
         });
     }
     else {
@@ -28972,7 +28984,7 @@ const prepend = async (body, tag, target) => {
             owner: repo.owner,
             repo: repo.repo,
             comment_id: comment.id,
-            body: `${body} ${comment.body}`,
+            body: `${body} ${comment.body}`
         });
     }
     else {
@@ -28994,7 +29006,7 @@ const list_comments = async (target, page = 1) => {
         repo: repo.repo,
         issue_number: target,
         page: page,
-        per_page: 100,
+        per_page: 100
     });
     if (!comments) {
         return [];
@@ -29151,10 +29163,9 @@ const codeReview = async (bot, options, prompts) => {
         }
         else {
             next_summarize_ids = release_notes_ids;
-            const description = inputs.description;
             let message = '### Summary by OpenAI\n\n';
             message += release_notes_response;
-            commenter.update_description(review_context.payload.pull_request.number, description, message);
+            commenter.update_description(review_context.payload.pull_request.number, message);
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
