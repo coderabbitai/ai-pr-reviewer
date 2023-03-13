@@ -1,7 +1,8 @@
 import "./fetch-polyfill.js";
-import * as optionsJs from "./options.js";
+
 import * as core from "@actions/core";
 import * as openai from "chatgpt";
+import * as optionsJs from "./options.js";
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
