@@ -28596,7 +28596,7 @@ class Prompts {
     summarize_file_diff;
     summarize;
     summarize_release_notes;
-    constructor(review_beginning = "", review_file = "", review_file_diff = "", review_patch_begin = "", review_patch = "", summarize_beginning = "", summarize_file_diff = "", summarize = "", summarize_release_notes = "") {
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
@@ -28645,7 +28645,7 @@ class Inputs {
     file_diff;
     patch;
     diff;
-    constructor(system_message = "", title = "", description = "", summary = "", filename = "", file_content = "", file_diff = "", patch = "", diff = "") {
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -28658,34 +28658,34 @@ class Inputs {
     }
     render(content) {
         if (!content) {
-            return "";
+            return '';
         }
         if (this.system_message) {
-            content = content.replace("$system_message", this.system_message);
+            content = content.replace('$system_message', this.system_message);
         }
         if (this.title) {
-            content = content.replace("$title", this.title);
+            content = content.replace('$title', this.title);
         }
         if (this.description) {
-            content = content.replace("$description", this.description);
+            content = content.replace('$description', this.description);
         }
         if (this.summary) {
-            content = content.replace("$summary", this.summary);
+            content = content.replace('$summary', this.summary);
         }
         if (this.filename) {
-            content = content.replace("$filename", this.filename);
+            content = content.replace('$filename', this.filename);
         }
         if (this.file_content) {
-            content = content.replace("$file_content", this.file_content);
+            content = content.replace('$file_content', this.file_content);
         }
         if (this.file_diff) {
-            content = content.replace("$file_diff", this.file_diff);
+            content = content.replace('$file_diff', this.file_diff);
         }
         if (this.patch) {
-            content = content.replace("$patch", this.patch);
+            content = content.replace('$patch', this.patch);
         }
         if (this.diff) {
-            content = content.replace("$diff", this.diff);
+            content = content.replace('$diff', this.diff);
         }
         return content;
     }
@@ -28696,7 +28696,7 @@ class Options {
     path_filters;
     system_message;
     temperature;
-    constructor(debug, review_comment_lgtm = false, path_filters = null, system_message = "", temperature = "0.0") {
+    constructor(debug, review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
         this.debug = debug;
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
@@ -28718,7 +28718,7 @@ class PathFilter {
             for (const rule of rules) {
                 const trimmed = rule?.trim();
                 if (trimmed) {
-                    if (trimmed.startsWith("!")) {
+                    if (trimmed.startsWith('!')) {
                         this.rules.push([trimmed.substring(1).trim(), true]);
                     }
                     else {
@@ -29030,16 +29030,16 @@ function get_token_count(input) {
 
 
 
-const review_token = core.getInput("token")
-    ? core.getInput("token")
+const review_token = core.getInput('token')
+    ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
 const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
 const review_context = github.context;
 const review_repo = review_context.repo;
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
-    if (review_context.eventName !== "pull_request" &&
-        review_context.eventName !== "pull_request_target") {
+    if (review_context.eventName !== 'pull_request' &&
+        review_context.eventName !== 'pull_request_target') {
         core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
         return;
     }
@@ -29060,7 +29060,7 @@ const codeReview = async (bot, options, prompts) => {
         owner: review_repo.owner,
         repo: review_repo.repo,
         base: review_context.payload.pull_request.base.sha,
-        head: review_context.payload.pull_request.head.sha,
+        head: review_context.payload.pull_request.head.sha
     });
     const { files, commits } = diff.data;
     if (!files) {
@@ -29075,18 +29075,18 @@ const codeReview = async (bot, options, prompts) => {
             continue;
         }
         // retrieve file contents
-        let file_content = "";
+        let file_content = '';
         try {
             const contents = await review_octokit.repos.getContent({
                 owner: review_repo.owner,
                 repo: review_repo.repo,
                 path: file.filename,
-                ref: review_context.payload.pull_request.base.sha,
+                ref: review_context.payload.pull_request.base.sha
             });
             if (contents.data) {
                 if (!Array.isArray(contents.data)) {
-                    if (contents.data.type === "file" && contents.data.content) {
-                        file_content = Buffer.from(contents.data.content, "base64").toString();
+                    if (contents.data.type === 'file' && contents.data.content) {
+                        file_content = Buffer.from(contents.data.content, 'base64').toString();
                     }
                 }
             }
@@ -29094,7 +29094,7 @@ const codeReview = async (bot, options, prompts) => {
         catch (error) {
             core.warning(`Failed to get file contents: ${error}, skipping.`);
         }
-        let file_diff = "";
+        let file_diff = '';
         if (file.patch) {
             core.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
@@ -29113,6 +29113,8 @@ const codeReview = async (bot, options, prompts) => {
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
         let next_summarize_ids = summarize_begin_ids;
         for (const [filename, file_content, file_diff] of files_to_review) {
+            // reset chat session for each file while summarizing
+            next_summarize_ids = summarize_begin_ids;
             inputs.filename = filename;
             inputs.file_content = file_content;
             inputs.file_diff = file_diff;
@@ -29122,10 +29124,11 @@ const codeReview = async (bot, options, prompts) => {
                     // summarize diff
                     const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
                     if (!summarize_resp) {
-                        core.info("summarize: nothing obtained from openai");
+                        core.info('summarize: nothing obtained from openai');
                     }
                     else {
                         next_summarize_ids = summarize_diff_ids;
+                        inputs.summary = summarize_resp;
                     }
                 }
             }
@@ -29133,30 +29136,30 @@ const codeReview = async (bot, options, prompts) => {
         // final summary
         const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
-            core.info("summarize: nothing obtained from openai");
+            core.info('summarize: nothing obtained from openai');
         }
         else {
             inputs.summary = summarize_final_response;
             next_summarize_ids = summarize_final_response_ids;
-            const tag = "<!-- This is an auto-generated comment: summarize by openai -->";
-            await commenter.comment(`${summarize_final_response}`, tag, "replace");
+            const tag = '<!-- This is an auto-generated comment: summarize by openai -->';
+            await commenter.comment(`${summarize_final_response}`, tag, 'replace');
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
-            core.info("release notes: nothing obtained from openai");
+            core.info('release notes: nothing obtained from openai');
         }
         else {
             next_summarize_ids = release_notes_ids;
             const description = inputs.description;
-            let message = "### Summary by OpenAI\n\n";
+            let message = '### Summary by OpenAI\n\n';
             message += release_notes_response;
             commenter.update_description(review_context.payload.pull_request.number, description, message);
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
         let next_review_ids = review_begin_ids;
-        for (const [filename, file_content, file_diff, patches,] of files_to_review) {
+        for (const [filename, file_content, file_diff, patches] of files_to_review) {
             inputs.filename = filename;
             inputs.file_content = file_content;
             inputs.file_diff = file_diff;
@@ -29168,7 +29171,7 @@ const codeReview = async (bot, options, prompts) => {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
                     if (!resp) {
-                        core.info("review: nothing obtained from openai");
+                        core.info('review: nothing obtained from openai');
                     }
                     else {
                         next_review_ids = review_file_ids;
@@ -29184,7 +29187,7 @@ const codeReview = async (bot, options, prompts) => {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
                     if (!resp) {
-                        core.info("review: nothing obtained from openai");
+                        core.info('review: nothing obtained from openai');
                     }
                     else {
                         next_review_ids = review_diff_ids;
@@ -29202,11 +29205,11 @@ const codeReview = async (bot, options, prompts) => {
                 inputs.patch = patch;
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {
-                    core.info("review: nothing obtained from openai");
+                    core.info('review: nothing obtained from openai');
                     continue;
                 }
                 next_review_ids = patch_ids;
-                if (!options.review_comment_lgtm && response.includes("LGTM")) {
+                if (!options.review_comment_lgtm && response.includes('LGTM')) {
                     continue;
                 }
                 try {
