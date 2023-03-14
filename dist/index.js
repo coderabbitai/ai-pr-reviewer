@@ -28702,7 +28702,7 @@ class Options {
     path_filters;
     system_message;
     temperature;
-    constructor(debug, max_files = '30', review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
+    constructor(debug, max_files = '40', review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
         this.debug = debug;
         this.max_files = parseInt(max_files);
         this.review_comment_lgtm = review_comment_lgtm;
@@ -29087,19 +29087,26 @@ const codeReview = async (bot, options, prompts) => {
         await commenter.comment(`Skipped: no files to review`, comment_tag, 'replace');
         return;
     }
-    // check if we are exceeding max_files
-    if (files.length > options.max_files) {
+    // skip files if they are filtered out
+    const filtered_files = [];
+    for (const file of files) {
+        if (!options.check_path(file.filename)) {
+            core.info(`skip for excluded path: ${file.filename}`);
+            continue;
+        }
+        else {
+            filtered_files.push(file);
+        }
+    }
+    // check if we are exceeding max_files and if max_files is <= 0 (no limit)
+    if (filtered_files.length > options.max_files && options.max_files > 0) {
         core.warning("Skipped: too many files to review, can't handle it");
         await commenter.comment(`Skipped: too many files to review, can't handle it`, comment_tag, 'replace');
         return;
     }
     // find patches to review
     const files_to_review = [];
-    for (const file of files) {
-        if (!options.check_path(file.filename)) {
-            core.info(`skip for excluded path: ${file.filename}`);
-            continue;
-        }
+    for (const file of filtered_files) {
         // retrieve file contents
         let file_content = '';
         try {
