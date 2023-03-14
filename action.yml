@@ -9,6 +9,10 @@ inputs:
     required: false
     description: 'Enable debug mode'
     default: 'false'
+  max_files:
+    required: false
+    description: 'Max files to review'
+    default: '30'
   temperature:
     required: false
     description: 'Temperature for GPT model'

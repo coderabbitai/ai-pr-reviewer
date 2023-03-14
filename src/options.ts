@@ -141,6 +141,7 @@ export class Inputs {
 
 export class Options {
   debug: boolean
+  max_files: number
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
@@ -148,12 +149,14 @@ export class Options {
 
   constructor(
     debug: boolean,
+    max_files = '30',
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
     temperature = '0.0'
   ) {
     this.debug = debug
+    this.max_files = parseInt(max_files)
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
@@ -188,7 +191,7 @@ export class PathFilter {
   }
 
   check(path: string): boolean {
-    let include_all = this.rules.length == 0
+    let include_all = this.rules.length === 0
     let matched = false
     for (const [rule, exclude] of this.rules) {
       if (exclude) {

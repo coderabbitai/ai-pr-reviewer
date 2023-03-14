@@ -14,12 +14,16 @@ const context = github.context
 const repo = context.repo
 
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
+const comment_tag =
+  '<!-- This is an auto-generated comment: summarize by openai -->'
 
 export const codeReview = async (
   bot: Bot,
   options: Options,
   prompts: Prompts
 ) => {
+  const commenter: Commenter = new Commenter()
+
   if (
     context.eventName !== 'pull_request' &&
     context.eventName !== 'pull_request_target'
@@ -29,13 +33,10 @@ export const codeReview = async (
     )
     return
   }
-
   if (!context.payload.pull_request) {
     core.warning(`Skipped: context.payload.pull_request is null`)
     return
   }
-
-  const commenter: Commenter = new Commenter()
 
   const inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
@@ -57,6 +58,22 @@ export const codeReview = async (
   const {files, commits} = diff.data
   if (!files) {
     core.warning(`Skipped: diff.data.files is null`)
+    await commenter.comment(
+      `Skipped: no files to review`,
+      comment_tag,
+      'replace'
+    )
+    return
+  }
+
+  // check if we are exceeding max_files
+  if (files.length > options.max_files) {
+    core.warning("Skipped: too many files to review, can't handle it")
+    await commenter.comment(
+      `Skipped: too many files to review, can't handle it`,
+      comment_tag,
+      'replace'
+    )
     return
   }
 
@@ -145,9 +162,11 @@ export const codeReview = async (
       inputs.summary = summarize_final_response
 
       next_summarize_ids = summarize_final_response_ids
-      const tag =
-        '<!-- This is an auto-generated comment: summarize by openai -->'
-      await commenter.comment(`${summarize_final_response}`, tag, 'replace')
+      await commenter.comment(
+        `${summarize_final_response}`,
+        comment_tag,
+        'replace'
+      )
     }
 
     // final release notes

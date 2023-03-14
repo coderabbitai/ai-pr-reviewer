@@ -6,6 +6,7 @@ import {codeReview} from './review.js'
 async function run(): Promise<void> {
   const options: Options = new Options(
     core.getBooleanInput('debug'),
+    core.getInput('max_files'),
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
     core.getInput('system_message'),
