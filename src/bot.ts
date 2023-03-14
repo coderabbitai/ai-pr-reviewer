@@ -48,6 +48,8 @@ export class Bot {
   }
 
   private chat_ = async (message: string, ids: Ids): Promise<[string, Ids]> => {
+    // record timing
+    const start = Date.now()
     if (!message) {
       return ['', {}]
     }
@@ -57,13 +59,15 @@ export class Bot {
 
     let response: openai.ChatMessage | null = null
     if (this.turbo) {
-      let opts: openai.SendMessageOptions = {}
+      const opts: openai.SendMessageOptions = {}
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId
       }
       response = await this.turbo.sendMessage(message, opts)
       try {
+        const end = Date.now()
         core.info(`response: ${JSON.stringify(response)}`)
+        core.info(`openai response time: ${end - start} ms`)
       } catch (e: any) {
         core.info(
           `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`

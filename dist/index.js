@@ -26988,6 +26988,8 @@ class Bot {
         }
     };
     chat_ = async (message, ids) => {
+        // record timing
+        const start = Date.now();
         if (!message) {
             return ['', {}];
         }
@@ -26996,13 +26998,15 @@ class Bot {
         }
         let response = null;
         if (this.turbo) {
-            let opts = {};
+            const opts = {};
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
             }
             response = await this.turbo.sendMessage(message, opts);
             try {
+                const end = Date.now();
                 core.info(`response: ${JSON.stringify(response)}`);
+                core.info(`openai response time: ${end - start} ms`);
             }
             catch (e) {
                 core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
@@ -27049,7 +27053,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('temperature'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('temperature'));
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
     // initialize openai bot
     let bot = null;
@@ -28693,12 +28697,14 @@ class Inputs {
 }
 class Options {
     debug;
+    max_files;
     review_comment_lgtm;
     path_filters;
     system_message;
     temperature;
-    constructor(debug, review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
+    constructor(debug, max_files = '30', review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
         this.debug = debug;
+        this.max_files = parseInt(max_files);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
@@ -28730,7 +28736,7 @@ class PathFilter {
         }
     }
     check(path) {
-        let include_all = this.rules.length == 0;
+        let include_all = this.rules.length === 0;
         let matched = false;
         for (const [rule, exclude] of this.rules) {
             if (exclude) {
@@ -29049,7 +29055,9 @@ const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_toke
 const review_context = github.context;
 const review_repo = review_context.repo;
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
+const comment_tag = '<!-- This is an auto-generated comment: summarize by openai -->';
 const codeReview = async (bot, options, prompts) => {
+    const commenter = new Commenter();
     if (review_context.eventName !== 'pull_request' &&
         review_context.eventName !== 'pull_request_target') {
         core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
@@ -29059,7 +29067,6 @@ const codeReview = async (bot, options, prompts) => {
         core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    const commenter = new Commenter();
     const inputs = new lib_options/* Inputs */.kq();
     inputs.title = review_context.payload.pull_request.title;
     if (review_context.payload.pull_request.body) {
@@ -29077,6 +29084,13 @@ const codeReview = async (bot, options, prompts) => {
     const { files, commits } = diff.data;
     if (!files) {
         core.warning(`Skipped: diff.data.files is null`);
+        await commenter.comment(`Skipped: no files to review`, comment_tag, 'replace');
+        return;
+    }
+    // check if we are exceeding max_files
+    if (files.length > options.max_files) {
+        core.warning("Skipped: too many files to review, can't handle it");
+        await commenter.comment(`Skipped: too many files to review, can't handle it`, comment_tag, 'replace');
         return;
     }
     // find patches to review
@@ -29153,8 +29167,7 @@ const codeReview = async (bot, options, prompts) => {
         else {
             inputs.summary = summarize_final_response;
             next_summarize_ids = summarize_final_response_ids;
-            const tag = '<!-- This is an auto-generated comment: summarize by openai -->';
-            await commenter.comment(`${summarize_final_response}`, tag, 'replace');
+            await commenter.comment(`${summarize_final_response}`, comment_tag, 'replace');
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
