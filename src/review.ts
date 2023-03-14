@@ -66,8 +66,19 @@ export const codeReview = async (
     return
   }
 
-  // check if we are exceeding max_files
-  if (files.length > options.max_files) {
+  // skip files if they are filtered out
+  const filtered_files = []
+  for (const file of files) {
+    if (!options.check_path(file.filename)) {
+      core.info(`skip for excluded path: ${file.filename}`)
+      continue
+    } else {
+      filtered_files.push(file)
+    }
+  }
+
+  // check if we are exceeding max_files and if max_files is <= 0 (no limit)
+  if (filtered_files.length > options.max_files && options.max_files > 0) {
     core.warning("Skipped: too many files to review, can't handle it")
     await commenter.comment(
       `Skipped: too many files to review, can't handle it`,
@@ -79,11 +90,7 @@ export const codeReview = async (
 
   // find patches to review
   const files_to_review: [string, string, string, [number, string][]][] = []
-  for (const file of files) {
-    if (!options.check_path(file.filename)) {
-      core.info(`skip for excluded path: ${file.filename}`)
-      continue
-    }
+  for (const file of filtered_files) {
     // retrieve file contents
     let file_content = ''
     try {

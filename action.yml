@@ -11,8 +11,8 @@ inputs:
     default: 'false'
   max_files:
     required: false
-    description: 'Max files to review'
-    default: '30'
+    description: 'Max files to review. Less than or equal to 0 means no limit.'
+    default: '40'
   temperature:
     required: false
     description: 'Temperature for GPT model'

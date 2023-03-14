@@ -149,7 +149,7 @@ export class Options {
 
   constructor(
     debug: boolean,
-    max_files = '30',
+    max_files = '40',
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
