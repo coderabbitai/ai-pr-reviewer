@@ -1,0 +1,196 @@
+name: "Combine PRs"
+
+# Controls when the action will run - in this case triggered manually
+on:
+  workflow_dispatch:
+    inputs:
+      branchPrefix:
+        description: "Branch prefix to find combinable PRs based on"
+        required: true
+        default: "dependabot"
+      mustBeGreen:
+        description: "Only combine PRs that are green (status is success)"
+        required: true
+        default: "true"
+      combineBranchName:
+        description: "Name of the branch to combine PRs into"
+        required: true
+        default: "combine-prs-branch"
+      ignoreLabel:
+        description: "Exclude PRs with this label"
+        required: true
+        default: "nocombine"
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "combine-prs"
+  combine-prs:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Set variables
+        env:
+          DEFAULT_BRANCH_PREFIX: dependabot
+          DEFAULT_MUST_BE_GREEN: true
+          DEFAULT_COMBINE_BRANCH_NAME: combine-prs-branch
+          DEFAULT_IGNORE_LABEL: nocombine
+        run: |
+          echo "BRANCH_PREFIX=${{ github.event.inputs.branchPrefix || env.DEFAULT_BRANCH_PREFIX }}" >> $GITHUB_ENV
+          echo "MUST_BE_GREEN=${{ github.event.inputs.mustBeGreen || env.DEFAULT_MUST_BE_GREEN }}" >> $GITHUB_ENV
+          echo "COMBINE_BRANCH_NAME=${{ github.event.inputs.combineBranchName || env.DEFAULT_COMBINE_BRANCH_NAME }}" >> $GITHUB_ENV
+          echo "IGNORE_LABEL=${{ github.event.inputs.ignoreLabel || env.DEFAULT_IGNORE_LABEL }}" >> $GITHUB_ENV
+
+      - uses: actions/github-script@v6
+        id: fetch-branch-names
+        name: Fetch branch names
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const pulls = await github.paginate('GET /repos/:owner/:repo/pulls', {
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            group_labels = ["go", "python", "terraform"];
+            branches = {};
+
+            base_branch = null;
+            for (const pull of pulls)
+            {
+              const branch = pull['head']['ref'];
+              console.log('Pull for branch: ' + branch);
+              if (branch.startsWith('${{ env.BRANCH_PREFIX }}')) {
+                console.log('Branch matched: ' + branch);
+                statusOK = true;
+                if(${{ env.MUST_BE_GREEN}}) {
+                  console.log('Checking green status: ' + branch);
+                  const statuses = await github.paginate('GET /repos/{owner}/{repo}/commits/{ref}/status', {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: branch
+                  });
+                  if(statuses.length > 0) {
+                    const latest_status = statuses[0]['state'];
+                    console.log('Validating status: ' + latest_status);
+                    if(latest_status == 'failure') {
+                      console.log('Discarding ' + branch + ' with status ' + latest_status);
+                      statusOK = false;
+                    }
+                  }
+                }
+                console.log('Checking labels: ' + branch);
+                const labels = pull['labels'];
+                for(const label of labels) {
+                  const labelName = label['name'];
+                  console.log('Checking label: ' + labelName);
+                  if(labelName == '${{ env.IGNORE_LABEL }}') {
+                    console.log('Discarding ' + branch + ' with label ' + labelName);
+                    statusOK = false;
+                  }
+                }
+
+                if (statusOK === true) {
+                  pr_str = '#' + pull['number'] + ' ' + pull['title']
+                  base_branch = pull['base']['ref'];
+                  for (const label of labels) {
+                    const labelName = label['name'];
+                    if(group_labels.includes(labelName)) {
+                      console.log('Added to ' + labelName);
+                      if (branches[labelName]) {
+                        branches[labelName].push(branch);
+                      } else {
+                        branches[labelName] = [branch];
+                      }
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            console.log(branches);
+
+            if (branches.length == 0) {
+              core.setFailed('No PRs/branches matched criteria');
+              return;
+            }
+
+            core.setOutput('base-branch', base_branch);
+            core.setOutput('branches-go', (branches["go"] || []).join(' '));
+            core.setOutput('branches-python', (branches["python"] || []).join(' '));
+            core.setOutput('branches-terraform', (branches["terraform"] || []).join(' '));
+
+            return "ok"
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # Creates a branch with other PR branches merged together
+      - name: Created combined branch and PR
+        env:
+          BASE_BRANCH: ${{ steps.fetch-branch-names.outputs.base-branch }}
+          BRANCHES_1: ${{ steps.fetch-branch-names.outputs.branches-go }}
+          BRANCHES_2: ${{ steps.fetch-branch-names.outputs.branches-python }}
+          BRANCHES_3: ${{ steps.fetch-branch-names.outputs.branches-terraform }}
+          COMBINE_NAME_1: ${{ env.COMBINE_BRANCH_NAME }}-go
+          COMBINE_NAME_2: ${{ env.COMBINE_BRANCH_NAME }}-python
+          COMBINE_NAME_3: ${{ env.COMBINE_BRANCH_NAME }}-terraform
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          set -x
+          basebranch="${BASE_BRANCH%\"}"
+          basebranch="${basebranch#\"}"
+
+          i=1
+          for branches in "${!BRANCHES_@}"; do
+            branches_list=${!branches}
+            name_from_list=COMBINE_NAME_$i
+            name=${!name_from_list}
+
+            echo "Branches: $branches_list"
+            if [ -z "$branches_list" ]; then
+              i=$(( i + 1 ))
+              continue
+            fi
+
+            sourcebranches="${branches_list%\"}"
+            sourcebranches="${sourcebranches#\"}"
+
+            git config pull.rebase false
+            git config user.name github-actions
+            git config user.email github-actions@users.noreply.github.com
+
+            git checkout $basebranch
+            git checkout -b $name
+
+            prs_list=""
+            for branch in ${sourcebranches[@]}; do
+                if git pull origin $branch --no-ff --no-commit; then
+                  git commit --no-edit
+
+                  if pr_view=$(gh pr view $branch); then
+                    title=$(echo "$pr_view" | sed -nE 's/^title:\s(.*)$/\1/p')
+                    number=$(echo "$pr_view" | sed -nE 's/^number:\s(.*)$/\1/p')
+                    desc='#'"$number $title"$'\n'
+                    prs_list="$prs_list$desc"
+                    gh pr close $branch -d
+                  fi
+
+                else
+                  git merge --abort
+                fi
+            done
+
+            git push origin $name
+            i=$(( i + 1 ))
+
+            if [ -z "$prs_list" ]; then
+              continue
+            fi
+
+            prs_string="This PR was created by the Combine PRs action by combining the following PRs:"$'\n'"${prs_list}"
+            title="Combined PR from dependabot's branch $name"
+            gh pr create --base $basebranch --head $name --title "$title" --body "$prs_string"
+          done
