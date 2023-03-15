@@ -86,14 +86,15 @@ inputs:
     required: false
     description: 'The prompt for each file diff'
     default: |
-      Here is the summary you generated for the other files, which you can use as a basis for your response:
+      Here is the summary you generated for the other files, which you can 
+      use as a basis for your response:
 
       ```
       $summary
       ```
 
-      Now, please summarize the diff for `$filename`. Add the summary for 
-      this file to the bullet point list. 
+      Now, please summarize the diff for `$filename` and add the summary for 
+      this file to the bullet point list I have provided above.
 
       ```diff
       $file_diff
@@ -102,7 +103,8 @@ inputs:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      This is the end of the summarization session. Here is the summary you have generated so far in our previous conversations:
+      This is the end of the summarization session. Here is the summary you have 
+      generated so far in our previous conversations:
 
       ```
       $summary
