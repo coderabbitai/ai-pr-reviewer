@@ -28741,6 +28741,7 @@ class PathFilter {
         }
         let included = false;
         let excluded = false;
+        let inclusionRuleExists = false;
         for (const [rule, exclude] of this.rules) {
             if (minimatch(path, rule)) {
                 if (exclude) {
@@ -28750,8 +28751,11 @@ class PathFilter {
                     included = true;
                 }
             }
+            if (!exclude) {
+                inclusionRuleExists = true;
+            }
         }
-        return included && !excluded;
+        return (!inclusionRuleExists || included) && !excluded;
     }
 }
 
