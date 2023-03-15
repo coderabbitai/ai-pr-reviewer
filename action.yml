@@ -81,24 +81,26 @@ inputs:
 
       Reply "OK" to confirm that you are ready to receive the diffs for 
       summarization.
-
   summarize_file_diff:
     required: false
     description: 'The prompt for each file diff'
     default: |
-      Here is the summary you generated for the other files, which you can 
-      use as a basis for your response:
+      So far, you have generated the following summary for the other files:
 
       ```
       $summary
       ```
 
-      Now, please summarize the diff for `$filename` and add the summary for 
-      this file to the bullet point list I have provided above.
+      Please review the diff for `$filename` and add a new bullet point with 
+      the summary for this file. In your response, include the updated bullet point 
+      list of the files we have summarized so far, and your overall feedback to the developer.
 
       ```diff
       $file_diff
       ```
+
+      When providing your response, make sure to keep the existing summary for the other files 
+      intact and only add the new summary for `$filename`.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
