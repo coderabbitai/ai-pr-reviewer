@@ -31,20 +31,22 @@ inputs:
       - https://github.com/isaacs/minimatch
     default: |
       !dist/**
-      !**/*.pb.go
-      !**/*.lock
-      !**/*.yaml
-      !**/*.yml
-      !**/*.cfg
-      !**/*.ini
-      !**/*.mod
-      !**/*.sum
-      !**/*.json
-      !**/*.mmd
-      !**/*.svg
-      !**/*.png
-      !**/*.dot
+      !*.pb.go
+      !*.lock
+      !*.yaml
+      !*.yml
+      !*.cfg
+      !*.toml
+      !*.ini
+      !*.mod
+      !*.sum
+      !*.json
+      !*.mmd
+      !*.svg
+      !*.png
+      !*.dot
       !**/gen/**
+      !**/_gen/**
       !**/vendor/**
   system_message:
     required: false

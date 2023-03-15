@@ -191,23 +191,27 @@ export class PathFilter {
   }
 
   check(path: string): boolean {
-    let include_all = this.rules.length === 0
-    let matched = false
+    if (this.rules.length === 0) {
+      return true
+    }
+
+    let included = false
+    let excluded = false
+    let inclusionRuleExists = false
+
     for (const [rule, exclude] of this.rules) {
-      if (exclude) {
-        if (minimatch(path, rule)) {
-          return false
-        }
-        include_all = true
-      } else {
-        if (minimatch(path, rule)) {
-          matched = true
-          include_all = false
+      if (minimatch(path, rule)) {
+        if (exclude) {
+          excluded = true
         } else {
-          return false
+          included = true
         }
       }
+      if (!exclude) {
+        inclusionRuleExists = true
+      }
     }
-    return include_all || matched
+
+    return (!inclusionRuleExists || included) && !excluded
   }
 }
