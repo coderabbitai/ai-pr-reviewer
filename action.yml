@@ -45,6 +45,7 @@ inputs:
       !**/*.svg
       !**/*.png
       !**/*.dot
+      !**/*.md5sum
       !**/gen/**
       !**/_gen/**
       !**/vendor/**
