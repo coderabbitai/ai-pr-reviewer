@@ -77,11 +77,10 @@ inputs:
       ```
 
       I will provide diffs for each file to be summarized. In every response, 
-      update the high-level summary of the entire pull request, the bullet point 
-      list with each file's diff summary, and any feedback for the developer, 
-      including compliments or suggestions for improvement.
+      update the bullet point list with each file's diff summary.
 
-      Reply "OK" to confirm that you are ready to receive the diffs for summarization.
+      Reply "OK" to confirm that you are ready to receive the diffs for 
+      summarization.
   summarize_file_diff:
     required: false
     description: 'The prompt for each file diff'
@@ -92,18 +91,16 @@ inputs:
       $summary
       ```
 
-      Please review the diff for `$filename` and add a new bullet point with the 
-      summary for this file. In your response, include the updated high-level summary, 
-      the updated bullet point list of the files we have summarized so far, 
-      and your overall feedback to the developer.
+      Please review the diff for `$filename` and add a new bullet point with 
+      the summary for this file. In your response, include the updated bullet point 
+      list of the files we have summarized so far, and your overall feedback to the developer.
 
       ```diff
       $file_diff
       ```
 
-      When providing your response, make sure to keep the existing summary for the other 
-      files intact and only add the new summary for `$filename` so the context is not 
-      lost across conversations.
+      When providing your response, make sure to keep the existing summary for the other files 
+      intact and only add the new summary for `$filename`.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
