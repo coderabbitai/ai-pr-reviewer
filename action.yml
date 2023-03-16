@@ -32,21 +32,38 @@ inputs:
     default: |
       !dist/**
       !*.pb.go
+      !**/*.pb.go
       !*.lock
+      !**/*.lock
       !*.yaml
+      !**/*.yaml
       !*.yml
+      !**/*.yml
       !*.cfg
+      !**/*.cfg
       !*.toml
+      !**/*.toml
       !*.ini
+      !**/*.ini
       !*.mod
+      !**/*.mod
       !*.sum
+      !**/*.sum
       !*.json
+      !**/*.json
       !*.mmd
+      !**/*.mmd
       !*.svg
+      !**/*.svg
       !*.png
+      !**/*.png
       !*.dot
+      !**/*.dot
+      !gen/**
       !**/gen/**
+      !_gen/**
       !**/_gen/**
+      !vendor/**
       !**/vendor/**
   system_message:
     required: false
