@@ -128,9 +128,11 @@ inputs:
       focusing on its purpose and user story. In needed, you can classify the 
       changes as "New Feature", "Bug fix", "Documentation", "Refactor", "Style", 
       "Test", "Chore", "Revert", and provide a bullet point list. For example: 
-      "New Feature: An integrations page was added to the UI".
+      "New Feature: An integrations page was added to the UI". Keep your 
+      response within 50-100 words.
 
-      Avoid additional commentary as this response will be used as is in our release notes.
+      Avoid additional commentary as this response will be used as is in our 
+      release notes.
   review_beginning:
     required: false
     description: 'The beginning prompt of a code review dialog'
