@@ -98,10 +98,6 @@ inputs:
       response, please provide the updated bullet point summary list of all the 
       files we have summarized so far.
 
-      When providing your response, make sure to keep the existing summary for 
-      the other files intact so that context is maintained across our 
-      conversations.
-
       ```diff
       $file_diff
       ```
