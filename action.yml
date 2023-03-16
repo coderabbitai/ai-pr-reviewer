@@ -92,15 +92,15 @@ inputs:
       ```
 
       Please review the diff for `$filename` and add a new bullet point with 
-      the summary for this file. In your response, include the updated bullet point 
-      list of the files we have summarized so far, and your overall feedback to the developer.
+      the summary for this file to the existing list.
+
+      When providing your response, make sure to keep the existing summary for 
+      the other files intact so that context is maintained across our 
+      conversations.
 
       ```diff
       $file_diff
       ```
-
-      When providing your response, make sure to keep the existing summary for the other files 
-      intact and only add the new summary for `$filename`.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
