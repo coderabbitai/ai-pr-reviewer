@@ -69,16 +69,17 @@ inputs:
       In this session, we will summarize a pull request. 
 
       Please provide a bullet point list containing the filename and a short 
-      summary (within 30 words) for each file's diff.
+      summary (within 30 words) for each file's diff. 
+
+      I will provide diffs for each file to be summarized. In every response, 
+      you will provide/update the bullet point list containing the filename and 
+      diff summary (within 30 words) of each file.
 
       The pull request has the title "$title" and the following description:
 
       ```
       $description
       ```
-
-      I will provide diffs for each file to be summarized. In every response, 
-      you will update the bullet point list of each file's diff summary.
 
       Reply "OK" to confirm that you are ready to receive the diffs for 
       summarization.
@@ -94,9 +95,9 @@ inputs:
       ```
 
       I am providing diff for `$filename` below. I would like you to summarize 
-      the diff and add the summary for this file in the bullet point list. In 
-      response, please provide the updated bullet point summary list of all the 
-      files we have summarized so far.
+      the diff and add it to the bullet point list. In response, please provide 
+      the updated bullet point summary list of all the files we have summarized 
+      so far.
 
       ```diff
       $file_diff
@@ -124,11 +125,10 @@ inputs:
     description: 'The prompt for generating release notes'
     default: |
       Create concise release notes in `markdown` format for this pull request, 
-      focusing on its purpose and user story. Classify the changes as "New Feature", 
-      "Bug fix", "Documentation", "Refactor", "Style", "Test", "Chore", 
-      "Revert", and provide a bullet point list. For example: 
-      "New Feature: An integrations page was added to the UI". Keep your 
-      response within 50-100 words.
+      focusing on its purpose and user story. In needed, you can classify the 
+      changes as "New Feature", "Bug fix", "Documentation", "Refactor", "Style", 
+      "Test", "Chore", "Revert", and provide a bullet point list. For example: 
+      "New Feature: An integrations page was added to the UI".
 
       Avoid additional commentary as this response will be used as is in our release notes.
   review_beginning:
