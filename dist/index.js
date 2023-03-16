@@ -26438,7 +26438,7 @@ var ChatGPTAPI = class {
   constructor(opts) {
     const {
       apiKey,
-      apiBaseUrl = "https://api.openai.com",
+      apiBaseUrl = "https://api.openai.com/v1",
       debug = false,
       messageStore,
       completionParams,
@@ -26505,6 +26505,7 @@ Current date: ${currentDate}`;
    * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
    * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
    * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
    *
    * @returns The response from ChatGPT
    */
@@ -26514,7 +26515,8 @@ Current date: ${currentDate}`;
       messageId = v4(),
       timeoutMs,
       onProgress,
-      stream = onProgress ? true : false
+      stream = onProgress ? true : false,
+      completionParams
     } = opts;
     let { abortSignal } = opts;
     let abortController = null;
@@ -26542,7 +26544,7 @@ Current date: ${currentDate}`;
     const responseP = new Promise(
       async (resolve, reject) => {
         var _a, _b;
-        const url = `${this._apiBaseUrl}/v1/chat/completions`;
+        const url = `${this._apiBaseUrl}/chat/completions`;
         const headers = {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this._apiKey}`
@@ -26550,6 +26552,7 @@ Current date: ${currentDate}`;
         const body = {
           max_tokens: maxTokens,
           ...this._completionParams,
+          ...completionParams,
           messages,
           stream
         };
