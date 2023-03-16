@@ -120,7 +120,6 @@ inputs:
       the following content:
         - Thank the user for letting you participate in the code review.
         - High-level summary (focus on the purpose and intent within 80 words)
-        - Your feedback to the developer (within 50 words)
         - Table of files and their summaries
 
       Avoid additional commentary as this summary will be added as a comment on the pull request.
