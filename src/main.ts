@@ -36,7 +36,15 @@ async function run(): Promise<void> {
   }
 
   try {
-    await codeReview(bot, options, prompts)
+    // check if the event is pull_request
+    if (
+      process.env.GITHUB_EVENT_NAME === 'pull_request' ||
+      process.env.GITHUB_EVENT_NAME === 'pull_request_target'
+    ) {
+      await codeReview(bot, options, prompts)
+    } else {
+      core.warning('Skipped: this action only works on push event')
+    }
   } catch (e: any) {
     if (e instanceof Error) {
       core.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
