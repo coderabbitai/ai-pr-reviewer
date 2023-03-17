@@ -28806,7 +28806,7 @@ class Commenter {
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
      */
     async comment(message, tag, mode) {
-        comment(message, tag, mode);
+        await comment(message, tag, mode);
     }
     get_description(description) {
         // remove our summary from description by looking for description_tag and description_tag_end
