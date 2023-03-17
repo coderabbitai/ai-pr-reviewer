@@ -23,7 +23,7 @@ export class Commenter {
    * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
    */
   async comment(message: string, tag: string, mode: string) {
-    comment(message, tag, mode)
+    await comment(message, tag, mode)
   }
 
   get_description(description: string) {
