@@ -103,55 +103,64 @@ ${message}
 
 ${tag}`
     // replace comment made by this action
-    const comments = await list_review_comments(pull_number)
-    for (const comment of comments) {
-      if (comment.path === path && comment.position === line) {
-        // look for tag
-        if (
-          comment.body &&
-          (comment.body.includes(tag) ||
-            comment.body.startsWith(COMMENT_GREETING))
-        ) {
-          await octokit.pulls.updateReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            comment_id: comment.id,
-            body: message
-          })
-          return
+    try {
+      const comments = await list_review_comments(pull_number)
+      for (const comment of comments) {
+        if (comment.path === path && comment.position === line) {
+          // look for tag
+          if (
+            comment.body &&
+            (comment.body.includes(tag) ||
+              comment.body.startsWith(COMMENT_GREETING))
+          ) {
+            await octokit.pulls.updateReviewComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              comment_id: comment.id,
+              body: message
+            })
+            return
+          }
         }
       }
-    }
 
-    await octokit.pulls.createReviewComment({
-      owner: repo.owner,
-      repo: repo.repo,
-      pull_number,
-      body: message,
-      commit_id,
-      path,
-      line
-    })
+      await octokit.pulls.createReviewComment({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number,
+        body: message,
+        commit_id,
+        path,
+        line
+      })
+    } catch (e: any) {
+      core.warning(`Failed to post review comment: ${e}`)
+    }
   }
 }
 
 // recursively list review comments
 const list_review_comments = async (target: number, page: number = 1) => {
-  let {data: comments} = await octokit.pulls.listReviewComments({
-    owner: repo.owner,
-    repo: repo.repo,
-    pull_number: target,
-    page: page,
-    per_page: 100
-  })
-  if (!comments) {
+  try {
+    let {data: comments} = await octokit.pulls.listReviewComments({
+      owner: repo.owner,
+      repo: repo.repo,
+      pull_number: target,
+      page: page,
+      per_page: 100
+    })
+    if (!comments) {
+      return []
+    }
+    if (comments.length >= 100) {
+      comments = comments.concat(await list_review_comments(target, page + 1))
+      return comments
+    } else {
+      return comments
+    }
+  } catch (e: any) {
+    core.warning(`Failed to list review comments: ${e}`)
     return []
-  }
-  if (comments.length >= 100) {
-    comments = comments.concat(await list_review_comments(target, page + 1))
-    return comments
-  } else {
-    return comments
   }
 }
 
@@ -178,13 +187,13 @@ ${message}
 
 ${tag}`
 
-  if (mode == 'create') {
+  if (mode === 'create') {
     await create(body, tag, target)
-  } else if (mode == 'replace') {
+  } else if (mode === 'replace') {
     await replace(body, tag, target)
-  } else if (mode == 'append') {
+  } else if (mode === 'append') {
     await append(body, tag, target)
-  } else if (mode == 'prepend') {
+  } else if (mode === 'prepend') {
     await prepend(body, tag, target)
   } else {
     core.warning(`Unknown mode: ${mode}, use "replace" instead`)
@@ -193,81 +202,108 @@ ${tag}`
 }
 
 const create = async (body: string, tag: string, target: number) => {
-  await octokit.issues.createComment({
-    owner: repo.owner,
-    repo: repo.repo,
-    issue_number: target,
-    body: body
-  })
+  try {
+    await octokit.issues.createComment({
+      owner: repo.owner,
+      repo: repo.repo,
+      issue_number: target,
+      body
+    })
+  } catch (e: any) {
+    core.warning(`Failed to create comment: ${e}`)
+  }
 }
 
 const replace = async (body: string, tag: string, target: number) => {
-  const comment = await find_comment_with_tag(tag, target)
-  if (comment) {
-    await octokit.issues.updateComment({
-      owner: repo.owner,
-      repo: repo.repo,
-      comment_id: comment.id,
-      body: body
-    })
-  } else {
-    await create(body, tag, target)
+  try {
+    const cmt = await find_comment_with_tag(tag, target)
+    if (cmt) {
+      await octokit.issues.updateComment({
+        owner: repo.owner,
+        repo: repo.repo,
+        comment_id: cmt.id,
+        body
+      })
+    } else {
+      await create(body, tag, target)
+    }
+  } catch (e: any) {
+    core.warning(`Failed to replace comment: ${e}`)
   }
 }
 
 const append = async (body: string, tag: string, target: number) => {
-  const comment = await find_comment_with_tag(tag, target)
-  if (comment) {
-    await octokit.issues.updateComment({
-      owner: repo.owner,
-      repo: repo.repo,
-      comment_id: comment.id,
-      body: `${comment.body} ${body}`
-    })
-  } else {
-    await create(body, tag, target)
+  try {
+    const cmt = await find_comment_with_tag(tag, target)
+    if (cmt) {
+      await octokit.issues.updateComment({
+        owner: repo.owner,
+        repo: repo.repo,
+        comment_id: cmt.id,
+        body: `${cmt.body} ${body}`
+      })
+    } else {
+      await create(body, tag, target)
+    }
+  } catch (e: any) {
+    core.warning(`Failed to append comment: ${e}`)
   }
 }
 
 const prepend = async (body: string, tag: string, target: number) => {
-  const comment = await find_comment_with_tag(tag, target)
-  if (comment) {
-    await octokit.issues.updateComment({
-      owner: repo.owner,
-      repo: repo.repo,
-      comment_id: comment.id,
-      body: `${body} ${comment.body}`
-    })
-  } else {
-    await create(body, tag, target)
+  try {
+    const cmt = await find_comment_with_tag(tag, target)
+    if (cmt) {
+      await octokit.issues.updateComment({
+        owner: repo.owner,
+        repo: repo.repo,
+        comment_id: cmt.id,
+        body: `${body} ${cmt.body}`
+      })
+    } else {
+      await create(body, tag, target)
+    }
+  } catch (e: any) {
+    core.warning(`Failed to prepend comment: ${e}`)
   }
 }
 
 const find_comment_with_tag = async (tag: string, target: number) => {
-  const comments = await list_comments(target)
-  for (let comment of comments) {
-    if (comment.body && comment.body.includes(tag)) {
-      return comment
+  try {
+    const comments = await list_comments(target)
+    for (const cmt of comments) {
+      if (cmt.body && cmt.body.includes(tag)) {
+        return cmt
+      }
     }
+
+    return null
+  } catch (e: any) {
+    core.warning(`Failed to find comment with tag: ${e}`)
+    return null
   }
-  return null
 }
 
 const list_comments = async (target: number, page: number = 1) => {
-  let {data: comments} = await octokit.issues.listComments({
-    owner: repo.owner,
-    repo: repo.repo,
-    issue_number: target,
-    page: page,
-    per_page: 100
-  })
-  if (!comments) {
+  try {
+    let {data: comments} = await octokit.issues.listComments({
+      owner: repo.owner,
+      repo: repo.repo,
+      issue_number: target,
+      page,
+      per_page: 100
+    })
+    if (!comments) {
+      return []
+    }
+    if (comments.length >= 100) {
+      comments = comments.concat(await list_comments(target, page + 1))
+      return comments
+    } else {
+      return comments
+    }
+  } catch (e: any) {
+    core.warning(`Failed to list comments: ${e}`)
     return []
-  }
-  if (comments.length >= 100) {
-    comments = comments.concat(await list_comments(target, page + 1))
-    return comments
-  } else {
-    return comments
   }
 }
