@@ -27068,7 +27068,14 @@ async function run() {
         return;
     }
     try {
-        await (0,_review_js__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(bot, options, prompts);
+        // check if the event is pull_request
+        if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
+            process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(bot, options, prompts);
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
+        }
     }
     catch (e) {
         if (e instanceof Error) {
