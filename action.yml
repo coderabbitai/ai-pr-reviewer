@@ -92,9 +92,9 @@ inputs:
       ```
 
       I am providing diff for `$filename` below. I would like you to summarize 
-      the diff and add it to the bullet point list. In response, please provide 
-      the updated bullet point summary list of all the files we have summarized 
-      so far.
+      the diff (within 30 words) and add it to the bullet point list. In response, 
+      please provide the updated bullet point summary list of all the files we have 
+      summarized so far.
 
       ```diff
       $file_diff
