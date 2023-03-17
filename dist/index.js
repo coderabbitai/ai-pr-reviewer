@@ -29017,22 +29017,28 @@ const find_comment_with_tag = async (tag, target) => {
     return null;
 };
 const list_comments = async (target, page = 1) => {
-    let { data: comments } = await octokit.issues.listComments({
-        owner: repo.owner,
-        repo: repo.repo,
-        issue_number: target,
-        page: page,
-        per_page: 100
-    });
-    if (!comments) {
+    try {
+        let { data: comments } = await octokit.issues.listComments({
+            owner: repo.owner,
+            repo: repo.repo,
+            issue_number: target,
+            page: page,
+            per_page: 100
+        });
+        if (!comments) {
+            return [];
+        }
+        if (comments.length >= 100) {
+            comments = comments.concat(await list_comments(target, page + 1));
+            return comments;
+        }
+        else {
+            return comments;
+        }
+    }
+    catch (e) {
+        core.warning(`Failed to list comments: ${e}`);
         return [];
-    }
-    if (comments.length >= 100) {
-        comments = comments.concat(await list_comments(target, page + 1));
-        return comments;
-    }
-    else {
-        return comments;
     }
 };
 
