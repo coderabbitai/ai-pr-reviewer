@@ -68,9 +68,6 @@ inputs:
 
       In this session, we will summarize a pull request. 
 
-      Please provide a bullet point list containing the filename and a short 
-      summary (within 30 words) for each file's diff. 
-
       I will provide diffs for each file to be summarized. In every response, 
       you will provide/update the bullet point list containing the filename and 
       diff summary (within 30 words) of each file.

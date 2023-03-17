@@ -28905,30 +28905,27 @@ ${tag}`;
         }
     }
 }
-// recursively list review comments
 const list_review_comments = async (target, page = 1) => {
+    const comments = [];
     try {
-        let { data: comments } = await octokit.pulls.listReviewComments({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number: target,
-            page: page,
-            per_page: 100
-        });
-        if (!comments) {
-            return [];
-        }
-        if (comments.length >= 100) {
-            comments = comments.concat(await list_review_comments(target, page + 1));
-            return comments;
-        }
-        else {
-            return comments;
-        }
+        let data;
+        do {
+            ;
+            ({ data } = await octokit.pulls.listReviewComments({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number: target,
+                page,
+                per_page: 100
+            }));
+            comments.push(...data);
+            page++;
+        } while (data.length >= 100);
+        return comments;
     }
     catch (e) {
-        core.warning(`Failed to list review comments: ${e}`);
-        return [];
+        console.warn(`Failed to list review comments: ${e}`);
+        return comments;
     }
 };
 const comment = async (message, tag, mode) => {
