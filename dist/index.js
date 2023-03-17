@@ -28712,7 +28712,7 @@ class Options {
     path_filters;
     system_message;
     temperature;
-    constructor(debug, max_files = '40', review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
+    constructor(debug, max_files = '80', review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
         this.debug = debug;
         this.max_files = parseInt(max_files);
         this.review_comment_lgtm = review_comment_lgtm;
