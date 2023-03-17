@@ -181,9 +181,9 @@ inputs:
     description: 'The prompt for each file diff'
     default: |
       Next, I will send you a series of patches. Each patch consists of a diff snippet, 
-      and your task is to briefly review every patch. Identify any bug risks or provide 
+      and your task is to review every patch. Identify any bug risks or provide 
       improvement suggestions. If the patch looks good and acceptable, please reply 
-      "LGTM!" with a short comment within 30 words. 
+      "LGTM!" with a short comment. 
 
       Your responses will be recorded as review comments on the pull request. 
       Markdown format is preferred for your responses. Reply "OK" to confirm.
