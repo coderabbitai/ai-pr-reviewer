@@ -29066,6 +29066,9 @@ class Inputs {
         this.comment_chain = comment_chain;
         this.comment = comment;
     }
+    clone() {
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patch, this.diff, this.comment_chain, this.comment);
+    }
     render(content) {
         if (!content) {
             return '';
@@ -29529,7 +29532,7 @@ Tips:
             // reset chat session for each file while reviewing
             let next_review_ids = review_begin_ids;
             // make a copy of inputs
-            const ins = JSON.parse(JSON.stringify(inputs));
+            const ins = inputs.clone();
             ins.filename = filename;
             ins.file_content = file_content;
             ins.file_diff = file_diff;

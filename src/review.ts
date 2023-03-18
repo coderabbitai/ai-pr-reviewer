@@ -226,7 +226,7 @@ Tips:
           let next_review_ids = review_begin_ids
 
           // make a copy of inputs
-          const ins: Inputs = JSON.parse(JSON.stringify(inputs))
+          const ins: Inputs = inputs.clone()
 
           ins.filename = filename
           ins.file_content = file_content
