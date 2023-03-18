@@ -27144,12 +27144,6 @@ ${COMMENT_TAG}`;
         try {
             let found = false;
             const comments = await this.get_comments_at_line(pull_number, path, line);
-            if (comments.length === 0) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`No existing comments found at line ${line}`);
-            }
-            else {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found ${comments.length} existing comments at line ${line}`);
-            }
             for (const comment of comments) {
                 if (comment.body.includes(COMMENT_TAG)) {
                     await octokit.pulls.updateReviewComment({
@@ -27249,7 +27243,7 @@ ${chain}
                 });
                 all_comments.push(...comments);
                 page++;
-                if (comments.length < 100) {
+                if (!comments || comments.length < 100) {
                     break;
                 }
             }
@@ -27396,7 +27390,7 @@ ${tag}`;
                 });
                 all_comments.push(...comments);
                 page++;
-                if (comments.length < 100) {
+                if (!comments || comments.length < 100) {
                     break;
                 }
             }
