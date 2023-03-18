@@ -61,6 +61,7 @@ export const handleReviewComment = async (bot: Bot) => {
       pull_number,
       comment
     )
+    core.info(`Conversation chain: ${chain}`)
     // check whether this chain contains replies from the bot
     if (
       chain.includes(COMMENT_TAG) ||

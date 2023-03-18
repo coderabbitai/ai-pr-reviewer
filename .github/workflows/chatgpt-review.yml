@@ -28,4 +28,4 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: true
-          review_comment_lgtm: true
+          review_comment_lgtm: false
