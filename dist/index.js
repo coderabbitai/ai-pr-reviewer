@@ -27173,22 +27173,11 @@ ${tag}`;
     async getConversationChain(pull_number, comment) {
         try {
             const reviewComments = await list_review_comments(pull_number);
-            const conversationChain = [
-                `${comment.user.login}-(${comment.id}): ${comment.body}`
-            ];
-            let in_reply_to_id = comment.in_reply_to_id;
-            let topLevelComment = comment;
-            while (in_reply_to_id) {
-                const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
-                if (parentComment) {
-                    conversationChain.unshift(`${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`);
-                    in_reply_to_id = parentComment.in_reply_to_id;
-                    topLevelComment = parentComment;
-                }
-                else {
-                    break;
-                }
-            }
+            const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
+            const conversationChain = reviewComments
+                .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
+                .map((cmt) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`);
+            conversationChain.unshift(`${topLevelComment.user.login}-(${topLevelComment.id}): ${topLevelComment.body}`);
             return {
                 chain: conversationChain.join('\n---\n'),
                 topLevelComment
@@ -27201,6 +27190,19 @@ ${tag}`;
                 topLevelComment: null
             };
         }
+    }
+    async getTopLevelComment(reviewComments, comment) {
+        let topLevelComment = comment;
+        while (topLevelComment.in_reply_to_id) {
+            const parentComment = reviewComments.find((cmt) => cmt.id === topLevelComment.in_reply_to_id);
+            if (parentComment) {
+                topLevelComment = parentComment;
+            }
+            else {
+                break;
+            }
+        }
+        return topLevelComment;
     }
 }
 const list_review_comments = async (target, page = 1) => {
