@@ -167,7 +167,9 @@ ${COMMENT_TAG}`
       }
     }
 
-    core.info(`Found top level comments: ${top_level_comments.length}`)
+    core.info(
+      `Found top level comments: ${top_level_comments.length}, path: ${path}, line: ${line}`
+    )
 
     let all_chains = ''
     let chain_num = 0

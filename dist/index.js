@@ -27185,7 +27185,7 @@ ${COMMENT_TAG}`;
                 top_level_comments.push(comment);
             }
         }
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found top level comments: ${top_level_comments.length}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found top level comments: ${top_level_comments.length}, path: ${path}, line: ${line}`);
         let all_chains = '';
         let chain_num = 0;
         for (const top_level_comment of top_level_comments) {
@@ -29569,6 +29569,9 @@ Tips:
                 const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
                 if (all_chains.length > 0) {
                     inputs.comment_chain = all_chains;
+                }
+                else {
+                    inputs.comment_chain = 'no previous comments';
                 }
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {

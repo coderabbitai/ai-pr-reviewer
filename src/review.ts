@@ -274,6 +274,8 @@ Tips:
 
         if (all_chains.length > 0) {
           inputs.comment_chain = all_chains
+        } else {
+          inputs.comment_chain = 'no previous comments'
         }
 
         const [response, patch_ids] = await bot.chat(
