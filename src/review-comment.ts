@@ -48,7 +48,7 @@ export const handleReviewComment = async (bot: Bot) => {
     )
     // check whether this chain contains replies from the bot
     if (chain.includes(COMMENT_TAG)) {
-      const prompt = `I would like you to reply to the new review comment made on a conversation chain on a code review diff.
+      const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
 \`\`\`diff

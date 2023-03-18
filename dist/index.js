@@ -29156,7 +29156,7 @@ const handleReviewComment = async (bot) => {
         const { chain, topLevelCommentId } = await commenter.getConversationChain(pull_number, comment);
         // check whether this chain contains replies from the bot
         if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
-            const prompt = `I would like you to reply to the new review comment made on a conversation chain on a code review diff.
+            const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
 \`\`\`diff
