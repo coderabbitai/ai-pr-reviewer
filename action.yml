@@ -200,9 +200,22 @@ inputs:
       $system_message
 
       A comment was made on a review for a diff patch on file 
-      `$filename`. We will be replying to that. If possible, I 
+      `$filename`. You will be replying directly to that. If possible, I 
       will provide you the file and the entire diff to help 
       provide overall context.
+
+      For context, the pull request has the title "$title" and the following 
+      description:
+
+      ```
+      $description
+      ```
+
+      The OpenAI-generated summary is as follows:
+
+      ```
+      $summary
+      ```
 
       Reply "OK" to confirm.
   comment_file:
@@ -245,14 +258,13 @@ inputs:
       $comment_chain
       ```
 
-      Please directly reply to the new comment in the conversation 
+      Please reply directly to the new comment in the conversation 
       chain without extra prose as that reply will be posted as-is.
 
       In your reply, please make sure to begin the reply by
-      tagging the user:
-      `@user: <your reply>`
+      tagging the user with "@user".
 
-      To reiterate, the comment that you need to directly reply to:
+      The comment that you need to directly reply to:
 
       ```
       $comment

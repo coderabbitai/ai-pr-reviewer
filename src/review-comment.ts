@@ -46,6 +46,10 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
     core.warning(`Skipped: ${context.eventName} event is missing pull_request`)
     return
   }
+  inputs.title = context.payload.pull_request.title
+  if (context.payload.pull_request.body) {
+    inputs.description = context.payload.pull_request.body
+  }
 
   // check if the comment was created and not edited or deleted
   if (context.payload.action !== 'created') {
@@ -112,6 +116,16 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
       } catch (error) {
         core.warning(`Failed to get file contents: ${error}, skipping.`)
       }
+
+      // get summary of the PR
+      const summary = await commenter.find_comment_with_tag(
+        COMMENT_TAG,
+        pull_number
+      )
+      if (summary) {
+        inputs.summary = summary
+      }
+
       inputs.filename = comment.path
       inputs.file_content = file_content
       inputs.file_diff = file_diff

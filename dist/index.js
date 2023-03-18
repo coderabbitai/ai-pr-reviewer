@@ -27075,7 +27075,7 @@ class Commenter {
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
      */
     async comment(message, tag, mode) {
-        await comment(message, tag, mode);
+        await this.post_comment(message, tag, mode);
     }
     get_description(description) {
         // remove our summary from description by looking for description_tag and description_tag_end
@@ -27141,7 +27141,7 @@ ${message}
 ${tag}`;
         // replace comment made by this action
         try {
-            const comments = await list_review_comments(pull_number);
+            const comments = await this.list_review_comments(pull_number);
             for (const comment of comments) {
                 if (comment.path === path && comment.position === line) {
                     // look for tag
@@ -27172,7 +27172,7 @@ ${tag}`;
     }
     async getConversationChain(pull_number, comment) {
         try {
-            const reviewComments = await list_review_comments(pull_number);
+            const reviewComments = await this.list_review_comments(pull_number);
             const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
             const conversationChain = reviewComments
                 .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
@@ -27204,175 +27204,175 @@ ${tag}`;
         }
         return topLevelComment;
     }
-}
-const list_review_comments = async (target, page = 1) => {
-    const comments = [];
-    try {
-        let data;
-        do {
-            ;
-            ({ data } = await octokit.pulls.listReviewComments({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number: target,
-                page,
-                per_page: 100
-            }));
-            comments.push(...data);
-            page++;
-        } while (data.length >= 100);
-        return comments;
+    async list_review_comments(target, page = 1) {
+        const comments = [];
+        try {
+            let data;
+            do {
+                ;
+                ({ data } = await octokit.pulls.listReviewComments({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number: target,
+                    page,
+                    per_page: 100
+                }));
+                comments.push(...data);
+                page++;
+            } while (data.length >= 100);
+            return comments;
+        }
+        catch (e) {
+            console.warn(`Failed to list review comments: ${e}`);
+            return comments;
+        }
     }
-    catch (e) {
-        console.warn(`Failed to list review comments: ${e}`);
-        return comments;
-    }
-};
-const comment = async (message, tag, mode) => {
-    let target;
-    if (context.payload.pull_request) {
-        target = context.payload.pull_request.number;
-    }
-    else if (context.payload.issue) {
-        target = context.payload.issue.number;
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
-        return;
-    }
-    if (!tag) {
-        tag = COMMENT_TAG;
-    }
-    const body = `${COMMENT_GREETING}
+    async post_comment(message, tag, mode) {
+        let target;
+        if (context.payload.pull_request) {
+            target = context.payload.pull_request.number;
+        }
+        else if (context.payload.issue) {
+            target = context.payload.issue.number;
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
+            return;
+        }
+        if (!tag) {
+            tag = COMMENT_TAG;
+        }
+        const body = `${COMMENT_GREETING}
 
 ${message}
 
 ${tag}`;
-    if (mode === 'create') {
-        await create(body, tag, target);
-    }
-    else if (mode === 'replace') {
-        await replace(body, tag, target);
-    }
-    else if (mode === 'append') {
-        await append(body, tag, target);
-    }
-    else if (mode === 'prepend') {
-        await prepend(body, tag, target);
-    }
-    else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
-        await replace(body, tag, target);
-    }
-};
-const create = async (body, tag, target) => {
-    try {
-        await octokit.issues.createComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            issue_number: target,
-            body
-        });
-    }
-    catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to create comment: ${e}`);
-    }
-};
-const replace = async (body, tag, target) => {
-    try {
-        const cmt = await find_comment_with_tag(tag, target);
-        if (cmt) {
-            await octokit.issues.updateComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                comment_id: cmt.id,
-                body
-            });
+        if (mode === 'create') {
+            await this.create(body, target);
+        }
+        else if (mode === 'replace') {
+            await this.replace(body, tag, target);
+        }
+        else if (mode === 'append') {
+            await this.append(body, tag, target);
+        }
+        else if (mode === 'prepend') {
+            await this.prepend(body, tag, target);
         }
         else {
-            await create(body, tag, target);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
+            await this.replace(body, tag, target);
         }
     }
-    catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to replace comment: ${e}`);
-    }
-};
-const append = async (body, tag, target) => {
-    try {
-        const cmt = await find_comment_with_tag(tag, target);
-        if (cmt) {
-            await octokit.issues.updateComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                comment_id: cmt.id,
-                body: `${cmt.body} ${body}`
-            });
-        }
-        else {
-            await create(body, tag, target);
-        }
-    }
-    catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to append comment: ${e}`);
-    }
-};
-const prepend = async (body, tag, target) => {
-    try {
-        const cmt = await find_comment_with_tag(tag, target);
-        if (cmt) {
-            await octokit.issues.updateComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                comment_id: cmt.id,
-                body: `${body} ${cmt.body}`
-            });
-        }
-        else {
-            await create(body, tag, target);
-        }
-    }
-    catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to prepend comment: ${e}`);
-    }
-};
-const find_comment_with_tag = async (tag, target) => {
-    try {
-        const comments = await list_comments(target);
-        for (const cmt of comments) {
-            if (cmt.body && cmt.body.includes(tag)) {
-                return cmt;
-            }
-        }
-        return null;
-    }
-    catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find comment with tag: ${e}`);
-        return null;
-    }
-};
-const list_comments = async (target, page = 1) => {
-    const comments = [];
-    try {
-        let data;
-        do {
-            ;
-            ({ data } = await octokit.issues.listComments({
+    async create(body, target) {
+        try {
+            await octokit.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
                 issue_number: target,
-                page,
-                per_page: 100
-            }));
-            comments.push(...data);
-            page++;
-        } while (data.length >= 100);
-        return comments;
+                body
+            });
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to create comment: ${e}`);
+        }
     }
-    catch (e) {
-        console.warn(`Failed to list comments: ${e}`);
-        return comments;
+    async replace(body, tag, target) {
+        try {
+            const cmt = await this.find_comment_with_tag(tag, target);
+            if (cmt) {
+                await octokit.issues.updateComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    comment_id: cmt.id,
+                    body
+                });
+            }
+            else {
+                await this.create(body, target);
+            }
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to replace comment: ${e}`);
+        }
     }
-};
+    async append(body, tag, target) {
+        try {
+            const cmt = await this.find_comment_with_tag(tag, target);
+            if (cmt) {
+                await octokit.issues.updateComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    comment_id: cmt.id,
+                    body: `${cmt.body} ${body}`
+                });
+            }
+            else {
+                await this.create(body, target);
+            }
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to append comment: ${e}`);
+        }
+    }
+    async prepend(body, tag, target) {
+        try {
+            const cmt = await this.find_comment_with_tag(tag, target);
+            if (cmt) {
+                await octokit.issues.updateComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    comment_id: cmt.id,
+                    body: `${body} ${cmt.body}`
+                });
+            }
+            else {
+                await this.create(body, target);
+            }
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to prepend comment: ${e}`);
+        }
+    }
+    async find_comment_with_tag(tag, target) {
+        try {
+            const comments = await this.list_comments(target);
+            for (const cmt of comments) {
+                if (cmt.body && cmt.body.includes(tag)) {
+                    return cmt;
+                }
+            }
+            return null;
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find comment with tag: ${e}`);
+            return null;
+        }
+    }
+    async list_comments(target, page = 1) {
+        const comments = [];
+        try {
+            let data;
+            do {
+                ;
+                ({ data } = await octokit.issues.listComments({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    issue_number: target,
+                    page,
+                    per_page: 100
+                }));
+                comments.push(...data);
+                page++;
+            } while (data.length >= 100);
+            return comments;
+        }
+        catch (e) {
+            console.warn(`Failed to list comments: ${e}`);
+            return comments;
+        }
+    }
+}
 
 
 /***/ }),
@@ -29187,6 +29187,10 @@ const handleReviewComment = async (bot, prompts) => {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing pull_request`);
         return;
     }
+    inputs.title = context.payload.pull_request.title;
+    if (context.payload.pull_request.body) {
+        inputs.description = context.payload.pull_request.body;
+    }
     // check if the comment was created and not edited or deleted
     if (context.payload.action !== 'created') {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is not created`);
@@ -29240,6 +29244,11 @@ const handleReviewComment = async (bot, prompts) => {
             }
             catch (error) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
+            }
+            // get summary of the PR
+            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs, pull_number);
+            if (summary) {
+                inputs.summary = summary;
             }
             inputs.filename = comment.path;
             inputs.file_content = file_content;
