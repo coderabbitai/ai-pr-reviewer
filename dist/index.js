@@ -27134,55 +27134,85 @@ class Commenter {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
+    async review_comment(pull_number, commit_id, path, line, message) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`;
+${COMMENT_TAG}`;
         // replace comment made by this action
         try {
-            const comments = await this.list_review_comments(pull_number);
+            let found = false;
+            const comments = await this.get_comments_at_line(pull_number, path, line);
             for (const comment of comments) {
-                if (comment.path === path && comment.position === line) {
-                    // look for tag
-                    if (comment.body && comment.body.includes(tag)) {
-                        await octokit.pulls.updateReviewComment({
-                            owner: repo.owner,
-                            repo: repo.repo,
-                            comment_id: comment.id,
-                            body: message
-                        });
-                        return;
-                    }
+                if (comment.body.includes(COMMENT_TAG)) {
+                    await octokit.pulls.updateReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        comment_id: comment.id,
+                        body: message
+                    });
+                    found = true;
+                    break;
                 }
             }
-            await octokit.pulls.createReviewComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number,
-                body: message,
-                commit_id,
-                path,
-                line
-            });
+            if (!found) {
+                await octokit.pulls.createReviewComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: message,
+                    commit_id,
+                    path,
+                    line
+                });
+            }
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment: ${e}`);
         }
     }
-    async getConversationChain(pull_number, comment) {
+    async get_comments_at_line(pull_number, path, line) {
+        const comments = await this.list_review_comments(pull_number);
+        return comments.filter((comment) => comment.path === path && comment.line === line && comment.body !== '');
+    }
+    async get_conversation_chains_at_line(pull_number, path, line, tag = '') {
+        const existing_comments = await this.get_comments_at_line(pull_number, path, line);
+        // find all top most comments
+        const top_level_comments = [];
+        for (const comment of existing_comments) {
+            if (!comment.in_reply_to_id) {
+                top_level_comments.push(comment);
+            }
+        }
+        let all_chains = '';
+        let chain_num = 0;
+        for (const top_level_comment of top_level_comments) {
+            // get conversation chain
+            const chain = await this.compose_conversation_chain(existing_comments, top_level_comment);
+            if (chain && chain.includes(tag)) {
+                chain_num += 1;
+                all_chains += `Conversation Chain ${chain_num}:
+${chain}
+---
+`;
+            }
+        }
+        return all_chains;
+    }
+    async compose_conversation_chain(reviewComments, topLevelComment) {
+        const conversationChain = reviewComments
+            .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
+            .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
+        conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
+        return conversationChain.join('\n---\n');
+    }
+    async get_conversation_chain(pull_number, comment) {
         try {
-            const reviewComments = await this.list_review_comments(pull_number);
-            const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
-            const conversationChain = reviewComments
-                .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
-                .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
-            conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
-            return {
-                chain: conversationChain.join('\n---\n'),
-                topLevelComment
-            };
+            const review_comments = await this.list_review_comments(pull_number);
+            const top_level_comment = await this.get_top_level_comment(review_comments, comment);
+            const chain = await this.compose_conversation_chain(review_comments, top_level_comment);
+            return { chain, topLevelComment: top_level_comment };
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
@@ -27192,40 +27222,42 @@ ${tag}`;
             };
         }
     }
-    async getTopLevelComment(reviewComments, comment) {
-        let topLevelComment = comment;
-        while (topLevelComment.in_reply_to_id) {
-            const parentComment = reviewComments.find((cmt) => cmt.id === topLevelComment.in_reply_to_id);
-            if (parentComment) {
-                topLevelComment = parentComment;
+    async get_top_level_comment(reviewComments, comment) {
+        let top_level_comment = comment;
+        while (top_level_comment.in_reply_to_id) {
+            const parent_comment = reviewComments.find((cmt) => cmt.id === top_level_comment.in_reply_to_id);
+            if (parent_comment) {
+                top_level_comment = parent_comment;
             }
             else {
                 break;
             }
         }
-        return topLevelComment;
+        return top_level_comment;
     }
-    async list_review_comments(target, page = 1) {
-        const comments = [];
+    async list_review_comments(target) {
+        const all_comments = [];
+        let page = 1;
         try {
-            let data;
-            do {
-                ;
-                ({ data } = await octokit.pulls.listReviewComments({
+            for (;;) {
+                const { data: comments } = await octokit.pulls.listReviewComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number: target,
                     page,
                     per_page: 100
-                }));
-                comments.push(...data);
+                });
+                all_comments.push(...comments);
                 page++;
-            } while (data.length >= 100);
-            return comments;
+                if (!comments || comments.length < 100) {
+                    break;
+                }
+            }
+            return all_comments;
         }
         catch (e) {
             console.warn(`Failed to list review comments: ${e}`);
-            return comments;
+            return all_comments;
         }
     }
     async post_comment(message, tag, mode) {
@@ -27350,27 +27382,29 @@ ${tag}`;
             return null;
         }
     }
-    async list_comments(target, page = 1) {
-        const comments = [];
+    async list_comments(target) {
+        const all_comments = [];
+        let page = 1;
         try {
-            let data;
-            do {
-                ;
-                ({ data } = await octokit.issues.listComments({
+            for (;;) {
+                const { data: comments } = await octokit.issues.listComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     issue_number: target,
                     page,
                     per_page: 100
-                }));
-                comments.push(...data);
+                });
+                all_comments.push(...comments);
                 page++;
-            } while (data.length >= 100);
-            return comments;
+                if (!comments || comments.length < 100) {
+                    break;
+                }
+            }
+            return all_comments;
         }
         catch (e) {
             console.warn(`Failed to list comments: ${e}`);
-            return comments;
+            return all_comments;
         }
     }
 }
@@ -29022,7 +29056,7 @@ class Inputs {
     diff;
     comment_chain;
     comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = '', file_content = '', file_diff = '', patch = '', diff = '', comment_chain = '', comment = '') {
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patch = 'patch cannot be provided', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -29204,7 +29238,7 @@ const handleReviewComment = async (bot, prompts) => {
         const diff = comment.diff_hunk;
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = diff;
-        const { chain: comment_chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
+        const { chain: comment_chain, topLevelComment } = await commenter.get_conversation_chain(pull_number, comment);
         inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
@@ -29530,6 +29564,14 @@ Tips:
             for (const [line, patch] of patches) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with openai ...`);
                 inputs.patch = patch;
+                // get existing comments on the line
+                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
+                if (all_chains.length > 0) {
+                    inputs.comment_chain = all_chains;
+                }
+                else {
+                    inputs.comment_chain = 'no previous comments';
+                }
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');

@@ -190,6 +190,13 @@ inputs:
     default: |
       $filename
 
+      Existing comments on the patch, though some of them may be outdated. 
+      Please use them as additional context.
+      ```
+      $comment_chain
+      ```
+
+      Diff for review:
       ```diff
       $patch
       ```
@@ -259,7 +266,8 @@ inputs:
       ```
 
       Please reply directly to the new comment in the conversation 
-      chain without extra prose as that reply will be posted as-is.
+      chain (instead of suggesting a reply) and your reply will be 
+      posted as-is.
 
       In your reply, please make sure to begin the reply by
       tagging the user with "@user".

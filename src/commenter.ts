@@ -100,66 +100,119 @@ export class Commenter {
     commit_id: string,
     path: string,
     line: number,
-    message: string,
-    tag: string = COMMENT_TAG
+    message: string
   ) {
     message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`
+${COMMENT_TAG}`
     // replace comment made by this action
     try {
-      const comments = await this.list_review_comments(pull_number)
+      let found = false
+      const comments = await this.get_comments_at_line(pull_number, path, line)
       for (const comment of comments) {
-        if (comment.path === path && comment.position === line) {
-          // look for tag
-          if (comment.body && comment.body.includes(tag)) {
-            await octokit.pulls.updateReviewComment({
-              owner: repo.owner,
-              repo: repo.repo,
-              comment_id: comment.id,
-              body: message
-            })
-            return
-          }
+        if (comment.body.includes(COMMENT_TAG)) {
+          await octokit.pulls.updateReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: message
+          })
+          found = true
+          break
         }
       }
 
-      await octokit.pulls.createReviewComment({
-        owner: repo.owner,
-        repo: repo.repo,
-        pull_number,
-        body: message,
-        commit_id,
-        path,
-        line
-      })
+      if (!found) {
+        await octokit.pulls.createReviewComment({
+          owner: repo.owner,
+          repo: repo.repo,
+          pull_number,
+          body: message,
+          commit_id,
+          path,
+          line
+        })
+      }
     } catch (e: any) {
       core.warning(`Failed to post review comment: ${e}`)
     }
   }
 
-  async getConversationChain(pull_number: number, comment: any) {
+  async get_comments_at_line(pull_number: number, path: string, line: number) {
+    const comments = await this.list_review_comments(pull_number)
+    return comments.filter(
+      (comment: any) =>
+        comment.path === path && comment.line === line && comment.body !== ''
+    )
+  }
+
+  async get_conversation_chains_at_line(
+    pull_number: number,
+    path: string,
+    line: number,
+    tag: string = ''
+  ) {
+    const existing_comments = await this.get_comments_at_line(
+      pull_number,
+      path,
+      line
+    )
+    // find all top most comments
+    const top_level_comments = []
+    for (const comment of existing_comments) {
+      if (!comment.in_reply_to_id) {
+        top_level_comments.push(comment)
+      }
+    }
+
+    let all_chains = ''
+    let chain_num = 0
+    for (const top_level_comment of top_level_comments) {
+      // get conversation chain
+      const chain = await this.compose_conversation_chain(
+        existing_comments,
+        top_level_comment
+      )
+      if (chain && chain.includes(tag)) {
+        chain_num += 1
+        all_chains += `Conversation Chain ${chain_num}:
+${chain}
+---
+`
+      }
+    }
+    return all_chains
+  }
+
+  async compose_conversation_chain(
+    reviewComments: any[],
+    topLevelComment: any
+  ) {
+    const conversationChain = reviewComments
+      .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
+      .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
+
+    conversationChain.unshift(
+      `${topLevelComment.user.login}: ${topLevelComment.body}`
+    )
+
+    return conversationChain.join('\n---\n')
+  }
+
+  async get_conversation_chain(pull_number: number, comment: any) {
     try {
-      const reviewComments = await this.list_review_comments(pull_number)
-      const topLevelComment = await this.getTopLevelComment(
-        reviewComments,
+      const review_comments = await this.list_review_comments(pull_number)
+      const top_level_comment = await this.get_top_level_comment(
+        review_comments,
         comment
       )
-
-      const conversationChain = reviewComments
-        .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
-        .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
-
-      conversationChain.unshift(
-        `${topLevelComment.user.login}: ${topLevelComment.body}`
+      const chain = await this.compose_conversation_chain(
+        review_comments,
+        top_level_comment
       )
-
-      return {
-        chain: conversationChain.join('\n---\n'),
-        topLevelComment
-      }
+      return {chain, topLevelComment: top_level_comment}
     } catch (e: any) {
       core.warning(`Failed to get conversation chain: ${e}`)
       return {
@@ -169,44 +222,47 @@ ${tag}`
     }
   }
 
-  async getTopLevelComment(reviewComments: any[], comment: any) {
-    let topLevelComment = comment
+  async get_top_level_comment(reviewComments: any[], comment: any) {
+    let top_level_comment = comment
 
-    while (topLevelComment.in_reply_to_id) {
-      const parentComment = reviewComments.find(
-        (cmt: any) => cmt.id === topLevelComment.in_reply_to_id
+    while (top_level_comment.in_reply_to_id) {
+      const parent_comment = reviewComments.find(
+        (cmt: any) => cmt.id === top_level_comment.in_reply_to_id
       )
 
-      if (parentComment) {
-        topLevelComment = parentComment
+      if (parent_comment) {
+        top_level_comment = parent_comment
       } else {
         break
       }
     }
 
-    return topLevelComment
+    return top_level_comment
   }
 
-  async list_review_comments(target: number, page: number = 1) {
-    const comments: any[] = []
+  async list_review_comments(target: number) {
+    const all_comments: any[] = []
+    let page = 1
     try {
-      let data
-      do {
-        ;({data} = await octokit.pulls.listReviewComments({
+      for (;;) {
+        const {data: comments} = await octokit.pulls.listReviewComments({
           owner: repo.owner,
           repo: repo.repo,
           pull_number: target,
           page,
           per_page: 100
-        }))
-        comments.push(...data)
+        })
+        all_comments.push(...comments)
         page++
-      } while (data.length >= 100)
+        if (!comments || comments.length < 100) {
+          break
+        }
+      }
 
-      return comments
+      return all_comments
     } catch (e: any) {
       console.warn(`Failed to list review comments: ${e}`)
-      return comments
+      return all_comments
     }
   }
 
@@ -330,27 +386,29 @@ ${tag}`
     }
   }
 
-  async list_comments(target: number, page: number = 1) {
-    const comments: any[] = []
+  async list_comments(target: number) {
+    const all_comments: any[] = []
+    let page = 1
     try {
-      let data
-      do {
-        ;({data} = await octokit.issues.listComments({
+      for (;;) {
+        const {data: comments} = await octokit.issues.listComments({
           owner: repo.owner,
           repo: repo.repo,
           issue_number: target,
           page,
           per_page: 100
-        }))
-
-        comments.push(...data)
+        })
+        all_comments.push(...comments)
         page++
-      } while (data.length >= 100)
+        if (!comments || comments.length < 100) {
+          break
+        }
+      }
 
-      return comments
+      return all_comments
     } catch (e: any) {
       console.warn(`Failed to list comments: ${e}`)
-      return comments
+      return all_comments
     }
   }
 }
