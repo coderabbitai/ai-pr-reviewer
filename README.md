@@ -25,6 +25,9 @@ NOTES:
 
 ## Usage
 
+Add the below file to your repository at
+`.github/workflows/openai-pr-reviewer.yml`
+
 ```yaml
 name: Code Review
 
@@ -57,14 +60,6 @@ jobs:
           review_comment_lgtm: false
 ```
 
-### Screenshots
-
-![PR Summary](./docs/images/openai-pr-summary.png)
-
-![PR Release Notes](./docs/images/openai-pr-release-notes.png)
-
-![PR Review](./docs/images/openai-pr-review.png)
-
 ### Configuration
 
 See also: [./action.yml](./action.yml)
@@ -78,6 +73,16 @@ mentioning it in the beginning of the comment with `@openai`.
 Example:
 
 > @openai Can you please review this block of code?
+
+### Screenshots
+
+![PR Summary](./docs/images/openai-pr-summary.png)
+
+![PR Release Notes](./docs/images/openai-pr-release-notes.png)
+
+![PR Review](./docs/images/openai-pr-review.png)
+
+![PR Conversation](./docs/images/openai-review-conversation.png)
 
 #### Environment variables
 

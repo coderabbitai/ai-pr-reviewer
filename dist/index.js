@@ -29461,8 +29461,16 @@ const codeReview = async (bot, options, prompts) => {
         }
         else {
             inputs.summary = summarize_final_response;
+            const summarize_comment = `${summarize_final_response}
+
+---
+
+Tips: 
+- You can reply on the review comment left by this bot to ask follow-up questions.
+- You can invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
+`;
             next_summarize_ids = summarize_final_response_ids;
-            await commenter.comment(`${summarize_final_response}`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
+            await commenter.comment(`${summarize_comment}`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
