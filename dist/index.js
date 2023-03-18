@@ -29172,22 +29172,27 @@ Please reply to the latest comment in the conversation chain without extra prose
             const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}\n${reply}`;
             if (topLevelComment) {
                 const topLevelCommentId = topLevelComment.id;
-                // Post the reply to the user comment
-                await octokit.pulls.createReplyForReviewComment({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    body: message,
-                    comment_id: topLevelCommentId
-                });
-                // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-                const newBody = topLevelComment.body.replace(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
-                await octokit.pulls.updateReviewComment({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    comment_id: topLevelCommentId,
-                    body: newBody
-                });
+                try {
+                    // Post the reply to the user comment
+                    await octokit.pulls.createReplyForReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        pull_number,
+                        body: message,
+                        comment_id: topLevelCommentId
+                    });
+                    // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
+                    const newBody = topLevelComment.body.replace(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
+                    await octokit.pulls.updateReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        comment_id: topLevelCommentId,
+                        body: newBody
+                    });
+                }
+                catch (error) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment`);
+                }
             }
             else {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
