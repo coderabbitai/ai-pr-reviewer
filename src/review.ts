@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
-import {Commenter} from './commenter.js'
+import {Commenter, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
 
@@ -14,8 +14,6 @@ const context = github.context
 const repo = context.repo
 
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
-const comment_tag =
-  '<!-- This is an auto-generated comment: summarize by openai -->'
 
 export const codeReview = async (
   bot: Bot,
@@ -60,7 +58,7 @@ export const codeReview = async (
     core.warning(`Skipped: diff.data.files is null`)
     await commenter.comment(
       `Skipped: no files to review`,
-      comment_tag,
+      SUMMARIZE_TAG,
       'replace'
     )
     return
@@ -82,7 +80,7 @@ export const codeReview = async (
     core.warning("Skipped: too many files to review, can't handle it")
     await commenter.comment(
       `Skipped: too many files to review, can't handle it`,
-      comment_tag,
+      SUMMARIZE_TAG,
       'replace'
     )
     return
@@ -171,7 +169,7 @@ export const codeReview = async (
       next_summarize_ids = summarize_final_response_ids
       await commenter.comment(
         `${summarize_final_response}`,
-        comment_tag,
+        SUMMARIZE_TAG,
         'replace'
       )
     }

@@ -11,6 +11,10 @@ export class Prompts {
   summarize_file_diff: string
   summarize: string
   summarize_release_notes: string
+  comment_beginning: string
+  comment_file: string
+  comment_file_diff: string
+  comment: string
 
   constructor(
     review_beginning = '',
@@ -21,7 +25,11 @@ export class Prompts {
     summarize_beginning = '',
     summarize_file_diff = '',
     summarize = '',
-    summarize_release_notes = ''
+    summarize_release_notes = '',
+    comment_beginning = '',
+    comment_file = '',
+    comment_file_diff = '',
+    comment = ''
   ) {
     this.review_beginning = review_beginning
     this.review_file = review_file
@@ -32,6 +40,10 @@ export class Prompts {
     this.summarize_file_diff = summarize_file_diff
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
+    this.comment_beginning = comment_beginning
+    this.comment_file = comment_file
+    this.comment_file_diff = comment_file_diff
+    this.comment = comment
   }
 
   render_review_beginning(inputs: Inputs): string {
@@ -69,6 +81,18 @@ export class Prompts {
   render_summarize_release_notes(inputs: Inputs): string {
     return inputs.render(this.summarize_release_notes)
   }
+  render_comment_beginning(inputs: Inputs): string {
+    return inputs.render(this.comment_beginning)
+  }
+  render_comment_file(inputs: Inputs): string {
+    return inputs.render(this.comment_file)
+  }
+  render_comment_file_diff(inputs: Inputs): string {
+    return inputs.render(this.comment_file_diff)
+  }
+  render_comment(inputs: Inputs): string {
+    return inputs.render(this.comment)
+  }
 }
 
 export class Inputs {
@@ -81,6 +105,8 @@ export class Inputs {
   file_diff: string
   patch: string
   diff: string
+  comment_chain: string
+  comment: string
 
   constructor(
     system_message = '',
@@ -91,7 +117,9 @@ export class Inputs {
     file_content = '',
     file_diff = '',
     patch = '',
-    diff = ''
+    diff = '',
+    comment_chain = '',
+    comment = ''
   ) {
     this.system_message = system_message
     this.title = title
@@ -102,6 +130,8 @@ export class Inputs {
     this.file_diff = file_diff
     this.patch = patch
     this.diff = diff
+    this.comment_chain = comment_chain
+    this.comment = comment
   }
 
   render(content: string): string {
@@ -134,6 +164,12 @@ export class Inputs {
     }
     if (this.diff) {
       content = content.replace('$diff', this.diff)
+    }
+    if (this.comment_chain) {
+      content = content.replace('$comment_chain', this.comment_chain)
+    }
+    if (this.comment) {
+      content = content.replace('$comment', this.comment)
     }
     return content
   }

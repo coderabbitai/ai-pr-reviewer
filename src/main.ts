@@ -22,7 +22,11 @@ async function run(): Promise<void> {
     core.getInput('summarize_beginning'),
     core.getInput('summarize_file_diff'),
     core.getInput('summarize'),
-    core.getInput('summarize_release_notes')
+    core.getInput('summarize_release_notes'),
+    core.getInput('comment_beginning'),
+    core.getInput('comment_file'),
+    core.getInput('comment_file_diff'),
+    core.getInput('comment')
   )
 
   // initialize openai bot
@@ -46,7 +50,7 @@ async function run(): Promise<void> {
     } else if (
       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
     ) {
-      await handleReviewComment(bot)
+      await handleReviewComment(bot, prompts)
     } else {
       core.warning('Skipped: this action only works on push event')
     }

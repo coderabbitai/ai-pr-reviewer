@@ -69,6 +69,16 @@ jobs:
 
 See also: [./action.yml](./action.yml)
 
+### Conversation with OpenAI
+
+You can reply to a review comment made by this action and get a response based
+on the diff context. Additionally, you can invite the bot to a conversation by
+mentioning it in the beginning of the comment with `@openai`.
+
+Example:
+
+> @openai Can you please review this block of code?
+
 #### Environment variables
 
 - `GITHUB_TOKEN`: This should already be available to the GitHub Action
