@@ -245,14 +245,14 @@ inputs:
       $comment_chain
       ```
 
-      Please reply to the new comment in the conversation chain 
-      without extra prose as that reply will be posted as-is.
+      Please directly reply to the new comment in the conversation 
+      chain without extra prose as that reply will be posted as-is.
 
       In your reply, please make sure to begin the reply by
       tagging the user and prefer markdown format:
       `@user: <your reply>`
 
-      The new comment that you need to reply to:
+      To reiterate, the comment that you need to directly reply to:
 
       ```
       $comment
