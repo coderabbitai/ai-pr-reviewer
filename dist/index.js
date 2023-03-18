@@ -27177,7 +27177,7 @@ ${tag}`;
             const conversationChain = reviewComments
                 .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
                 .map((cmt) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`);
-            conversationChain.unshift(`${topLevelComment.user.login}-(${topLevelComment.id}): ${topLevelComment.body}`);
+            conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
             return {
                 chain: conversationChain.join('\n---\n'),
                 topLevelComment
@@ -29174,12 +29174,16 @@ Diff:
 ${diffHunk}
 \`\`\`
 
-Conversation chain:
+Conversation chain (including the new comment):
 \`\`\`
 ${chain}
 \`\`\`
 
-Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`;
+Please reply to the new comment in the conversation chain without extra prose as that reply will be posted as-is. Make sure to tag the user in your reply. Providing below the new comment again as reference:
+\`\`\`
+${comment.user.login}: ${comment.body}
+\`\`\`
+`;
             const [reply] = await bot.chat(prompt, {});
             const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_GREETING */ .pK}
 

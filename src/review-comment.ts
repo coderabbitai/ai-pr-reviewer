@@ -75,12 +75,16 @@ Diff:
 ${diffHunk}
 \`\`\`
 
-Conversation chain:
+Conversation chain (including the new comment):
 \`\`\`
 ${chain}
 \`\`\`
 
-Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`
+Please reply to the new comment in the conversation chain without extra prose as that reply will be posted as-is. Make sure to tag the user in your reply. Providing below the new comment again as reference:
+\`\`\`
+${comment.user.login}: ${comment.body}
+\`\`\`
+`
 
       const [reply] = await bot.chat(prompt, {})
       const message = `${COMMENT_GREETING}

@@ -151,7 +151,7 @@ ${tag}`
         .map((cmt: any) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`)
 
       conversationChain.unshift(
-        `${topLevelComment.user.login}-(${topLevelComment.id}): ${topLevelComment.body}`
+        `${topLevelComment.user.login}: ${topLevelComment.body}`
       )
 
       return {
