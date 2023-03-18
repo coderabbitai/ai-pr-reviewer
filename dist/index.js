@@ -27147,8 +27147,11 @@ ${COMMENT_TAG}`;
             if (comments.length === 0) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`No existing comments found at line ${line}`);
             }
+            else {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found ${comments.length} existing comments at line ${line}`);
+            }
             for (const comment of comments) {
-                if (comment.body && comment.body.includes(COMMENT_TAG)) {
+                if (comment.body.includes(COMMENT_TAG)) {
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -27186,7 +27189,7 @@ ${COMMENT_TAG}`;
         let all_chains = '';
         let chain_num = 0;
         for (const comment of existing_comments) {
-            if (comment.body && comment.body.includes(tag)) {
+            if (comment.body.includes(tag)) {
                 // get conversation chain
                 const { chain } = await this.get_conversation_chain(pull_number, comment);
                 if (chain) {

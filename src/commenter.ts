@@ -113,9 +113,11 @@ ${COMMENT_TAG}`
       const comments = await this.get_comments_at_line(pull_number, path, line)
       if (comments.length === 0) {
         core.info(`No existing comments found at line ${line}`)
+      } else {
+        core.info(`Found ${comments.length} existing comments at line ${line}`)
       }
       for (const comment of comments) {
-        if (comment.body && comment.body.includes(COMMENT_TAG)) {
+        if (comment.body.includes(COMMENT_TAG)) {
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,
@@ -167,7 +169,7 @@ ${COMMENT_TAG}`
     let all_chains = ''
     let chain_num = 0
     for (const comment of existing_comments) {
-      if (comment.body && comment.body.includes(tag)) {
+      if (comment.body.includes(tag)) {
         // get conversation chain
         const {chain} = await this.get_conversation_chain(pull_number, comment)
         if (chain) {
