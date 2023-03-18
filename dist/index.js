@@ -27189,7 +27189,7 @@ ${tag}`;
                 }
             }
             return {
-                chain: conversationChain.join('\n\n'),
+                chain: conversationChain.join('\n---\n'),
                 topLevelComment
             };
         }
