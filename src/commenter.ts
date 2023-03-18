@@ -162,7 +162,7 @@ ${COMMENT_TAG}`
     // find all top most comments
     const top_level_comments = []
     for (const comment of existing_comments) {
-      if (comment.in_reply_to_id === null) {
+      if (comment.in_reply_to_id === comment.id) {
         top_level_comments.push(comment)
       }
     }
@@ -227,7 +227,7 @@ ${chain}
   async get_top_level_comment(reviewComments: any[], comment: any) {
     let top_level_comment = comment
 
-    while (top_level_comment.in_reply_to_id) {
+    while (top_level_comment.in_reply_to_id !== top_level_comment.id) {
       const parent_comment = reviewComments.find(
         (cmt: any) => cmt.id === top_level_comment.in_reply_to_id
       )
