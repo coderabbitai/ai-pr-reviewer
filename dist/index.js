@@ -27185,11 +27185,12 @@ ${COMMENT_TAG}`;
                 top_level_comments.push(comment);
             }
         }
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found top level comments: ${top_level_comments.length}`);
         let all_chains = '';
         let chain_num = 0;
-        for (const topLevelComment of top_level_comments) {
+        for (const top_level_comment of top_level_comments) {
             // get conversation chain
-            const chain = await this.compose_conversation_chain(existing_comments, topLevelComment);
+            const chain = await this.compose_conversation_chain(existing_comments, top_level_comment);
             if (chain && chain.includes(tag)) {
                 chain_num += 1;
                 all_chains += `Conversation Chain ${chain_num}:
@@ -27209,10 +27210,10 @@ ${chain}
     }
     async get_conversation_chain(pull_number, comment) {
         try {
-            const reviewComments = await this.list_review_comments(pull_number);
-            const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
-            const chain = await this.compose_conversation_chain(reviewComments, topLevelComment);
-            return { chain, topLevelComment };
+            const review_comments = await this.list_review_comments(pull_number);
+            const top_level_comment = await this.get_top_level_comment(review_comments, comment);
+            const chain = await this.compose_conversation_chain(review_comments, top_level_comment);
+            return { chain, topLevelComment: top_level_comment };
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
@@ -27222,18 +27223,18 @@ ${chain}
             };
         }
     }
-    async getTopLevelComment(reviewComments, comment) {
-        let topLevelComment = comment;
-        while (topLevelComment.in_reply_to_id) {
-            const parentComment = reviewComments.find((cmt) => cmt.id === topLevelComment.in_reply_to_id);
-            if (parentComment) {
-                topLevelComment = parentComment;
+    async get_top_level_comment(reviewComments, comment) {
+        let top_level_comment = comment;
+        while (top_level_comment.in_reply_to_id) {
+            const parent_comment = reviewComments.find((cmt) => cmt.id === top_level_comment.in_reply_to_id);
+            if (parent_comment) {
+                top_level_comment = parent_comment;
             }
             else {
                 break;
             }
         }
-        return topLevelComment;
+        return top_level_comment;
     }
     async list_review_comments(target) {
         const all_comments = [];
@@ -29564,8 +29565,8 @@ Tips:
             for (const [line, patch] of patches) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with openai ...`);
                 inputs.patch = patch;
-                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
                 // get existing comments on the line
+                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
                 if (all_chains.length > 0) {
                     inputs.comment_chain = all_chains;
                 }

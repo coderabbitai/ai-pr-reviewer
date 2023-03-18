@@ -264,6 +264,7 @@ Tips:
         core.info(`Reviewing ${filename}:${line} with openai ...`)
         inputs.patch = patch
 
+        // get existing comments on the line
         const all_chains = await commenter.get_conversation_chains_at_line(
           context.payload.pull_request.number,
           filename,
@@ -271,7 +272,6 @@ Tips:
           COMMENT_REPLY_TAG
         )
 
-        // get existing comments on the line
         if (all_chains.length > 0) {
           inputs.comment_chain = all_chains
         }

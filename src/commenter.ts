@@ -167,13 +167,15 @@ ${COMMENT_TAG}`
       }
     }
 
+    core.info(`Found top level comments: ${top_level_comments.length}`)
+
     let all_chains = ''
     let chain_num = 0
-    for (const topLevelComment of top_level_comments) {
+    for (const top_level_comment of top_level_comments) {
       // get conversation chain
       const chain = await this.compose_conversation_chain(
         existing_comments,
-        topLevelComment
+        top_level_comment
       )
       if (chain && chain.includes(tag)) {
         chain_num += 1
@@ -203,16 +205,16 @@ ${chain}
 
   async get_conversation_chain(pull_number: number, comment: any) {
     try {
-      const reviewComments = await this.list_review_comments(pull_number)
-      const topLevelComment = await this.getTopLevelComment(
-        reviewComments,
+      const review_comments = await this.list_review_comments(pull_number)
+      const top_level_comment = await this.get_top_level_comment(
+        review_comments,
         comment
       )
       const chain = await this.compose_conversation_chain(
-        reviewComments,
-        topLevelComment
+        review_comments,
+        top_level_comment
       )
-      return {chain, topLevelComment}
+      return {chain, topLevelComment: top_level_comment}
     } catch (e: any) {
       core.warning(`Failed to get conversation chain: ${e}`)
       return {
@@ -222,22 +224,22 @@ ${chain}
     }
   }
 
-  async getTopLevelComment(reviewComments: any[], comment: any) {
-    let topLevelComment = comment
+  async get_top_level_comment(reviewComments: any[], comment: any) {
+    let top_level_comment = comment
 
-    while (topLevelComment.in_reply_to_id) {
-      const parentComment = reviewComments.find(
-        (cmt: any) => cmt.id === topLevelComment.in_reply_to_id
+    while (top_level_comment.in_reply_to_id) {
+      const parent_comment = reviewComments.find(
+        (cmt: any) => cmt.id === top_level_comment.in_reply_to_id
       )
 
-      if (parentComment) {
-        topLevelComment = parentComment
+      if (parent_comment) {
+        top_level_comment = parent_comment
       } else {
         break
       }
     }
 
-    return topLevelComment
+    return top_level_comment
   }
 
   async list_review_comments(target: number) {
