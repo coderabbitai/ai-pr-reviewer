@@ -70,25 +70,29 @@ Please reply to the latest comment in the conversation chain without extra prose
 
       if (topLevelComment) {
         const topLevelCommentId = topLevelComment.id
-        // Post the reply to the user comment
-        await octokit.pulls.createReplyForReviewComment({
-          owner: repo.owner,
-          repo: repo.repo,
-          pull_number,
-          body: message,
-          comment_id: topLevelCommentId
-        })
-        // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-        const newBody = topLevelComment.body.replace(
-          COMMENT_TAG,
-          COMMENT_REPLY_TAG
-        )
-        await octokit.pulls.updateReviewComment({
-          owner: repo.owner,
-          repo: repo.repo,
-          comment_id: topLevelCommentId,
-          body: newBody
-        })
+        try {
+          // Post the reply to the user comment
+          await octokit.pulls.createReplyForReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number,
+            body: message,
+            comment_id: topLevelCommentId
+          })
+          // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
+          const newBody = topLevelComment.body.replace(
+            COMMENT_TAG,
+            COMMENT_REPLY_TAG
+          )
+          await octokit.pulls.updateReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: topLevelCommentId,
+            body: newBody
+          })
+        } catch (error) {
+          core.warning(`Failed to reply to the top-level comment`)
+        }
       } else {
         core.warning(`Failed to find the top-level comment to reply to`)
       }
