@@ -230,20 +230,30 @@ inputs:
       I would like you to reply to the new comment made on 
       a conversation chain on a code review diff.
 
-      diff being commented on:
+      Diff being commented on:
+
       ```diff
       $diff
       ```
 
+      The format of the conversation chain is:
+      `user: comment`
+
       Conversation chain (including the new comment):
+
       ```
       $comment_chain
       ```
 
       Please reply to the new comment in the conversation chain 
-      without extra prose as that reply will be posted as-is. 
-      Make sure to tag (using the "@" sign) the user in your reply. 
-      Providing below the new comment again as reference:
+      without extra prose as that reply will be posted as-is.
+
+      In your reply, please make sure to begin the reply by
+      tagging the user and prefer markdown format:
+      `@user: <your reply>`
+
+      The new comment that you need to reply to:
+
       ```
       $comment
       ```

@@ -27176,7 +27176,7 @@ ${tag}`;
             const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
             const conversationChain = reviewComments
                 .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
-                .map((cmt) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`);
+                .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
             conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
             return {
                 chain: conversationChain.join('\n---\n'),
