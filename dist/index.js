@@ -29128,6 +29128,7 @@ const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
 const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .v({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
+const BOT_INVITE = '@openai';
 const handleReviewComment = async (bot) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     if (context.eventName !== 'pull_request_review_comment') {
@@ -29154,7 +29155,9 @@ const handleReviewComment = async (bot) => {
         const diffHunk = comment.diff_hunk;
         const { chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
         // check whether this chain contains replies from the bot
-        if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) || chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
+        if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
+            chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
+            comment.body.startsWith(BOT_INVITE)) {
             const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
