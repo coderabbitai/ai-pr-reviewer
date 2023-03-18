@@ -113,6 +113,7 @@ ${COMMENT_TAG}`
       const comments = await this.get_comments_at_line(pull_number, path, line)
       for (const comment of comments) {
         if (comment.body && comment.body.includes(COMMENT_TAG)) {
+          core.info(`Updating review comment ${comment.id}`)
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,
