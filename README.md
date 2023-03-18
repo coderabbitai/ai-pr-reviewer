@@ -10,6 +10,9 @@ prompts have been tuned for a concise response. To prevent excessive
 notifications, this action can be configured to skip adding review comments when
 the changes look good for the most part.
 
+In addition, this action can also reply to the user comments made on the review
+by this action.
+
 NOTES:
 
 - Your code (files, diff, PR title/description) will be sent to OpenAI's servers
@@ -20,20 +23,6 @@ NOTES:
   [more conservative data usage policy](https://openai.com/policies/api-data-usage-policies)
   compared to their ChatGPT offering.
 
-### Features
-
-- Code review your pull requests
-
-  ```yaml
-  - uses: fluxninja/openai-pr-reviewer@main
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    with:
-      debug: false
-      review_comment_lgtm: false
-  ```
-
 ## Usage
 
 ```yaml
@@ -43,25 +32,26 @@ permissions:
   contents: read
   pull-requests: write
 
-on:
-  pull_request:
+on: [pull_request, pull_request_review_comment]
+
+concurrency:
+  group:
+    ${{ github.repository }}-${{ github.event.number || github.head_ref ||
+    github.sha }}-${{ github.workflow }}-${{ github.event_name ==
+    'pull_request_review_comment' && 'pr_comment' || 'pr' }}
+  cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
       - uses: fluxninja/openai-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
-          review_comment_lgtm: true
+          review_comment_lgtm: false
 ```
 
 ### Screenshots
@@ -142,12 +132,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
-
       - uses: fluxninja/openai-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
