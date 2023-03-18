@@ -23395,14 +23395,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 9714:
-/***/ ((module) => {
-
-module.exports = eval("require")("./commenter");
-
-
-/***/ }),
-
 /***/ 2877:
 /***/ ((module) => {
 
@@ -27051,6 +27043,331 @@ class Bot {
 
 /***/ }),
 
+/***/ 4571:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "Es": () => (/* binding */ Commenter),
+/* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
+/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG)
+/* harmony export */ });
+/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END */
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
+
+
+
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+    : process.env.GITHUB_TOKEN;
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit */ .v({ auth: `token ${token}` });
+const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+const repo = context.repo;
+const COMMENT_GREETING = `:robot: OpenAI`;
+const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
+const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
+const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
+const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
+class Commenter {
+    /**
+     * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
+     */
+    async comment(message, tag, mode) {
+        await comment(message, tag, mode);
+    }
+    get_description(description) {
+        // remove our summary from description by looking for description_tag and description_tag_end
+        const start = description.indexOf(DESCRIPTION_TAG);
+        const end = description.indexOf(DESCRIPTION_TAG_END);
+        if (start >= 0 && end >= 0) {
+            return (description.slice(0, start) +
+                description.slice(end + DESCRIPTION_TAG_END.length));
+        }
+        return description;
+    }
+    async update_description(pull_number, message) {
+        // add this response to the description field of the PR as release notes by looking
+        // for the tag (marker)
+        try {
+            // get latest description from PR
+            const pr = await octokit.pulls.get({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number
+            });
+            let body = '';
+            if (pr.data.body) {
+                body = pr.data.body;
+            }
+            const description = this.get_description(body);
+            // find the tag in the description and replace the content between the tag and the tag_end
+            // if not found, add the tag and the content to the end of the description
+            const tag_index = description.indexOf(DESCRIPTION_TAG);
+            const tag_end_index = description.indexOf(DESCRIPTION_TAG_END);
+            const comment = `\n\n${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
+            if (tag_index === -1 || tag_end_index === -1) {
+                let new_description = description;
+                new_description += comment;
+                await octokit.pulls.update({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: new_description
+                });
+            }
+            else {
+                let new_description = description.substring(0, tag_index);
+                new_description += comment;
+                new_description += description.substring(tag_end_index + DESCRIPTION_TAG_END.length);
+                await octokit.pulls.update({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: new_description
+                });
+            }
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
+        }
+    }
+    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
+        message = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`;
+        // replace comment made by this action
+        try {
+            const comments = await list_review_comments(pull_number);
+            for (const comment of comments) {
+                if (comment.path === path && comment.position === line) {
+                    // look for tag
+                    if (comment.body &&
+                        (comment.body.includes(tag) ||
+                            comment.body.startsWith(COMMENT_GREETING))) {
+                        await octokit.pulls.updateReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            comment_id: comment.id,
+                            body: message
+                        });
+                        return;
+                    }
+                }
+            }
+            await octokit.pulls.createReviewComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number,
+                body: message,
+                commit_id,
+                path,
+                line
+            });
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment: ${e}`);
+        }
+    }
+    async getConversationChain(pull_number, comment) {
+        try {
+            const reviewComments = await list_review_comments(pull_number);
+            const conversationChain = [
+                `${comment.user.login}: ${comment.body}`
+            ];
+            let in_reply_to_id = comment.in_reply_to_id;
+            while (in_reply_to_id) {
+                const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
+                if (parentComment) {
+                    conversationChain.unshift(`${parentComment.user.login}: ${parentComment.body}`);
+                    in_reply_to_id = parentComment.in_reply_to_id;
+                }
+                else {
+                    break;
+                }
+            }
+            return conversationChain.join('\n\n');
+        }
+        catch (e) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
+            return '';
+        }
+    }
+}
+const list_review_comments = async (target, page = 1) => {
+    const comments = [];
+    try {
+        let data;
+        do {
+            ;
+            ({ data } = await octokit.pulls.listReviewComments({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number: target,
+                page,
+                per_page: 100
+            }));
+            comments.push(...data);
+            page++;
+        } while (data.length >= 100);
+        return comments;
+    }
+    catch (e) {
+        console.warn(`Failed to list review comments: ${e}`);
+        return comments;
+    }
+};
+const comment = async (message, tag, mode) => {
+    let target;
+    if (context.payload.pull_request) {
+        target = context.payload.pull_request.number;
+    }
+    else if (context.payload.issue) {
+        target = context.payload.issue.number;
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
+        return;
+    }
+    if (!tag) {
+        tag = COMMENT_TAG;
+    }
+    const body = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`;
+    if (mode === 'create') {
+        await create(body, tag, target);
+    }
+    else if (mode === 'replace') {
+        await replace(body, tag, target);
+    }
+    else if (mode === 'append') {
+        await append(body, tag, target);
+    }
+    else if (mode === 'prepend') {
+        await prepend(body, tag, target);
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
+        await replace(body, tag, target);
+    }
+};
+const create = async (body, tag, target) => {
+    try {
+        await octokit.issues.createComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            issue_number: target,
+            body
+        });
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to create comment: ${e}`);
+    }
+};
+const replace = async (body, tag, target) => {
+    try {
+        const cmt = await find_comment_with_tag(tag, target);
+        if (cmt) {
+            await octokit.issues.updateComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                comment_id: cmt.id,
+                body
+            });
+        }
+        else {
+            await create(body, tag, target);
+        }
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to replace comment: ${e}`);
+    }
+};
+const append = async (body, tag, target) => {
+    try {
+        const cmt = await find_comment_with_tag(tag, target);
+        if (cmt) {
+            await octokit.issues.updateComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                comment_id: cmt.id,
+                body: `${cmt.body} ${body}`
+            });
+        }
+        else {
+            await create(body, tag, target);
+        }
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to append comment: ${e}`);
+    }
+};
+const prepend = async (body, tag, target) => {
+    try {
+        const cmt = await find_comment_with_tag(tag, target);
+        if (cmt) {
+            await octokit.issues.updateComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                comment_id: cmt.id,
+                body: `${body} ${cmt.body}`
+            });
+        }
+        else {
+            await create(body, tag, target);
+        }
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to prepend comment: ${e}`);
+    }
+};
+const find_comment_with_tag = async (tag, target) => {
+    try {
+        const comments = await list_comments(target);
+        for (const cmt of comments) {
+            if (cmt.body && cmt.body.includes(tag)) {
+                return cmt;
+            }
+        }
+        return null;
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find comment with tag: ${e}`);
+        return null;
+    }
+};
+const list_comments = async (target, page = 1) => {
+    const comments = [];
+    try {
+        let data;
+        do {
+            ;
+            ({ data } = await octokit.issues.listComments({
+                owner: repo.owner,
+                repo: repo.repo,
+                issue_number: target,
+                page,
+                per_page: 100
+            }));
+            comments.push(...data);
+            page++;
+        } while (data.length >= 100);
+        return comments;
+    }
+    catch (e) {
+        console.warn(`Failed to list comments: ${e}`);
+        return comments;
+    }
+};
+
+
+/***/ }),
+
 /***/ 2092:
 /***/ ((__webpack_module__, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
@@ -27059,7 +27376,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3435);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3174);
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(899);
 
 
 
@@ -28794,7 +29111,7 @@ class PathFilter {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1231);
-/* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9714);
+/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4571);
 
 
 
@@ -28806,7 +29123,7 @@ const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const handleReviewComment = async (bot) => {
-    const commenter = new _commenter__WEBPACK_IMPORTED_MODULE_2__.Commenter();
+    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     if (context.eventName !== 'pull_request_review_comment') {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
         return;
@@ -28825,12 +29142,12 @@ const handleReviewComment = async (bot) => {
         return;
     }
     // Check if the comment is not from the bot itself
-    if (!comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__.COMMENT_TAG)) {
+    if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
         const pull_number = context.payload.pull_request.number;
         const diffHunk = comment.diff_hunk;
         const conversationChain = await commenter.getConversationChain(pull_number, comment);
         // check whether this chain contains replies from the bot
-        if (conversationChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__.COMMENT_TAG)) {
+        if (conversationChain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
             const prompt = `I would like you to reply to the new review comment made on a conversation chain on a code review diff.
 Diff:
 \`\`\`diff
@@ -28843,7 +29160,7 @@ ${conversationChain}
 Please reply to the latest comment in the conversation chain.
 `;
             const [reply] = await bot.chat(prompt, {});
-            const message = `${_commenter__WEBPACK_IMPORTED_MODULE_2__.COMMENT_REPLY_TAG}\n${reply}`;
+            const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}\n${reply}`;
             // Post the reply to the user comment
             await octokit.issues.createComment({
                 owner: repo.owner,
@@ -28859,7 +29176,7 @@ Please reply to the latest comment in the conversation chain.
 
 /***/ }),
 
-/***/ 3174:
+/***/ 899:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -28874,317 +29191,8 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 // EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
 var dist_node = __nccwpck_require__(1231);
-;// CONCATENATED MODULE: ./lib/commenter.js
-
-
-
-const token = core.getInput('token')
-    ? core.getInput('token')
-    : process.env.GITHUB_TOKEN;
-const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
-const context = github.context;
-const repo = context.repo;
-const COMMENT_GREETING = `:robot: OpenAI`;
-const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
-const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
-const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
-const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
-class Commenter {
-    /**
-     * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
-     */
-    async comment(message, tag, mode) {
-        await comment(message, tag, mode);
-    }
-    get_description(description) {
-        // remove our summary from description by looking for description_tag and description_tag_end
-        const start = description.indexOf(DESCRIPTION_TAG);
-        const end = description.indexOf(DESCRIPTION_TAG_END);
-        if (start >= 0 && end >= 0) {
-            return (description.slice(0, start) +
-                description.slice(end + DESCRIPTION_TAG_END.length));
-        }
-        return description;
-    }
-    async update_description(pull_number, message) {
-        // add this response to the description field of the PR as release notes by looking
-        // for the tag (marker)
-        try {
-            // get latest description from PR
-            const pr = await octokit.pulls.get({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number
-            });
-            let body = '';
-            if (pr.data.body) {
-                body = pr.data.body;
-            }
-            const description = this.get_description(body);
-            // find the tag in the description and replace the content between the tag and the tag_end
-            // if not found, add the tag and the content to the end of the description
-            const tag_index = description.indexOf(DESCRIPTION_TAG);
-            const tag_end_index = description.indexOf(DESCRIPTION_TAG_END);
-            const comment = `\n\n${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
-            if (tag_index === -1 || tag_end_index === -1) {
-                let new_description = description;
-                new_description += comment;
-                await octokit.pulls.update({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    body: new_description
-                });
-            }
-            else {
-                let new_description = description.substring(0, tag_index);
-                new_description += comment;
-                new_description += description.substring(tag_end_index + DESCRIPTION_TAG_END.length);
-                await octokit.pulls.update({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    body: new_description
-                });
-            }
-        }
-        catch (e) {
-            core.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
-        }
-    }
-    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
-        message = `${COMMENT_GREETING}
-
-${message}
-
-${tag}`;
-        // replace comment made by this action
-        try {
-            const comments = await list_review_comments(pull_number);
-            for (const comment of comments) {
-                if (comment.path === path && comment.position === line) {
-                    // look for tag
-                    if (comment.body &&
-                        (comment.body.includes(tag) ||
-                            comment.body.startsWith(COMMENT_GREETING))) {
-                        await octokit.pulls.updateReviewComment({
-                            owner: repo.owner,
-                            repo: repo.repo,
-                            comment_id: comment.id,
-                            body: message
-                        });
-                        return;
-                    }
-                }
-            }
-            await octokit.pulls.createReviewComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number,
-                body: message,
-                commit_id,
-                path,
-                line
-            });
-        }
-        catch (e) {
-            core.warning(`Failed to post review comment: ${e}`);
-        }
-    }
-    async getConversationChain(pull_number, comment) {
-        try {
-            const reviewComments = await list_review_comments(pull_number);
-            const conversationChain = [
-                `${comment.user.login}: ${comment.body}`
-            ];
-            let in_reply_to_id = comment.in_reply_to_id;
-            while (in_reply_to_id) {
-                const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
-                if (parentComment) {
-                    conversationChain.unshift(`${parentComment.user.login}: ${parentComment.body}`);
-                    in_reply_to_id = parentComment.in_reply_to_id;
-                }
-                else {
-                    break;
-                }
-            }
-            return conversationChain.join('\n\n');
-        }
-        catch (e) {
-            core.warning(`Failed to get conversation chain: ${e}`);
-            return '';
-        }
-    }
-}
-const list_review_comments = async (target, page = 1) => {
-    const comments = [];
-    try {
-        let data;
-        do {
-            ;
-            ({ data } = await octokit.pulls.listReviewComments({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number: target,
-                page,
-                per_page: 100
-            }));
-            comments.push(...data);
-            page++;
-        } while (data.length >= 100);
-        return comments;
-    }
-    catch (e) {
-        console.warn(`Failed to list review comments: ${e}`);
-        return comments;
-    }
-};
-const comment = async (message, tag, mode) => {
-    let target;
-    if (context.payload.pull_request) {
-        target = context.payload.pull_request.number;
-    }
-    else if (context.payload.issue) {
-        target = context.payload.issue.number;
-    }
-    else {
-        core.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
-        return;
-    }
-    if (!tag) {
-        tag = COMMENT_TAG;
-    }
-    const body = `${COMMENT_GREETING}
-
-${message}
-
-${tag}`;
-    if (mode === 'create') {
-        await create(body, tag, target);
-    }
-    else if (mode === 'replace') {
-        await replace(body, tag, target);
-    }
-    else if (mode === 'append') {
-        await append(body, tag, target);
-    }
-    else if (mode === 'prepend') {
-        await prepend(body, tag, target);
-    }
-    else {
-        core.warning(`Unknown mode: ${mode}, use "replace" instead`);
-        await replace(body, tag, target);
-    }
-};
-const create = async (body, tag, target) => {
-    try {
-        await octokit.issues.createComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            issue_number: target,
-            body
-        });
-    }
-    catch (e) {
-        core.warning(`Failed to create comment: ${e}`);
-    }
-};
-const replace = async (body, tag, target) => {
-    try {
-        const cmt = await find_comment_with_tag(tag, target);
-        if (cmt) {
-            await octokit.issues.updateComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                comment_id: cmt.id,
-                body
-            });
-        }
-        else {
-            await create(body, tag, target);
-        }
-    }
-    catch (e) {
-        core.warning(`Failed to replace comment: ${e}`);
-    }
-};
-const append = async (body, tag, target) => {
-    try {
-        const cmt = await find_comment_with_tag(tag, target);
-        if (cmt) {
-            await octokit.issues.updateComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                comment_id: cmt.id,
-                body: `${cmt.body} ${body}`
-            });
-        }
-        else {
-            await create(body, tag, target);
-        }
-    }
-    catch (e) {
-        core.warning(`Failed to append comment: ${e}`);
-    }
-};
-const prepend = async (body, tag, target) => {
-    try {
-        const cmt = await find_comment_with_tag(tag, target);
-        if (cmt) {
-            await octokit.issues.updateComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                comment_id: cmt.id,
-                body: `${body} ${cmt.body}`
-            });
-        }
-        else {
-            await create(body, tag, target);
-        }
-    }
-    catch (e) {
-        core.warning(`Failed to prepend comment: ${e}`);
-    }
-};
-const find_comment_with_tag = async (tag, target) => {
-    try {
-        const comments = await list_comments(target);
-        for (const cmt of comments) {
-            if (cmt.body && cmt.body.includes(tag)) {
-                return cmt;
-            }
-        }
-        return null;
-    }
-    catch (e) {
-        core.warning(`Failed to find comment with tag: ${e}`);
-        return null;
-    }
-};
-const list_comments = async (target, page = 1) => {
-    const comments = [];
-    try {
-        let data;
-        do {
-            ;
-            ({ data } = await octokit.issues.listComments({
-                owner: repo.owner,
-                repo: repo.repo,
-                issue_number: target,
-                page,
-                per_page: 100
-            }));
-            comments.push(...data);
-            page++;
-        } while (data.length >= 100);
-        return comments;
-    }
-    catch (e) {
-        console.warn(`Failed to list comments: ${e}`);
-        return comments;
-    }
-};
-
+// EXTERNAL MODULE: ./lib/commenter.js
+var lib_commenter = __nccwpck_require__(4571);
 // EXTERNAL MODULE: ./lib/options.js + 4 modules
 var lib_options = __nccwpck_require__(744);
 // EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
@@ -29207,38 +29215,38 @@ function get_token_count(input) {
 
 
 
-const review_token = core.getInput('token')
+const token = core.getInput('token')
     ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
-const review_octokit = new dist_node/* Octokit */.v({ auth: `token ${review_token}` });
-const review_context = github.context;
-const review_repo = review_context.repo;
+const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
+const context = github.context;
+const repo = context.repo;
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const comment_tag = '<!-- This is an auto-generated comment: summarize by openai -->';
 const codeReview = async (bot, options, prompts) => {
-    const commenter = new Commenter();
-    if (review_context.eventName !== 'pull_request' &&
-        review_context.eventName !== 'pull_request_target') {
-        core.warning(`Skipped: current event is ${review_context.eventName}, only support pull_request event`);
+    const commenter = new lib_commenter/* Commenter */.Es();
+    if (context.eventName !== 'pull_request' &&
+        context.eventName !== 'pull_request_target') {
+        core.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
         return;
     }
-    if (!review_context.payload.pull_request) {
+    if (!context.payload.pull_request) {
         core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
     const inputs = new lib_options/* Inputs */.kq();
-    inputs.title = review_context.payload.pull_request.title;
-    if (review_context.payload.pull_request.body) {
-        inputs.description = commenter.get_description(review_context.payload.pull_request.body);
+    inputs.title = context.payload.pull_request.title;
+    if (context.payload.pull_request.body) {
+        inputs.description = commenter.get_description(context.payload.pull_request.body);
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
     // collect diff chunks
-    const diff = await review_octokit.repos.compareCommits({
-        owner: review_repo.owner,
-        repo: review_repo.repo,
-        base: review_context.payload.pull_request.base.sha,
-        head: review_context.payload.pull_request.head.sha
+    const diff = await octokit.repos.compareCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        base: context.payload.pull_request.base.sha,
+        head: context.payload.pull_request.head.sha
     });
     const { files, commits } = diff.data;
     if (!files) {
@@ -29269,11 +29277,11 @@ const codeReview = async (bot, options, prompts) => {
         // retrieve file contents
         let file_content = '';
         try {
-            const contents = await review_octokit.repos.getContent({
-                owner: review_repo.owner,
-                repo: review_repo.repo,
+            const contents = await octokit.repos.getContent({
+                owner: repo.owner,
+                repo: repo.repo,
                 path: file.filename,
-                ref: review_context.payload.pull_request.base.sha
+                ref: context.payload.pull_request.base.sha
             });
             if (contents.data) {
                 if (!Array.isArray(contents.data)) {
@@ -29344,7 +29352,7 @@ const codeReview = async (bot, options, prompts) => {
             next_summarize_ids = release_notes_ids;
             let message = '### Summary by OpenAI\n\n';
             message += release_notes_response;
-            commenter.update_description(review_context.payload.pull_request.number, message);
+            commenter.update_description(context.payload.pull_request.number, message);
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
@@ -29403,7 +29411,7 @@ const codeReview = async (bot, options, prompts) => {
                     continue;
                 }
                 try {
-                    await commenter.review_comment(review_context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
+                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
                 }
                 catch (e) {
                     core.warning(`Failed to comment: ${e}, skipping.

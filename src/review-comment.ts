@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
-import {Commenter, COMMENT_REPLY_TAG, COMMENT_TAG} from './commenter'
+import {Commenter, COMMENT_REPLY_TAG, COMMENT_TAG} from './commenter.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')
