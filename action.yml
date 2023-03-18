@@ -232,12 +232,12 @@ inputs:
 
       diff being commented on:
       ```diff
-      ${diff}
+      $diff
       ```
 
       Conversation chain (including the new comment):
       ```
-      ${comment_chain}
+      $comment_chain
       ```
 
       Please reply to the new comment in the conversation chain 
@@ -245,7 +245,7 @@ inputs:
       Make sure to tag the user in your reply. Providing below the 
       new comment again as reference:
       ```
-      ${comment}
+      $comment
       ```
 
 runs:
