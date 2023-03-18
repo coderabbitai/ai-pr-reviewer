@@ -23395,6 +23395,14 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 9714:
+/***/ ((module) => {
+
+module.exports = eval("require")("./commenter");
+
+
+/***/ }),
+
 /***/ 2877:
 /***/ ((module) => {
 
@@ -27050,7 +27058,9 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3174);
+/* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3435);
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(3174);
+
 
 
 
@@ -27071,7 +27081,10 @@ async function run() {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(bot, options, prompts);
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
+        }
+        else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
@@ -28772,6 +28785,80 @@ class PathFilter {
 
 /***/ }),
 
+/***/ 3435:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "V": () => (/* binding */ handleReviewComment)
+/* harmony export */ });
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1231);
+/* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9714);
+
+
+
+
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+    : process.env.GITHUB_TOKEN;
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .v({ auth: `token ${token}` });
+const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+const repo = context.repo;
+const handleReviewComment = async (bot) => {
+    const commenter = new _commenter__WEBPACK_IMPORTED_MODULE_2__.Commenter();
+    if (context.eventName !== 'pull_request_review_comment') {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
+        return;
+    }
+    if (!context.payload) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing payload`);
+        return;
+    }
+    const comment = context.payload.comment;
+    if (!comment) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing comment`);
+        return;
+    }
+    if (!context.payload.pull_request || !context.payload.repository) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing pull_request`);
+        return;
+    }
+    // Check if the comment is not from the bot itself
+    if (!comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__.COMMENT_TAG)) {
+        const pull_number = context.payload.pull_request.number;
+        const diffHunk = comment.diff_hunk;
+        const conversationChain = await commenter.getConversationChain(pull_number, comment);
+        // check whether this chain contains replies from the bot
+        if (conversationChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__.COMMENT_TAG)) {
+            const prompt = `I would like you to reply to the new review comment made on a conversation chain on a code review diff.
+Diff:
+\`\`\`diff
+${diffHunk}
+\`\`\`
+Conversation chain:
+\`\`\`
+${conversationChain}
+\`\`\`
+Please reply to the latest comment in the conversation chain.
+`;
+            const [reply] = await bot.chat(prompt, {});
+            const message = `${_commenter__WEBPACK_IMPORTED_MODULE_2__.COMMENT_REPLY_TAG}\n${reply}`;
+            // Post the reply to the user comment
+            await octokit.issues.createComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                issue_number: pull_number,
+                body: message,
+                in_reply_to: comment.id
+            });
+        }
+    }
+};
+
+
+/***/ }),
+
 /***/ 3174:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
@@ -28798,9 +28885,10 @@ const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
-const DEFAULT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
-const description_tag = '<!-- This is an auto-generated comment: release notes by openai -->';
-const description_tag_end = '<!-- end of auto-generated comment: release notes by openai -->';
+const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
+const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
+const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
+const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
@@ -28810,11 +28898,11 @@ class Commenter {
     }
     get_description(description) {
         // remove our summary from description by looking for description_tag and description_tag_end
-        const start = description.indexOf(description_tag);
-        const end = description.indexOf(description_tag_end);
+        const start = description.indexOf(DESCRIPTION_TAG);
+        const end = description.indexOf(DESCRIPTION_TAG_END);
         if (start >= 0 && end >= 0) {
             return (description.slice(0, start) +
-                description.slice(end + description_tag_end.length));
+                description.slice(end + DESCRIPTION_TAG_END.length));
         }
         return description;
     }
@@ -28835,9 +28923,9 @@ class Commenter {
             const description = this.get_description(body);
             // find the tag in the description and replace the content between the tag and the tag_end
             // if not found, add the tag and the content to the end of the description
-            const tag_index = description.indexOf(description_tag);
-            const tag_end_index = description.indexOf(description_tag_end);
-            const comment = `\n\n${description_tag}\n${message}\n${description_tag_end}`;
+            const tag_index = description.indexOf(DESCRIPTION_TAG);
+            const tag_end_index = description.indexOf(DESCRIPTION_TAG_END);
+            const comment = `\n\n${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
             if (tag_index === -1 || tag_end_index === -1) {
                 let new_description = description;
                 new_description += comment;
@@ -28851,7 +28939,7 @@ class Commenter {
             else {
                 let new_description = description.substring(0, tag_index);
                 new_description += comment;
-                new_description += description.substring(tag_end_index + description_tag_end.length);
+                new_description += description.substring(tag_end_index + DESCRIPTION_TAG_END.length);
                 await octokit.pulls.update({
                     owner: repo.owner,
                     repo: repo.repo,
@@ -28864,8 +28952,7 @@ class Commenter {
             core.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, line, message) {
-        const tag = DEFAULT_TAG;
+    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
         message = `${COMMENT_GREETING}
 
 ${message}
@@ -28902,6 +28989,30 @@ ${tag}`;
         }
         catch (e) {
             core.warning(`Failed to post review comment: ${e}`);
+        }
+    }
+    async getConversationChain(pull_number, comment) {
+        try {
+            const reviewComments = await list_review_comments(pull_number);
+            const conversationChain = [
+                `${comment.user.login}: ${comment.body}`
+            ];
+            let in_reply_to_id = comment.in_reply_to_id;
+            while (in_reply_to_id) {
+                const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
+                if (parentComment) {
+                    conversationChain.unshift(`${parentComment.user.login}: ${parentComment.body}`);
+                    in_reply_to_id = parentComment.in_reply_to_id;
+                }
+                else {
+                    break;
+                }
+            }
+            return conversationChain.join('\n\n');
+        }
+        catch (e) {
+            core.warning(`Failed to get conversation chain: ${e}`);
+            return '';
         }
     }
 }
@@ -28941,7 +29052,7 @@ const comment = async (message, tag, mode) => {
         return;
     }
     if (!tag) {
-        tag = DEFAULT_TAG;
+        tag = COMMENT_TAG;
     }
     const body = `${COMMENT_GREETING}
 

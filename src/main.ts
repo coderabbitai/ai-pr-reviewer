@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {Bot} from './bot.js'
 import {Options, Prompts} from './options.js'
+import {handleReviewComment} from './review-comment.js'
 import {codeReview} from './review.js'
 
 async function run(): Promise<void> {
@@ -42,6 +43,10 @@ async function run(): Promise<void> {
       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
     ) {
       await codeReview(bot, options, prompts)
+    } else if (
+      process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
+    ) {
+      await handleReviewComment(bot)
     } else {
       core.warning('Skipped: this action only works on push event')
     }

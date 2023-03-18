@@ -9,13 +9,17 @@ const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 
-const COMMENT_GREETING = `:robot: OpenAI`
+export const COMMENT_GREETING = `:robot: OpenAI`
 
-const DEFAULT_TAG = '<!-- This is an auto-generated comment by OpenAI -->'
+export const COMMENT_TAG =
+  '<!-- This is an auto-generated comment by OpenAI -->'
 
-const description_tag =
+export const COMMENT_REPLY_TAG =
+  '<!-- This is an auto-generated reply by OpenAI -->'
+
+export const DESCRIPTION_TAG =
   '<!-- This is an auto-generated comment: release notes by openai -->'
-const description_tag_end =
+export const DESCRIPTION_TAG_END =
   '<!-- end of auto-generated comment: release notes by openai -->'
 
 export class Commenter {
@@ -28,12 +32,12 @@ export class Commenter {
 
   get_description(description: string) {
     // remove our summary from description by looking for description_tag and description_tag_end
-    const start = description.indexOf(description_tag)
-    const end = description.indexOf(description_tag_end)
+    const start = description.indexOf(DESCRIPTION_TAG)
+    const end = description.indexOf(DESCRIPTION_TAG_END)
     if (start >= 0 && end >= 0) {
       return (
         description.slice(0, start) +
-        description.slice(end + description_tag_end.length)
+        description.slice(end + DESCRIPTION_TAG_END.length)
       )
     }
     return description
@@ -57,9 +61,9 @@ export class Commenter {
 
       // find the tag in the description and replace the content between the tag and the tag_end
       // if not found, add the tag and the content to the end of the description
-      const tag_index = description.indexOf(description_tag)
-      const tag_end_index = description.indexOf(description_tag_end)
-      const comment = `\n\n${description_tag}\n${message}\n${description_tag_end}`
+      const tag_index = description.indexOf(DESCRIPTION_TAG)
+      const tag_end_index = description.indexOf(DESCRIPTION_TAG_END)
+      const comment = `\n\n${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`
       if (tag_index === -1 || tag_end_index === -1) {
         let new_description = description
         new_description += comment
@@ -73,7 +77,7 @@ export class Commenter {
         let new_description = description.substring(0, tag_index)
         new_description += comment
         new_description += description.substring(
-          tag_end_index + description_tag_end.length
+          tag_end_index + DESCRIPTION_TAG_END.length
         )
         await octokit.pulls.update({
           owner: repo.owner,
@@ -94,9 +98,9 @@ export class Commenter {
     commit_id: string,
     path: string,
     line: number,
-    message: string
+    message: string,
+    tag: string = COMMENT_TAG
   ) {
-    const tag = DEFAULT_TAG
     message = `${COMMENT_GREETING}
 
 ${message}
@@ -135,6 +139,37 @@ ${tag}`
       })
     } catch (e: any) {
       core.warning(`Failed to post review comment: ${e}`)
+    }
+  }
+
+  async getConversationChain(pull_number: number, comment: any) {
+    try {
+      const reviewComments = await list_review_comments(pull_number)
+      const conversationChain: string[] = [
+        `${comment.user.login}: ${comment.body}`
+      ]
+
+      let in_reply_to_id = comment.in_reply_to_id
+
+      while (in_reply_to_id) {
+        const parentComment = reviewComments.find(
+          (cmt: any) => cmt.id === in_reply_to_id
+        )
+
+        if (parentComment) {
+          conversationChain.unshift(
+            `${parentComment.user.login}: ${parentComment.body}`
+          )
+          in_reply_to_id = parentComment.in_reply_to_id
+        } else {
+          break
+        }
+      }
+
+      return conversationChain.join('\n\n')
+    } catch (e: any) {
+      core.warning(`Failed to get conversation chain: ${e}`)
+      return ''
     }
   }
 }
@@ -177,7 +212,7 @@ const comment = async (message: string, tag: string, mode: string) => {
   }
 
   if (!tag) {
-    tag = DEFAULT_TAG
+    tag = COMMENT_TAG
   }
 
   const body = `${COMMENT_GREETING}
