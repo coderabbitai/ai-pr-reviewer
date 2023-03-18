@@ -32,7 +32,10 @@ permissions:
   contents: read
   pull-requests: write
 
-on: [pull_request, pull_request_review_comment]
+on:
+  pull_request:
+  pull_request_review_comment:
+    types: [created]
 
 concurrency:
   group:
