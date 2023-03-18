@@ -38,16 +38,19 @@ export const handleReviewComment = async (bot: Bot) => {
   }
 
   // Check if the comment is not from the bot itself
-  if (!comment.body.includes(COMMENT_TAG)) {
+  if (
+    !comment.body.includes(COMMENT_TAG) &&
+    !comment.body.includes(COMMENT_REPLY_TAG)
+  ) {
     const pull_number = context.payload.pull_request.number
     const diffHunk = comment.diff_hunk
 
-    const {chain, topLevelCommentId} = await commenter.getConversationChain(
+    const {chain, topLevelComment} = await commenter.getConversationChain(
       pull_number,
       comment
     )
     // check whether this chain contains replies from the bot
-    if (chain.includes(COMMENT_TAG)) {
+    if (chain.includes(COMMENT_TAG) || chain.includes(COMMENT_REPLY_TAG)) {
       const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
@@ -65,7 +68,8 @@ Please reply to the latest comment in the conversation chain without extra prose
       const [reply] = await bot.chat(prompt, {})
       const message = `${COMMENT_REPLY_TAG}\n${reply}`
 
-      if (topLevelCommentId) {
+      if (topLevelComment) {
+        const topLevelCommentId = topLevelComment.id
         // Post the reply to the user comment
         await octokit.pulls.createReplyForReviewComment({
           owner: repo.owner,
@@ -73,6 +77,17 @@ Please reply to the latest comment in the conversation chain without extra prose
           pull_number,
           body: message,
           comment_id: topLevelCommentId
+        })
+        // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
+        const newBody = topLevelComment.body.replace(
+          COMMENT_TAG,
+          COMMENT_REPLY_TAG
+        )
+        await octokit.pulls.updateReviewComment({
+          owner: repo.owner,
+          repo: repo.repo,
+          comment_id: topLevelCommentId,
+          body: newBody
         })
       } else {
         core.warning(`Failed to find the top-level comment to reply to`)

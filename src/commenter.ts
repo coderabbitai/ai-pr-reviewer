@@ -112,11 +112,7 @@ ${tag}`
       for (const comment of comments) {
         if (comment.path === path && comment.position === line) {
           // look for tag
-          if (
-            comment.body &&
-            (comment.body.includes(tag) ||
-              comment.body.startsWith(COMMENT_GREETING))
-          ) {
+          if (comment.body && comment.body.includes(tag)) {
             await octokit.pulls.updateReviewComment({
               owner: repo.owner,
               repo: repo.repo,
@@ -150,7 +146,7 @@ ${tag}`
       ]
 
       let in_reply_to_id = comment.in_reply_to_id
-      let topLevelCommentId: number | null = null
+      let topLevelComment: any | null
 
       while (in_reply_to_id) {
         const parentComment = reviewComments.find(
@@ -162,7 +158,7 @@ ${tag}`
             `${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`
           )
           in_reply_to_id = parentComment.in_reply_to_id
-          topLevelCommentId = parentComment.id
+          topLevelComment = parentComment
         } else {
           break
         }
@@ -170,13 +166,13 @@ ${tag}`
 
       return {
         chain: conversationChain.join('\n\n'),
-        topLevelCommentId
+        topLevelComment
       }
     } catch (e: any) {
       core.warning(`Failed to get conversation chain: ${e}`)
       return {
         chain: '',
-        topLevelCommentId: null
+        topLevelComment: null
       }
     }
   }
@@ -194,7 +190,6 @@ const list_review_comments = async (target: number, page: number = 1) => {
         page,
         per_page: 100
       }))
-
       comments.push(...data)
       page++
     } while (data.length >= 100)

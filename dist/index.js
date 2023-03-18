@@ -27144,9 +27144,7 @@ ${tag}`;
             for (const comment of comments) {
                 if (comment.path === path && comment.position === line) {
                     // look for tag
-                    if (comment.body &&
-                        (comment.body.includes(tag) ||
-                            comment.body.startsWith(COMMENT_GREETING))) {
+                    if (comment.body && comment.body.includes(tag)) {
                         await octokit.pulls.updateReviewComment({
                             owner: repo.owner,
                             repo: repo.repo,
@@ -27178,13 +27176,13 @@ ${tag}`;
                 `${comment.user.login}-(${comment.id}): ${comment.body}`
             ];
             let in_reply_to_id = comment.in_reply_to_id;
-            let topLevelCommentId = null;
+            let topLevelComment;
             while (in_reply_to_id) {
                 const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
                 if (parentComment) {
                     conversationChain.unshift(`${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`);
                     in_reply_to_id = parentComment.in_reply_to_id;
-                    topLevelCommentId = parentComment.id;
+                    topLevelComment = parentComment;
                 }
                 else {
                     break;
@@ -27192,14 +27190,14 @@ ${tag}`;
             }
             return {
                 chain: conversationChain.join('\n\n'),
-                topLevelCommentId
+                topLevelComment
             };
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
             return {
                 chain: '',
-                topLevelCommentId: null
+                topLevelComment: null
             };
         }
     }
@@ -29150,12 +29148,13 @@ const handleReviewComment = async (bot) => {
         return;
     }
     // Check if the comment is not from the bot itself
-    if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
+    if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
+        !comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
         const pull_number = context.payload.pull_request.number;
         const diffHunk = comment.diff_hunk;
-        const { chain, topLevelCommentId } = await commenter.getConversationChain(pull_number, comment);
+        const { chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
         // check whether this chain contains replies from the bot
-        if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
+        if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) || chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
             const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
@@ -29171,7 +29170,8 @@ ${chain}
 Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`;
             const [reply] = await bot.chat(prompt, {});
             const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}\n${reply}`;
-            if (topLevelCommentId) {
+            if (topLevelComment) {
+                const topLevelCommentId = topLevelComment.id;
                 // Post the reply to the user comment
                 await octokit.pulls.createReplyForReviewComment({
                     owner: repo.owner,
@@ -29179,6 +29179,14 @@ Please reply to the latest comment in the conversation chain without extra prose
                     pull_number,
                     body: message,
                     comment_id: topLevelCommentId
+                });
+                // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
+                const newBody = topLevelComment.body.replace(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
+                await octokit.pulls.updateReviewComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    comment_id: topLevelCommentId,
+                    body: newBody
                 });
             }
             else {
