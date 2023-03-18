@@ -87,46 +87,66 @@ export const codeReview = async (
   }
 
   // find patches to review
-  const files_to_review: [string, string, string, [number, string][]][] = []
-  for (const file of filtered_files) {
-    // retrieve file contents
-    let file_content = ''
-    try {
-      const contents = await octokit.repos.getContent({
-        owner: repo.owner,
-        repo: repo.repo,
-        path: file.filename,
-        ref: context.payload.pull_request.base.sha
-      })
-      if (contents.data) {
-        if (!Array.isArray(contents.data)) {
-          if (contents.data.type === 'file' && contents.data.content) {
-            file_content = Buffer.from(
-              contents.data.content,
-              'base64'
-            ).toString()
+  const filtered_files_to_review: (
+    | [string, string, string, [number, string][]]
+    | null
+  )[] = await Promise.all(
+    filtered_files.map(async file => {
+      // retrieve file contents
+      let file_content = ''
+      if (!context.payload.pull_request) {
+        core.warning(`Skipped: context.payload.pull_request is null`)
+        return null
+      }
+      try {
+        const contents = await octokit.repos.getContent({
+          owner: repo.owner,
+          repo: repo.repo,
+          path: file.filename,
+          ref: context.payload.pull_request.base.sha
+        })
+        if (contents.data) {
+          if (!Array.isArray(contents.data)) {
+            if (contents.data.type === 'file' && contents.data.content) {
+              file_content = Buffer.from(
+                contents.data.content,
+                'base64'
+              ).toString()
+            }
           }
         }
+      } catch (error) {
+        core.warning(`Failed to get file contents: ${error}, skipping.`)
       }
-    } catch (error) {
-      core.warning(`Failed to get file contents: ${error}, skipping.`)
-    }
 
-    let file_diff = ''
-    if (file.patch) {
-      core.info(`diff for ${file.filename}: ${file.patch}`)
-      file_diff = file.patch
-    }
+      let file_diff = ''
+      if (file.patch) {
+        core.info(`diff for ${file.filename}: ${file.patch}`)
+        file_diff = file.patch
+      }
 
-    const patches: [number, string][] = []
-    for (const patch of split_patch(file.patch)) {
-      const line = patch_comment_line(patch)
-      patches.push([line, patch])
-    }
-    if (patches.length > 0) {
-      files_to_review.push([file.filename, file_content, file_diff, patches])
-    }
-  }
+      const patches: [number, string][] = []
+      for (const patch of split_patch(file.patch)) {
+        const line = patch_comment_line(patch)
+        patches.push([line, patch])
+      }
+      if (patches.length > 0) {
+        return [file.filename, file_content, file_diff, patches] as [
+          string,
+          string,
+          string,
+          [number, string][]
+        ]
+      } else {
+        return null
+      }
+    })
+  )
+
+  // Filter out any null results
+  const files_to_review = filtered_files_to_review.filter(
+    file => file !== null
+  ) as [string, string, string, [number, string][]][]
 
   if (files_to_review.length > 0) {
     // Summary Stage
@@ -206,7 +226,7 @@ Tips:
           let next_review_ids = review_begin_ids
 
           // make a copy of inputs
-          const ins = JSON.parse(JSON.stringify(inputs))
+          const ins: Inputs = JSON.parse(JSON.stringify(inputs))
 
           ins.filename = filename
           ins.file_content = file_content

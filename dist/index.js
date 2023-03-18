@@ -29424,10 +29424,13 @@ const codeReview = async (bot, options, prompts) => {
         return;
     }
     // find patches to review
-    const files_to_review = [];
-    for (const file of filtered_files) {
+    const filtered_files_to_review = await Promise.all(filtered_files.map(async (file) => {
         // retrieve file contents
         let file_content = '';
+        if (!context.payload.pull_request) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
+            return null;
+        }
         try {
             const contents = await octokit.repos.getContent({
                 owner: repo.owner,
@@ -29457,9 +29460,14 @@ const codeReview = async (bot, options, prompts) => {
             patches.push([line, patch]);
         }
         if (patches.length > 0) {
-            files_to_review.push([file.filename, file_content, file_diff, patches]);
+            return [file.filename, file_content, file_diff, patches];
         }
-    }
+        else {
+            return null;
+        }
+    }));
+    // Filter out any null results
+    const files_to_review = filtered_files_to_review.filter(file => file !== null);
     if (files_to_review.length > 0) {
         // Summary Stage
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
