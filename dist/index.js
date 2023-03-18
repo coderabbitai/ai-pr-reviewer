@@ -29148,6 +29148,11 @@ const handleReviewComment = async (bot) => {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing pull_request`);
         return;
     }
+    // check if the comment was created and not edited or deleted
+    if (context.payload.action !== 'created') {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is not created`);
+        return;
+    }
     // Check if the comment is not from the bot itself
     if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
         !comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {

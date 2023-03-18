@@ -38,6 +38,12 @@ export const handleReviewComment = async (bot: Bot) => {
     return
   }
 
+  // check if the comment was created and not edited or deleted
+  if (context.payload.action !== 'created') {
+    core.warning(`Skipped: ${context.eventName} event is not created`)
+    return
+  }
+
   // Check if the comment is not from the bot itself
   if (
     !comment.body.includes(COMMENT_TAG) &&
