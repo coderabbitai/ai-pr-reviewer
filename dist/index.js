@@ -27232,26 +27232,28 @@ ${chain}
         return topLevelComment;
     }
     async list_review_comments(target, page = 1) {
-        const comments = [];
+        const all_comments = [];
         try {
-            let data;
-            do {
-                ;
-                ({ data } = await octokit.pulls.listReviewComments({
+            // infinite loop to get all comments
+            for (;;) {
+                const { data: comments } = await octokit.pulls.listReviewComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number: target,
                     page,
                     per_page: 100
-                }));
-                comments.push(...data);
+                });
+                all_comments.push(...comments);
                 page++;
-            } while (data.length >= 100);
-            return comments;
+                if (comments.length < 100) {
+                    break;
+                }
+            }
+            return all_comments;
         }
         catch (e) {
             console.warn(`Failed to list review comments: ${e}`);
-            return comments;
+            return all_comments;
         }
     }
     async post_comment(message, tag, mode) {
@@ -27377,26 +27379,27 @@ ${tag}`;
         }
     }
     async list_comments(target, page = 1) {
-        const comments = [];
+        const all_comments = [];
         try {
-            let data;
-            do {
-                ;
-                ({ data } = await octokit.issues.listComments({
+            for (;;) {
+                const { data: comments } = await octokit.issues.listComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     issue_number: target,
                     page,
                     per_page: 100
-                }));
-                comments.push(...data);
+                });
+                all_comments.push(...comments);
                 page++;
-            } while (data.length >= 100);
-            return comments;
+                if (comments.length < 100) {
+                    break;
+                }
+            }
+            return all_comments;
         }
         catch (e) {
             console.warn(`Failed to list comments: ${e}`);
-            return comments;
+            return all_comments;
         }
     }
 }
