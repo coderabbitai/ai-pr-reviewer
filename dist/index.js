@@ -27181,7 +27181,7 @@ ${COMMENT_TAG}`;
         // find all top most comments
         const top_level_comments = [];
         for (const comment of existing_comments) {
-            if (comment.in_reply_to_id === comment.id) {
+            if (!comment.in_reply_to_id) {
                 top_level_comments.push(comment);
             }
         }
@@ -27225,7 +27225,7 @@ ${chain}
     }
     async get_top_level_comment(reviewComments, comment) {
         let top_level_comment = comment;
-        while (top_level_comment.in_reply_to_id !== top_level_comment.id) {
+        while (top_level_comment.in_reply_to_id) {
             const parent_comment = reviewComments.find((cmt) => cmt.id === top_level_comment.in_reply_to_id);
             if (parent_comment) {
                 top_level_comment = parent_comment;
