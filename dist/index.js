@@ -27049,9 +27049,10 @@ class Bot {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Es": () => (/* binding */ Commenter),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
-/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG)
+/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
+/* harmony export */   "pK": () => (/* binding */ COMMENT_GREETING)
 /* harmony export */ });
-/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END */
+/* unused harmony exports DESCRIPTION_TAG, DESCRIPTION_TAG_END */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
@@ -29177,7 +29178,12 @@ ${chain}
 
 Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`;
             const [reply] = await bot.chat(prompt, {});
-            const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}\n${reply}`;
+            const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_GREETING */ .pK}
+
+${reply}
+
+${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}
+`;
             if (topLevelComment) {
                 const topLevelCommentId = topLevelComment.id;
                 try {

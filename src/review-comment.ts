@@ -2,7 +2,12 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
-import {Commenter, COMMENT_REPLY_TAG, COMMENT_TAG} from './commenter.js'
+import {
+  Commenter,
+  COMMENT_GREETING,
+  COMMENT_REPLY_TAG,
+  COMMENT_TAG
+} from './commenter.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -77,8 +82,12 @@ ${chain}
 Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`
 
       const [reply] = await bot.chat(prompt, {})
-      const message = `${COMMENT_REPLY_TAG}\n${reply}`
+      const message = `${COMMENT_GREETING}
 
+${reply}
+
+${COMMENT_REPLY_TAG}
+`
       if (topLevelComment) {
         const topLevelCommentId = topLevelComment.id
         try {
