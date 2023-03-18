@@ -27180,9 +27180,7 @@ ${COMMENT_TAG}`;
     }
     async get_comments_at_line(pull_number, path, line) {
         const comments = await this.list_review_comments(pull_number);
-        return comments.filter((comment) => comment.path === path &&
-            comment.position === line &&
-            comment.body !== '');
+        return comments.filter((comment) => comment.path === path && comment.line === line && comment.body !== '');
     }
     async get_conversation_chains_at_line(pull_number, path, line, tag = '') {
         const existing_comments = await this.get_comments_at_line(pull_number, path, line);
@@ -27237,10 +27235,10 @@ ${chain}
         }
         return topLevelComment;
     }
-    async list_review_comments(target, page = 1) {
+    async list_review_comments(target) {
         const all_comments = [];
+        let page = 1;
         try {
-            // infinite loop to get all comments
             for (;;) {
                 const { data: comments } = await octokit.pulls.listReviewComments({
                     owner: repo.owner,
@@ -27384,8 +27382,9 @@ ${tag}`;
             return null;
         }
     }
-    async list_comments(target, page = 1) {
+    async list_comments(target) {
         const all_comments = [];
+        let page = 1;
         try {
             for (;;) {
                 const { data: comments } = await octokit.issues.listComments({

@@ -149,9 +149,7 @@ ${COMMENT_TAG}`
     const comments = await this.list_review_comments(pull_number)
     return comments.filter(
       (comment: any) =>
-        comment.path === path &&
-        comment.position === line &&
-        comment.body !== ''
+        comment.path === path && comment.line === line && comment.body !== ''
     )
   }
 
@@ -231,10 +229,10 @@ ${chain}
     return topLevelComment
   }
 
-  async list_review_comments(target: number, page: number = 1) {
+  async list_review_comments(target: number) {
     const all_comments: any[] = []
+    let page = 1
     try {
-      // infinite loop to get all comments
       for (;;) {
         const {data: comments} = await octokit.pulls.listReviewComments({
           owner: repo.owner,
@@ -377,8 +375,9 @@ ${tag}`
     }
   }
 
-  async list_comments(target: number, page: number = 1) {
+  async list_comments(target: number) {
     const all_comments: any[] = []
+    let page = 1
     try {
       for (;;) {
         const {data: comments} = await octokit.issues.listComments({
