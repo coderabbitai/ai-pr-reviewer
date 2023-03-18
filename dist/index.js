@@ -27185,36 +27185,36 @@ ${COMMENT_TAG}`;
                 top_level_comments.push(comment);
             }
         }
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found ${top_level_comments.length} top level comments.`);
         let all_chains = '';
         let chain_num = 0;
-        for (const comment of top_level_comments) {
-            if (comment.body.includes(tag)) {
-                // get conversation chain
-                const { chain } = await this.get_conversation_chain(pull_number, comment);
-                if (chain) {
-                    chain_num += 1;
-                    all_chains += `Conversation Chain ${chain_num}:
+        for (const topLevelComment of top_level_comments) {
+            // get conversation chain
+            const { chain } = await this.compose_conversation_chain(existing_comments, topLevelComment);
+            if (chain && chain.includes(tag)) {
+                chain_num += 1;
+                all_chains += `Conversation Chain ${chain_num}:
 ${chain}
 ---
 `;
-                }
             }
         }
         return all_chains;
+    }
+    async compose_conversation_chain(reviewComments, topLevelComment) {
+        const conversationChain = reviewComments
+            .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
+            .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
+        conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
+        return {
+            chain: conversationChain.join('\n---\n'),
+            topLevelComment
+        };
     }
     async get_conversation_chain(pull_number, comment) {
         try {
             const reviewComments = await this.list_review_comments(pull_number);
             const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
-            const conversationChain = reviewComments
-                .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
-                .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
-            conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
-            return {
-                chain: conversationChain.join('\n---\n'),
-                topLevelComment
-            };
+            return await this.compose_conversation_chain(reviewComments, topLevelComment);
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
