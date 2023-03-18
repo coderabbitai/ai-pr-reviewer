@@ -249,7 +249,7 @@ inputs:
       chain without extra prose as that reply will be posted as-is.
 
       In your reply, please make sure to begin the reply by
-      tagging the user and prefer markdown format:
+      tagging the user:
       `@user: <your reply>`
 
       To reiterate, the comment that you need to directly reply to:
