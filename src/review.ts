@@ -166,12 +166,17 @@ export const codeReview = async (
     } else {
       inputs.summary = summarize_final_response
 
+      const summarize_comment = `${summarize_final_response}
+
+---
+
+Tips: 
+- You can reply on the review comment left by this bot to ask follow-up questions.
+- You can invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
+`
+
       next_summarize_ids = summarize_final_response_ids
-      await commenter.comment(
-        `${summarize_final_response}`,
-        SUMMARIZE_TAG,
-        'replace'
-      )
+      await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
     }
 
     // final release notes
