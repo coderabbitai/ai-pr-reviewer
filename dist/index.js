@@ -27185,7 +27185,6 @@ ${COMMENT_TAG}`;
                 top_level_comments.push(comment);
             }
         }
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found top level comments: ${top_level_comments.length}, path: ${path}, line: ${line}`);
         let all_chains = '';
         let chain_num = 0;
         for (const top_level_comment of top_level_comments) {
