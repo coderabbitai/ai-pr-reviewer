@@ -124,7 +124,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         pull_number
       )
       if (summary) {
-        inputs.summary = summary
+        inputs.summary = summary.body
       }
 
       inputs.filename = comment.path

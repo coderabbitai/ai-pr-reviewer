@@ -29249,7 +29249,7 @@ const handleReviewComment = async (bot, prompts) => {
             // get summary of the PR
             const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
             if (summary) {
-                inputs.summary = summary;
+                inputs.summary = summary.body;
             }
             inputs.filename = comment.path;
             inputs.file_content = file_content;
