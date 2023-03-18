@@ -27144,9 +27144,11 @@ ${COMMENT_TAG}`;
         try {
             let found = false;
             const comments = await this.get_comments_at_line(pull_number, path, line);
+            if (comments.length === 0) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug(`No existing comments found at line ${line}`);
+            }
             for (const comment of comments) {
                 if (comment.body && comment.body.includes(COMMENT_TAG)) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment ${comment.id}`);
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
