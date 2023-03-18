@@ -171,7 +171,7 @@ ${COMMENT_TAG}`
     let chain_num = 0
     for (const topLevelComment of top_level_comments) {
       // get conversation chain
-      const {chain} = await this.compose_conversation_chain(
+      const chain = await this.compose_conversation_chain(
         existing_comments,
         topLevelComment
       )
@@ -198,10 +198,7 @@ ${chain}
       `${topLevelComment.user.login}: ${topLevelComment.body}`
     )
 
-    return {
-      chain: conversationChain.join('\n---\n'),
-      topLevelComment
-    }
+    return conversationChain.join('\n---\n')
   }
 
   async get_conversation_chain(pull_number: number, comment: any) {
@@ -211,10 +208,11 @@ ${chain}
         reviewComments,
         comment
       )
-      return await this.compose_conversation_chain(
+      const chain = await this.compose_conversation_chain(
         reviewComments,
         topLevelComment
       )
+      return {chain, topLevelComment}
     } catch (e: any) {
       core.warning(`Failed to get conversation chain: ${e}`)
       return {

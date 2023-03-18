@@ -27189,7 +27189,7 @@ ${COMMENT_TAG}`;
         let chain_num = 0;
         for (const topLevelComment of top_level_comments) {
             // get conversation chain
-            const { chain } = await this.compose_conversation_chain(existing_comments, topLevelComment);
+            const chain = await this.compose_conversation_chain(existing_comments, topLevelComment);
             if (chain && chain.includes(tag)) {
                 chain_num += 1;
                 all_chains += `Conversation Chain ${chain_num}:
@@ -27205,16 +27205,14 @@ ${chain}
             .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
             .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
         conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
-        return {
-            chain: conversationChain.join('\n---\n'),
-            topLevelComment
-        };
+        return conversationChain.join('\n---\n');
     }
     async get_conversation_chain(pull_number, comment) {
         try {
             const reviewComments = await this.list_review_comments(pull_number);
             const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
-            return await this.compose_conversation_chain(reviewComments, topLevelComment);
+            const chain = await this.compose_conversation_chain(reviewComments, topLevelComment);
+            return { chain, topLevelComment };
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
