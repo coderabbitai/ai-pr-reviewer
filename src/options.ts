@@ -113,13 +113,13 @@ export class Inputs {
     title = 'no title provided',
     description = 'no description provided',
     summary = 'no summary so far',
-    filename = '',
-    file_content = '',
-    file_diff = '',
-    patch = '',
-    diff = '',
-    comment_chain = '',
-    comment = ''
+    filename = 'unknown',
+    file_content = 'file contents cannot be provided',
+    file_diff = 'file diff cannot be provided',
+    patch = 'patch cannot be provided',
+    diff = 'no diff',
+    comment_chain = 'no other comments on this patch',
+    comment = 'no comment provided'
   ) {
     this.system_message = system_message
     this.title = title

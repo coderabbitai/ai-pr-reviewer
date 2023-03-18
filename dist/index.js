@@ -27134,44 +27134,70 @@ class Commenter {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
+    async review_comment(pull_number, commit_id, path, line, message) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`;
+${COMMENT_TAG}`;
         // replace comment made by this action
         try {
-            const comments = await this.list_review_comments(pull_number);
+            let found = false;
+            const comments = await this.get_comments_at_line(pull_number, path, line);
             for (const comment of comments) {
-                if (comment.path === path && comment.position === line) {
-                    // look for tag
-                    if (comment.body && comment.body.includes(tag)) {
-                        await octokit.pulls.updateReviewComment({
-                            owner: repo.owner,
-                            repo: repo.repo,
-                            comment_id: comment.id,
-                            body: message
-                        });
-                        return;
-                    }
+                if (comment.body && comment.body.includes(COMMENT_TAG)) {
+                    await octokit.pulls.updateReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        comment_id: comment.id,
+                        body: message
+                    });
+                    found = true;
+                    break;
                 }
             }
-            await octokit.pulls.createReviewComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number,
-                body: message,
-                commit_id,
-                path,
-                line
-            });
+            if (!found) {
+                await octokit.pulls.createReviewComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: message,
+                    commit_id,
+                    path,
+                    line
+                });
+            }
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment: ${e}`);
         }
     }
-    async getConversationChain(pull_number, comment) {
+    async get_comments_at_line(pull_number, path, line) {
+        const comments = await this.list_review_comments(pull_number);
+        return comments.filter((comment) => comment.path === path &&
+            comment.position === line &&
+            comment.body !== '');
+    }
+    async get_conversation_chains_at_line(pull_number, path, line, tag = '') {
+        const existing_comments = await this.get_comments_at_line(pull_number, path, line);
+        let all_chains = '';
+        let chain_num = 0;
+        for (const comment of existing_comments) {
+            if (comment.body && comment.body.includes(tag)) {
+                // get conversation chain
+                const { chain } = await this.get_conversation_chain(pull_number, comment);
+                if (chain) {
+                    chain_num += 1;
+                    all_chains += `Conversation Chain ${chain_num}:
+${chain}
+---
+`;
+                }
+            }
+        }
+        return all_chains;
+    }
+    async get_conversation_chain(pull_number, comment) {
         try {
             const reviewComments = await this.list_review_comments(pull_number);
             const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
@@ -29022,7 +29048,7 @@ class Inputs {
     diff;
     comment_chain;
     comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = '', file_content = '', file_diff = '', patch = '', diff = '', comment_chain = '', comment = '') {
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patch = 'patch cannot be provided', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -29204,7 +29230,7 @@ const handleReviewComment = async (bot, prompts) => {
         const diff = comment.diff_hunk;
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = diff;
-        const { chain: comment_chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
+        const { chain: comment_chain, topLevelComment } = await commenter.get_conversation_chain(pull_number, comment);
         inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
@@ -29530,6 +29556,11 @@ Tips:
             for (const [line, patch] of patches) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with openai ...`);
                 inputs.patch = patch;
+                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
+                // get existing comments on the line
+                if (all_chains.length > 0) {
+                    inputs.comment_chain = all_chains;
+                }
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');

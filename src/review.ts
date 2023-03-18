@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
-import {Commenter, SUMMARIZE_TAG} from './commenter.js'
+import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
 
@@ -263,6 +263,19 @@ Tips:
       for (const [line, patch] of patches) {
         core.info(`Reviewing ${filename}:${line} with openai ...`)
         inputs.patch = patch
+
+        const all_chains = await commenter.get_conversation_chains_at_line(
+          context.payload.pull_request.number,
+          filename,
+          line,
+          COMMENT_REPLY_TAG
+        )
+
+        // get existing comments on the line
+        if (all_chains.length > 0) {
+          inputs.comment_chain = all_chains
+        }
+
         const [response, patch_ids] = await bot.chat(
           prompts.render_review_patch(inputs),
           next_review_ids

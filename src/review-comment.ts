@@ -70,7 +70,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
     inputs.diff = diff
 
     const {chain: comment_chain, topLevelComment} =
-      await commenter.getConversationChain(pull_number, comment)
+      await commenter.get_conversation_chain(pull_number, comment)
     inputs.comment_chain = comment_chain
 
     // check whether this chain contains replies from the bot

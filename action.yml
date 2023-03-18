@@ -190,6 +190,11 @@ inputs:
     default: |
       $filename
 
+      Existing comments on the patch. Please use them as additional context.
+      ```
+      $comment_chain
+      ```
+
       ```diff
       $patch
       ```

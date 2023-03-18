@@ -100,47 +100,86 @@ export class Commenter {
     commit_id: string,
     path: string,
     line: number,
-    message: string,
-    tag: string = COMMENT_TAG
+    message: string
   ) {
     message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`
+${COMMENT_TAG}`
     // replace comment made by this action
     try {
-      const comments = await this.list_review_comments(pull_number)
+      let found = false
+      const comments = await this.get_comments_at_line(pull_number, path, line)
       for (const comment of comments) {
-        if (comment.path === path && comment.position === line) {
-          // look for tag
-          if (comment.body && comment.body.includes(tag)) {
-            await octokit.pulls.updateReviewComment({
-              owner: repo.owner,
-              repo: repo.repo,
-              comment_id: comment.id,
-              body: message
-            })
-            return
-          }
+        if (comment.body && comment.body.includes(COMMENT_TAG)) {
+          await octokit.pulls.updateReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: message
+          })
+          found = true
+          break
         }
       }
 
-      await octokit.pulls.createReviewComment({
-        owner: repo.owner,
-        repo: repo.repo,
-        pull_number,
-        body: message,
-        commit_id,
-        path,
-        line
-      })
+      if (!found) {
+        await octokit.pulls.createReviewComment({
+          owner: repo.owner,
+          repo: repo.repo,
+          pull_number,
+          body: message,
+          commit_id,
+          path,
+          line
+        })
+      }
     } catch (e: any) {
       core.warning(`Failed to post review comment: ${e}`)
     }
   }
 
-  async getConversationChain(pull_number: number, comment: any) {
+  async get_comments_at_line(pull_number: number, path: string, line: number) {
+    const comments = await this.list_review_comments(pull_number)
+    return comments.filter(
+      (comment: any) =>
+        comment.path === path &&
+        comment.position === line &&
+        comment.body !== ''
+    )
+  }
+
+  async get_conversation_chains_at_line(
+    pull_number: number,
+    path: string,
+    line: number,
+    tag: string = ''
+  ) {
+    const existing_comments = await this.get_comments_at_line(
+      pull_number,
+      path,
+      line
+    )
+    let all_chains = ''
+    let chain_num = 0
+    for (const comment of existing_comments) {
+      if (comment.body && comment.body.includes(tag)) {
+        // get conversation chain
+        const {chain} = await this.get_conversation_chain(pull_number, comment)
+        if (chain) {
+          chain_num += 1
+          all_chains += `Conversation Chain ${chain_num}:
+${chain}
+---
+`
+        }
+      }
+    }
+    return all_chains
+  }
+
+  async get_conversation_chain(pull_number: number, comment: any) {
     try {
       const reviewComments = await this.list_review_comments(pull_number)
       const topLevelComment = await this.getTopLevelComment(
