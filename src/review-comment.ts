@@ -64,10 +64,10 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
     !comment.body.includes(COMMENT_REPLY_TAG)
   ) {
     const pull_number = context.payload.pull_request.number
-    const diff = comment.diff_hunk
 
     inputs.comment = `${comment.user.login}: ${comment.body}`
-    inputs.diff = diff
+    inputs.diff = comment.diff_hunk
+    inputs.filename = comment.path
 
     const {chain: comment_chain, topLevelComment} =
       await commenter.get_conversation_chain(pull_number, comment)
@@ -79,8 +79,6 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
       comment_chain.includes(COMMENT_REPLY_TAG) ||
       comment.body.startsWith(ASK_BOT)
     ) {
-      let file_content = ''
-      let file_diff = ''
       try {
         const contents = await octokit.repos.getContent({
           owner: repo.owner,
@@ -91,13 +89,17 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         if (contents.data) {
           if (!Array.isArray(contents.data)) {
             if (contents.data.type === 'file' && contents.data.content) {
-              file_content = Buffer.from(
+              inputs.file_content = Buffer.from(
                 contents.data.content,
                 'base64'
               ).toString()
             }
           }
         }
+      } catch (error) {
+        core.warning(`Failed to get file contents: ${error}, skipping.`)
+      }
+      try {
         // get diff for this file by comparing the base and head commits
         const diffAll = await octokit.repos.compareCommits({
           owner: repo.owner,
@@ -110,12 +112,12 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
           if (files) {
             const file = files.find(f => f.filename === comment.path)
             if (file && file.patch) {
-              file_diff = file.patch
+              inputs.file_diff = file.patch
             }
           }
         }
       } catch (error) {
-        core.warning(`Failed to get file contents: ${error}, skipping.`)
+        core.warning(`Failed to get file diff: ${error}, skipping.`)
       }
 
       // get summary of the PR
@@ -127,18 +129,16 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         inputs.summary = summary.body
       }
 
-      inputs.filename = comment.path
-      inputs.file_content = file_content
-      inputs.file_diff = file_diff
-
       // begin comment generation
       const [, comment_begin_ids] = await bot.chat(
         prompts.render_comment_beginning(inputs),
         {}
       )
       let next_comment_ids = comment_begin_ids
-      if (file_content.length > 0) {
-        const file_content_tokens = tokenizer.get_token_count(file_content)
+      if (inputs.file_content.length > 0) {
+        const file_content_tokens = tokenizer.get_token_count(
+          inputs.file_content
+        )
         if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           const [file_content_resp, file_content_ids] = await bot.chat(
             prompts.render_comment_file(inputs),
@@ -150,8 +150,8 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         }
       }
 
-      if (file_diff.length > 0) {
-        const file_diff_tokens = tokenizer.get_token_count(file_diff)
+      if (inputs.file_diff.length > 0) {
+        const file_diff_tokens = tokenizer.get_token_count(inputs.file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           const [file_diff_resp, file_diff_ids] = await bot.chat(
             prompts.render_comment_file_diff(inputs),
