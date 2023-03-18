@@ -134,6 +134,22 @@ export class Inputs {
     this.comment = comment
   }
 
+  clone(): Inputs {
+    return new Inputs(
+      this.system_message,
+      this.title,
+      this.description,
+      this.summary,
+      this.filename,
+      this.file_content,
+      this.file_diff,
+      this.patch,
+      this.diff,
+      this.comment_chain,
+      this.comment
+    )
+  }
+
   render(content: string): string {
     if (!content) {
       return ''

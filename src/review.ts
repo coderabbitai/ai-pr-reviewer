@@ -87,46 +87,66 @@ export const codeReview = async (
   }
 
   // find patches to review
-  const files_to_review: [string, string, string, [number, string][]][] = []
-  for (const file of filtered_files) {
-    // retrieve file contents
-    let file_content = ''
-    try {
-      const contents = await octokit.repos.getContent({
-        owner: repo.owner,
-        repo: repo.repo,
-        path: file.filename,
-        ref: context.payload.pull_request.base.sha
-      })
-      if (contents.data) {
-        if (!Array.isArray(contents.data)) {
-          if (contents.data.type === 'file' && contents.data.content) {
-            file_content = Buffer.from(
-              contents.data.content,
-              'base64'
-            ).toString()
+  const filtered_files_to_review: (
+    | [string, string, string, [number, string][]]
+    | null
+  )[] = await Promise.all(
+    filtered_files.map(async file => {
+      // retrieve file contents
+      let file_content = ''
+      if (!context.payload.pull_request) {
+        core.warning(`Skipped: context.payload.pull_request is null`)
+        return null
+      }
+      try {
+        const contents = await octokit.repos.getContent({
+          owner: repo.owner,
+          repo: repo.repo,
+          path: file.filename,
+          ref: context.payload.pull_request.base.sha
+        })
+        if (contents.data) {
+          if (!Array.isArray(contents.data)) {
+            if (contents.data.type === 'file' && contents.data.content) {
+              file_content = Buffer.from(
+                contents.data.content,
+                'base64'
+              ).toString()
+            }
           }
         }
+      } catch (error) {
+        core.warning(`Failed to get file contents: ${error}, skipping.`)
       }
-    } catch (error) {
-      core.warning(`Failed to get file contents: ${error}, skipping.`)
-    }
 
-    let file_diff = ''
-    if (file.patch) {
-      core.info(`diff for ${file.filename}: ${file.patch}`)
-      file_diff = file.patch
-    }
+      let file_diff = ''
+      if (file.patch) {
+        core.info(`diff for ${file.filename}: ${file.patch}`)
+        file_diff = file.patch
+      }
 
-    const patches: [number, string][] = []
-    for (const patch of split_patch(file.patch)) {
-      const line = patch_comment_line(patch)
-      patches.push([line, patch])
-    }
-    if (patches.length > 0) {
-      files_to_review.push([file.filename, file_content, file_diff, patches])
-    }
-  }
+      const patches: [number, string][] = []
+      for (const patch of split_patch(file.patch)) {
+        const line = patch_comment_line(patch)
+        patches.push([line, patch])
+      }
+      if (patches.length > 0) {
+        return [file.filename, file_content, file_diff, patches] as [
+          string,
+          string,
+          string,
+          [number, string][]
+        ]
+      } else {
+        return null
+      }
+    })
+  )
+
+  // Filter out any null results
+  const files_to_review = filtered_files_to_review.filter(
+    file => file !== null
+  ) as [string, string, string, [number, string][]][]
 
   if (files_to_review.length > 0) {
     // Summary Stage
@@ -198,115 +218,119 @@ Tips:
       prompts.render_review_beginning(inputs),
       {}
     )
-    let next_review_ids = review_begin_ids
+    // Use Promise.all to run file review processes in parallel
+    await Promise.all(
+      files_to_review.map(
+        async ([filename, file_content, file_diff, patches]) => {
+          // reset chat session for each file while reviewing
+          let next_review_ids = review_begin_ids
 
-    for (const [
-      filename,
-      file_content,
-      file_diff,
-      patches
-    ] of files_to_review) {
-      inputs.filename = filename
-      inputs.file_content = file_content
-      inputs.file_diff = file_diff
+          // make a copy of inputs
+          const ins: Inputs = inputs.clone()
 
-      // reset chat session for each file while reviewing
-      next_review_ids = review_begin_ids
+          ins.filename = filename
+          ins.file_content = file_content
+          ins.file_diff = file_diff
 
-      if (file_content.length > 0) {
-        const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-          // review file
-          const [resp, review_file_ids] = await bot.chat(
-            prompts.render_review_file(inputs),
+          if (file_content.length > 0) {
+            const file_content_tokens = tokenizer.get_token_count(file_content)
+            if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+              // review file
+              const [resp, review_file_ids] = await bot.chat(
+                prompts.render_review_file(ins),
+                next_review_ids
+              )
+              if (!resp) {
+                core.info('review: nothing obtained from openai')
+              } else {
+                next_review_ids = review_file_ids
+              }
+            } else {
+              core.info(
+                `skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`
+              )
+            }
+          }
+
+          if (file_diff.length > 0) {
+            const file_diff_tokens = tokenizer.get_token_count(file_diff)
+            if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+              // review diff
+              const [resp, review_diff_ids] = await bot.chat(
+                prompts.render_review_file_diff(ins),
+                next_review_ids
+              )
+              if (!resp) {
+                core.info('review: nothing obtained from openai')
+              } else {
+                next_review_ids = review_diff_ids
+              }
+            } else {
+              core.info(
+                `skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`
+              )
+            }
+          }
+
+          // review_patch_begin
+          const [, patch_begin_ids] = await bot.chat(
+            prompts.render_review_patch_begin(ins),
             next_review_ids
           )
-          if (!resp) {
-            core.info('review: nothing obtained from openai')
-          } else {
-            next_review_ids = review_file_ids
-          }
-        } else {
-          core.info(
-            `skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`
-          )
-        }
-      }
+          next_review_ids = patch_begin_ids
 
-      if (file_diff.length > 0) {
-        const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-          // review diff
-          const [resp, review_diff_ids] = await bot.chat(
-            prompts.render_review_file_diff(inputs),
-            next_review_ids
-          )
-          if (!resp) {
-            core.info('review: nothing obtained from openai')
-          } else {
-            next_review_ids = review_diff_ids
-          }
-        } else {
-          core.info(
-            `skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`
-          )
-        }
-      }
+          for (const [line, patch] of patches) {
+            core.info(`Reviewing ${filename}:${line} with openai ...`)
+            ins.patch = patch
+            if (!context.payload.pull_request) {
+              core.warning('No pull request found, skipping.')
+              continue
+            }
+            // get existing comments on the line
+            const all_chains = await commenter.get_conversation_chains_at_line(
+              context.payload.pull_request.number,
+              filename,
+              line,
+              COMMENT_REPLY_TAG
+            )
 
-      // review_patch_begin
-      const [, patch_begin_ids] = await bot.chat(
-        prompts.render_review_patch_begin(inputs),
-        next_review_ids
-      )
-      next_review_ids = patch_begin_ids
+            if (all_chains.length > 0) {
+              ins.comment_chain = all_chains
+            } else {
+              ins.comment_chain = 'no previous comments'
+            }
 
-      for (const [line, patch] of patches) {
-        core.info(`Reviewing ${filename}:${line} with openai ...`)
-        inputs.patch = patch
-
-        // get existing comments on the line
-        const all_chains = await commenter.get_conversation_chains_at_line(
-          context.payload.pull_request.number,
-          filename,
-          line,
-          COMMENT_REPLY_TAG
-        )
-
-        if (all_chains.length > 0) {
-          inputs.comment_chain = all_chains
-        } else {
-          inputs.comment_chain = 'no previous comments'
-        }
-
-        const [response, patch_ids] = await bot.chat(
-          prompts.render_review_patch(inputs),
-          next_review_ids
-        )
-        if (!response) {
-          core.info('review: nothing obtained from openai')
-          continue
-        }
-        next_review_ids = patch_ids
-        if (!options.review_comment_lgtm && response.includes('LGTM')) {
-          continue
-        }
-        try {
-          await commenter.review_comment(
-            context.payload.pull_request.number,
-            commits[commits.length - 1].sha,
-            filename,
-            line,
-            `${response}`
-          )
-        } catch (e: any) {
-          core.warning(`Failed to comment: ${e}, skipping.
+            const [response, patch_ids] = await bot.chat(
+              prompts.render_review_patch(ins),
+              next_review_ids
+            )
+            if (!response) {
+              core.info('review: nothing obtained from openai')
+              continue
+            }
+            next_review_ids = patch_ids
+            if (!options.review_comment_lgtm && response.includes('LGTM')) {
+              continue
+            }
+            try {
+              await commenter.review_comment(
+                context.payload.pull_request.number,
+                commits[commits.length - 1].sha,
+                filename,
+                line,
+                `${response}`
+              )
+            } catch (e: any) {
+              core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)
+            }
+          }
         }
-      }
-    }
+      )
+    )
   }
 }
 

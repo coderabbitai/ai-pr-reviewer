@@ -26438,7 +26438,7 @@ var ChatGPTAPI = class {
   constructor(opts) {
     const {
       apiKey,
-      apiBaseUrl = "https://api.openai.com/v1",
+      apiBaseUrl = "https://api.openai.com",
       debug = false,
       messageStore,
       completionParams,
@@ -26505,7 +26505,6 @@ Current date: ${currentDate}`;
    * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
    * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
    * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
    *
    * @returns The response from ChatGPT
    */
@@ -26515,8 +26514,7 @@ Current date: ${currentDate}`;
       messageId = v4(),
       timeoutMs,
       onProgress,
-      stream = onProgress ? true : false,
-      completionParams
+      stream = onProgress ? true : false
     } = opts;
     let { abortSignal } = opts;
     let abortController = null;
@@ -26544,7 +26542,7 @@ Current date: ${currentDate}`;
     const responseP = new Promise(
       async (resolve, reject) => {
         var _a, _b;
-        const url = `${this._apiBaseUrl}/chat/completions`;
+        const url = `${this._apiBaseUrl}/v1/chat/completions`;
         const headers = {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this._apiKey}`
@@ -26552,7 +26550,6 @@ Current date: ${currentDate}`;
         const body = {
           max_tokens: maxTokens,
           ...this._completionParams,
-          ...completionParams,
           messages,
           stream
         };
@@ -29069,6 +29066,9 @@ class Inputs {
         this.comment_chain = comment_chain;
         this.comment = comment;
     }
+    clone() {
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patch, this.diff, this.comment_chain, this.comment);
+    }
     render(content) {
         if (!content) {
             return '';
@@ -29427,10 +29427,13 @@ const codeReview = async (bot, options, prompts) => {
         return;
     }
     // find patches to review
-    const files_to_review = [];
-    for (const file of filtered_files) {
+    const filtered_files_to_review = await Promise.all(filtered_files.map(async (file) => {
         // retrieve file contents
         let file_content = '';
+        if (!context.payload.pull_request) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
+            return null;
+        }
         try {
             const contents = await octokit.repos.getContent({
                 owner: repo.owner,
@@ -29460,9 +29463,14 @@ const codeReview = async (bot, options, prompts) => {
             patches.push([line, patch]);
         }
         if (patches.length > 0) {
-            files_to_review.push([file.filename, file_content, file_diff, patches]);
+            return [file.filename, file_content, file_diff, patches];
         }
-    }
+        else {
+            return null;
+        }
+    }));
+    // Filter out any null results
+    const files_to_review = filtered_files_to_review.filter(file => file !== null);
     if (files_to_review.length > 0) {
         // Summary Stage
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
@@ -29519,18 +29527,20 @@ Tips:
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
-        let next_review_ids = review_begin_ids;
-        for (const [filename, file_content, file_diff, patches] of files_to_review) {
-            inputs.filename = filename;
-            inputs.file_content = file_content;
-            inputs.file_diff = file_diff;
+        // Use Promise.all to run file review processes in parallel
+        await Promise.all(files_to_review.map(async ([filename, file_content, file_diff, patches]) => {
             // reset chat session for each file while reviewing
-            next_review_ids = review_begin_ids;
+            let next_review_ids = review_begin_ids;
+            // make a copy of inputs
+            const ins = inputs.clone();
+            ins.filename = filename;
+            ins.file_content = file_content;
+            ins.file_diff = file_diff;
             if (file_content.length > 0) {
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review file
-                    const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
+                    const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
                     if (!resp) {
                         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
                     }
@@ -29539,14 +29549,14 @@ Tips:
                     }
                 }
                 else {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`);
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`);
                 }
             }
             if (file_diff.length > 0) {
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review diff
-                    const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
+                    const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
                     if (!resp) {
                         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
                     }
@@ -29555,24 +29565,28 @@ Tips:
                     }
                 }
                 else {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`);
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`);
                 }
             }
             // review_patch_begin
-            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
+            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
             next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with openai ...`);
-                inputs.patch = patch;
+                ins.patch = patch;
+                if (!context.payload.pull_request) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('No pull request found, skipping.');
+                    continue;
+                }
                 // get existing comments on the line
                 const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
                 if (all_chains.length > 0) {
-                    inputs.comment_chain = all_chains;
+                    ins.comment_chain = all_chains;
                 }
                 else {
-                    inputs.comment_chain = 'no previous comments';
+                    ins.comment_chain = 'no previous comments';
                 }
-                const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
+                const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
                 if (!response) {
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
                     continue;
@@ -29592,7 +29606,7 @@ Tips:
         patch: ${patch}`);
                 }
             }
-        }
+        }));
     }
 };
 // Write a function that takes diff for a single file as a string
