@@ -27048,6 +27048,7 @@ class Bot {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Es": () => (/* binding */ Commenter),
+/* harmony export */   "Rp": () => (/* binding */ SUMMARIZE_TAG),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
 /* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
 /* harmony export */   "pK": () => (/* binding */ COMMENT_GREETING)
@@ -27068,6 +27069,7 @@ const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
 const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
+const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
 const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
 const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
 class Commenter {
@@ -27106,10 +27108,9 @@ class Commenter {
             // if not found, add the tag and the content to the end of the description
             const tag_index = description.indexOf(DESCRIPTION_TAG);
             const tag_end_index = description.indexOf(DESCRIPTION_TAG_END);
-            const comment = `\n\n${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
+            const comment = `${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
             if (tag_index === -1 || tag_end_index === -1) {
-                let new_description = description;
-                new_description += comment;
+                const new_description = `${description}\n${comment}`;
                 await octokit.pulls.update({
                     owner: repo.owner,
                     repo: repo.repo,
@@ -29246,7 +29247,7 @@ const handleReviewComment = async (bot, prompts) => {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
             }
             // get summary of the PR
-            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs, pull_number);
+            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
             if (summary) {
                 inputs.summary = summary;
             }
@@ -29343,7 +29344,6 @@ const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
-const comment_tag = '<!-- This is an auto-generated comment: summarize by openai -->';
 const codeReview = async (bot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     if (context.eventName !== 'pull_request' &&
@@ -29372,7 +29372,7 @@ const codeReview = async (bot, options, prompts) => {
     const { files, commits } = diff.data;
     if (!files) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
-        await commenter.comment(`Skipped: no files to review`, comment_tag, 'replace');
+        await commenter.comment(`Skipped: no files to review`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
         return;
     }
     // skip files if they are filtered out
@@ -29389,7 +29389,7 @@ const codeReview = async (bot, options, prompts) => {
     // check if we are exceeding max_files and if max_files is <= 0 (no limit)
     if (filtered_files.length > options.max_files && options.max_files > 0) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning("Skipped: too many files to review, can't handle it");
-        await commenter.comment(`Skipped: too many files to review, can't handle it`, comment_tag, 'replace');
+        await commenter.comment(`Skipped: too many files to review, can't handle it`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
         return;
     }
     // find patches to review
@@ -29462,7 +29462,7 @@ const codeReview = async (bot, options, prompts) => {
         else {
             inputs.summary = summarize_final_response;
             next_summarize_ids = summarize_final_response_ids;
-            await commenter.comment(`${summarize_final_response}`, comment_tag, 'replace');
+            await commenter.comment(`${summarize_final_response}`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);

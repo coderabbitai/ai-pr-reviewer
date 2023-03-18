@@ -6,7 +6,8 @@ import {
   Commenter,
   COMMENT_GREETING,
   COMMENT_REPLY_TAG,
-  COMMENT_TAG
+  COMMENT_TAG,
+  SUMMARIZE_TAG
 } from './commenter.js'
 import {Inputs, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
@@ -119,7 +120,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
 
       // get summary of the PR
       const summary = await commenter.find_comment_with_tag(
-        COMMENT_TAG,
+        SUMMARIZE_TAG,
         pull_number
       )
       if (summary) {

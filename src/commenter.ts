@@ -17,6 +17,9 @@ export const COMMENT_TAG =
 export const COMMENT_REPLY_TAG =
   '<!-- This is an auto-generated reply by OpenAI -->'
 
+export const SUMMARIZE_TAG =
+  '<!-- This is an auto-generated comment: summarize by openai -->'
+
 export const DESCRIPTION_TAG =
   '<!-- This is an auto-generated comment: release notes by openai -->'
 export const DESCRIPTION_TAG_END =
@@ -63,10 +66,9 @@ export class Commenter {
       // if not found, add the tag and the content to the end of the description
       const tag_index = description.indexOf(DESCRIPTION_TAG)
       const tag_end_index = description.indexOf(DESCRIPTION_TAG_END)
-      const comment = `\n\n${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`
+      const comment = `${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`
       if (tag_index === -1 || tag_end_index === -1) {
-        let new_description = description
-        new_description += comment
+        const new_description = `${description}\n${comment}`
         await octokit.pulls.update({
           owner: repo.owner,
           repo: repo.repo,
