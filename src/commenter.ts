@@ -159,9 +159,17 @@ ${COMMENT_TAG}`
       path,
       line
     )
+    // find all top most comments
+    const top_level_comments = []
+    for (const comment of existing_comments) {
+      if (comment.in_reply_to_id === null) {
+        top_level_comments.push(comment)
+      }
+    }
+
     let all_chains = ''
     let chain_num = 0
-    for (const comment of existing_comments) {
+    for (const comment of top_level_comments) {
       if (comment.body.includes(tag)) {
         // get conversation chain
         const {chain} = await this.get_conversation_chain(pull_number, comment)
