@@ -146,7 +146,7 @@ ${tag}`
       ]
 
       let in_reply_to_id = comment.in_reply_to_id
-      let topLevelComment: any | null
+      let topLevelComment: any = comment
 
       while (in_reply_to_id) {
         const parentComment = reviewComments.find(

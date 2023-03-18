@@ -27176,7 +27176,7 @@ ${tag}`;
                 `${comment.user.login}-(${comment.id}): ${comment.body}`
             ];
             let in_reply_to_id = comment.in_reply_to_id;
-            let topLevelComment;
+            let topLevelComment = comment;
             while (in_reply_to_id) {
                 const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
                 if (parentComment) {
