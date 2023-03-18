@@ -27049,9 +27049,10 @@ class Bot {
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Es": () => (/* binding */ Commenter),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
-/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG)
+/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
+/* harmony export */   "pK": () => (/* binding */ COMMENT_GREETING)
 /* harmony export */ });
-/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END */
+/* unused harmony exports DESCRIPTION_TAG, DESCRIPTION_TAG_END */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
@@ -27172,22 +27173,11 @@ ${tag}`;
     async getConversationChain(pull_number, comment) {
         try {
             const reviewComments = await list_review_comments(pull_number);
-            const conversationChain = [
-                `${comment.user.login}-(${comment.id}): ${comment.body}`
-            ];
-            let in_reply_to_id = comment.in_reply_to_id;
-            let topLevelComment;
-            while (in_reply_to_id) {
-                const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
-                if (parentComment) {
-                    conversationChain.unshift(`${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`);
-                    in_reply_to_id = parentComment.in_reply_to_id;
-                    topLevelComment = parentComment;
-                }
-                else {
-                    break;
-                }
-            }
+            const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
+            const conversationChain = reviewComments
+                .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
+                .map((cmt) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`);
+            conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
             return {
                 chain: conversationChain.join('\n---\n'),
                 topLevelComment
@@ -27200,6 +27190,19 @@ ${tag}`;
                 topLevelComment: null
             };
         }
+    }
+    async getTopLevelComment(reviewComments, comment) {
+        let topLevelComment = comment;
+        while (topLevelComment.in_reply_to_id) {
+            const parentComment = reviewComments.find((cmt) => cmt.id === topLevelComment.in_reply_to_id);
+            if (parentComment) {
+                topLevelComment = parentComment;
+            }
+            else {
+                break;
+            }
+        }
+        return topLevelComment;
     }
 }
 const list_review_comments = async (target, page = 1) => {
@@ -29128,7 +29131,7 @@ const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
 const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .v({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const BOT_INVITE = '@openai';
+const ASK_BOT = '@openai';
 const handleReviewComment = async (bot) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     if (context.eventName !== 'pull_request_review_comment') {
@@ -29148,16 +29151,22 @@ const handleReviewComment = async (bot) => {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing pull_request`);
         return;
     }
+    // check if the comment was created and not edited or deleted
+    if (context.payload.action !== 'created') {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is not created`);
+        return;
+    }
     // Check if the comment is not from the bot itself
     if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
         !comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
         const pull_number = context.payload.pull_request.number;
         const diffHunk = comment.diff_hunk;
         const { chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Conversation chain: ${chain}`);
         // check whether this chain contains replies from the bot
         if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
             chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
-            comment.body.startsWith(BOT_INVITE)) {
+            comment.body.startsWith(ASK_BOT)) {
             const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
@@ -29165,14 +29174,23 @@ Diff:
 ${diffHunk}
 \`\`\`
 
-Conversation chain:
+Conversation chain (including the new comment):
 \`\`\`
 ${chain}
 \`\`\`
 
-Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`;
+Please reply to the new comment in the conversation chain without extra prose as that reply will be posted as-is. Make sure to tag the user in your reply. Providing below the new comment again as reference:
+\`\`\`
+${comment.user.login}: ${comment.body}
+\`\`\`
+`;
             const [reply] = await bot.chat(prompt, {});
-            const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}\n${reply}`;
+            const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_GREETING */ .pK}
+
+${reply}
+
+${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}
+`;
             if (topLevelComment) {
                 const topLevelCommentId = topLevelComment.id;
                 try {
@@ -29201,6 +29219,9 @@ Please reply to the latest comment in the conversation chain without extra prose
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
             }
         }
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Skipped: ${context.eventName} event is from the bot itself`);
     }
 };
 

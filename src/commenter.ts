@@ -141,28 +141,18 @@ ${tag}`
   async getConversationChain(pull_number: number, comment: any) {
     try {
       const reviewComments = await list_review_comments(pull_number)
-      const conversationChain: string[] = [
-        `${comment.user.login}-(${comment.id}): ${comment.body}`
-      ]
+      const topLevelComment = await this.getTopLevelComment(
+        reviewComments,
+        comment
+      )
 
-      let in_reply_to_id = comment.in_reply_to_id
-      let topLevelComment: any | null
+      const conversationChain = reviewComments
+        .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
+        .map((cmt: any) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`)
 
-      while (in_reply_to_id) {
-        const parentComment = reviewComments.find(
-          (cmt: any) => cmt.id === in_reply_to_id
-        )
-
-        if (parentComment) {
-          conversationChain.unshift(
-            `${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`
-          )
-          in_reply_to_id = parentComment.in_reply_to_id
-          topLevelComment = parentComment
-        } else {
-          break
-        }
-      }
+      conversationChain.unshift(
+        `${topLevelComment.user.login}: ${topLevelComment.body}`
+      )
 
       return {
         chain: conversationChain.join('\n---\n'),
@@ -175,6 +165,24 @@ ${tag}`
         topLevelComment: null
       }
     }
+  }
+
+  async getTopLevelComment(reviewComments: any[], comment: any) {
+    let topLevelComment = comment
+
+    while (topLevelComment.in_reply_to_id) {
+      const parentComment = reviewComments.find(
+        (cmt: any) => cmt.id === topLevelComment.in_reply_to_id
+      )
+
+      if (parentComment) {
+        topLevelComment = parentComment
+      } else {
+        break
+      }
+    }
+
+    return topLevelComment
   }
 }
 

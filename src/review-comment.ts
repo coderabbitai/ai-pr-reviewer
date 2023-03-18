@@ -2,7 +2,12 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
-import {Commenter, COMMENT_REPLY_TAG, COMMENT_TAG} from './commenter.js'
+import {
+  Commenter,
+  COMMENT_GREETING,
+  COMMENT_REPLY_TAG,
+  COMMENT_TAG
+} from './commenter.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -11,7 +16,7 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-const BOT_INVITE = '@openai'
+const ASK_BOT = '@openai'
 
 export const handleReviewComment = async (bot: Bot) => {
   const commenter: Commenter = new Commenter()
@@ -38,6 +43,12 @@ export const handleReviewComment = async (bot: Bot) => {
     return
   }
 
+  // check if the comment was created and not edited or deleted
+  if (context.payload.action !== 'created') {
+    core.warning(`Skipped: ${context.eventName} event is not created`)
+    return
+  }
+
   // Check if the comment is not from the bot itself
   if (
     !comment.body.includes(COMMENT_TAG) &&
@@ -50,11 +61,12 @@ export const handleReviewComment = async (bot: Bot) => {
       pull_number,
       comment
     )
+    core.info(`Conversation chain: ${chain}`)
     // check whether this chain contains replies from the bot
     if (
       chain.includes(COMMENT_TAG) ||
       chain.includes(COMMENT_REPLY_TAG) ||
-      comment.body.startsWith(BOT_INVITE)
+      comment.body.startsWith(ASK_BOT)
     ) {
       const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
@@ -63,16 +75,24 @@ Diff:
 ${diffHunk}
 \`\`\`
 
-Conversation chain:
+Conversation chain (including the new comment):
 \`\`\`
 ${chain}
 \`\`\`
 
-Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`
+Please reply to the new comment in the conversation chain without extra prose as that reply will be posted as-is. Make sure to tag the user in your reply. Providing below the new comment again as reference:
+\`\`\`
+${comment.user.login}: ${comment.body}
+\`\`\`
+`
 
       const [reply] = await bot.chat(prompt, {})
-      const message = `${COMMENT_REPLY_TAG}\n${reply}`
+      const message = `${COMMENT_GREETING}
 
+${reply}
+
+${COMMENT_REPLY_TAG}
+`
       if (topLevelComment) {
         const topLevelCommentId = topLevelComment.id
         try {
@@ -102,5 +122,7 @@ Please reply to the latest comment in the conversation chain without extra prose
         core.warning(`Failed to find the top-level comment to reply to`)
       }
     }
+  } else {
+    core.info(`Skipped: ${context.eventName} event is from the bot itself`)
   }
 }
