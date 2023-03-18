@@ -118,5 +118,7 @@ ${COMMENT_REPLY_TAG}
         core.warning(`Failed to find the top-level comment to reply to`)
       }
     }
+  } else {
+    core.info(`Skipped: ${context.eventName} event is from the bot itself`)
   }
 }

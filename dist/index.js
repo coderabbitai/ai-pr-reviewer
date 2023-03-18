@@ -29160,6 +29160,7 @@ const handleReviewComment = async (bot) => {
         const pull_number = context.payload.pull_request.number;
         const diffHunk = comment.diff_hunk;
         const { chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Conversation chain: ${chain}`);
         // check whether this chain contains replies from the bot
         if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
             chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
@@ -29212,6 +29213,9 @@ ${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
             }
         }
+    }
+    else {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Skipped: ${context.eventName} event is from the bot itself`);
     }
 };
 
