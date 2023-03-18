@@ -11,6 +11,7 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
+const BOT_INVITE = '@openai'
 
 export const handleReviewComment = async (bot: Bot) => {
   const commenter: Commenter = new Commenter()
@@ -50,7 +51,11 @@ export const handleReviewComment = async (bot: Bot) => {
       comment
     )
     // check whether this chain contains replies from the bot
-    if (chain.includes(COMMENT_TAG) || chain.includes(COMMENT_REPLY_TAG)) {
+    if (
+      chain.includes(COMMENT_TAG) ||
+      chain.includes(COMMENT_REPLY_TAG) ||
+      comment.body.startsWith(BOT_INVITE)
+    ) {
       const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
 
 Diff:
