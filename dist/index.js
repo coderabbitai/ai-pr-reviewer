@@ -27175,24 +27175,32 @@ ${tag}`;
         try {
             const reviewComments = await list_review_comments(pull_number);
             const conversationChain = [
-                `${comment.user.login}: ${comment.body}`
+                `${comment.user.login}-(${comment.id}): ${comment.body}`
             ];
             let in_reply_to_id = comment.in_reply_to_id;
+            let topLevelCommentId = null;
             while (in_reply_to_id) {
                 const parentComment = reviewComments.find((cmt) => cmt.id === in_reply_to_id);
                 if (parentComment) {
-                    conversationChain.unshift(`${parentComment.user.login}: ${parentComment.body}`);
+                    conversationChain.unshift(`${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`);
                     in_reply_to_id = parentComment.in_reply_to_id;
+                    topLevelCommentId = parentComment.id;
                 }
                 else {
                     break;
                 }
             }
-            return conversationChain.join('\n\n');
+            return {
+                chain: conversationChain.join('\n\n'),
+                topLevelCommentId
+            };
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
-            return '';
+            return {
+                chain: '',
+                topLevelCommentId: null
+            };
         }
     }
 }
@@ -29145,30 +29153,37 @@ const handleReviewComment = async (bot) => {
     if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
         const pull_number = context.payload.pull_request.number;
         const diffHunk = comment.diff_hunk;
-        const conversationChain = await commenter.getConversationChain(pull_number, comment);
+        const { chain, topLevelCommentId } = await commenter.getConversationChain(pull_number, comment);
         // check whether this chain contains replies from the bot
-        if (conversationChain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
+        if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs)) {
             const prompt = `I would like you to reply to the new review comment made on a conversation chain on a code review diff.
+
 Diff:
 \`\`\`diff
 ${diffHunk}
 \`\`\`
+
 Conversation chain:
 \`\`\`
-${conversationChain}
+${chain}
 \`\`\`
-Please reply to the latest comment in the conversation chain.
-`;
+
+Please reply to the latest comment in the conversation chain without extra prose as that reply will be posted as-is.`;
             const [reply] = await bot.chat(prompt, {});
             const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}\n${reply}`;
-            // Post the reply to the user comment
-            await octokit.issues.createComment({
-                owner: repo.owner,
-                repo: repo.repo,
-                issue_number: pull_number,
-                body: message,
-                in_reply_to: comment.id
-            });
+            if (topLevelCommentId) {
+                // Post the reply to the user comment
+                await octokit.pulls.createReplyForReviewComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: message,
+                    comment_id: topLevelCommentId
+                });
+            }
+            else {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
+            }
         }
     }
 };

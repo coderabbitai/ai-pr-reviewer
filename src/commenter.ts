@@ -146,10 +146,11 @@ ${tag}`
     try {
       const reviewComments = await list_review_comments(pull_number)
       const conversationChain: string[] = [
-        `${comment.user.login}: ${comment.body}`
+        `${comment.user.login}-(${comment.id}): ${comment.body}`
       ]
 
       let in_reply_to_id = comment.in_reply_to_id
+      let topLevelCommentId: number | null = null
 
       while (in_reply_to_id) {
         const parentComment = reviewComments.find(
@@ -158,18 +159,25 @@ ${tag}`
 
         if (parentComment) {
           conversationChain.unshift(
-            `${parentComment.user.login}: ${parentComment.body}`
+            `${parentComment.user.login}-(${parentComment.id}): ${parentComment.body}`
           )
           in_reply_to_id = parentComment.in_reply_to_id
+          topLevelCommentId = parentComment.id
         } else {
           break
         }
       }
 
-      return conversationChain.join('\n\n')
+      return {
+        chain: conversationChain.join('\n\n'),
+        topLevelCommentId
+      }
     } catch (e: any) {
       core.warning(`Failed to get conversation chain: ${e}`)
-      return ''
+      return {
+        chain: '',
+        topLevelCommentId: null
+      }
     }
   }
 }
