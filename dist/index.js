@@ -27385,7 +27385,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3435);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(899);
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4231);
 
 
 
@@ -27393,7 +27393,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('temperature'));
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // initialize openai bot
     let bot = null;
     try {
@@ -27410,7 +27410,7 @@ async function run() {
             await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot);
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, prompts);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
@@ -28950,7 +28950,11 @@ class Prompts {
     summarize_file_diff;
     summarize;
     summarize_release_notes;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '') {
+    comment_beginning;
+    comment_file;
+    comment_file_diff;
+    comment;
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
@@ -28960,6 +28964,10 @@ class Prompts {
         this.summarize_file_diff = summarize_file_diff;
         this.summarize = summarize;
         this.summarize_release_notes = summarize_release_notes;
+        this.comment_beginning = comment_beginning;
+        this.comment_file = comment_file;
+        this.comment_file_diff = comment_file_diff;
+        this.comment = comment;
     }
     render_review_beginning(inputs) {
         return inputs.render(this.review_beginning);
@@ -28988,6 +28996,18 @@ class Prompts {
     render_summarize_release_notes(inputs) {
         return inputs.render(this.summarize_release_notes);
     }
+    render_comment_beginning(inputs) {
+        return inputs.render(this.comment_beginning);
+    }
+    render_comment_file(inputs) {
+        return inputs.render(this.comment_file);
+    }
+    render_comment_file_diff(inputs) {
+        return inputs.render(this.comment_file_diff);
+    }
+    render_comment(inputs) {
+        return inputs.render(this.comment);
+    }
 }
 class Inputs {
     system_message;
@@ -28999,7 +29019,9 @@ class Inputs {
     file_diff;
     patch;
     diff;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = '', file_content = '', file_diff = '', patch = '', diff = '') {
+    comment_chain;
+    comment;
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = '', file_content = '', file_diff = '', patch = '', diff = '', comment_chain = '', comment = '') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -29009,6 +29031,8 @@ class Inputs {
         this.file_diff = file_diff;
         this.patch = patch;
         this.diff = diff;
+        this.comment_chain = comment_chain;
+        this.comment = comment;
     }
     render(content) {
         if (!content) {
@@ -29040,6 +29064,12 @@ class Inputs {
         }
         if (this.diff) {
             content = content.replace('$diff', this.diff);
+        }
+        if (this.comment_chain) {
+            content = content.replace('$comment_chain', this.comment_chain);
+        }
+        if (this.comment) {
+            content = content.replace('$comment', this.comment);
         }
         return content;
     }
@@ -29119,8 +29149,12 @@ class PathFilter {
 /* harmony export */ });
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1231);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1231);
 /* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4571);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(744);
+/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6153);
+
+
 
 
 
@@ -29128,12 +29162,14 @@ class PathFilter {
 const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .v({ auth: `token ${token}` });
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .v({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
-const handleReviewComment = async (bot) => {
+const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
+const handleReviewComment = async (bot, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
+    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     if (context.eventName !== 'pull_request_review_comment') {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
         return;
@@ -29160,31 +29196,76 @@ const handleReviewComment = async (bot) => {
     if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
         !comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
         const pull_number = context.payload.pull_request.number;
-        const diffHunk = comment.diff_hunk;
-        const { chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Conversation chain: ${chain}`);
+        const diff = comment.diff_hunk;
+        inputs.comment = `${comment.user.login}: ${comment.body}`;
+        inputs.diff = diff;
+        const { chain: comment_chain, topLevelComment } = await commenter.getConversationChain(pull_number, comment);
+        inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot
-        if (chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
-            chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
+        if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
+            comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
             comment.body.startsWith(ASK_BOT)) {
-            const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
-
-Diff:
-\`\`\`diff
-${diffHunk}
-\`\`\`
-
-Conversation chain (including the new comment):
-\`\`\`
-${chain}
-\`\`\`
-
-Please reply to the new comment in the conversation chain without extra prose as that reply will be posted as-is. Make sure to tag the user in your reply. Providing below the new comment again as reference:
-\`\`\`
-${comment.user.login}: ${comment.body}
-\`\`\`
-`;
-            const [reply] = await bot.chat(prompt, {});
+            let file_content = '';
+            let file_diff = '';
+            try {
+                const contents = await octokit.repos.getContent({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    path: comment.path,
+                    ref: context.payload.pull_request.base.sha
+                });
+                if (contents.data) {
+                    if (!Array.isArray(contents.data)) {
+                        if (contents.data.type === 'file' && contents.data.content) {
+                            file_content = Buffer.from(contents.data.content, 'base64').toString();
+                        }
+                    }
+                }
+                // get diff for this file by comparing the base and head commits
+                const diffAll = await octokit.repos.compareCommits({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    base: context.payload.pull_request.base.sha,
+                    head: context.payload.pull_request.head.sha
+                });
+                if (diffAll.data) {
+                    const files = diffAll.data.files;
+                    if (files) {
+                        const file = files.find(f => f.filename === comment.path);
+                        if (file && file.patch) {
+                            file_diff = file.patch;
+                        }
+                    }
+                }
+            }
+            catch (error) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
+            }
+            inputs.filename = comment.path;
+            inputs.file_content = file_content;
+            inputs.file_diff = file_diff;
+            // begin comment generation
+            const [, comment_begin_ids] = await bot.chat(prompts.render_comment_beginning(inputs), {});
+            let next_comment_ids = comment_begin_ids;
+            if (file_content.length > 0) {
+                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
+                if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
+                    if (file_content_resp) {
+                        next_comment_ids = file_content_ids;
+                    }
+                }
+            }
+            if (file_diff.length > 0) {
+                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
+                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                    const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
+                    if (file_diff_resp) {
+                        next_comment_ids = file_diff_ids;
+                    }
+                }
+            }
+            const [reply] = await bot.chat(prompts.render_comment(inputs), next_comment_ids);
             const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_GREETING */ .pK}
 
 ${reply}
@@ -29228,65 +29309,44 @@ ${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}
 
 /***/ }),
 
-/***/ 899:
+/***/ 4231:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "z": () => (/* binding */ codeReview)
-});
-
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(2186);
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(5438);
-// EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
-var dist_node = __nccwpck_require__(1231);
-// EXTERNAL MODULE: ./lib/commenter.js
-var lib_commenter = __nccwpck_require__(4571);
-// EXTERNAL MODULE: ./lib/options.js + 4 modules
-var lib_options = __nccwpck_require__(744);
-// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/dist/node/_tiktoken.js
-var _tiktoken = __nccwpck_require__(4083);
-;// CONCATENATED MODULE: ./lib/tokenizer.js
-
-const tokenizer = (0,_tiktoken.get_encoding)('cl100k_base');
-function encode(input) {
-    return tokenizer.encode(input);
-}
-function get_token_count(input) {
-    input = input.replace(/<\|endoftext\|>/g, '');
-    return encode(input).length;
-}
-
-;// CONCATENATED MODULE: ./lib/review.js
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "z": () => (/* binding */ codeReview)
+/* harmony export */ });
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1231);
+/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4571);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(744);
+/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6153);
 
 
 
 
 
 
-const token = core.getInput('token')
-    ? core.getInput('token')
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
-const context = github.context;
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .v({ auth: `token ${token}` });
+const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const comment_tag = '<!-- This is an auto-generated comment: summarize by openai -->';
 const codeReview = async (bot, options, prompts) => {
-    const commenter = new lib_commenter/* Commenter */.Es();
+    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     if (context.eventName !== 'pull_request' &&
         context.eventName !== 'pull_request_target') {
-        core.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
         return;
     }
     if (!context.payload.pull_request) {
-        core.warning(`Skipped: context.payload.pull_request is null`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    const inputs = new lib_options/* Inputs */.kq();
+    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
@@ -29302,7 +29362,7 @@ const codeReview = async (bot, options, prompts) => {
     });
     const { files, commits } = diff.data;
     if (!files) {
-        core.warning(`Skipped: diff.data.files is null`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
         await commenter.comment(`Skipped: no files to review`, comment_tag, 'replace');
         return;
     }
@@ -29310,7 +29370,7 @@ const codeReview = async (bot, options, prompts) => {
     const filtered_files = [];
     for (const file of files) {
         if (!options.check_path(file.filename)) {
-            core.info(`skip for excluded path: ${file.filename}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for excluded path: ${file.filename}`);
             continue;
         }
         else {
@@ -29319,7 +29379,7 @@ const codeReview = async (bot, options, prompts) => {
     }
     // check if we are exceeding max_files and if max_files is <= 0 (no limit)
     if (filtered_files.length > options.max_files && options.max_files > 0) {
-        core.warning("Skipped: too many files to review, can't handle it");
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning("Skipped: too many files to review, can't handle it");
         await commenter.comment(`Skipped: too many files to review, can't handle it`, comment_tag, 'replace');
         return;
     }
@@ -29344,11 +29404,11 @@ const codeReview = async (bot, options, prompts) => {
             }
         }
         catch (error) {
-            core.warning(`Failed to get file contents: ${error}, skipping.`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
         }
         let file_diff = '';
         if (file.patch) {
-            core.info(`diff for ${file.filename}: ${file.patch}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
         }
         const patches = [];
@@ -29371,12 +29431,12 @@ const codeReview = async (bot, options, prompts) => {
             inputs.file_content = file_content;
             inputs.file_diff = file_diff;
             if (file_diff.length > 0) {
-                const file_diff_tokens = get_token_count(file_diff);
+                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // summarize diff
                     const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(inputs), next_summarize_ids);
                     if (!summarize_resp) {
-                        core.info('summarize: nothing obtained from openai');
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
                     }
                     else {
                         next_summarize_ids = summarize_diff_ids;
@@ -29388,7 +29448,7 @@ const codeReview = async (bot, options, prompts) => {
         // final summary
         const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
-            core.info('summarize: nothing obtained from openai');
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
         }
         else {
             inputs.summary = summarize_final_response;
@@ -29398,7 +29458,7 @@ const codeReview = async (bot, options, prompts) => {
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
-            core.info('release notes: nothing obtained from openai');
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('release notes: nothing obtained from openai');
         }
         else {
             next_summarize_ids = release_notes_ids;
@@ -29416,46 +29476,46 @@ const codeReview = async (bot, options, prompts) => {
             // reset chat session for each file while reviewing
             next_review_ids = review_begin_ids;
             if (file_content.length > 0) {
-                const file_content_tokens = get_token_count(file_content);
+                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(inputs), next_review_ids);
                     if (!resp) {
-                        core.info('review: nothing obtained from openai');
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
                     }
                     else {
                         next_review_ids = review_file_ids;
                     }
                 }
                 else {
-                    core.info(`skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`);
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`);
                 }
             }
             if (file_diff.length > 0) {
-                const file_diff_tokens = get_token_count(file_diff);
+                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(inputs), next_review_ids);
                     if (!resp) {
-                        core.info('review: nothing obtained from openai');
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
                     }
                     else {
                         next_review_ids = review_diff_ids;
                     }
                 }
                 else {
-                    core.info(`skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`);
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`);
                 }
             }
             // review_patch_begin
             const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(inputs), next_review_ids);
             next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
-                core.info(`Reviewing ${filename}:${line} with openai ...`);
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with openai ...`);
                 inputs.patch = patch;
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(inputs), next_review_ids);
                 if (!response) {
-                    core.info('review: nothing obtained from openai');
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
                     continue;
                 }
                 next_review_ids = patch_ids;
@@ -29466,7 +29526,7 @@ const codeReview = async (bot, options, prompts) => {
                     await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
                 }
                 catch (e) {
-                    core.warning(`Failed to comment: ${e}, skipping.
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
@@ -29512,6 +29572,27 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
+
+
+/***/ }),
+
+/***/ 6153:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "u": () => (/* binding */ get_token_count)
+/* harmony export */ });
+/* unused harmony export encode */
+/* harmony import */ var _dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4083);
+
+const tokenizer = (0,_dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__.get_encoding)('cl100k_base');
+function encode(input) {
+    return tokenizer.encode(input);
+}
+function get_token_count(input) {
+    input = input.replace(/<\|endoftext\|>/g, '');
+    return encode(input).length;
+}
 
 
 /***/ }),

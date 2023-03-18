@@ -8,6 +8,8 @@ import {
   COMMENT_REPLY_TAG,
   COMMENT_TAG
 } from './commenter.js'
+import {Inputs, Prompts} from './options.js'
+import * as tokenizer from './tokenizer.js'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -17,9 +19,11 @@ const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 const ASK_BOT = '@openai'
+const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
-export const handleReviewComment = async (bot: Bot) => {
+export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
   const commenter: Commenter = new Commenter()
+  const inputs: Inputs = new Inputs()
 
   if (context.eventName !== 'pull_request_review_comment') {
     core.warning(
@@ -55,38 +59,100 @@ export const handleReviewComment = async (bot: Bot) => {
     !comment.body.includes(COMMENT_REPLY_TAG)
   ) {
     const pull_number = context.payload.pull_request.number
-    const diffHunk = comment.diff_hunk
+    const diff = comment.diff_hunk
 
-    const {chain, topLevelComment} = await commenter.getConversationChain(
-      pull_number,
-      comment
-    )
-    core.info(`Conversation chain: ${chain}`)
+    inputs.comment = `${comment.user.login}: ${comment.body}`
+    inputs.diff = diff
+
+    const {chain: comment_chain, topLevelComment} =
+      await commenter.getConversationChain(pull_number, comment)
+    inputs.comment_chain = comment_chain
+
     // check whether this chain contains replies from the bot
     if (
-      chain.includes(COMMENT_TAG) ||
-      chain.includes(COMMENT_REPLY_TAG) ||
+      comment_chain.includes(COMMENT_TAG) ||
+      comment_chain.includes(COMMENT_REPLY_TAG) ||
       comment.body.startsWith(ASK_BOT)
     ) {
-      const prompt = `I would like you to reply to the new comment made on a conversation chain on a code review diff.
+      let file_content = ''
+      let file_diff = ''
+      try {
+        const contents = await octokit.repos.getContent({
+          owner: repo.owner,
+          repo: repo.repo,
+          path: comment.path,
+          ref: context.payload.pull_request.base.sha
+        })
+        if (contents.data) {
+          if (!Array.isArray(contents.data)) {
+            if (contents.data.type === 'file' && contents.data.content) {
+              file_content = Buffer.from(
+                contents.data.content,
+                'base64'
+              ).toString()
+            }
+          }
+        }
+        // get diff for this file by comparing the base and head commits
+        const diffAll = await octokit.repos.compareCommits({
+          owner: repo.owner,
+          repo: repo.repo,
+          base: context.payload.pull_request.base.sha,
+          head: context.payload.pull_request.head.sha
+        })
+        if (diffAll.data) {
+          const files = diffAll.data.files
+          if (files) {
+            const file = files.find(f => f.filename === comment.path)
+            if (file && file.patch) {
+              file_diff = file.patch
+            }
+          }
+        }
+      } catch (error) {
+        core.warning(`Failed to get file contents: ${error}, skipping.`)
+      }
+      inputs.filename = comment.path
+      inputs.file_content = file_content
+      inputs.file_diff = file_diff
 
-Diff:
-\`\`\`diff
-${diffHunk}
-\`\`\`
+      // begin comment generation
+      const [, comment_begin_ids] = await bot.chat(
+        prompts.render_comment_beginning(inputs),
+        {}
+      )
+      let next_comment_ids = comment_begin_ids
+      if (file_content.length > 0) {
+        const file_content_tokens = tokenizer.get_token_count(file_content)
+        if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+          const [file_content_resp, file_content_ids] = await bot.chat(
+            prompts.render_comment_file(inputs),
+            next_comment_ids
+          )
+          if (file_content_resp) {
+            next_comment_ids = file_content_ids
+          }
+        }
+      }
 
-Conversation chain (including the new comment):
-\`\`\`
-${chain}
-\`\`\`
+      if (file_diff.length > 0) {
+        const file_diff_tokens = tokenizer.get_token_count(file_diff)
+        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+          const [file_diff_resp, file_diff_ids] = await bot.chat(
+            prompts.render_comment_file_diff(inputs),
+            next_comment_ids
+          )
+          if (file_diff_resp) {
+            next_comment_ids = file_diff_ids
+          }
+        }
+      }
 
-Please reply to the new comment in the conversation chain without extra prose as that reply will be posted as-is. Make sure to tag the user in your reply. Providing below the new comment again as reference:
-\`\`\`
-${comment.user.login}: ${comment.body}
-\`\`\`
-`
+      const [reply] = await bot.chat(
+        prompts.render_comment(inputs),
+        next_comment_ids
+      )
 
-      const [reply] = await bot.chat(prompt, {})
       const message = `${COMMENT_GREETING}
 
 ${reply}

@@ -193,6 +193,61 @@ inputs:
       ```diff
       $patch
       ```
+  comment_beginning:
+    required: false
+    description: 'Prompt for comment'
+    default: |
+      $system_message
+
+      A comment was made on a review for a diff patch on file 
+      `$filename`. We will be replying to that. If possible, I 
+      will provide you the file and the entire diff to help 
+      provide overall context.
+
+      Reply "OK" to confirm.
+  comment_file:
+    required: false
+    description: 'Prompt for file'
+    default: |
+      Here is the content of `$filename` for context.
+
+      ```
+      $file_content
+      ```
+  comment_file_diff:
+    required: false
+    description: 'Prompt for file diff'
+    default: |
+      Here is the entire diff for `$filename` for context.
+
+      ```diff
+      $file_diff
+      ```
+  comment:
+    required: false
+    description: 'Prompt for comment'
+    default: |
+      I would like you to reply to the new comment made on 
+      a conversation chain on a code review diff.
+
+      diff being commented on:
+      ```diff
+      ${diff}
+      ```
+
+      Conversation chain (including the new comment):
+      ```
+      ${comment_chain}
+      ```
+
+      Please reply to the new comment in the conversation chain 
+      without extra prose as that reply will be posted as-is. 
+      Make sure to tag the user in your reply. Providing below the 
+      new comment again as reference:
+      ```
+      ${comment}
+      ```
+
 runs:
   using: 'node16'
   main: 'dist/index.js'
