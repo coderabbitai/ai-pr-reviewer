@@ -148,7 +148,7 @@ ${tag}`
 
       const conversationChain = reviewComments
         .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
-        .map((cmt: any) => `${cmt.user.login}-(${cmt.id}): ${cmt.body}`)
+        .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
 
       conversationChain.unshift(
         `${topLevelComment.user.login}: ${topLevelComment.body}`

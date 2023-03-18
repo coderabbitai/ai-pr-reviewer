@@ -242,8 +242,8 @@ inputs:
 
       Please reply to the new comment in the conversation chain 
       without extra prose as that reply will be posted as-is. 
-      Make sure to tag the user in your reply. Providing below the 
-      new comment again as reference:
+      Make sure to tag (using the "@" sign) the user in your reply. 
+      Providing below the new comment again as reference:
       ```
       $comment
       ```
