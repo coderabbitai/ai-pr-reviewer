@@ -76,7 +76,7 @@ inputs:
       livelocks, starvation, suspension, order violation, atomicity violation, 
       consistency, complexity, error handling, and more.
 
-      We will be conducting code reviews today.
+      You will be conducting code reviews today and write code if asked to do so.
   summarize_beginning:
     required: false
     description: 'The prompt for the whole pull request'
@@ -208,8 +208,10 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      A comment was made on a review for a diff patch on file 
-      `$filename`. You will be replying directly to that. If possible, I 
+      $system_message
+
+      A comment/request was made on a review for a diff patch on file 
+      `$filename`. You will be responding directly to that. If possible, I 
       will provide you the file and the entire diff to help 
       provide overall context.
 
@@ -253,8 +255,8 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      I would like you to reply to the new comment made on 
-      a conversation chain on a code review diff.
+      I would like you to respond to the new comment/request 
+      made on a conversation chain on a code review diff.
 
       Diff being commented on:
 
@@ -271,14 +273,13 @@ inputs:
       $comment_chain
       ```
 
-      Please reply directly to the new comment in the conversation 
-      chain (instead of suggesting a reply) and your reply will be 
-      posted as-is.
+      Please respond directly to the new comment/request in the 
+      conversation chain and your respone will be posted as-is.
 
-      In your reply, please make sure to begin the reply by
-      tagging the user with "@user".
+      In your response, please make sure to tag the user with 
+      "@user" in the opening sentence.
 
-      The comment that you need to directly reply to:
+      The comment/request that you need to directly respond to:
 
       ```
       $comment
