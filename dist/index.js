@@ -27001,7 +27001,9 @@ class Bot {
         }
         let response = null;
         if (this.turbo) {
-            const opts = {};
+            const opts = {
+                timeoutMs: 120000
+            };
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
             }

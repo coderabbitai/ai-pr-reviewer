@@ -59,7 +59,9 @@ export class Bot {
 
     let response: openai.ChatMessage | null = null
     if (this.turbo) {
-      const opts: openai.SendMessageOptions = {}
+      const opts: openai.SendMessageOptions = {
+        timeoutMs: 90000
+      }
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId
       }
