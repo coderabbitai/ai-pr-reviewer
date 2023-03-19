@@ -154,30 +154,55 @@ export const codeReview = async (
       prompts.render_summarize_beginning(inputs),
       {}
     )
-    let next_summarize_ids = summarize_begin_ids
-    for (const [filename, file_content, file_diff] of files_to_review) {
-      // reset chat session for each file while summarizing
-      next_summarize_ids = summarize_begin_ids
-      inputs.filename = filename
-      inputs.file_content = file_content
-      inputs.file_diff = file_diff
+
+    const generateSummary = async (
+      filename: string,
+      file_content: string,
+      file_diff: string
+    ): Promise<[string, string] | null> => {
+      let next_summarize_ids = summarize_begin_ids
+      const ins = inputs.clone()
+      ins.filename = filename
+      ins.file_content = file_content
+      ins.file_diff = file_diff
       if (file_diff.length > 0) {
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           // summarize diff
           const [summarize_resp, summarize_diff_ids] = await bot.chat(
-            prompts.render_summarize_file_diff(inputs),
+            prompts.render_summarize_file_diff(ins),
             next_summarize_ids
           )
           if (!summarize_resp) {
             core.info('summarize: nothing obtained from openai')
+            return null
           } else {
             next_summarize_ids = summarize_diff_ids
-            inputs.summary = summarize_resp
+            return [filename, summarize_resp]
           }
         }
       }
+      return null
     }
+
+    const summaryPromises = files_to_review.map(
+      async ([filename, file_content, file_diff]) =>
+        generateSummary(filename, file_content, file_diff)
+    )
+
+    const summaries = (await Promise.all(summaryPromises)).filter(
+      summary => summary !== null
+    ) as [string, string][]
+
+    // join summaries into one
+    for (const [filename, summary] of summaries) {
+      inputs.summary += `---
+${filename}: ${summary}
+`
+    }
+
+    let next_summarize_ids = summarize_begin_ids
+
     // final summary
     const [summarize_final_response, summarize_final_response_ids] =
       await bot.chat(prompts.render_summarize(inputs), next_summarize_ids)
