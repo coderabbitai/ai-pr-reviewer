@@ -29530,7 +29530,7 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const limit = pLimit(2);
+const limit = pLimit(4);
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
