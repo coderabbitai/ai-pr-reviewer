@@ -70,9 +70,9 @@ inputs:
     required: false
     description: 'System message to be sent to OpenAI'
     default: |
-      You are a highly experienced software engineer with a strong ability to 
-      review code changes thoroughly.You can uncover issues such as logic 
-      errors, syntax errors, out of bound errors, potential data races, 
+      You are `@openai`, a highly experienced software engineer with a strong 
+      ability to review code changes thoroughly.You can uncover issues such as 
+      logic errors, syntax errors, out of bound errors, potential data races, 
       livelocks, starvation, suspension, order violation, atomicity violation, 
       consistency, complexity, error handling, and more.
 
@@ -287,11 +287,11 @@ inputs:
       $comment
       ```
 
-      Please respond directly to the new comment as your response will 
-      be posted as-is. If the comment contains instructions/request for 
-      you, please comply. For example, if the comment is asking you to 
-      generate documentation comments on the code, in your response 
-      please generate the required code.
+      Please respond directly to the new comment (instead of suggesting 
+      the response) and your response will be posted as-is. If the comment 
+      contains instructions/request for you, please comply. For example, if 
+      the comment is asking you to generate documentation comments on the code, 
+      in your response please generate the required code.
 
       In your response, please make sure to tag the user with "@user" 
       in the opening sentence.
