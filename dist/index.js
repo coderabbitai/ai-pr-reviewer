@@ -26955,12 +26955,12 @@ var ChatGPTUnofficialProxyAPI = class {
 
 
 class Bot {
-    turbo = null; // not free
+    api = null; // not free
     options;
     constructor(options) {
         this.options = options;
         if (process.env.OPENAI_API_KEY) {
-            this.turbo = new ChatGPTAPI({
+            this.api = new ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
@@ -27000,15 +27000,15 @@ class Bot {
             core.info(`sending to openai: ${message}`);
         }
         let response = null;
-        if (this.turbo) {
+        if (this.api) {
             const opts = {
-                timeoutMs: 120000
+                timeoutMs: 90000
             };
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
             }
-            response = await this.turbo.sendMessage(message, opts);
             try {
+                response = await this.api.sendMessage(message, opts);
                 const end = Date.now();
                 core.info(`response: ${JSON.stringify(response)}`);
                 core.info(`openai response time: ${end - start} ms`);

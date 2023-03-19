@@ -11,14 +11,14 @@ export type Ids = {
 }
 
 export class Bot {
-  private turbo: openai.ChatGPTAPI | null = null // not free
+  private api: openai.ChatGPTAPI | null = null // not free
 
   private options: optionsJs.Options
 
   constructor(options: optionsJs.Options) {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
-      this.turbo = new openai.ChatGPTAPI({
+      this.api = new openai.ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
@@ -58,15 +58,15 @@ export class Bot {
     }
 
     let response: openai.ChatMessage | null = null
-    if (this.turbo) {
+    if (this.api) {
       const opts: openai.SendMessageOptions = {
         timeoutMs: 90000
       }
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId
       }
-      response = await this.turbo.sendMessage(message, opts)
       try {
+        response = await this.api.sendMessage(message, opts)
         const end = Date.now()
         core.info(`response: ${JSON.stringify(response)}`)
         core.info(`openai response time: ${end - start} ms`)
