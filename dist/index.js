@@ -29273,6 +29273,7 @@ const handleReviewComment = async (bot, prompts) => {
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
             comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
             comment.body.startsWith(ASK_BOT)) {
+            let file_content = '';
             try {
                 const contents = await octokit.repos.getContent({
                     owner: repo.owner,
@@ -29283,7 +29284,7 @@ const handleReviewComment = async (bot, prompts) => {
                 if (contents.data) {
                     if (!Array.isArray(contents.data)) {
                         if (contents.data.type === 'file' && contents.data.content) {
-                            inputs.file_content = Buffer.from(contents.data.content, 'base64').toString();
+                            file_content = Buffer.from(contents.data.content, 'base64').toString();
                         }
                     }
                 }
@@ -29291,6 +29292,7 @@ const handleReviewComment = async (bot, prompts) => {
             catch (error) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
             }
+            let file_diff = '';
             try {
                 // get diff for this file by comparing the base and head commits
                 const diffAll = await octokit.repos.compareCommits({
@@ -29304,7 +29306,7 @@ const handleReviewComment = async (bot, prompts) => {
                     if (files) {
                         const file = files.find(f => f.filename === comment.path);
                         if (file && file.patch) {
-                            inputs.file_diff = file.patch;
+                            file_diff = file.patch;
                         }
                     }
                 }
@@ -29320,8 +29322,9 @@ const handleReviewComment = async (bot, prompts) => {
             // begin comment generation
             const [, comment_begin_ids] = await bot.chat(prompts.render_comment_beginning(inputs), {});
             let next_comment_ids = comment_begin_ids;
-            if (inputs.file_content.length > 0) {
-                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(inputs.file_content);
+            if (file_content.length > 0) {
+                inputs.file_content = file_content;
+                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
                     if (file_content_resp) {
@@ -29329,8 +29332,13 @@ const handleReviewComment = async (bot, prompts) => {
                     }
                 }
             }
-            if (inputs.file_diff.length > 0) {
-                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(inputs.file_diff);
+            if (file_diff.length > 0) {
+                inputs.file_diff = file_diff;
+                // use file diff if no diff was found in the comment
+                if (inputs.diff.length === 0) {
+                    inputs.diff = file_diff;
+                }
+                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
                     if (file_diff_resp) {
@@ -29657,9 +29665,11 @@ const codeReview = async (bot, options, prompts) => {
         const generateSummary = async (filename, file_content, file_diff) => {
             const ins = inputs.clone();
             ins.filename = filename;
-            ins.file_content = file_content;
-            ins.file_diff = file_diff;
+            if (file_content.length > 0) {
+                ins.file_content = file_content;
+            }
             if (file_diff.length > 0) {
+                ins.file_diff = file_diff;
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // summarize diff
@@ -29731,9 +29741,8 @@ Tips:
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
-            ins.file_content = file_content;
-            ins.file_diff = file_diff;
             if (file_content.length > 0) {
+                ins.file_content = file_content;
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     try {
@@ -29755,6 +29764,7 @@ Tips:
                 }
             }
             if (file_diff.length > 0) {
+                ins.file_diff = file_diff;
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     try {
