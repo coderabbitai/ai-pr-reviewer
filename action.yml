@@ -80,7 +80,7 @@ inputs:
     description: 'The prompt for each file diff'
     default: |
       I am providing diff for `$filename` below. I would like you to summarize 
-      the diff.
+      the diff within 30 words.
 
       ```diff
       $file_diff
