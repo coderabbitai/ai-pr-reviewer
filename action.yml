@@ -100,7 +100,8 @@ inputs:
       the following content:
         - Thank the user for letting you participate in the code review.
         - High-level summary (focus on the purpose and intent within 80 words)
-        - Table of files and their summaries
+        - Table of files and their summaries. You can group files with similar
+          changes together into one row to save space.
 
       Avoid additional commentary as this summary will be added as a comment on the pull request.
   summarize_release_notes:

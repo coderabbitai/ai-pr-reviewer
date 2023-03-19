@@ -32,3 +32,6 @@ jobs:
         with:
           debug: true
           review_comment_lgtm: false
+          path_filters: |
+            !dist/**
+            !**/*.lock
