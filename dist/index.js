@@ -29715,8 +29715,8 @@ ${filename}: ${summary}
 ---
 
 Tips: 
-- You can reply on the review comment left by this bot to ask follow-up questions.
-- You can invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
+- Reply on the review comment left by this bot to ask follow-up questions.
+- Invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
 `;
             next_summarize_ids = summarize_final_response_ids;
             await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
