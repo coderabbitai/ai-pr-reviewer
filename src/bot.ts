@@ -24,7 +24,8 @@ export class Bot {
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
         completionParams: {
-          temperature: options.temperature
+          temperature: options.openai_model_temperature,
+          model: options.openai_model
         }
       })
     } else {
@@ -60,7 +61,7 @@ export class Bot {
 
     if (this.api) {
       const opts: openai.SendMessageOptions = {
-        timeoutMs: 60000
+        timeoutMs: this.options.openai_timeout_ms
       }
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId
@@ -69,7 +70,7 @@ export class Bot {
         response = await utils.retry(
           this.api.sendMessage.bind(this.api),
           [message, opts],
-          3
+          this.options.openai_retries
         )
       } catch (e: any) {
         core.info(

@@ -13,8 +13,6 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-const limit = pLimit(4)
-
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
 export const codeReview = async (
@@ -23,6 +21,8 @@ export const codeReview = async (
   prompts: Prompts
 ) => {
   const commenter: Commenter = new Commenter()
+
+  const openai_concurrency_limit = pLimit(options.openai_concurrency_limit)
 
   if (
     context.eventName !== 'pull_request' &&
@@ -191,7 +191,9 @@ export const codeReview = async (
     }
     const summaryPromises = files_to_review.map(
       async ([filename, file_content, file_diff]) =>
-        limit(async () => generateSummary(filename, file_content, file_diff))
+        openai_concurrency_limit(async () =>
+          generateSummary(filename, file_content, file_diff)
+        )
     )
 
     const summaries = (await Promise.all(summaryPromises)).filter(
@@ -253,7 +255,7 @@ Tips:
     // Use Promise.all to run file review processes in parallel
     const reviewPromises = files_to_review.map(
       async ([filename, file_content, file_diff, patches]) =>
-        limit(async () => {
+        openai_concurrency_limit(async () => {
           // reset chat session for each file while reviewing
           let next_review_ids = review_begin_ids
 
