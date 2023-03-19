@@ -281,20 +281,21 @@ inputs:
       $comment_chain
       ```
 
-      The comment/request that you need to directly respond to:
+      Please reply directly to the new comment (instead of suggesting 
+      a reply) and your reply will be posted as-is.
+
+      If the comment contains instructions/request for you, please comply. 
+      For example, if the comment is asking you to generate documentation 
+      comments on the code, in your reply please generate the required code.
+
+      In your reply, please make sure to begin the reply by tagging the user 
+      with "@user".
+
+      The comment/request that you need to directly reply to:
 
       ```
       $comment
       ```
-
-      Please respond directly to the new comment (instead of suggesting 
-      the response) and your response will be posted as-is. If the comment 
-      contains instructions/request for you, please comply. For example, if 
-      the comment is asking you to generate documentation comments on the code, 
-      in your response please generate the required code.
-
-      In your response, please make sure to tag the user with "@user" 
-      in the opening sentence.
 runs:
   using: 'node16'
   main: 'dist/index.js'
