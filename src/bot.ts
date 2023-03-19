@@ -3,6 +3,7 @@ import './fetch-polyfill.js'
 import * as core from '@actions/core'
 import * as openai from 'chatgpt'
 import * as optionsJs from './options.js'
+import * as utils from './utils.js'
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
@@ -25,8 +26,6 @@ export class Bot {
         completionParams: {
           temperature: options.temperature
         }
-        // assistantLabel: " ",
-        // userLabel: " ",
       })
     } else {
       const err =
@@ -58,23 +57,32 @@ export class Bot {
     }
 
     let response: openai.ChatMessage | null = null
+
     if (this.api) {
       const opts: openai.SendMessageOptions = {
-        timeoutMs: 90000
+        timeoutMs: 60000
       }
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId
       }
       try {
-        response = await this.api.sendMessage(message, opts)
-        const end = Date.now()
-        core.info(`response: ${JSON.stringify(response)}`)
-        core.info(`openai response time: ${end - start} ms`)
+        response = await utils.retry(
+          this.api.sendMessage.bind(this.api),
+          [message, opts],
+          3
+        )
       } catch (e: any) {
         core.info(
           `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
         )
       }
+      const end = Date.now()
+      core.info(`response: ${JSON.stringify(response)}`)
+      core.info(
+        `openai sendMessage (including retries) response time: ${
+          end - start
+        } ms`
+      )
     } else {
       core.setFailed('The OpenAI API is not initialized')
     }

@@ -23601,7 +23601,7 @@ try {
 
 /***/ }),
 
-/***/ 5357:
+/***/ 5924:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -26950,7 +26950,25 @@ var ChatGPTUnofficialProxyAPI = class {
 };
 
 //# sourceMappingURL=index.js.map
+;// CONCATENATED MODULE: ./lib/utils.js
+
+const retry = async (fn, args, times) => {
+    for (let i = 0; i < times; i++) {
+        try {
+            return await fn(...args);
+        }
+        catch (error) {
+            if (i === times - 1) {
+                throw error;
+            }
+            core.warning(`Function failed on try ${i + 1}, retrying...`);
+            continue;
+        }
+    }
+};
+
 ;// CONCATENATED MODULE: ./lib/bot.js
+
 
 
 
@@ -26967,8 +26985,6 @@ class Bot {
                 completionParams: {
                     temperature: options.temperature
                 }
-                // assistantLabel: " ",
-                // userLabel: " ",
             });
         }
         else {
@@ -27002,20 +27018,20 @@ class Bot {
         let response = null;
         if (this.api) {
             const opts = {
-                timeoutMs: 90000
+                timeoutMs: 60000
             };
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
             }
             try {
-                response = await this.api.sendMessage(message, opts);
-                const end = Date.now();
-                core.info(`response: ${JSON.stringify(response)}`);
-                core.info(`openai response time: ${end - start} ms`);
+                response = await retry(this.api.sendMessage.bind(this.api), [message, opts], 3);
             }
             catch (e) {
                 core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
             }
+            const end = Date.now();
+            core.info(`response: ${JSON.stringify(response)}`);
+            core.info(`openai sendMessage (including retries) response time: ${end - start} ms`);
         }
         else {
             core.setFailed('The OpenAI API is not initialized');
@@ -27419,7 +27435,7 @@ ${tag}`;
 
 __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
+/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5924);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3435);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1071);
