@@ -26438,7 +26438,7 @@ var ChatGPTAPI = class {
   constructor(opts) {
     const {
       apiKey,
-      apiBaseUrl = "https://api.openai.com",
+      apiBaseUrl = "https://api.openai.com/v1",
       debug = false,
       messageStore,
       completionParams,
@@ -26505,6 +26505,7 @@ Current date: ${currentDate}`;
    * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
    * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
    * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
    *
    * @returns The response from ChatGPT
    */
@@ -26514,7 +26515,8 @@ Current date: ${currentDate}`;
       messageId = v4(),
       timeoutMs,
       onProgress,
-      stream = onProgress ? true : false
+      stream = onProgress ? true : false,
+      completionParams
     } = opts;
     let { abortSignal } = opts;
     let abortController = null;
@@ -26542,7 +26544,7 @@ Current date: ${currentDate}`;
     const responseP = new Promise(
       async (resolve, reject) => {
         var _a, _b;
-        const url = `${this._apiBaseUrl}/v1/chat/completions`;
+        const url = `${this._apiBaseUrl}/chat/completions`;
         const headers = {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this._apiKey}`
@@ -26550,6 +26552,7 @@ Current date: ${currentDate}`;
         const body = {
           max_tokens: maxTokens,
           ...this._completionParams,
+          ...completionParams,
           messages,
           stream
         };
@@ -29475,7 +29478,6 @@ const codeReview = async (bot, options, prompts) => {
         // Summary Stage
         const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
         const generateSummary = async (filename, file_content, file_diff) => {
-            let next_summarize_ids = summarize_begin_ids;
             const ins = inputs.clone();
             ins.filename = filename;
             ins.file_content = file_content;
@@ -29484,13 +29486,12 @@ const codeReview = async (bot, options, prompts) => {
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // summarize diff
-                    const [summarize_resp, summarize_diff_ids] = await bot.chat(prompts.render_summarize_file_diff(ins), next_summarize_ids);
+                    const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);
                     if (!summarize_resp) {
                         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
                         return null;
                     }
                     else {
-                        next_summarize_ids = summarize_diff_ids;
                         return [filename, summarize_resp];
                     }
                 }
@@ -29499,11 +29500,14 @@ const codeReview = async (bot, options, prompts) => {
         };
         const summaryPromises = files_to_review.map(async ([filename, file_content, file_diff]) => generateSummary(filename, file_content, file_diff));
         const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
-        // join summaries into one
-        for (const [filename, summary] of summaries) {
-            inputs.summary += `---
+        if (summaries.length > 0) {
+            inputs.summary = '';
+            // join summaries into one
+            for (const [filename, summary] of summaries) {
+                inputs.summary += `---
 ${filename}: ${summary}
 `;
+            }
         }
         let next_summarize_ids = summarize_begin_ids;
         // final summary

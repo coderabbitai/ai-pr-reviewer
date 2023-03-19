@@ -160,7 +160,6 @@ export const codeReview = async (
       file_content: string,
       file_diff: string
     ): Promise<[string, string] | null> => {
-      let next_summarize_ids = summarize_begin_ids
       const ins = inputs.clone()
       ins.filename = filename
       ins.file_content = file_content
@@ -169,22 +168,20 @@ export const codeReview = async (
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           // summarize diff
-          const [summarize_resp, summarize_diff_ids] = await bot.chat(
+          const [summarize_resp] = await bot.chat(
             prompts.render_summarize_file_diff(ins),
-            next_summarize_ids
+            summarize_begin_ids
           )
           if (!summarize_resp) {
             core.info('summarize: nothing obtained from openai')
             return null
           } else {
-            next_summarize_ids = summarize_diff_ids
             return [filename, summarize_resp]
           }
         }
       }
       return null
     }
-
     const summaryPromises = files_to_review.map(
       async ([filename, file_content, file_diff]) =>
         generateSummary(filename, file_content, file_diff)
@@ -194,11 +191,14 @@ export const codeReview = async (
       summary => summary !== null
     ) as [string, string][]
 
-    // join summaries into one
-    for (const [filename, summary] of summaries) {
-      inputs.summary += `---
+    if (summaries.length > 0) {
+      inputs.summary = ''
+      // join summaries into one
+      for (const [filename, summary] of summaries) {
+        inputs.summary += `---
 ${filename}: ${summary}
 `
+      }
     }
 
     let next_summarize_ids = summarize_begin_ids
