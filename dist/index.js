@@ -27420,7 +27420,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5357);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(744);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3435);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4231);
+/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1071);
 
 
 
@@ -29356,43 +29356,194 @@ ${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}
 
 /***/ }),
 
-/***/ 4231:
+/***/ 1071:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "z": () => (/* binding */ codeReview)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1231);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4571);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(744);
-/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6153);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "z": () => (/* binding */ codeReview)
+});
+
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(2186);
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(5438);
+// EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
+var dist_node = __nccwpck_require__(1231);
+;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
+/*
+How it works:
+`this.#head` is an instance of `Node` which keeps track of its current value and nests another instance of `Node` that keeps the value that comes after it. When a value is provided to `.enqueue()`, the code needs to iterate through `this.#head`, going deeper and deeper to find the last value. However, iterating through every single item is slow. This problem is solved by saving a reference to the last value as `this.#tail` so that it can reference it to add a new value.
+*/
+
+class Node {
+	value;
+	next;
+
+	constructor(value) {
+		this.value = value;
+	}
+}
+
+class Queue {
+	#head;
+	#tail;
+	#size;
+
+	constructor() {
+		this.clear();
+	}
+
+	enqueue(value) {
+		const node = new Node(value);
+
+		if (this.#head) {
+			this.#tail.next = node;
+			this.#tail = node;
+		} else {
+			this.#head = node;
+			this.#tail = node;
+		}
+
+		this.#size++;
+	}
+
+	dequeue() {
+		const current = this.#head;
+		if (!current) {
+			return;
+		}
+
+		this.#head = this.#head.next;
+		this.#size--;
+		return current.value;
+	}
+
+	clear() {
+		this.#head = undefined;
+		this.#tail = undefined;
+		this.#size = 0;
+	}
+
+	get size() {
+		return this.#size;
+	}
+
+	* [Symbol.iterator]() {
+		let current = this.#head;
+
+		while (current) {
+			yield current.value;
+			current = current.next;
+		}
+	}
+}
+
+;// CONCATENATED MODULE: ./node_modules/p-limit/index.js
+
+
+function pLimit(concurrency) {
+	if (!((Number.isInteger(concurrency) || concurrency === Number.POSITIVE_INFINITY) && concurrency > 0)) {
+		throw new TypeError('Expected `concurrency` to be a number from 1 and up');
+	}
+
+	const queue = new Queue();
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.size > 0) {
+			queue.dequeue()();
+		}
+	};
+
+	const run = async (fn, resolve, args) => {
+		activeCount++;
+
+		const result = (async () => fn(...args))();
+
+		resolve(result);
+
+		try {
+			await result;
+		} catch {}
+
+		next();
+	};
+
+	const enqueue = (fn, resolve, args) => {
+		queue.enqueue(run.bind(undefined, fn, resolve, args));
+
+		(async () => {
+			// This function needs to wait until the next microtask before comparing
+			// `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
+			// when the run function is dequeued and called. The comparison in the if-statement
+			// needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
+			await Promise.resolve();
+
+			if (activeCount < concurrency && queue.size > 0) {
+				queue.dequeue()();
+			}
+		})();
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => {
+		enqueue(fn, resolve, args);
+	});
+
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount,
+		},
+		pendingCount: {
+			get: () => queue.size,
+		},
+		clearQueue: {
+			value: () => {
+				queue.clear();
+			},
+		},
+	});
+
+	return generator;
+}
+
+// EXTERNAL MODULE: ./lib/commenter.js
+var lib_commenter = __nccwpck_require__(4571);
+// EXTERNAL MODULE: ./lib/options.js + 4 modules
+var lib_options = __nccwpck_require__(744);
+// EXTERNAL MODULE: ./lib/tokenizer.js
+var tokenizer = __nccwpck_require__(6153);
+;// CONCATENATED MODULE: ./lib/review.js
 
 
 
 
 
 
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
+
+const token = core.getInput('token')
+    ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .v({ auth: `token ${token}` });
-const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
+const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
+const context = github.context;
 const repo = context.repo;
+const limit = pLimit(4);
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
-    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
+    const commenter = new lib_commenter/* Commenter */.Es();
     if (context.eventName !== 'pull_request' &&
         context.eventName !== 'pull_request_target') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
+        core.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
         return;
     }
     if (!context.payload.pull_request) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
+        core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
+    const inputs = new lib_options/* Inputs */.kq();
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
@@ -29408,15 +29559,15 @@ const codeReview = async (bot, options, prompts) => {
     });
     const { files, commits } = diff.data;
     if (!files) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: diff.data.files is null`);
-        await commenter.comment(`Skipped: no files to review`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
+        core.warning(`Skipped: diff.data.files is null`);
+        await commenter.comment(`Skipped: no files to review`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         return;
     }
     // skip files if they are filtered out
     const filtered_files = [];
     for (const file of files) {
         if (!options.check_path(file.filename)) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip for excluded path: ${file.filename}`);
+            core.info(`skip for excluded path: ${file.filename}`);
             continue;
         }
         else {
@@ -29425,8 +29576,8 @@ const codeReview = async (bot, options, prompts) => {
     }
     // check if we are exceeding max_files and if max_files is <= 0 (no limit)
     if (filtered_files.length > options.max_files && options.max_files > 0) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning("Skipped: too many files to review, can't handle it");
-        await commenter.comment(`Skipped: too many files to review, can't handle it`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
+        core.warning("Skipped: too many files to review, can't handle it");
+        await commenter.comment(`Skipped: too many files to review, can't handle it`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         return;
     }
     // find patches to review
@@ -29434,7 +29585,7 @@ const codeReview = async (bot, options, prompts) => {
         // retrieve file contents
         let file_content = '';
         if (!context.payload.pull_request) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request is null`);
+            core.warning(`Skipped: context.payload.pull_request is null`);
             return null;
         }
         try {
@@ -29453,11 +29604,11 @@ const codeReview = async (bot, options, prompts) => {
             }
         }
         catch (error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
+            core.warning(`Failed to get file contents: ${error}, skipping.`);
         }
         let file_diff = '';
         if (file.patch) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`diff for ${file.filename}: ${file.patch}`);
+            core.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
         }
         const patches = [];
@@ -29483,12 +29634,12 @@ const codeReview = async (bot, options, prompts) => {
             ins.file_content = file_content;
             ins.file_diff = file_diff;
             if (file_diff.length > 0) {
-                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
+                const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // summarize diff
                     const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);
                     if (!summarize_resp) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
+                        core.info('summarize: nothing obtained from openai');
                         return null;
                     }
                     else {
@@ -29498,7 +29649,7 @@ const codeReview = async (bot, options, prompts) => {
             }
             return null;
         };
-        const summaryPromises = files_to_review.map(async ([filename, file_content, file_diff]) => generateSummary(filename, file_content, file_diff));
+        const summaryPromises = files_to_review.map(async ([filename, file_content, file_diff]) => limit(async () => generateSummary(filename, file_content, file_diff)));
         const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
         if (summaries.length > 0) {
             inputs.summary = '';
@@ -29513,7 +29664,7 @@ ${filename}: ${summary}
         // final summary
         const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
+            core.info('summarize: nothing obtained from openai');
         }
         else {
             inputs.summary = summarize_final_response;
@@ -29526,12 +29677,12 @@ Tips:
 - You can invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
 `;
             next_summarize_ids = summarize_final_response_ids;
-            await commenter.comment(`${summarize_comment}`, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, 'replace');
+            await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         }
         // final release notes
         const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('release notes: nothing obtained from openai');
+            core.info('release notes: nothing obtained from openai');
         }
         else {
             next_summarize_ids = release_notes_ids;
@@ -29542,7 +29693,7 @@ Tips:
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
         // Use Promise.all to run file review processes in parallel
-        await Promise.all(files_to_review.map(async ([filename, file_content, file_diff, patches]) => {
+        const reviewPromises = files_to_review.map(async ([filename, file_content, file_diff, patches]) => limit(async () => {
             // reset chat session for each file while reviewing
             let next_review_ids = review_begin_ids;
             // make a copy of inputs
@@ -29551,49 +29702,49 @@ Tips:
             ins.file_content = file_content;
             ins.file_diff = file_diff;
             if (file_content.length > 0) {
-                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
+                const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review file
                     const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
                     if (!resp) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                        core.info('review: nothing obtained from openai');
                     }
                     else {
                         next_review_ids = review_file_ids;
                     }
                 }
                 else {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`);
+                    core.info(`skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`);
                 }
             }
             if (file_diff.length > 0) {
-                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
+                const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // review diff
                     const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
                     if (!resp) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                        core.info('review: nothing obtained from openai');
                     }
                     else {
                         next_review_ids = review_diff_ids;
                     }
                 }
                 else {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`);
+                    core.info(`skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`);
                 }
             }
             // review_patch_begin
             const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
             next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Reviewing ${filename}:${line} with openai ...`);
+                core.info(`Reviewing ${filename}:${line} with openai ...`);
                 ins.patch = patch;
                 if (!context.payload.pull_request) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('No pull request found, skipping.');
+                    core.warning('No pull request found, skipping.');
                     continue;
                 }
                 // get existing comments on the line
-                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
+                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                 if (all_chains.length > 0) {
                     ins.comment_chain = all_chains;
                 }
@@ -29602,7 +29753,7 @@ Tips:
                 }
                 const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
                 if (!response) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                    core.info('review: nothing obtained from openai');
                     continue;
                 }
                 next_review_ids = patch_ids;
@@ -29613,7 +29764,7 @@ Tips:
                     await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
                 }
                 catch (e) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to comment: ${e}, skipping.
+                    core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
@@ -29621,6 +29772,7 @@ Tips:
                 }
             }
         }));
+        await Promise.all(reviewPromises);
     }
 };
 // Write a function that takes diff for a single file as a string
