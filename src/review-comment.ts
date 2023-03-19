@@ -79,6 +79,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
       comment_chain.includes(COMMENT_REPLY_TAG) ||
       comment.body.startsWith(ASK_BOT)
     ) {
+      let file_content = ''
       try {
         const contents = await octokit.repos.getContent({
           owner: repo.owner,
@@ -89,7 +90,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         if (contents.data) {
           if (!Array.isArray(contents.data)) {
             if (contents.data.type === 'file' && contents.data.content) {
-              inputs.file_content = Buffer.from(
+              file_content = Buffer.from(
                 contents.data.content,
                 'base64'
               ).toString()
@@ -99,6 +100,8 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
       } catch (error) {
         core.warning(`Failed to get file contents: ${error}, skipping.`)
       }
+
+      let file_diff = ''
       try {
         // get diff for this file by comparing the base and head commits
         const diffAll = await octokit.repos.compareCommits({
@@ -112,7 +115,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
           if (files) {
             const file = files.find(f => f.filename === comment.path)
             if (file && file.patch) {
-              inputs.file_diff = file.patch
+              file_diff = file.patch
             }
           }
         }
@@ -135,10 +138,9 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         {}
       )
       let next_comment_ids = comment_begin_ids
-      if (inputs.file_content.length > 0) {
-        const file_content_tokens = tokenizer.get_token_count(
-          inputs.file_content
-        )
+      if (file_content.length > 0) {
+        inputs.file_content = file_content
+        const file_content_tokens = tokenizer.get_token_count(file_content)
         if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           const [file_content_resp, file_content_ids] = await bot.chat(
             prompts.render_comment_file(inputs),
@@ -150,8 +152,13 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         }
       }
 
-      if (inputs.file_diff.length > 0) {
-        const file_diff_tokens = tokenizer.get_token_count(inputs.file_diff)
+      if (file_diff.length > 0) {
+        inputs.file_diff = file_diff
+        // use file diff if no diff was found in the comment
+        if (inputs.diff.length === 0) {
+          inputs.diff = file_diff
+        }
+        const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           const [file_diff_resp, file_diff_ids] = await bot.chat(
             prompts.render_comment_file_diff(inputs),
@@ -198,6 +205,17 @@ ${COMMENT_REPLY_TAG}
           })
         } catch (error) {
           core.warning(`Failed to reply to the top-level comment`)
+          try {
+            await octokit.pulls.createReplyForReviewComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              pull_number,
+              body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
+              comment_id: topLevelCommentId
+            })
+          } catch (error) {
+            core.warning(`Failed to reply to the top-level comment`)
+          }
         }
       } else {
         core.warning(`Failed to find the top-level comment to reply to`)

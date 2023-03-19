@@ -70,13 +70,13 @@ inputs:
     required: false
     description: 'System message to be sent to OpenAI'
     default: |
-      You are a highly experienced software engineer with a strong ability to 
-      review code changes thoroughly.You can uncover issues such as logic 
-      errors, syntax errors, out of bound errors, potential data races, 
+      You are `@openai`, a highly experienced software engineer with a strong 
+      ability to review code changes thoroughly.You can uncover issues such as 
+      logic errors, syntax errors, out of bound errors, potential data races, 
       livelocks, starvation, suspension, order violation, atomicity violation, 
       consistency, complexity, error handling, and more.
 
-      We will be conducting code reviews today.
+      You will be conducting code reviews today and write code if asked to do so.
   summarize_beginning:
     required: false
     description: 'The prompt for the whole pull request'
@@ -156,7 +156,7 @@ inputs:
       $summary
       ```
 
-      Reply "OK" to confirm that you are ready for further instructions.
+      Reply "OK" to confirm.
   review_file:
     required: false
     description: 'The prompt for each file'
@@ -167,6 +167,8 @@ inputs:
       ```
       $file_content
       ```
+
+      Reply "OK" to confirm.
   review_file_diff:
     required: false
     description: 'The prompt for each file diff'
@@ -177,6 +179,8 @@ inputs:
       ```diff
       $file_diff
       ```
+
+      Reply "OK" to confirm.
   review_patch_begin:
     required: false
     description: 'The prompt for each file diff'
@@ -187,7 +191,9 @@ inputs:
       "LGTM!" with a short comment. 
 
       Your responses will be recorded as review comments on the pull request. 
-      Markdown format is preferred for your responses. Reply "OK" to confirm.
+      Markdown format is preferred for your responses. 
+
+      Reply "OK" to confirm.
   review_patch:
     required: false
     description: 'The prompt for each chunks/patches'
@@ -211,11 +217,13 @@ inputs:
       $system_message
 
       A comment was made on a review for a diff patch on file 
-      `$filename`. You will be replying directly to that. If possible, I 
-      will provide you the file and the entire diff to help 
-      provide overall context.
+      `$filename`. I would like you to follow the instructions 
+      in that comment. 
 
-      For context, the pull request has the title "$title" and the following 
+      If possible, I will provide you the file and the entire diff 
+      to help provide overall context for your response.
+
+      The pull request has the title "$title" and the following 
       description:
 
       ```
@@ -238,6 +246,8 @@ inputs:
       ```
       $file_content
       ```
+
+      Reply "OK" to confirm.
   comment_file_diff:
     required: false
     description: 'Prompt for file diff'
@@ -247,12 +257,14 @@ inputs:
       ```diff
       $file_diff
       ```
+
+      Reply "OK" to confirm.
   comment:
     required: false
     description: 'Prompt for comment'
     default: |
-      I would like you to reply to the new comment made on 
-      a conversation chain on a code review diff.
+      I would like you to follow the instructions in the new 
+      comment made on a conversation chain on a code review diff.
 
       Diff being commented on:
 
@@ -269,19 +281,21 @@ inputs:
       $comment_chain
       ```
 
-      Please reply directly to the new comment in the conversation 
-      chain (instead of suggesting a reply) and your reply will be 
-      posted as-is.
+      Please reply directly to the new comment (instead of suggesting 
+      a reply) and your reply will be posted as-is.
 
-      In your reply, please make sure to begin the reply by
-      tagging the user with "@user".
+      If the comment contains instructions/request for you, please comply. 
+      For example, if the comment is asking you to generate documentation 
+      comments on the code, in your reply please generate the required code.
 
-      The comment that you need to directly reply to:
+      In your reply, please make sure to begin the reply by tagging the user 
+      with "@user".
+
+      The comment/request that you need to directly reply to:
 
       ```
       $comment
       ```
-
 runs:
   using: 'node16'
   main: 'dist/index.js'

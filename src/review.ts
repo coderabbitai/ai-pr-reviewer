@@ -164,9 +164,12 @@ export const codeReview = async (
     ): Promise<[string, string] | null> => {
       const ins = inputs.clone()
       ins.filename = filename
-      ins.file_content = file_content
-      ins.file_diff = file_diff
+
+      if (file_content.length > 0) {
+        ins.file_content = file_content
+      }
       if (file_diff.length > 0) {
+        ins.file_diff = file_diff
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           // summarize diff
@@ -225,8 +228,8 @@ ${filename}: ${summary}
 ---
 
 Tips: 
-- You can reply on the review comment left by this bot to ask follow-up questions.
-- You can invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
+- Reply on the review comment left by this bot to ask follow-up questions.
+- Invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
 `
 
       next_summarize_ids = summarize_final_response_ids
@@ -263,10 +266,9 @@ Tips:
           const ins: Inputs = inputs.clone()
 
           ins.filename = filename
-          ins.file_content = file_content
-          ins.file_diff = file_diff
 
           if (file_content.length > 0) {
+            ins.file_content = file_content
             const file_content_tokens = tokenizer.get_token_count(file_content)
             if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
               try {
@@ -291,6 +293,7 @@ Tips:
           }
 
           if (file_diff.length > 0) {
+            ins.file_diff = file_diff
             const file_diff_tokens = tokenizer.get_token_count(file_diff)
             if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
               try {

@@ -84,6 +84,8 @@ Example:
 
 ![PR Conversation](./docs/images/openai-review-conversation.png)
 
+![PR Conversation Request](./docs/images/openai-review-request.png)
+
 #### Environment variables
 
 - `GITHUB_TOKEN`: This should already be available to the GitHub Action
