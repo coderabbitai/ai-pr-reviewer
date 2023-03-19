@@ -156,7 +156,7 @@ inputs:
       $summary
       ```
 
-      Reply "OK" to confirm that you are ready for further instructions.
+      Reply "OK" to confirm.
   review_file:
     required: false
     description: 'The prompt for each file'
@@ -167,6 +167,8 @@ inputs:
       ```
       $file_content
       ```
+
+      Reply "OK" to confirm.
   review_file_diff:
     required: false
     description: 'The prompt for each file diff'
@@ -177,6 +179,8 @@ inputs:
       ```diff
       $file_diff
       ```
+
+      Reply "OK" to confirm.
   review_patch_begin:
     required: false
     description: 'The prompt for each file diff'
@@ -187,7 +191,9 @@ inputs:
       "LGTM!" with a short comment. 
 
       Your responses will be recorded as review comments on the pull request. 
-      Markdown format is preferred for your responses. Reply "OK" to confirm.
+      Markdown format is preferred for your responses. 
+
+      Reply "OK" to confirm.
   review_patch:
     required: false
     description: 'The prompt for each chunks/patches'
