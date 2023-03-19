@@ -29486,13 +29486,19 @@ const codeReview = async (bot, options, prompts) => {
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
                     // summarize diff
-                    const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);
-                    if (!summarize_resp) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
-                        return null;
+                    try {
+                        const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);
+                        if (!summarize_resp) {
+                            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('summarize: nothing obtained from openai');
+                            return null;
+                        }
+                        else {
+                            return [filename, summarize_resp];
+                        }
                     }
-                    else {
-                        return [filename, summarize_resp];
+                    catch (error) {
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`summarize: error from openai: ${error}`);
+                        return null;
                     }
                 }
             }
@@ -29553,13 +29559,18 @@ Tips:
             if (file_content.length > 0) {
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-                    // review file
-                    const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
-                    if (!resp) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                    try {
+                        // review file
+                        const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
+                        if (!resp) {
+                            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                        }
+                        else {
+                            next_review_ids = review_file_ids;
+                        }
                     }
-                    else {
-                        next_review_ids = review_file_ids;
+                    catch (error) {
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`review: error from openai: ${error}`);
                     }
                 }
                 else {
@@ -29569,13 +29580,18 @@ Tips:
             if (file_diff.length > 0) {
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-                    // review diff
-                    const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
-                    if (!resp) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                    try {
+                        // review diff
+                        const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
+                        if (!resp) {
+                            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                        }
+                        else {
+                            next_review_ids = review_diff_ids;
+                        }
                     }
-                    else {
-                        next_review_ids = review_diff_ids;
+                    catch (error) {
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`review: error from openai: ${error}`);
                     }
                 }
                 else {
@@ -29592,24 +29608,29 @@ Tips:
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('No pull request found, skipping.');
                     continue;
                 }
-                // get existing comments on the line
-                const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
-                if (all_chains.length > 0) {
-                    ins.comment_chain = all_chains;
+                try {
+                    // get existing comments on the line
+                    const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
+                    if (all_chains.length > 0) {
+                        ins.comment_chain = all_chains;
+                    }
+                    else {
+                        ins.comment_chain = 'no previous comments';
+                    }
                 }
-                else {
-                    ins.comment_chain = 'no previous comments';
-                }
-                const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
-                if (!response) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
-                    continue;
-                }
-                next_review_ids = patch_ids;
-                if (!options.review_comment_lgtm && response.includes('LGTM')) {
-                    continue;
+                catch (e) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                 }
                 try {
+                    const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
+                    if (!response) {
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('review: nothing obtained from openai');
+                        continue;
+                    }
+                    next_review_ids = patch_ids;
+                    if (!options.review_comment_lgtm && response.includes('LGTM')) {
+                        continue;
+                    }
                     await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
                 }
                 catch (e) {
