@@ -79,8 +79,8 @@ inputs:
     required: false
     description: 'The prompt for each file diff'
     default: |
-      I am providing diff for `$filename` below. I would like you to summarize 
-      the diff.
+      I am providing diff for `$filename` below. I would like you to provide
+      a concise summary of this diff.
 
       ```diff
       $file_diff
@@ -100,7 +100,7 @@ inputs:
       the following content:
         - Thank the user for letting you participate in the code review.
         - High-level summary (focus on the purpose and intent within 80 words)
-        - Table of files and their summaries
+        - Table of files and their summaries (30 word summary of each file)
 
       Avoid additional commentary as this summary will be added as a comment on the pull request.
   summarize_release_notes:
