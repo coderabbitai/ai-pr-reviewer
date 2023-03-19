@@ -13,10 +13,6 @@ inputs:
     required: false
     description: 'Max files to review. Less than or equal to 0 means no limit.'
     default: '40'
-  temperature:
-    required: false
-    description: 'Temperature for GPT model'
-    default: '0.0'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
@@ -49,6 +45,27 @@ inputs:
       !**/gen/**
       !**/_gen/**
       !**/vendor/**
+  openai_model:
+    required: false
+    description: 'Model to use'
+    default: 'gpt-3.5-turbo'
+  openai_model_temperature:
+    required: false
+    description: 'Temperature for GPT model'
+    default: '0.0'
+  openai_retries:
+    required: false
+    description:
+      'How many times to retry openai API in case of timeouts or errors?'
+    default: '5'
+  openai_timeout_ms:
+    required: false
+    description: 'Timeout for openai API call in millis'
+    default: '60000'
+  openai_concurrency_limit:
+    required: false
+    description: 'How many concurrent API calls to make to openai servers?'
+    default: '4'
   system_message:
     required: false
     description: 'System message to be sent to OpenAI'

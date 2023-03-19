@@ -26983,7 +26983,8 @@ class Bot {
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
                 completionParams: {
-                    temperature: options.temperature
+                    temperature: options.openai_model_temperature,
+                    model: options.openai_model
                 }
             });
         }
@@ -27018,13 +27019,13 @@ class Bot {
         let response = null;
         if (this.api) {
             const opts = {
-                timeoutMs: 60000
+                timeoutMs: this.options.openai_timeout_ms
             };
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
             }
             try {
-                response = await retry(this.api.sendMessage.bind(this.api), [message, opts], 3);
+                response = await retry(this.api.sendMessage.bind(this.api), [message, opts], this.options.openai_retries);
             }
             catch (e) {
                 core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
@@ -27445,7 +27446,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('temperature'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // initialize openai bot
     let bot = null;
@@ -29136,15 +29137,22 @@ class Options {
     review_comment_lgtm;
     path_filters;
     system_message;
-    temperature;
-    constructor(debug, max_files = '40', review_comment_lgtm = false, path_filters = null, system_message = '', temperature = '0.0') {
+    openai_model;
+    openai_model_temperature;
+    openai_retries;
+    openai_timeout_ms;
+    openai_concurrency_limit;
+    constructor(debug, max_files = '40', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files = parseInt(max_files);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
-        // convert temperature to number
-        this.temperature = parseFloat(temperature);
+        this.openai_model = openai_model;
+        this.openai_model_temperature = parseFloat(openai_model_temperature);
+        this.openai_retries = parseInt(openai_retries);
+        this.openai_timeout_ms = parseInt(openai_timeout_ms);
+        this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
@@ -29548,10 +29556,10 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const limit = pLimit(4);
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
+    const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
     if (context.eventName !== 'pull_request' &&
         context.eventName !== 'pull_request_target') {
         core.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
@@ -29673,7 +29681,7 @@ const codeReview = async (bot, options, prompts) => {
             }
             return null;
         };
-        const summaryPromises = files_to_review.map(async ([filename, file_content, file_diff]) => limit(async () => generateSummary(filename, file_content, file_diff)));
+        const summaryPromises = files_to_review.map(async ([filename, file_content, file_diff]) => openai_concurrency_limit(async () => generateSummary(filename, file_content, file_diff)));
         const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
         if (summaries.length > 0) {
             inputs.summary = '';
@@ -29717,7 +29725,7 @@ Tips:
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
         // Use Promise.all to run file review processes in parallel
-        const reviewPromises = files_to_review.map(async ([filename, file_content, file_diff, patches]) => limit(async () => {
+        const reviewPromises = files_to_review.map(async ([filename, file_content, file_diff, patches]) => openai_concurrency_limit(async () => {
             // reset chat session for each file while reviewing
             let next_review_ids = review_begin_ids;
             // make a copy of inputs

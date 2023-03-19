@@ -11,7 +11,11 @@ async function run(): Promise<void> {
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
     core.getInput('system_message'),
-    core.getInput('temperature')
+    core.getInput('openai_model'),
+    core.getInput('openai_model_temperature'),
+    core.getInput('openai_retries'),
+    core.getInput('openai_timeout_ms'),
+    core.getInput('openai_concurrency_limit')
   )
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),

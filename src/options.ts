@@ -197,7 +197,11 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
-  temperature: number
+  openai_model: string
+  openai_model_temperature: number
+  openai_retries: number
+  openai_timeout_ms: number
+  openai_concurrency_limit: number
 
   constructor(
     debug: boolean,
@@ -205,15 +209,22 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    temperature = '0.0'
+    openai_model = 'gpt-3.5-turbo',
+    openai_model_temperature = '0.0',
+    openai_retries = '3',
+    openai_timeout_ms = '60000',
+    openai_concurrency_limit = '4'
   ) {
     this.debug = debug
     this.max_files = parseInt(max_files)
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
-    // convert temperature to number
-    this.temperature = parseFloat(temperature)
+    this.openai_model = openai_model
+    this.openai_model_temperature = parseFloat(openai_model_temperature)
+    this.openai_retries = parseInt(openai_retries)
+    this.openai_timeout_ms = parseInt(openai_timeout_ms)
+    this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
   }
 
   check_path(path: string): boolean {
