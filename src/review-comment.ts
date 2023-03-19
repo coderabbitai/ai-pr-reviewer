@@ -113,6 +113,10 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
             const file = files.find(f => f.filename === comment.path)
             if (file && file.patch) {
               inputs.file_diff = file.patch
+              // if inputs.diff is not set, use the file diff
+              if (!inputs.diff) {
+                inputs.diff = `same as file diff`
+              }
             }
           }
         }

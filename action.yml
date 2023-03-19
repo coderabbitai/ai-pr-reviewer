@@ -208,8 +208,6 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      $system_message
-
       A comment was made on a review for a diff patch on file 
       `$filename`. You will be replying directly to that. If possible, I 
       will provide you the file and the entire diff to help 
@@ -238,6 +236,8 @@ inputs:
       ```
       $file_content
       ```
+
+      Reply "OK" to confirm.
   comment_file_diff:
     required: false
     description: 'Prompt for file diff'
@@ -247,6 +247,8 @@ inputs:
       ```diff
       $file_diff
       ```
+
+      Reply "OK" to confirm.
   comment:
     required: false
     description: 'Prompt for comment'
