@@ -205,6 +205,17 @@ ${COMMENT_REPLY_TAG}
           })
         } catch (error) {
           core.warning(`Failed to reply to the top-level comment`)
+          try {
+            await octokit.pulls.createReplyForReviewComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              pull_number,
+              body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
+              comment_id: topLevelCommentId
+            })
+          } catch (error) {
+            core.warning(`Failed to reply to the top-level comment`)
+          }
         }
       } else {
         core.warning(`Failed to find the top-level comment to reply to`)
