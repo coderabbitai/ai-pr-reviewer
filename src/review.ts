@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import pLimit from 'p-limit'
 import {Bot} from './bot.js'
 import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
@@ -12,6 +13,7 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
+const limit = pLimit(2)
 
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
@@ -189,7 +191,7 @@ export const codeReview = async (
     }
     const summaryPromises = files_to_review.map(
       async ([filename, file_content, file_diff]) =>
-        generateSummary(filename, file_content, file_diff)
+        limit(async () => generateSummary(filename, file_content, file_diff))
     )
 
     const summaries = (await Promise.all(summaryPromises)).filter(
@@ -249,9 +251,9 @@ Tips:
       {}
     )
     // Use Promise.all to run file review processes in parallel
-    await Promise.all(
-      files_to_review.map(
-        async ([filename, file_content, file_diff, patches]) => {
+    const reviewPromises = files_to_review.map(
+      async ([filename, file_content, file_diff, patches]) =>
+        limit(async () => {
           // reset chat session for each file while reviewing
           let next_review_ids = review_begin_ids
 
@@ -374,9 +376,10 @@ Tips:
         patch: ${patch}`)
             }
           }
-        }
-      )
+        })
     )
+
+    await Promise.all(reviewPromises)
   }
 }
 

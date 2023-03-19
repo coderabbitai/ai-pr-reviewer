@@ -30,7 +30,8 @@
     "@actions/github": "^5.1.1",
     "@octokit/action": "^5.0.2",
     "minimatch": "^7.4.2",
-    "node-fetch": "^3.3.1"
+    "node-fetch": "^3.3.1",
+    "p-limit": "^4.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.5.0",
