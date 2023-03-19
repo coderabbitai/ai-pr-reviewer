@@ -71,9 +71,7 @@ export class Bot {
         core.info(`response: ${JSON.stringify(response)}`)
         core.info(`openai response time: ${end - start} ms`)
       } catch (e: any) {
-        core.info(
-          `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
-        )
+        core.warning(`Failed to send message to OpenAI: ${e} ${e.stack}`)
       }
     } else {
       core.setFailed('The OpenAI API is not initialized')
