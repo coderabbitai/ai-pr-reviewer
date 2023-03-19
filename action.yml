@@ -216,12 +216,14 @@ inputs:
     default: |
       $system_message
 
-      A comment/request was made on a review for a diff patch on file 
-      `$filename`. You will be responding directly to that. If possible, I 
-      will provide you the file and the entire diff to help 
-      provide overall context.
+      A comment was made on a review for a diff patch on file 
+      `$filename`. I would like you to follow the instructions 
+      in that comment. 
 
-      For context, the pull request has the title "$title" and the following 
+      If possible, I will provide you the file and the entire diff 
+      to help provide overall context for your response.
+
+      The pull request has the title "$title" and the following 
       description:
 
       ```
@@ -261,8 +263,8 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      I would like you to respond to the new comment/request 
-      made on a conversation chain on a code review diff.
+      I would like you to follow the instructions in the new 
+      comment made on a conversation chain on a code review diff.
 
       Diff being commented on:
 
@@ -279,18 +281,20 @@ inputs:
       $comment_chain
       ```
 
-      Please respond directly to the new comment/request in the 
-      conversation chain and your respone will be posted as-is.
-
-      In your response, please make sure to tag the user with 
-      "@user" in the opening sentence.
-
       The comment/request that you need to directly respond to:
 
       ```
       $comment
       ```
 
+      Please respond directly to the new comment as your response will 
+      be posted as-is. If the comment contains instructions/request for 
+      you, please comply. For example, if the comment is asking you to 
+      generate documentation comments on the code, in your response 
+      please generate the required code.
+
+      In your response, please make sure to tag the user with "@user" 
+      in the opening sentence.
 runs:
   using: 'node16'
   main: 'dist/index.js'
