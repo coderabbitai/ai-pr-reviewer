@@ -27069,10 +27069,9 @@ class Bot {
 /* harmony export */   "Es": () => (/* binding */ Commenter),
 /* harmony export */   "Rp": () => (/* binding */ SUMMARIZE_TAG),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
-/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
-/* harmony export */   "pK": () => (/* binding */ COMMENT_GREETING)
+/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG)
 /* harmony export */ });
-/* unused harmony exports DESCRIPTION_TAG, DESCRIPTION_TAG_END */
+/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
@@ -27189,6 +27188,54 @@ ${COMMENT_TAG}`;
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment: ${e}`);
+        }
+    }
+    async review_comment_reply(pull_number, top_level_comment, message) {
+        const reply = `${COMMENT_GREETING}
+
+${message}
+
+${COMMENT_REPLY_TAG}
+`;
+        try {
+            // Post the reply to the user comment
+            await octokit.pulls.createReplyForReviewComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number,
+                body: reply,
+                comment_id: top_level_comment.id
+            });
+        }
+        catch (error) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment ${error}`);
+            try {
+                await octokit.pulls.createReplyForReviewComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
+                    comment_id: top_level_comment.id
+                });
+            }
+            catch (e) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment ${e}`);
+            }
+        }
+        try {
+            if (top_level_comment.body.includes(COMMENT_TAG)) {
+                // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
+                const newBody = top_level_comment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG);
+                await octokit.pulls.updateReviewComment({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    comment_id: top_level_comment.id,
+                    body: newBody
+                });
+            }
+        }
+        catch (error) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to update the top-level comment ${error}`);
         }
     }
     async get_comments_at_line(pull_number, path, line) {
@@ -29142,7 +29189,7 @@ class Options {
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
-    constructor(debug, max_files = '40', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files = '60', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files = parseInt(max_files);
         this.review_comment_lgtm = review_comment_lgtm;
@@ -29347,47 +29394,8 @@ const handleReviewComment = async (bot, prompts) => {
                 }
             }
             const [reply] = await bot.chat(prompts.render_comment(inputs), next_comment_ids);
-            const message = `${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_GREETING */ .pK}
-
-${reply}
-
-${_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD}
-`;
             if (topLevelComment) {
-                const topLevelCommentId = topLevelComment.id;
-                try {
-                    // Post the reply to the user comment
-                    await octokit.pulls.createReplyForReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        body: message,
-                        comment_id: topLevelCommentId
-                    });
-                    // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-                    const newBody = topLevelComment.body.replace(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs, _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD);
-                    await octokit.pulls.updateReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        comment_id: topLevelCommentId,
-                        body: newBody
-                    });
-                }
-                catch (error) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment`);
-                    try {
-                        await octokit.pulls.createReplyForReviewComment({
-                            owner: repo.owner,
-                            repo: repo.repo,
-                            pull_number,
-                            body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
-                            comment_id: topLevelCommentId
-                        });
-                    }
-                    catch (error) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment`);
-                    }
-                }
+                await commenter.review_comment_reply(pull_number, topLevelComment, reply);
             }
             else {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);

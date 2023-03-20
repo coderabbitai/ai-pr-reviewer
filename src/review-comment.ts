@@ -4,7 +4,6 @@ import {Octokit} from '@octokit/action'
 import {Bot} from './bot.js'
 import {
   Commenter,
-  COMMENT_GREETING,
   COMMENT_REPLY_TAG,
   COMMENT_TAG,
   SUMMARIZE_TAG
@@ -175,48 +174,12 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
         next_comment_ids
       )
 
-      const message = `${COMMENT_GREETING}
-
-${reply}
-
-${COMMENT_REPLY_TAG}
-`
       if (topLevelComment) {
-        const topLevelCommentId = topLevelComment.id
-        try {
-          // Post the reply to the user comment
-          await octokit.pulls.createReplyForReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number,
-            body: message,
-            comment_id: topLevelCommentId
-          })
-          // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-          const newBody = topLevelComment.body.replace(
-            COMMENT_TAG,
-            COMMENT_REPLY_TAG
-          )
-          await octokit.pulls.updateReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            comment_id: topLevelCommentId,
-            body: newBody
-          })
-        } catch (error) {
-          core.warning(`Failed to reply to the top-level comment`)
-          try {
-            await octokit.pulls.createReplyForReviewComment({
-              owner: repo.owner,
-              repo: repo.repo,
-              pull_number,
-              body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
-              comment_id: topLevelCommentId
-            })
-          } catch (error) {
-            core.warning(`Failed to reply to the top-level comment`)
-          }
-        }
+        await commenter.review_comment_reply(
+          pull_number,
+          topLevelComment,
+          reply
+        )
       } else {
         core.warning(`Failed to find the top-level comment to reply to`)
       }
