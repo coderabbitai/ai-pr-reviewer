@@ -287,7 +287,7 @@ Tips:
                       context.payload.pull_request.number,
                       commits[commits.length - 1].sha,
                       filename,
-                      0,
+                      1,
                       `${resp}`
                     )
                   }
