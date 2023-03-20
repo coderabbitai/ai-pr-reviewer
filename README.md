@@ -48,7 +48,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
 
 jobs:
-  test:
+  review:
     runs-on: ubuntu-latest
     steps:
       - uses: fluxninja/openai-pr-reviewer@main
@@ -147,7 +147,7 @@ on:
   pull_request_target:
 
 jobs:
-  test:
+  review:
     runs-on: ubuntu-latest
     steps:
       - uses: fluxninja/openai-pr-reviewer@main
@@ -165,9 +165,3 @@ https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows
 
 Set `debug: true` in the workflow file to enable debug mode, which will show the
 messages
-
-### Special Thanks
-
-This GitHub Action is based on
-[ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action) by
-[Tao He](https://github.com/sighingnow).
