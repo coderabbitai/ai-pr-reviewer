@@ -13,8 +13,6 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-const limit = pLimit(4)
-
 const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
 export const codeReview = async (
@@ -23,6 +21,8 @@ export const codeReview = async (
   prompts: Prompts
 ) => {
   const commenter: Commenter = new Commenter()
+
+  const openai_concurrency_limit = pLimit(options.openai_concurrency_limit)
 
   if (
     context.eventName !== 'pull_request' &&
@@ -164,9 +164,12 @@ export const codeReview = async (
     ): Promise<[string, string] | null> => {
       const ins = inputs.clone()
       ins.filename = filename
-      ins.file_content = file_content
-      ins.file_diff = file_diff
+
+      if (file_content.length > 0) {
+        ins.file_content = file_content
+      }
       if (file_diff.length > 0) {
+        ins.file_diff = file_diff
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
           // summarize diff
@@ -191,7 +194,9 @@ export const codeReview = async (
     }
     const summaryPromises = files_to_review.map(
       async ([filename, file_content, file_diff]) =>
-        limit(async () => generateSummary(filename, file_content, file_diff))
+        openai_concurrency_limit(async () =>
+          generateSummary(filename, file_content, file_diff)
+        )
     )
 
     const summaries = (await Promise.all(summaryPromises)).filter(
@@ -223,8 +228,8 @@ ${filename}: ${summary}
 ---
 
 Tips: 
-- You can reply on the review comment left by this bot to ask follow-up questions.
-- You can invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
+- Reply on the review comment left by this bot to ask follow-up questions.
+- Invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
 `
 
       next_summarize_ids = summarize_final_response_ids
@@ -253,7 +258,7 @@ Tips:
     // Use Promise.all to run file review processes in parallel
     const reviewPromises = files_to_review.map(
       async ([filename, file_content, file_diff, patches]) =>
-        limit(async () => {
+        openai_concurrency_limit(async () => {
           // reset chat session for each file while reviewing
           let next_review_ids = review_begin_ids
 
@@ -261,10 +266,9 @@ Tips:
           const ins: Inputs = inputs.clone()
 
           ins.filename = filename
-          ins.file_content = file_content
-          ins.file_diff = file_diff
 
           if (file_content.length > 0) {
+            ins.file_content = file_content
             const file_content_tokens = tokenizer.get_token_count(file_content)
             if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
               try {
@@ -289,6 +293,7 @@ Tips:
           }
 
           if (file_diff.length > 0) {
+            ins.file_diff = file_diff
             const file_diff_tokens = tokenizer.get_token_count(file_diff)
             if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
               try {

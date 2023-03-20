@@ -3,6 +3,7 @@ import './fetch-polyfill.js'
 import * as core from '@actions/core'
 import * as openai from 'chatgpt'
 import * as optionsJs from './options.js'
+import * as utils from './utils.js'
 
 // define type to save parentMessageId and conversationId
 export type Ids = {
@@ -23,10 +24,9 @@ export class Bot {
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
         completionParams: {
-          temperature: options.temperature
+          temperature: options.openai_model_temperature,
+          model: options.openai_model
         }
-        // assistantLabel: " ",
-        // userLabel: " ",
       })
     } else {
       const err =
@@ -58,21 +58,30 @@ export class Bot {
     }
 
     let response: openai.ChatMessage | null = null
+
     if (this.api) {
       const opts: openai.SendMessageOptions = {
-        timeoutMs: 90000
+        timeoutMs: this.options.openai_timeout_ms
       }
       if (ids.parentMessageId) {
         opts.parentMessageId = ids.parentMessageId
       }
       try {
-        response = await this.api.sendMessage(message, opts)
-        const end = Date.now()
-        core.info(`response: ${JSON.stringify(response)}`)
-        core.info(`openai response time: ${end - start} ms`)
+        response = await utils.retry(
+          this.api.sendMessage.bind(this.api),
+          [message, opts],
+          this.options.openai_retries
+        )
       } catch (e: any) {
         core.warning(`Failed to send message to OpenAI: ${e} ${e.stack}`)
       }
+      const end = Date.now()
+      core.info(`response: ${JSON.stringify(response)}`)
+      core.info(
+        `openai sendMessage (including retries) response time: ${
+          end - start
+        } ms`
+      )
     } else {
       core.setFailed('The OpenAI API is not initialized')
     }
