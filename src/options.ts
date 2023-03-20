@@ -202,6 +202,7 @@ export class Options {
   openai_retries: number
   openai_timeout_ms: number
   openai_concurrency_limit: number
+  max_tokens_for_extra_content: number
 
   constructor(
     debug: boolean,
@@ -225,6 +226,14 @@ export class Options {
     this.openai_retries = parseInt(openai_retries)
     this.openai_timeout_ms = parseInt(openai_timeout_ms)
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
+
+    if (this.openai_model === 'gpt-4') {
+      this.max_tokens_for_extra_content = 5000
+    } else if (this.openai_model === 'gpt-3.5-turbo') {
+      this.max_tokens_for_extra_content = 2500
+    } else {
+      this.max_tokens_for_extra_content = 1000
+    }
   }
 
   check_path(path: string): boolean {

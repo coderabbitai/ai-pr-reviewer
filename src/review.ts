@@ -13,7 +13,6 @@ const token = core.getInput('token')
 const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
-const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
 export const codeReview = async (
   bot: Bot,
@@ -171,7 +170,7 @@ export const codeReview = async (
       if (file_diff.length > 0) {
         ins.file_diff = file_diff
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+        if (file_diff_tokens < options.max_tokens_for_extra_content) {
           // summarize diff
           try {
             const [summarize_resp] = await bot.chat(
@@ -270,7 +269,7 @@ Tips:
           if (file_content.length > 0) {
             ins.file_content = file_content
             const file_content_tokens = tokenizer.get_token_count(file_content)
-            if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+            if (file_content_tokens < options.max_tokens_for_extra_content) {
               try {
                 // review file
                 const [resp, review_file_ids] = await bot.chat(
@@ -295,7 +294,7 @@ Tips:
           if (file_diff.length > 0) {
             ins.file_diff = file_diff
             const file_diff_tokens = tokenizer.get_token_count(file_diff)
-            if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+            if (file_diff_tokens < options.max_tokens_for_extra_content) {
               try {
                 // review diff
                 const [resp, review_diff_ids] = await bot.chat(

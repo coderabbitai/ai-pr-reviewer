@@ -140,6 +140,59 @@ ${COMMENT_TAG}`
     }
   }
 
+  async review_comment_reply(
+    pull_number: number,
+    top_level_comment: any,
+    message: string
+  ) {
+    const reply = `${COMMENT_GREETING}
+
+${message}
+
+${COMMENT_REPLY_TAG}
+`
+    try {
+      // Post the reply to the user comment
+      await octokit.pulls.createReplyForReviewComment({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number,
+        body: reply,
+        comment_id: top_level_comment.id
+      })
+    } catch (error) {
+      core.warning(`Failed to reply to the top-level comment ${error}`)
+      try {
+        await octokit.pulls.createReplyForReviewComment({
+          owner: repo.owner,
+          repo: repo.repo,
+          pull_number,
+          body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
+          comment_id: top_level_comment.id
+        })
+      } catch (e) {
+        core.warning(`Failed to reply to the top-level comment ${e}`)
+      }
+    }
+    try {
+      if (top_level_comment.body.includes(COMMENT_TAG)) {
+        // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
+        const newBody = top_level_comment.body.replace(
+          COMMENT_TAG,
+          COMMENT_REPLY_TAG
+        )
+        await octokit.pulls.updateReviewComment({
+          owner: repo.owner,
+          repo: repo.repo,
+          comment_id: top_level_comment.id,
+          body: newBody
+        })
+      }
+    } catch (error) {
+      core.warning(`Failed to update the top-level comment ${error}`)
+    }
+  }
+
   async get_comments_at_line(pull_number: number, path: string, line: number) {
     const comments = await this.list_review_comments(pull_number)
     return comments.filter(
