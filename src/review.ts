@@ -285,7 +285,7 @@ Tips:
                   if (context.payload.pull_request) {
                     await commenter.review_comment(
                       context.payload.pull_request.number,
-                      context.payload.pull_request.base.sha,
+                      context.payload.pull_request.head.sha,
                       filename,
                       1,
                       `${resp}`

@@ -29782,7 +29782,7 @@ Tips:
                             //if (resp.includes('LGTM')) {
                             // comment at line 0
                             if (context.payload.pull_request) {
-                                await commenter.review_comment(context.payload.pull_request.number, context.payload.pull_request.base.sha, filename, 1, `${resp}`);
+                                await commenter.review_comment(context.payload.pull_request.number, context.payload.pull_request.head.sha, filename, 1, `${resp}`);
                             }
                             //}
                         }
