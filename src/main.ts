@@ -54,7 +54,7 @@ async function run(): Promise<void> {
     } else if (
       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
     ) {
-      await handleReviewComment(bot, prompts)
+      await handleReviewComment(bot, options, prompts)
     } else {
       core.warning('Skipped: this action only works on push event')
     }
@@ -69,11 +69,9 @@ async function run(): Promise<void> {
 
 process
   .on('unhandledRejection', (reason, p) => {
-    console.error(reason, 'Unhandled Rejection at Promise', p)
     core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
   })
   .on('uncaughtException', (e: any) => {
-    console.error(e, 'Uncaught Exception thrown')
     core.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
   })
 

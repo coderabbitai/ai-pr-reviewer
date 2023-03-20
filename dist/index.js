@@ -27511,7 +27511,7 @@ async function run() {
             await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, prompts);
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, options, prompts);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
@@ -27528,11 +27528,9 @@ async function run() {
 }
 process
     .on('unhandledRejection', (reason, p) => {
-    console.error(reason, 'Unhandled Rejection at Promise', p);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
 })
     .on('uncaughtException', (e) => {
-    console.error(e, 'Uncaught Exception thrown');
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
 });
 await run();
@@ -29189,6 +29187,7 @@ class Options {
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
+    max_tokens_for_extra_content;
     constructor(debug, max_files = '60', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files = parseInt(max_files);
@@ -29200,6 +29199,15 @@ class Options {
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
+        if (this.openai_model === 'gpt-4') {
+            this.max_tokens_for_extra_content = 5000;
+        }
+        else if (this.openai_model === 'gpt-3.5-turbo') {
+            this.max_tokens_for_extra_content = 2500;
+        }
+        else {
+            this.max_tokens_for_extra_content = 1000;
+        }
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
@@ -29277,8 +29285,7 @@ const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
-const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
-const handleReviewComment = async (bot, prompts) => {
+const handleReviewComment = async (bot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     if (context.eventName !== 'pull_request_review_comment') {
@@ -29372,7 +29379,7 @@ const handleReviewComment = async (bot, prompts) => {
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
-                if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                if (file_content_tokens < options.max_tokens_for_extra_content) {
                     const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
                     if (file_content_resp) {
                         next_comment_ids = file_content_ids;
@@ -29386,7 +29393,7 @@ const handleReviewComment = async (bot, prompts) => {
                     inputs.diff = file_diff;
                 }
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
-                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                if (file_diff_tokens < options.max_tokens_for_extra_content) {
                     const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
                     if (file_diff_resp) {
                         next_comment_ids = file_diff_ids;
@@ -29584,7 +29591,6 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500;
 const codeReview = async (bot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
@@ -29691,7 +29697,7 @@ const codeReview = async (bot, options, prompts) => {
             if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                if (file_diff_tokens < options.max_tokens_for_extra_content) {
                     // summarize diff
                     try {
                         const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);
@@ -29764,7 +29770,7 @@ Tips:
             if (file_content.length > 0) {
                 ins.file_content = file_content;
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-                if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                if (file_content_tokens < options.max_tokens_for_extra_content) {
                     try {
                         // review file
                         const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
@@ -29786,7 +29792,7 @@ Tips:
             if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+                if (file_diff_tokens < options.max_tokens_for_extra_content) {
                     try {
                         // review diff
                         const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);

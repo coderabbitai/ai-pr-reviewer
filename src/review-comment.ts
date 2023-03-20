@@ -8,7 +8,7 @@ import {
   COMMENT_TAG,
   SUMMARIZE_TAG
 } from './commenter.js'
-import {Inputs, Prompts} from './options.js'
+import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
 
 const token = core.getInput('token')
@@ -19,9 +19,12 @@ const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 const ASK_BOT = '@openai'
-const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
 
-export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
+export const handleReviewComment = async (
+  bot: Bot,
+  options: Options,
+  prompts: Prompts
+) => {
   const commenter: Commenter = new Commenter()
   const inputs: Inputs = new Inputs()
 
@@ -140,7 +143,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
       if (file_content.length > 0) {
         inputs.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+        if (file_content_tokens < options.max_tokens_for_extra_content) {
           const [file_content_resp, file_content_ids] = await bot.chat(
             prompts.render_comment_file(inputs),
             next_comment_ids
@@ -158,7 +161,7 @@ export const handleReviewComment = async (bot: Bot, prompts: Prompts) => {
           inputs.diff = file_diff
         }
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+        if (file_diff_tokens < options.max_tokens_for_extra_content) {
           const [file_diff_resp, file_diff_ids] = await bot.chat(
             prompts.render_comment_file_diff(inputs),
             next_comment_ids
