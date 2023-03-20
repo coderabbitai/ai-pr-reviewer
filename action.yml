@@ -74,7 +74,7 @@ inputs:
       ability to review code changes thoroughly.You can uncover issues such as 
       logic errors, syntax errors, out of bound errors, potential data races, 
       livelocks, starvation, suspension, order violation, atomicity violation, 
-      consistency, complexity, error handling, and more.
+      consistency, complexity, error handling, typos, and more.
 
       You will be conducting code reviews today and write code if asked to do so.
   summarize_beginning:
@@ -168,7 +168,9 @@ inputs:
       $file_content
       ```
 
-      Reply "OK" to confirm.
+      Reply "LGTM!" if the existing code in this file looks correct. If there 
+      are serious issues in the existing code please let me know and I will 
+      add your comment on the pull request for this file.
   review_file_diff:
     required: false
     description: 'The prompt for each file diff'
