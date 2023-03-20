@@ -280,18 +280,18 @@ Tips:
                   core.info('review: nothing obtained from openai')
                 } else {
                   next_review_ids = review_file_ids
-                  if (resp.includes('LGTM')) {
-                    // comment at line 0
-                    if (context.payload.pull_request) {
-                      await commenter.review_comment(
-                        context.payload.pull_request.number,
-                        commits[commits.length - 1].sha,
-                        filename,
-                        0,
-                        `${resp}`
-                      )
-                    }
+                  //if (resp.includes('LGTM')) {
+                  // comment at line 0
+                  if (context.payload.pull_request) {
+                    await commenter.review_comment(
+                      context.payload.pull_request.number,
+                      commits[commits.length - 1].sha,
+                      filename,
+                      0,
+                      `${resp}`
+                    )
                   }
+                  //}
                 }
               } catch (error) {
                 core.warning(`review: error from openai: ${error}`)
