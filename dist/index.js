@@ -27095,7 +27095,41 @@ class Commenter {
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
      */
     async comment(message, tag, mode) {
-        await this.post_comment(message, tag, mode);
+        let target;
+        if (context.payload.pull_request) {
+            target = context.payload.pull_request.number;
+        }
+        else if (context.payload.issue) {
+            target = context.payload.issue.number;
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
+            return;
+        }
+        if (!tag) {
+            tag = COMMENT_TAG;
+        }
+        const body = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`;
+        if (mode === 'create') {
+            await this.create(body, target);
+        }
+        else if (mode === 'replace') {
+            await this.replace(body, tag, target);
+        }
+        else if (mode === 'append') {
+            await this.append(body, tag, target);
+        }
+        else if (mode === 'prepend') {
+            await this.prepend(body, tag, target);
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
+            await this.replace(body, tag, target);
+        }
     }
     get_description(description) {
         // remove our summary from description by looking for description_tag and description_tag_end
@@ -27324,43 +27358,6 @@ ${chain}
         catch (e) {
             console.warn(`Failed to list review comments: ${e}`);
             return all_comments;
-        }
-    }
-    async post_comment(message, tag, mode) {
-        let target;
-        if (context.payload.pull_request) {
-            target = context.payload.pull_request.number;
-        }
-        else if (context.payload.issue) {
-            target = context.payload.issue.number;
-        }
-        else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
-            return;
-        }
-        if (!tag) {
-            tag = COMMENT_TAG;
-        }
-        const body = `${COMMENT_GREETING}
-
-${message}
-
-${tag}`;
-        if (mode === 'create') {
-            await this.create(body, target);
-        }
-        else if (mode === 'replace') {
-            await this.replace(body, tag, target);
-        }
-        else if (mode === 'append') {
-            await this.append(body, tag, target);
-        }
-        else if (mode === 'prepend') {
-            await this.prepend(body, tag, target);
-        }
-        else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
-            await this.replace(body, tag, target);
         }
     }
     async create(body, target) {
