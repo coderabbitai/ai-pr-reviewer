@@ -285,7 +285,7 @@ Tips:
                   // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
                   // For now comment on the PR itself
                   const tag = `<!-- openai-review-file-${filename} -->`
-                  const comment = `${tag}\n${resp}`
+                  const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`
                   await commenter.comment(comment, tag, 'replace')
                   //}
                 }
