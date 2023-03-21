@@ -280,14 +280,14 @@ Tips:
                   core.info('review: nothing obtained from openai')
                 } else {
                   next_review_ids = review_file_ids
-                  //if (resp.includes('LGTM')) {
-                  // TODO: add file level comments via API once it's available
-                  // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
-                  // For now comment on the PR itself
-                  const tag = `<!-- openai-review-file-${filename} -->`
-                  const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`
-                  await commenter.comment(comment, tag, 'replace')
-                  //}
+                  if (resp.includes('LGTM')) {
+                    // TODO: add file level comments via API once it's available
+                    // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
+                    // For now comment on the PR itself
+                    const tag = `<!-- openai-review-file-${filename} -->`
+                    const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`
+                    await commenter.comment(comment, tag, 'replace')
+                  }
                 }
               } catch (error) {
                 core.warning(`review: error from openai: ${error}`)

@@ -29197,10 +29197,10 @@ class Options {
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
         if (this.openai_model === 'gpt-4') {
-            this.max_tokens_for_extra_content = 5000;
+            this.max_tokens_for_extra_content = 4000;
         }
         else if (this.openai_model === 'gpt-3.5-turbo') {
-            this.max_tokens_for_extra_content = 2500;
+            this.max_tokens_for_extra_content = 2000;
         }
         else {
             this.max_tokens_for_extra_content = 1000;
@@ -29776,14 +29776,14 @@ Tips:
                         }
                         else {
                             next_review_ids = review_file_ids;
-                            //if (resp.includes('LGTM')) {
-                            // TODO: add file level comments via API once it's available
-                            // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
-                            // For now comment on the PR itself
-                            const tag = `<!-- openai-review-file-${filename} -->`;
-                            const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`;
-                            await commenter.comment(comment, tag, 'replace');
-                            //}
+                            if (resp.includes('LGTM')) {
+                                // TODO: add file level comments via API once it's available
+                                // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
+                                // For now comment on the PR itself
+                                const tag = `<!-- openai-review-file-${filename} -->`;
+                                const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`;
+                                await commenter.comment(comment, tag, 'replace');
+                            }
                         }
                     }
                     catch (error) {
