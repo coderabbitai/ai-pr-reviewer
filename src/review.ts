@@ -280,7 +280,7 @@ Tips:
                   core.info('review: nothing obtained from openai')
                 } else {
                   next_review_ids = review_file_ids
-                  if (resp.includes('LGTM')) {
+                  if (!resp.includes('LGTM')) {
                     // TODO: add file level comments via API once it's available
                     // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
                     // For now comment on the PR itself
