@@ -27095,7 +27095,41 @@ class Commenter {
      * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
      */
     async comment(message, tag, mode) {
-        await this.post_comment(message, tag, mode);
+        let target;
+        if (context.payload.pull_request) {
+            target = context.payload.pull_request.number;
+        }
+        else if (context.payload.issue) {
+            target = context.payload.issue.number;
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
+            return;
+        }
+        if (!tag) {
+            tag = COMMENT_TAG;
+        }
+        const body = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`;
+        if (mode === 'create') {
+            await this.create(body, target);
+        }
+        else if (mode === 'replace') {
+            await this.replace(body, tag, target);
+        }
+        else if (mode === 'append') {
+            await this.append(body, tag, target);
+        }
+        else if (mode === 'prepend') {
+            await this.prepend(body, tag, target);
+        }
+        else {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
+            await this.replace(body, tag, target);
+        }
     }
     get_description(description) {
         // remove our summary from description by looking for description_tag and description_tag_end
@@ -27152,18 +27186,18 @@ class Commenter {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, line, message) {
+    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
-${COMMENT_TAG}`;
+${tag}`;
         // replace comment made by this action
         try {
             let found = false;
             const comments = await this.get_comments_at_line(pull_number, path, line);
             for (const comment of comments) {
-                if (comment.body.includes(COMMENT_TAG)) {
+                if (comment.body.includes(tag)) {
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -27324,43 +27358,6 @@ ${chain}
         catch (e) {
             console.warn(`Failed to list review comments: ${e}`);
             return all_comments;
-        }
-    }
-    async post_comment(message, tag, mode) {
-        let target;
-        if (context.payload.pull_request) {
-            target = context.payload.pull_request.number;
-        }
-        else if (context.payload.issue) {
-            target = context.payload.issue.number;
-        }
-        else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
-            return;
-        }
-        if (!tag) {
-            tag = COMMENT_TAG;
-        }
-        const body = `${COMMENT_GREETING}
-
-${message}
-
-${tag}`;
-        if (mode === 'create') {
-            await this.create(body, target);
-        }
-        else if (mode === 'replace') {
-            await this.replace(body, tag, target);
-        }
-        else if (mode === 'append') {
-            await this.append(body, tag, target);
-        }
-        else if (mode === 'prepend') {
-            await this.prepend(body, tag, target);
-        }
-        else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
-            await this.replace(body, tag, target);
         }
     }
     async create(body, target) {
@@ -29200,10 +29197,10 @@ class Options {
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
         if (this.openai_model === 'gpt-4') {
-            this.max_tokens_for_extra_content = 5000;
+            this.max_tokens_for_extra_content = 4000;
         }
         else if (this.openai_model === 'gpt-3.5-turbo') {
-            this.max_tokens_for_extra_content = 2500;
+            this.max_tokens_for_extra_content = 2000;
         }
         else {
             this.max_tokens_for_extra_content = 1000;
@@ -29779,6 +29776,14 @@ Tips:
                         }
                         else {
                             next_review_ids = review_file_ids;
+                            if (!resp.includes('LGTM')) {
+                                // TODO: add file level comments via API once it's available
+                                // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
+                                // For now comment on the PR itself
+                                const tag = `<!-- openai-review-file-${filename} -->`;
+                                const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`;
+                                await commenter.comment(comment, tag, 'replace');
+                            }
                         }
                     }
                     catch (error) {

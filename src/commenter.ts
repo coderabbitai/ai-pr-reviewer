@@ -30,7 +30,40 @@ export class Commenter {
    * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
    */
   async comment(message: string, tag: string, mode: string) {
-    await this.post_comment(message, tag, mode)
+    let target: number
+    if (context.payload.pull_request) {
+      target = context.payload.pull_request.number
+    } else if (context.payload.issue) {
+      target = context.payload.issue.number
+    } else {
+      core.warning(
+        `Skipped: context.payload.pull_request and context.payload.issue are both null`
+      )
+      return
+    }
+
+    if (!tag) {
+      tag = COMMENT_TAG
+    }
+
+    const body = `${COMMENT_GREETING}
+
+${message}
+
+${tag}`
+
+    if (mode === 'create') {
+      await this.create(body, target)
+    } else if (mode === 'replace') {
+      await this.replace(body, tag, target)
+    } else if (mode === 'append') {
+      await this.append(body, tag, target)
+    } else if (mode === 'prepend') {
+      await this.prepend(body, tag, target)
+    } else {
+      core.warning(`Unknown mode: ${mode}, use "replace" instead`)
+      await this.replace(body, tag, target)
+    }
   }
 
   get_description(description: string) {
@@ -100,19 +133,20 @@ export class Commenter {
     commit_id: string,
     path: string,
     line: number,
-    message: string
+    message: string,
+    tag: string = COMMENT_TAG
   ) {
     message = `${COMMENT_GREETING}
 
 ${message}
 
-${COMMENT_TAG}`
+${tag}`
     // replace comment made by this action
     try {
       let found = false
       const comments = await this.get_comments_at_line(pull_number, path, line)
       for (const comment of comments) {
-        if (comment.body.includes(COMMENT_TAG)) {
+        if (comment.body.includes(tag)) {
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,
@@ -316,43 +350,6 @@ ${chain}
     } catch (e: any) {
       console.warn(`Failed to list review comments: ${e}`)
       return all_comments
-    }
-  }
-
-  async post_comment(message: string, tag: string, mode: string) {
-    let target: number
-    if (context.payload.pull_request) {
-      target = context.payload.pull_request.number
-    } else if (context.payload.issue) {
-      target = context.payload.issue.number
-    } else {
-      core.warning(
-        `Skipped: context.payload.pull_request and context.payload.issue are both null`
-      )
-      return
-    }
-
-    if (!tag) {
-      tag = COMMENT_TAG
-    }
-
-    const body = `${COMMENT_GREETING}
-
-${message}
-
-${tag}`
-
-    if (mode === 'create') {
-      await this.create(body, target)
-    } else if (mode === 'replace') {
-      await this.replace(body, tag, target)
-    } else if (mode === 'append') {
-      await this.append(body, tag, target)
-    } else if (mode === 'prepend') {
-      await this.prepend(body, tag, target)
-    } else {
-      core.warning(`Unknown mode: ${mode}, use "replace" instead`)
-      await this.replace(body, tag, target)
     }
   }
 
