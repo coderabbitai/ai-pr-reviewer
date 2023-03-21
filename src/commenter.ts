@@ -100,19 +100,20 @@ export class Commenter {
     commit_id: string,
     path: string,
     line: number,
-    message: string
+    message: string,
+    tag: string = COMMENT_TAG
   ) {
     message = `${COMMENT_GREETING}
 
 ${message}
 
-${COMMENT_TAG}`
+${tag}`
     // replace comment made by this action
     try {
       let found = false
       const comments = await this.get_comments_at_line(pull_number, path, line)
       for (const comment of comments) {
-        if (comment.body.includes(COMMENT_TAG)) {
+        if (comment.body.includes(tag)) {
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,

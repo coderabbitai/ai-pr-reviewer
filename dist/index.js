@@ -27152,18 +27152,18 @@ class Commenter {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, line, message) {
+    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
-${COMMENT_TAG}`;
+${tag}`;
         // replace comment made by this action
         try {
             let found = false;
             const comments = await this.get_comments_at_line(pull_number, path, line);
             for (const comment of comments) {
-                if (comment.body.includes(COMMENT_TAG)) {
+                if (comment.body.includes(tag)) {
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -29780,10 +29780,12 @@ Tips:
                         else {
                             next_review_ids = review_file_ids;
                             //if (resp.includes('LGTM')) {
-                            // comment at line 0
-                            if (context.payload.pull_request) {
-                                await commenter.review_comment(context.payload.pull_request.number, context.payload.pull_request.head.sha, filename, 1, `${resp}`);
-                            }
+                            // TODO: add file level comments via API once it's available
+                            // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
+                            // For now comment on the PR itself
+                            const tag = `<!-- openai-review-file-${filename} -->`;
+                            const comment = `${tag}\n${resp}`;
+                            await commenter.comment(comment, tag, 'replace');
                             //}
                         }
                     }

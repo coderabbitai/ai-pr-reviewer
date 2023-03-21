@@ -281,16 +281,12 @@ Tips:
                 } else {
                   next_review_ids = review_file_ids
                   //if (resp.includes('LGTM')) {
-                  // comment at line 0
-                  if (context.payload.pull_request) {
-                    await commenter.review_comment(
-                      context.payload.pull_request.number,
-                      context.payload.pull_request.head.sha,
-                      filename,
-                      1,
-                      `${resp}`
-                    )
-                  }
+                  // TODO: add file level comments via API once it's available
+                  // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
+                  // For now comment on the PR itself
+                  const tag = `<!-- openai-review-file-${filename} -->`
+                  const comment = `${tag}\n${resp}`
+                  await commenter.comment(comment, tag, 'replace')
                   //}
                 }
               } catch (error) {
