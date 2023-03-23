@@ -227,8 +227,9 @@ ${filename}: ${summary}
 ---
 
 Tips: 
-- Reply on the review comment left by this bot to ask follow-up questions.
-- Invite the bot into a review conversation by typing \`@openai\` in the beginning of the comment.
+- Reply on review comments left by this bot to ask follow-up questions. 
+  A review comment is a comment on a diff or a file.
+- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
 `
 
       next_summarize_ids = summarize_final_response_ids
