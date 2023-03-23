@@ -29,7 +29,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
     "@octokit/action": "^5.0.2",
-    "minimatch": "^7.4.2",
+    "minimatch": "^7.4.3",
     "node-fetch": "^3.3.1",
     "p-limit": "^4.0.0"
   },
