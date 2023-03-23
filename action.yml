@@ -12,7 +12,7 @@ inputs:
   max_files:
     required: false
     description: 'Max files to review. Less than or equal to 0 means no limit.'
-    default: '60'
+    default: '50'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
@@ -189,7 +189,7 @@ inputs:
     default: |
       Next, I will send you a series of patches. Each patch consists of a diff snippet, 
       and your task is to review every patch. Identify any bug risks or provide 
-      improvement suggestions. If the patch looks good and acceptable, please reply 
+      improvement suggestions. Otherwise, if the patch is acceptable, please reply 
       "LGTM!" with a short comment. 
 
       Your responses will be recorded as review comments on the pull request. 

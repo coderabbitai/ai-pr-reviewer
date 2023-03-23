@@ -74,6 +74,9 @@ Example:
 
 > @openai Can you please review this block of code?
 
+Note: A review comment is a comment made on a diff or a file in the pull
+request.
+
 ### Screenshots
 
 ![PR Summary](./docs/images/openai-pr-summary.png)
