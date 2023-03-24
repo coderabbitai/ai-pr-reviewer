@@ -227,7 +227,7 @@ ${
     ? `
 ---
 
-### Skipped files (${filter_skipped_files.length})
+### Skipped files due to filter (${filter_skipped_files.length})
 - ${filter_skipped_files.map(file => file.filename).join('\n- ')}
 `
     : ''
