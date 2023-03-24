@@ -9,10 +9,15 @@ inputs:
     required: false
     description: 'Enable debug mode'
     default: 'false'
-  max_files:
+  max_files_to_summarize:
+    required: false
+    description:
+      'Max files to summarize. Less than or equal to 0 means no limit.'
+    default: '60'
+  max_files_to_review:
     required: false
     description: 'Max files to review. Less than or equal to 0 means no limit.'
-    default: '50'
+    default: '180'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'

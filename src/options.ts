@@ -193,7 +193,8 @@ export class Inputs {
 
 export class Options {
   debug: boolean
-  max_files: number
+  max_files_to_summarize: number
+  max_files_to_review: number
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
@@ -206,7 +207,8 @@ export class Options {
 
   constructor(
     debug: boolean,
-    max_files = '60',
+    max_files_to_summarize = '60',
+    max_files_to_review = '180',
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
@@ -217,7 +219,8 @@ export class Options {
     openai_concurrency_limit = '4'
   ) {
     this.debug = debug
-    this.max_files = parseInt(max_files)
+    this.max_files_to_summarize = parseInt(max_files_to_summarize)
+    this.max_files_to_review = parseInt(max_files_to_review)
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
