@@ -6311,8 +6311,7 @@ ${skipped_files_to_summarize.length > 0
         }
         await Promise.all(reviewPromises);
         // comment about skipped files for review and summarize
-        if (skipped_files_to_review.length > 0 ||
-            skipped_files_to_summarize.length > 0) {
+        if (skipped_files_to_review.length > 0) {
             const tag = '<!-- openai-skipped-files -->';
             // make bullet points for skipped files
             const comment = `

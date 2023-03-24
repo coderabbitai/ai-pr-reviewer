@@ -41,6 +41,7 @@ inputs:
       !**/*.ini
       !**/*.mod
       !**/*.sum
+      !**/*.work
       !**/*.json
       !**/*.mmd
       !**/*.svg
