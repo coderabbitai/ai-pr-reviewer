@@ -225,15 +225,18 @@ ${filename}: ${summary}
 
       // make a bullet point list of skipped files
       let skipped_files_str = ''
-      for (const file of skipped_files) {
-        skipped_files_str += `- ${file.filename}\n`
+      if (skipped_files.length > 0) {
+        skipped_files_str = `---
+
+These files were skipped from the review:
+`
+        for (const file of skipped_files) {
+          skipped_files_str += `- ${file.filename}\n`
+        }
       }
 
       const summarize_comment = `${summarize_final_response}
 
----
-
-These files were skipped from review:
 ${skipped_files_str}
 
 ---
