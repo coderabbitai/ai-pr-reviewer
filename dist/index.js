@@ -29622,10 +29622,11 @@ const codeReview = async (bot, options, prompts) => {
     }
     // skip files if they are filtered out
     const filtered_files = [];
+    const skipped_files = [];
     for (const file of files) {
         if (!options.check_path(file.filename)) {
             core.info(`skip for excluded path: ${file.filename}`);
-            continue;
+            skipped_files.push(file);
         }
         else {
             filtered_files.push(file);
@@ -29733,7 +29734,20 @@ ${filename}: ${summary}
         }
         else {
             inputs.summary = summarize_final_response;
+            // make a bullet point list of skipped files
+            let skipped_files_str = '';
+            if (skipped_files.length > 0) {
+                skipped_files_str = `---
+
+These files were skipped from the review:
+`;
+                for (const file of skipped_files) {
+                    skipped_files_str += `- ${file.filename}\n`;
+                }
+            }
             const summarize_comment = `${summarize_final_response}
+
+${skipped_files_str}
 
 ---
 

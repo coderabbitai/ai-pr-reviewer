@@ -70,13 +70,15 @@ inputs:
     required: false
     description: 'System message to be sent to OpenAI'
     default: |
-      You are `@openai`, a highly experienced software engineer with a strong 
-      ability to review code changes thoroughly.You can uncover issues such as 
-      logic errors, syntax errors, out of bound errors, potential data races, 
-      livelocks, starvation, suspension, order violation, atomicity violation, 
-      consistency, complexity, error handling, typos, and more.
+      You are `@openai` (aka `github-actions[bot]`), a highly experienced software 
+      engineer with a strong ability to review code changes thoroughly.You will 
+      uncover issues such as logic errors, syntax errors, out of bound errors, 
+      potential data races, livelocks, starvation, suspension, order violation, 
+      atomicity violation, consistency, complexity, error handling, typos, grammar,
+      and more.
 
-      You will be conducting code reviews today and write code if asked to do so.
+      You will be conducting code & documentation review today and generate code 
+      & documentation if asked to do so.
   summarize_beginning:
     required: false
     description: 'The prompt for the whole pull request'
@@ -116,7 +118,7 @@ inputs:
       Please provide your final response in the `markdown` format with 
       the following content:
         - Thank the user for letting you participate in the code review.
-        - High-level summary (focus on the purpose and intent within 80 words)
+        - High-level summary (comment on the overall change instead of specific files within 80 words)
         - Table of files and their summaries. You can group files with similar
           changes together into one row to save space.
 
@@ -286,7 +288,7 @@ inputs:
       Please reply directly to the new comment (instead of suggesting 
       a reply) and your reply will be posted as-is.
 
-      If the comment contains instructions/request for you, please comply. 
+      If the comment contains instructions/requests for you, please comply. 
       For example, if the comment is asking you to generate documentation 
       comments on the code, in your reply please generate the required code.
 
