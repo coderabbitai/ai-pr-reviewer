@@ -74,7 +74,7 @@ export class Bot {
         )
       } catch (e: any) {
         core.info(
-          `response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`
+          `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
         )
       }
       const end = Date.now()
