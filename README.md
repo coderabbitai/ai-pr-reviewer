@@ -99,8 +99,10 @@ request.
 
 - `debug`: Enable debug mode, will show messages and responses between OpenAI
   server in CI logs.
-- `max_files`: Maximum number of files to be reviewed. Less than or equal to 0
-  means no limit.
+- `max_files_to_summarize`: Maximum number of files to be summarized. Less than
+  or equal to 0 means no limit.
+- `max_files_to_review`: Maximum number of files to be reviewed. Less than or
+  equal to 0
 - `review_comment_lgtm`: Leave comments even the patch is LGTM
 - `path_filters`: Rules to filter files to be reviewed.
 - `temperature`: Temperature of the GPT-3 model.
