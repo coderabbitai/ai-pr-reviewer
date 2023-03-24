@@ -3897,7 +3897,7 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // initialize openai bot
     let bot = null;
@@ -5583,7 +5583,8 @@ class Inputs {
 }
 class Options {
     debug;
-    max_files;
+    max_files_to_summarize;
+    max_files_to_review;
     review_comment_lgtm;
     path_filters;
     system_message;
@@ -5593,9 +5594,10 @@ class Options {
     openai_timeout_ms;
     openai_concurrency_limit;
     max_tokens_for_extra_content;
-    constructor(debug, max_files = '60', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files_to_summarize = '60', max_files_to_review = '180', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
         this.debug = debug;
-        this.max_files = parseInt(max_files);
+        this.max_files_to_summarize = parseInt(max_files_to_summarize);
+        this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
@@ -6033,25 +6035,19 @@ const codeReview = async (bot, options, prompts) => {
         return;
     }
     // skip files if they are filtered out
-    const filtered_files = [];
-    const skipped_files = [];
+    const filter_selected_files = [];
+    const filter_skipped_files = [];
     for (const file of files) {
         if (!options.check_path(file.filename)) {
             core.info(`skip for excluded path: ${file.filename}`);
-            skipped_files.push(file);
+            filter_skipped_files.push(file);
         }
         else {
-            filtered_files.push(file);
+            filter_selected_files.push(file);
         }
     }
-    // check if we are exceeding max_files and if max_files is <= 0 (no limit)
-    if (filtered_files.length > options.max_files && options.max_files > 0) {
-        core.warning("Skipped: too many files to review, can't handle it");
-        await commenter.comment(`Skipped: too many files to review, can't handle it`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
-        return;
-    }
     // find patches to review
-    const filtered_files_to_review = await Promise.all(filtered_files.map(async (file) => {
+    const filtered_files_to_review = await Promise.all(filter_selected_files.map(async (file) => {
         // retrieve file contents
         let file_content = '';
         if (!context.payload.pull_request) {
@@ -6127,7 +6123,16 @@ const codeReview = async (bot, options, prompts) => {
             }
             return null;
         };
-        const summaryPromises = files_to_review.map(async ([filename, file_content, file_diff]) => openai_concurrency_limit(async () => generateSummary(filename, file_content, file_diff)));
+        const summaryPromises = [];
+        const skipped_files_to_summarize = [];
+        for (const [filename, file_content, file_diff] of files_to_review) {
+            if (summaryPromises.length < options.max_files_to_summarize) {
+                summaryPromises.push(openai_concurrency_limit(async () => generateSummary(filename, file_content, file_diff)));
+            }
+            else {
+                skipped_files_to_summarize.push(filename);
+            }
+        }
         const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
         if (summaries.length > 0) {
             inputs.summary = '';
@@ -6146,24 +6151,20 @@ ${filename}: ${summary}
         }
         else {
             inputs.summary = summarize_final_response;
-            // make a bullet point list of skipped files
-            let skipped_files_str = '';
-            if (skipped_files.length > 0) {
-                skipped_files_str = `---
-
-These files were skipped from the review:
-`;
-                for (const file of skipped_files) {
-                    skipped_files_str += `- ${file.filename}\n`;
-                }
-            }
             const summarize_comment = `${summarize_final_response}
 
-${skipped_files_str}
+${filter_skipped_files.length > 0
+                ? `
+---
+
+### Skipped files
+- ${filter_skipped_files.map(file => file.filename).join('\n- ')}
+`
+                : ''}
 
 ---
 
-Tips: 
+### Chatting with 🤖 OpenAI Bot (\`@openai\`)
 - Reply on review comments left by this bot to ask follow-up questions. 
   A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
@@ -6184,8 +6185,7 @@ Tips:
         }
         // Review Stage
         const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
-        // Use Promise.all to run file review processes in parallel
-        const reviewPromises = files_to_review.map(async ([filename, file_content, file_diff, patches]) => openai_concurrency_limit(async () => {
+        const review = async (filename, file_content, file_diff, patches) => {
             // reset chat session for each file while reviewing
             let next_review_ids = review_begin_ids;
             // make a copy of inputs
@@ -6286,8 +6286,47 @@ Tips:
         patch: ${patch}`);
                 }
             }
-        }));
+        };
+        // Use Promise.all to run file review processes in parallel
+        // rewrite this to take max_files_to_review limit into account
+        // const reviewPromises = files_to_review.map(
+        //   async ([filename, file_content, file_diff, patches]) =>
+        //     openai_concurrency_limit(async () =>
+        //       review(filename, file_content, file_diff, patches)
+        //     )
+        // )
+        const reviewPromises = [];
+        const skipped_files_to_review = [];
+        for (const [filename, file_content, file_diff, patches] of files_to_review) {
+            if (reviewPromises.length < options.max_files_to_review) {
+                reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, file_diff, patches)));
+            }
+            else {
+                skipped_files_to_review.push(filename);
+            }
+        }
         await Promise.all(reviewPromises);
+        // comment about skipped files for review and summarize
+        if (skipped_files_to_review.length > 0 ||
+            skipped_files_to_summarize.length > 0) {
+            const tag = '<!-- openai-skipped-files -->';
+            // make bullet points for skipped files
+            const comment = `
+${tag}
+
+      ${skipped_files_to_summarize.length > 0
+                ? `
+### Files not summarized
+- ${skipped_files_to_summarize.join('\n - ')}`
+                : ''}
+      ${skipped_files_to_review.length > 0
+                ? `
+### Files not reviewed
+- ${skipped_files_to_review.join('\n - ')}`
+                : ''}
+      `;
+            await commenter.comment(comment, tag, 'replace');
+        }
     }
 };
 // Write a function that takes diff for a single file as a string

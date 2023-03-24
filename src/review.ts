@@ -198,7 +198,7 @@ export const codeReview = async (
 
     const summaries = (await Promise.all(summaryPromises)).filter(
       summary => summary !== null
-    )
+    ) as [string, string][]
 
     if (summaries.length > 0) {
       inputs.summary = ''
