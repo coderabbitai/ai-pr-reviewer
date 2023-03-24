@@ -207,8 +207,8 @@ export class Options {
 
   constructor(
     debug: boolean,
-    max_files_to_summarize = '60',
-    max_files_to_review = '180',
+    max_files_to_summarize = '40',
+    max_files_to_review = '0',
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',

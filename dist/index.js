@@ -5594,7 +5594,7 @@ class Options {
     openai_timeout_ms;
     openai_concurrency_limit;
     max_tokens_for_extra_content;
-    constructor(debug, max_files_to_summarize = '60', max_files_to_review = '180', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
@@ -6126,7 +6126,8 @@ const codeReview = async (bot, options, prompts) => {
         const summaryPromises = [];
         const skipped_files_to_summarize = [];
         for (const [filename, file_content, file_diff] of files_to_review) {
-            if (summaryPromises.length < options.max_files_to_summarize) {
+            if (options.max_files_to_summarize > 0 &&
+                summaryPromises.length < options.max_files_to_summarize) {
                 summaryPromises.push(openai_concurrency_limit(async () => generateSummary(filename, file_content, file_diff)));
             }
             else {
@@ -6288,9 +6289,6 @@ ${filter_skipped_files.length > 0
             }
         };
         // Use Promise.all to run file review processes in parallel
-        // rewrite this to take max_files_to_review limit into account
-        // const reviewPromises = files_to_review.map(
-        //   async ([filename, file_content, file_diff, patches]) =>
         //     openai_concurrency_limit(async () =>
         //       review(filename, file_content, file_diff, patches)
         //     )
@@ -6298,7 +6296,8 @@ ${filter_skipped_files.length > 0
         const reviewPromises = [];
         const skipped_files_to_review = [];
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
-            if (reviewPromises.length < options.max_files_to_review) {
+            if (options.max_files_to_review > 0 &&
+                reviewPromises.length < options.max_files_to_review) {
                 reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, file_diff, patches)));
             }
             else {

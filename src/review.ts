@@ -185,7 +185,10 @@ export const codeReview = async (
     const summaryPromises = []
     const skipped_files_to_summarize = []
     for (const [filename, file_content, file_diff] of files_to_review) {
-      if (summaryPromises.length < options.max_files_to_summarize) {
+      if (
+        options.max_files_to_summarize > 0 &&
+        summaryPromises.length < options.max_files_to_summarize
+      ) {
         summaryPromises.push(
           openai_concurrency_limit(async () =>
             generateSummary(filename, file_content, file_diff)
@@ -403,9 +406,6 @@ ${
     }
 
     // Use Promise.all to run file review processes in parallel
-    // rewrite this to take max_files_to_review limit into account
-    // const reviewPromises = files_to_review.map(
-    //   async ([filename, file_content, file_diff, patches]) =>
     //     openai_concurrency_limit(async () =>
     //       review(filename, file_content, file_diff, patches)
     //     )
@@ -418,7 +418,10 @@ ${
       file_diff,
       patches
     ] of files_to_review) {
-      if (reviewPromises.length < options.max_files_to_review) {
+      if (
+        options.max_files_to_review > 0 &&
+        reviewPromises.length < options.max_files_to_review
+      ) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
             review(filename, file_content, file_diff, patches)
