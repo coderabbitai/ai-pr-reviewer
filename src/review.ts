@@ -186,7 +186,7 @@ export const codeReview = async (
     const skipped_files_to_summarize = []
     for (const [filename, file_content, file_diff] of files_to_review) {
       if (
-        options.max_files_to_summarize === 0 ||
+        options.max_files_to_summarize <= 0 ||
         summaryPromises.length < options.max_files_to_summarize
       ) {
         summaryPromises.push(
@@ -419,7 +419,7 @@ ${
       patches
     ] of files_to_review) {
       if (
-        options.max_files_to_review === 0 ||
+        options.max_files_to_review <= 0 ||
         reviewPromises.length < options.max_files_to_review
       ) {
         reviewPromises.push(
