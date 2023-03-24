@@ -1,4 +1,4 @@
-name: ChatGPT Reviewer
+name: OpenAI Reviewer
 
 permissions:
   contents: read
