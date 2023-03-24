@@ -13,11 +13,11 @@ inputs:
     required: false
     description:
       'Max files to summarize. Less than or equal to 0 means no limit.'
-    default: '60'
+    default: '40'
   max_files_to_review:
     required: false
     description: 'Max files to review. Less than or equal to 0 means no limit.'
-    default: '180'
+    default: '0'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
