@@ -1,8 +1,9 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import pLimit from 'p-limit'
 import {Bot} from './bot.js'
-import {Commenter} from './commenter.js'
+import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
 
@@ -13,16 +14,14 @@ const octokit = new Octokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 
-const MAX_TOKENS_FOR_EXTRA_CONTENT = 2500
-const comment_tag =
-  '<!-- This is an auto-generated comment: summarize by openai -->'
-
 export const codeReview = async (
   bot: Bot,
   options: Options,
   prompts: Prompts
 ) => {
   const commenter: Commenter = new Commenter()
+
+  const openai_concurrency_limit = pLimit(options.openai_concurrency_limit)
 
   if (
     context.eventName !== 'pull_request' &&
@@ -60,7 +59,7 @@ export const codeReview = async (
     core.warning(`Skipped: diff.data.files is null`)
     await commenter.comment(
       `Skipped: no files to review`,
-      comment_tag,
+      SUMMARIZE_TAG,
       'replace'
     )
     return
@@ -68,10 +67,11 @@ export const codeReview = async (
 
   // skip files if they are filtered out
   const filtered_files = []
+  const skipped_files = []
   for (const file of files) {
     if (!options.check_path(file.filename)) {
       core.info(`skip for excluded path: ${file.filename}`)
-      continue
+      skipped_files.push(file)
     } else {
       filtered_files.push(file)
     }
@@ -82,53 +82,73 @@ export const codeReview = async (
     core.warning("Skipped: too many files to review, can't handle it")
     await commenter.comment(
       `Skipped: too many files to review, can't handle it`,
-      comment_tag,
+      SUMMARIZE_TAG,
       'replace'
     )
     return
   }
 
   // find patches to review
-  const files_to_review: [string, string, string, [number, string][]][] = []
-  for (const file of filtered_files) {
-    // retrieve file contents
-    let file_content = ''
-    try {
-      const contents = await octokit.repos.getContent({
-        owner: repo.owner,
-        repo: repo.repo,
-        path: file.filename,
-        ref: context.payload.pull_request.base.sha
-      })
-      if (contents.data) {
-        if (!Array.isArray(contents.data)) {
-          if (contents.data.type === 'file' && contents.data.content) {
-            file_content = Buffer.from(
-              contents.data.content,
-              'base64'
-            ).toString()
+  const filtered_files_to_review: (
+    | [string, string, string, [number, string][]]
+    | null
+  )[] = await Promise.all(
+    filtered_files.map(async file => {
+      // retrieve file contents
+      let file_content = ''
+      if (!context.payload.pull_request) {
+        core.warning(`Skipped: context.payload.pull_request is null`)
+        return null
+      }
+      try {
+        const contents = await octokit.repos.getContent({
+          owner: repo.owner,
+          repo: repo.repo,
+          path: file.filename,
+          ref: context.payload.pull_request.base.sha
+        })
+        if (contents.data) {
+          if (!Array.isArray(contents.data)) {
+            if (contents.data.type === 'file' && contents.data.content) {
+              file_content = Buffer.from(
+                contents.data.content,
+                'base64'
+              ).toString()
+            }
           }
         }
+      } catch (error) {
+        core.warning(`Failed to get file contents: ${error}, skipping.`)
       }
-    } catch (error) {
-      core.warning(`Failed to get file contents: ${error}, skipping.`)
-    }
 
-    let file_diff = ''
-    if (file.patch) {
-      core.info(`diff for ${file.filename}: ${file.patch}`)
-      file_diff = file.patch
-    }
+      let file_diff = ''
+      if (file.patch) {
+        core.info(`diff for ${file.filename}: ${file.patch}`)
+        file_diff = file.patch
+      }
 
-    const patches: [number, string][] = []
-    for (const patch of split_patch(file.patch)) {
-      const line = patch_comment_line(patch)
-      patches.push([line, patch])
-    }
-    if (patches.length > 0) {
-      files_to_review.push([file.filename, file_content, file_diff, patches])
-    }
-  }
+      const patches: [number, string][] = []
+      for (const patch of split_patch(file.patch)) {
+        const line = patch_comment_line(patch)
+        patches.push([line, patch])
+      }
+      if (patches.length > 0) {
+        return [file.filename, file_content, file_diff, patches] as [
+          string,
+          string,
+          string,
+          [number, string][]
+        ]
+      } else {
+        return null
+      }
+    })
+  )
+
+  // Filter out any null results
+  const files_to_review = filtered_files_to_review.filter(
+    file => file !== null
+  ) as [string, string, string, [number, string][]][]
 
   if (files_to_review.length > 0) {
     // Summary Stage
@@ -136,30 +156,65 @@ export const codeReview = async (
       prompts.render_summarize_beginning(inputs),
       {}
     )
-    let next_summarize_ids = summarize_begin_ids
-    for (const [filename, file_content, file_diff] of files_to_review) {
-      // reset chat session for each file while summarizing
-      next_summarize_ids = summarize_begin_ids
-      inputs.filename = filename
-      inputs.file_content = file_content
-      inputs.file_diff = file_diff
+
+    const generateSummary = async (
+      filename: string,
+      file_content: string,
+      file_diff: string
+    ): Promise<[string, string] | null> => {
+      const ins = inputs.clone()
+      ins.filename = filename
+
+      if (file_content.length > 0) {
+        ins.file_content = file_content
+      }
       if (file_diff.length > 0) {
+        ins.file_diff = file_diff
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
+        if (file_diff_tokens < options.max_tokens_for_extra_content) {
           // summarize diff
-          const [summarize_resp, summarize_diff_ids] = await bot.chat(
-            prompts.render_summarize_file_diff(inputs),
-            next_summarize_ids
-          )
-          if (!summarize_resp) {
-            core.info('summarize: nothing obtained from openai')
-          } else {
-            next_summarize_ids = summarize_diff_ids
-            inputs.summary = summarize_resp
+          try {
+            const [summarize_resp] = await bot.chat(
+              prompts.render_summarize_file_diff(ins),
+              summarize_begin_ids
+            )
+            if (!summarize_resp) {
+              core.info('summarize: nothing obtained from openai')
+              return null
+            } else {
+              return [filename, summarize_resp]
+            }
+          } catch (error) {
+            core.warning(`summarize: error from openai: ${error}`)
+            return null
           }
         }
       }
+      return null
     }
+    const summaryPromises = files_to_review.map(
+      async ([filename, file_content, file_diff]) =>
+        openai_concurrency_limit(async () =>
+          generateSummary(filename, file_content, file_diff)
+        )
+    )
+
+    const summaries = (await Promise.all(summaryPromises)).filter(
+      summary => summary !== null
+    ) as [string, string][]
+
+    if (summaries.length > 0) {
+      inputs.summary = ''
+      // join summaries into one
+      for (const [filename, summary] of summaries) {
+        inputs.summary += `---
+${filename}: ${summary}
+`
+      }
+    }
+
+    let next_summarize_ids = summarize_begin_ids
+
     // final summary
     const [summarize_final_response, summarize_final_response_ids] =
       await bot.chat(prompts.render_summarize(inputs), next_summarize_ids)
@@ -168,12 +223,32 @@ export const codeReview = async (
     } else {
       inputs.summary = summarize_final_response
 
+      // make a bullet point list of skipped files
+      let skipped_files_str = ''
+      if (skipped_files.length > 0) {
+        skipped_files_str = `---
+
+These files were skipped from the review:
+`
+        for (const file of skipped_files) {
+          skipped_files_str += `- ${file.filename}\n`
+        }
+      }
+
+      const summarize_comment = `${summarize_final_response}
+
+${skipped_files_str}
+
+---
+
+Tips: 
+- Reply on review comments left by this bot to ask follow-up questions. 
+  A review comment is a comment on a diff or a file.
+- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+`
+
       next_summarize_ids = summarize_final_response_ids
-      await commenter.comment(
-        `${summarize_final_response}`,
-        comment_tag,
-        'replace'
-      )
+      await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
     }
 
     // final release notes
@@ -195,100 +270,144 @@ export const codeReview = async (
       prompts.render_review_beginning(inputs),
       {}
     )
-    let next_review_ids = review_begin_ids
+    // Use Promise.all to run file review processes in parallel
+    const reviewPromises = files_to_review.map(
+      async ([filename, file_content, file_diff, patches]) =>
+        openai_concurrency_limit(async () => {
+          // reset chat session for each file while reviewing
+          let next_review_ids = review_begin_ids
 
-    for (const [
-      filename,
-      file_content,
-      file_diff,
-      patches
-    ] of files_to_review) {
-      inputs.filename = filename
-      inputs.file_content = file_content
-      inputs.file_diff = file_diff
+          // make a copy of inputs
+          const ins: Inputs = inputs.clone()
 
-      // reset chat session for each file while reviewing
-      next_review_ids = review_begin_ids
+          ins.filename = filename
 
-      if (file_content.length > 0) {
-        const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (file_content_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-          // review file
-          const [resp, review_file_ids] = await bot.chat(
-            prompts.render_review_file(inputs),
+          if (file_content.length > 0) {
+            ins.file_content = file_content
+            const file_content_tokens = tokenizer.get_token_count(file_content)
+            if (file_content_tokens < options.max_tokens_for_extra_content) {
+              try {
+                // review file
+                const [resp, review_file_ids] = await bot.chat(
+                  prompts.render_review_file(ins),
+                  next_review_ids
+                )
+                if (!resp) {
+                  core.info('review: nothing obtained from openai')
+                } else {
+                  next_review_ids = review_file_ids
+                  if (!resp.includes('LGTM')) {
+                    // TODO: add file level comments via API once it's available
+                    // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
+                    // For now comment on the PR itself
+                    const tag = `<!-- openai-review-file-${filename} -->`
+                    const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`
+                    await commenter.comment(comment, tag, 'replace')
+                  }
+                }
+              } catch (error) {
+                core.warning(`review: error from openai: ${error}`)
+              }
+            } else {
+              core.info(
+                `skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`
+              )
+            }
+          }
+
+          if (file_diff.length > 0) {
+            ins.file_diff = file_diff
+            const file_diff_tokens = tokenizer.get_token_count(file_diff)
+            if (file_diff_tokens < options.max_tokens_for_extra_content) {
+              try {
+                // review diff
+                const [resp, review_diff_ids] = await bot.chat(
+                  prompts.render_review_file_diff(ins),
+                  next_review_ids
+                )
+                if (!resp) {
+                  core.info('review: nothing obtained from openai')
+                } else {
+                  next_review_ids = review_diff_ids
+                }
+              } catch (error) {
+                core.warning(`review: error from openai: ${error}`)
+              }
+            } else {
+              core.info(
+                `skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`
+              )
+            }
+          }
+
+          // review_patch_begin
+          const [, patch_begin_ids] = await bot.chat(
+            prompts.render_review_patch_begin(ins),
             next_review_ids
           )
-          if (!resp) {
-            core.info('review: nothing obtained from openai')
-          } else {
-            next_review_ids = review_file_ids
-          }
-        } else {
-          core.info(
-            `skip sending content of file: ${inputs.filename} due to token count: ${file_content_tokens}`
-          )
-        }
-      }
+          next_review_ids = patch_begin_ids
 
-      if (file_diff.length > 0) {
-        const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < MAX_TOKENS_FOR_EXTRA_CONTENT) {
-          // review diff
-          const [resp, review_diff_ids] = await bot.chat(
-            prompts.render_review_file_diff(inputs),
-            next_review_ids
-          )
-          if (!resp) {
-            core.info('review: nothing obtained from openai')
-          } else {
-            next_review_ids = review_diff_ids
-          }
-        } else {
-          core.info(
-            `skip sending diff of file: ${inputs.filename} due to token count: ${file_diff_tokens}`
-          )
-        }
-      }
+          for (const [line, patch] of patches) {
+            core.info(`Reviewing ${filename}:${line} with openai ...`)
+            ins.patch = patch
+            if (!context.payload.pull_request) {
+              core.warning('No pull request found, skipping.')
+              continue
+            }
 
-      // review_patch_begin
-      const [, patch_begin_ids] = await bot.chat(
-        prompts.render_review_patch_begin(inputs),
-        next_review_ids
-      )
-      next_review_ids = patch_begin_ids
+            try {
+              // get existing comments on the line
+              const all_chains =
+                await commenter.get_conversation_chains_at_line(
+                  context.payload.pull_request.number,
+                  filename,
+                  line,
+                  COMMENT_REPLY_TAG
+                )
 
-      for (const [line, patch] of patches) {
-        core.info(`Reviewing ${filename}:${line} with openai ...`)
-        inputs.patch = patch
-        const [response, patch_ids] = await bot.chat(
-          prompts.render_review_patch(inputs),
-          next_review_ids
-        )
-        if (!response) {
-          core.info('review: nothing obtained from openai')
-          continue
-        }
-        next_review_ids = patch_ids
-        if (!options.review_comment_lgtm && response.includes('LGTM')) {
-          continue
-        }
-        try {
-          await commenter.review_comment(
-            context.payload.pull_request.number,
-            commits[commits.length - 1].sha,
-            filename,
-            line,
-            `${response}`
-          )
-        } catch (e: any) {
-          core.warning(`Failed to comment: ${e}, skipping.
+              if (all_chains.length > 0) {
+                ins.comment_chain = all_chains
+              } else {
+                ins.comment_chain = 'no previous comments'
+              }
+            } catch (e: any) {
+              core.warning(
+                `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+              )
+            }
+
+            try {
+              const [response, patch_ids] = await bot.chat(
+                prompts.render_review_patch(ins),
+                next_review_ids
+              )
+              if (!response) {
+                core.info('review: nothing obtained from openai')
+                continue
+              }
+              next_review_ids = patch_ids
+              if (!options.review_comment_lgtm && response.includes('LGTM')) {
+                continue
+              }
+              await commenter.review_comment(
+                context.payload.pull_request.number,
+                commits[commits.length - 1].sha,
+                filename,
+                line,
+                `${response}`
+              )
+            } catch (e: any) {
+              core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)
-        }
-      }
-    }
+            }
+          }
+        })
+    )
+
+    await Promise.all(reviewPromises)
   }
 }
 

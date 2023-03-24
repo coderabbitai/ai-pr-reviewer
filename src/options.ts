@@ -11,6 +11,10 @@ export class Prompts {
   summarize_file_diff: string
   summarize: string
   summarize_release_notes: string
+  comment_beginning: string
+  comment_file: string
+  comment_file_diff: string
+  comment: string
 
   constructor(
     review_beginning = '',
@@ -21,7 +25,11 @@ export class Prompts {
     summarize_beginning = '',
     summarize_file_diff = '',
     summarize = '',
-    summarize_release_notes = ''
+    summarize_release_notes = '',
+    comment_beginning = '',
+    comment_file = '',
+    comment_file_diff = '',
+    comment = ''
   ) {
     this.review_beginning = review_beginning
     this.review_file = review_file
@@ -32,6 +40,10 @@ export class Prompts {
     this.summarize_file_diff = summarize_file_diff
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
+    this.comment_beginning = comment_beginning
+    this.comment_file = comment_file
+    this.comment_file_diff = comment_file_diff
+    this.comment = comment
   }
 
   render_review_beginning(inputs: Inputs): string {
@@ -69,6 +81,18 @@ export class Prompts {
   render_summarize_release_notes(inputs: Inputs): string {
     return inputs.render(this.summarize_release_notes)
   }
+  render_comment_beginning(inputs: Inputs): string {
+    return inputs.render(this.comment_beginning)
+  }
+  render_comment_file(inputs: Inputs): string {
+    return inputs.render(this.comment_file)
+  }
+  render_comment_file_diff(inputs: Inputs): string {
+    return inputs.render(this.comment_file_diff)
+  }
+  render_comment(inputs: Inputs): string {
+    return inputs.render(this.comment)
+  }
 }
 
 export class Inputs {
@@ -81,17 +105,21 @@ export class Inputs {
   file_diff: string
   patch: string
   diff: string
+  comment_chain: string
+  comment: string
 
   constructor(
     system_message = '',
     title = 'no title provided',
     description = 'no description provided',
     summary = 'no summary so far',
-    filename = '',
-    file_content = '',
-    file_diff = '',
-    patch = '',
-    diff = ''
+    filename = 'unknown',
+    file_content = 'file contents cannot be provided',
+    file_diff = 'file diff cannot be provided',
+    patch = 'patch cannot be provided',
+    diff = 'no diff',
+    comment_chain = 'no other comments on this patch',
+    comment = 'no comment provided'
   ) {
     this.system_message = system_message
     this.title = title
@@ -102,6 +130,24 @@ export class Inputs {
     this.file_diff = file_diff
     this.patch = patch
     this.diff = diff
+    this.comment_chain = comment_chain
+    this.comment = comment
+  }
+
+  clone(): Inputs {
+    return new Inputs(
+      this.system_message,
+      this.title,
+      this.description,
+      this.summary,
+      this.filename,
+      this.file_content,
+      this.file_diff,
+      this.patch,
+      this.diff,
+      this.comment_chain,
+      this.comment
+    )
   }
 
   render(content: string): string {
@@ -135,6 +181,12 @@ export class Inputs {
     if (this.diff) {
       content = content.replace('$diff', this.diff)
     }
+    if (this.comment_chain) {
+      content = content.replace('$comment_chain', this.comment_chain)
+    }
+    if (this.comment) {
+      content = content.replace('$comment', this.comment)
+    }
     return content
   }
 }
@@ -145,23 +197,43 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
-  temperature: number
+  openai_model: string
+  openai_model_temperature: number
+  openai_retries: number
+  openai_timeout_ms: number
+  openai_concurrency_limit: number
+  max_tokens_for_extra_content: number
 
   constructor(
     debug: boolean,
-    max_files = '40',
+    max_files = '60',
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    temperature = '0.0'
+    openai_model = 'gpt-3.5-turbo',
+    openai_model_temperature = '0.0',
+    openai_retries = '3',
+    openai_timeout_ms = '60000',
+    openai_concurrency_limit = '4'
   ) {
     this.debug = debug
     this.max_files = parseInt(max_files)
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
-    // convert temperature to number
-    this.temperature = parseFloat(temperature)
+    this.openai_model = openai_model
+    this.openai_model_temperature = parseFloat(openai_model_temperature)
+    this.openai_retries = parseInt(openai_retries)
+    this.openai_timeout_ms = parseInt(openai_timeout_ms)
+    this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
+
+    if (this.openai_model === 'gpt-4') {
+      this.max_tokens_for_extra_content = 4000
+    } else if (this.openai_model === 'gpt-3.5-turbo') {
+      this.max_tokens_for_extra_content = 2000
+    } else {
+      this.max_tokens_for_extra_content = 1000
+    }
   }
 
   check_path(path: string): boolean {

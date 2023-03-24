@@ -10,6 +10,9 @@ prompts have been tuned for a concise response. To prevent excessive
 notifications, this action can be configured to skip adding review comments when
 the changes look good for the most part.
 
+In addition, this action can also reply to the user comments made on the review
+by this action.
+
 NOTES:
 
 - Your code (files, diff, PR title/description) will be sent to OpenAI's servers
@@ -20,21 +23,10 @@ NOTES:
   [more conservative data usage policy](https://openai.com/policies/api-data-usage-policies)
   compared to their ChatGPT offering.
 
-### Features
-
-- Code review your pull requests
-
-  ```yaml
-  - uses: fluxninja/openai-pr-reviewer@main
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    with:
-      debug: false
-      review_comment_lgtm: false
-  ```
-
 ## Usage
+
+Add the below file to your repository at
+`.github/workflows/openai-pr-reviewer.yml`
 
 ```yaml
 name: Code Review
@@ -45,24 +37,45 @@ permissions:
 
 on:
   pull_request:
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group:
+    ${{ github.repository }}-${{ github.event.number || github.head_ref ||
+    github.sha }}-${{ github.workflow }}-${{ github.event_name ==
+    'pull_request_review_comment' && 'pr_comment' || 'pr' }}
+  cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
 
 jobs:
-  test:
+  review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
       - uses: fluxninja/openai-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
-          review_comment_lgtm: true
+          review_comment_lgtm: false
 ```
+
+### Configuration
+
+See also: [./action.yml](./action.yml)
+
+### Conversation with OpenAI
+
+You can reply to a review comment made by this action and get a response based
+on the diff context. Additionally, you can invite the bot to a conversation by
+mentioning it in the beginning of the comment with `@openai`.
+
+Example:
+
+> @openai Can you please review this block of code?
+
+Note: A review comment is a comment made on a diff or a file in the pull
+request.
 
 ### Screenshots
 
@@ -72,9 +85,7 @@ jobs:
 
 ![PR Review](./docs/images/openai-pr-review.png)
 
-### Configuration
-
-See also: [./action.yml](./action.yml)
+![PR Conversation](./docs/images/openai-review-conversation.png)
 
 #### Environment variables
 
@@ -139,15 +150,9 @@ on:
   pull_request_target:
 
 jobs:
-  test:
+  review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
-
       - uses: fluxninja/openai-pr-reviewer@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -163,9 +168,3 @@ https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows
 
 Set `debug: true` in the workflow file to enable debug mode, which will show the
 messages
-
-### Special Thanks
-
-This GitHub Action is based on
-[ChatGPT Action](https://github.com/unsafecoerce/chatgpt-action) by
-[Tao He](https://github.com/sighingnow).
