@@ -6036,11 +6036,11 @@ const codeReview = async (bot, options, prompts) => {
     }
     // skip files if they are filtered out
     const filter_selected_files = [];
-    const filter_skipped_files = [];
+    const filter_ignored_files = [];
     for (const file of files) {
         if (!options.check_path(file.filename)) {
             core.info(`skip for excluded path: ${file.filename}`);
-            filter_skipped_files.push(file);
+            filter_ignored_files.push(file);
         }
         else {
             filter_selected_files.push(file);
@@ -6154,20 +6154,25 @@ ${filename}: ${summary}
             inputs.summary = summarize_final_response;
             const summarize_comment = `${summarize_final_response}
 
-${filter_skipped_files.length > 0
+${filter_ignored_files.length > 0
                 ? `
 ---
 
-### Skipped files due to filter (${filter_skipped_files.length})
-- ${filter_skipped_files.map(file => file.filename).join('\n- ')}
+### Files ignored due to filter (${filter_ignored_files.length})
+- ${filter_ignored_files.map(file => file.filename).join('\n- ')}
 `
+                : ''}
+
+${skipped_files_to_summarize.length > 0
+                ? `
+### Files not summarized due to max files limit (${skipped_files_to_summarize.length})
+- ${skipped_files_to_summarize.join('\n - ')}`
                 : ''}
 
 ---
 
-### Chatting with 🤖 OpenAI Bot (\`@openai\`)
-- Reply on review comments left by this bot to ask follow-up questions. 
-  A review comment is a comment on a diff or a file.
+### Chat with 🤖 OpenAI Bot (\`@openai\`)
+- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
 `;
             next_summarize_ids = summarize_final_response_ids;
@@ -6313,14 +6318,9 @@ ${filter_skipped_files.length > 0
             const comment = `
 ${tag}
 
-      ${skipped_files_to_summarize.length > 0
-                ? `
-### Files not summarized (${skipped_files_to_summarize.length})
-- ${skipped_files_to_summarize.join('\n - ')}`
-                : ''}
       ${skipped_files_to_review.length > 0
                 ? `
-### Files not reviewed (${skipped_files_to_review.length})
+### Files not reviewed due to max files limit (${skipped_files_to_review.length})
 - ${skipped_files_to_review.join('\n - ')}`
                 : ''}
       `;
