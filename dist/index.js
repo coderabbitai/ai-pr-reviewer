@@ -6157,7 +6157,7 @@ ${filter_skipped_files.length > 0
                 ? `
 ---
 
-### Skipped files
+### Skipped files (${filter_skipped_files.length})
 - ${filter_skipped_files.map(file => file.filename).join('\n- ')}
 `
                 : ''}
@@ -6316,12 +6316,12 @@ ${tag}
 
       ${skipped_files_to_summarize.length > 0
                 ? `
-### Files not summarized
+### Files not summarized (${skipped_files_to_summarize.length})
 - ${skipped_files_to_summarize.join('\n - ')}`
                 : ''}
       ${skipped_files_to_review.length > 0
                 ? `
-### Files not reviewed
+### Files not reviewed (${skipped_files_to_review.length})
 - ${skipped_files_to_review.join('\n - ')}`
                 : ''}
       `;
