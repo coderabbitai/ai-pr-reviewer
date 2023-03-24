@@ -27015,7 +27015,7 @@ class Bot {
                 response = await retry(this.api.sendMessage.bind(this.api), [message, opts], this.options.openai_retries);
             }
             catch (e) {
-                core.info(`response: ${response}, failed to stringify: ${e}, backtrace: ${e.stack}`);
+                core.info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`);
             }
             const end = Date.now();
             core.info(`response: ${JSON.stringify(response)}`);
