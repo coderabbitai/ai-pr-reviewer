@@ -6126,7 +6126,7 @@ const codeReview = async (bot, options, prompts) => {
         const summaryPromises = [];
         const skipped_files_to_summarize = [];
         for (const [filename, file_content, file_diff] of files_to_review) {
-            if (options.max_files_to_summarize > 0 &&
+            if (options.max_files_to_summarize === 0 ||
                 summaryPromises.length < options.max_files_to_summarize) {
                 summaryPromises.push(openai_concurrency_limit(async () => generateSummary(filename, file_content, file_diff)));
             }
@@ -6296,7 +6296,7 @@ ${filter_skipped_files.length > 0
         const reviewPromises = [];
         const skipped_files_to_review = [];
         for (const [filename, file_content, file_diff, patches] of files_to_review) {
-            if (options.max_files_to_review > 0 &&
+            if (options.max_files_to_review === 0 ||
                 reviewPromises.length < options.max_files_to_review) {
                 reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, file_diff, patches)));
             }
