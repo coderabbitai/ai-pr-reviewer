@@ -145,7 +145,7 @@ inputs:
       will be used as is in our release notes.
 
       Below the release notes, generate a short, celebratory poem about the 
-      changes in this PR. Add this poem as a quote (> symbol).
+      changes in this PR. Add this poem as a quote.
   review_beginning:
     required: false
     description: 'The beginning prompt of a code review dialog'
