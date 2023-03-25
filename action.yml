@@ -125,7 +125,7 @@ inputs:
 
       Please provide your final response in the `markdown` format with 
       the following content:
-        - Thank the user for letting you participate in the code review.
+        - Thank the user for letting you participate in the code review. 
         - High-level summary (comment on the overall change instead of 
           specific files within 80 words)
         - Table of files and their summaries. You can group files with 
@@ -145,7 +145,8 @@ inputs:
       will be used as is in our release notes.
 
       Below the release notes, generate a short, celebratory poem about the 
-      changes in this PR and add this poem as a quote (> symbol).
+      changes in this PR and add this poem as a quote (> symbol). You can 
+      use emojis in the poem, where they are relevant.
   review_beginning:
     required: false
     description: 'The beginning prompt of a code review dialog'
