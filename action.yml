@@ -125,10 +125,14 @@ inputs:
 
       Please provide your final response in the `markdown` format with 
       the following content:
-        - Thank the user for letting you participate in the code review.
-        - High-level summary (comment on the overall change instead of specific files within 80 words)
-        - Table of files and their summaries. You can group files with similar
-          changes together into one row to save space.
+        - Thank the user for letting you participate in the code review 
+        - If you feel that this pull request is exciting or important, 
+          generate a short poem to celebrate these changes. Add this poem
+          as a quote in markdown.
+        - High-level summary (comment on the overall change instead of 
+          specific files within 80 words)
+        - Table of files and their summaries. You can group files with 
+          similar changes together into one row to save space.
 
       Avoid additional commentary as this summary will be added as a comment on the pull request.
   summarize_release_notes:
