@@ -1,5 +1,5 @@
-name: 'OpenAI-based PR Reviewer & Summarizer'
-description: 'OpenAI-based PR Reviewer and Summarizer'
+name: 'OpenAI ChatGPT based PR Reviewer & Summarizer'
+description: 'OpenAI ChatGPT based PR Reviewer and Summarizer'
 branding:
   icon: 'aperture'
   color: 'orange'
@@ -63,15 +63,15 @@ inputs:
   openai_retries:
     required: false
     description:
-      'How many times to retry openai API in case of timeouts or errors?'
+      'How many times to retry OpenAI API in case of timeouts or errors?'
     default: '5'
   openai_timeout_ms:
     required: false
-    description: 'Timeout for openai API call in millis'
-    default: '60000'
+    description: 'Timeout for OpenAI API call in millis'
+    default: '120000'
   openai_concurrency_limit:
     required: false
-    description: 'How many concurrent API calls to make to openai servers?'
+    description: 'How many concurrent API calls to make to OpenAI servers?'
     default: '4'
   system_message:
     required: false

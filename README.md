@@ -1,10 +1,10 @@
-# OpenAI GPT based PR reviewer and summarizer
+# OpenAI ChatGPT based PR reviewer and summarizer
 
 ![AI](./docs/images/ai.png)
 
 ## Overview
 
-This [OpenAI Chat](https://platform.openai.com/docs/guides/chat) based GitHub
+This [OpenAI ChatGPT](https://platform.openai.com/docs/guides/chat) based GitHub
 Action provides a summary, release notes and review of pull requests. The
 prompts have been tuned for a concise response. To prevent excessive
 notifications, this action can be configured to skip adding review comments when
@@ -68,11 +68,12 @@ See also: [./action.yml](./action.yml)
 
 You can reply to a review comment made by this action and get a response based
 on the diff context. Additionally, you can invite the bot to a conversation by
-mentioning it in the beginning of the comment with `@openai`.
+tagging it in the comment (`@openai`).
 
-Example:
+Examples:
 
 > @openai Can you please review this block of code?
+> @openai Please generate a test plan for this file.
 
 Note: A review comment is a comment made on a diff or a file in the pull
 request.
