@@ -126,9 +126,8 @@ inputs:
       Please provide your final response in the `markdown` format with 
       the following content:
         - Thank the user for letting you participate in the code review 
-        - If you feel that this pull request is exciting or important, 
-          generate a short poem to celebrate these changes. Add this poem
-          as a quote in markdown.
+          and generate a short, celebratory poem about the changes in this 
+          PR. Add this poem as a quote in markdown.
         - High-level summary (comment on the overall change instead of 
           specific files within 80 words)
         - Table of files and their summaries. You can group files with 
