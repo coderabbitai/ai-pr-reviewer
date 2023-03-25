@@ -79,7 +79,7 @@ export const handleReviewComment = async (
     if (
       comment_chain.includes(COMMENT_TAG) ||
       comment_chain.includes(COMMENT_REPLY_TAG) ||
-      comment.body.startsWith(ASK_BOT)
+      comment.body.includes(ASK_BOT)
     ) {
       let file_content = ''
       try {
