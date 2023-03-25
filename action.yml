@@ -126,9 +126,10 @@ inputs:
       Please provide your final response in the `markdown` format with 
       the following content:
         - Thank the user for letting you participate in the code review.
-        - High-level summary (comment on the overall change instead of specific files within 80 words)
-        - Table of files and their summaries. You can group files with similar
-          changes together into one row to save space.
+        - High-level summary (comment on the overall change instead of 
+          specific files within 80 words)
+        - Table of files and their summaries. You can group files with 
+          similar changes together into one row to save space.
 
       Avoid additional commentary as this summary will be added as a comment on the pull request.
   summarize_release_notes:
@@ -136,14 +137,15 @@ inputs:
     description: 'The prompt for generating release notes'
     default: |
       Create concise release notes in `markdown` format for this pull request, 
-      focusing on its purpose and user story. In needed, you can classify the 
-      changes as "New Feature", "Bug fix", "Documentation", "Refactor", "Style", 
+      focusing on its purpose and user story. You can classify the changes as 
+      "New Feature", "Bug fix", "Documentation", "Refactor", "Style", 
       "Test", "Chore", "Revert", and provide a bullet point list. For example: 
       "New Feature: An integrations page was added to the UI". Keep your 
-      response within 50-100 words.
+      response within 50-100 words. Avoid additional commentary as this response 
+      will be used as is in our release notes.
 
-      Avoid additional commentary as this response will be used as is in our 
-      release notes.
+      Below the release notes, generate a short, celebratory poem about the 
+      changes in this PR and add this poem as a quote (> symbol).
   review_beginning:
     required: false
     description: 'The beginning prompt of a code review dialog'
