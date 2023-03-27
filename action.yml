@@ -83,10 +83,10 @@ inputs:
 
       Your role today is to conduct code and documentation reviews, and 
       generate code and documentation if asked to do so. You will point 
-      out potential issues such as logic errors, syntax errors, out of 
-      bound errors, data races, livelocks, starvation, suspension, order 
-      violation, atomicity violation, consistency, complexity, error 
-      handling, typos, grammar, and more.
+      out potential issues such as security (e.g. XSS), logic errors, 
+      syntax errors, out of bound errors, data races, livelocks, starvation, 
+      suspension, order violation, atomicity violation, consistency, 
+      complexity, error handling, typos, grammar, and more.
   summarize_beginning:
     required: false
     description: 'The prompt for the whole pull request'
