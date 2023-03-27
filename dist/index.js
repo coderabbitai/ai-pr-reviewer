@@ -5736,7 +5736,7 @@ const handleReviewComment = async (bot, options, prompts) => {
         // check whether this chain contains replies from the bot
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
             comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
-            comment.body.startsWith(ASK_BOT)) {
+            comment.body.includes(ASK_BOT)) {
             let file_content = '';
             try {
                 const contents = await octokit.repos.getContent({
@@ -6154,26 +6154,31 @@ ${filename}: ${summary}
             inputs.summary = summarize_final_response;
             const summarize_comment = `${summarize_final_response}
 
-${filter_ignored_files.length > 0
-                ? `
----
-
-### Files ignored due to filter (${filter_ignored_files.length})
-- ${filter_ignored_files.map(file => file.filename).join('\n- ')}
-`
-                : ''}
-
-${skipped_files_to_summarize.length > 0
-                ? `
-### Files not summarized due to max files limit (${skipped_files_to_summarize.length})
-- ${skipped_files_to_summarize.join('\n - ')}`
-                : ''}
-
 ---
 
 ### Chat with 🤖 OpenAI Bot (\`@openai\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+
+---
+
+${filter_ignored_files.length > 0
+                ? `
+<details>
+<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+- ${filter_ignored_files.map(file => file.filename).join('\n- ')}
+</details>
+`
+                : ''}
+
+${skipped_files_to_summarize.length > 0
+                ? `
+<details>
+<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length})</summary>
+- ${skipped_files_to_summarize.join('\n - ')}
+</details>
+`
+                : ''}
 `;
             next_summarize_ids = summarize_final_response_ids;
             await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
@@ -6312,18 +6317,19 @@ ${skipped_files_to_summarize.length > 0
         await Promise.all(reviewPromises);
         // comment about skipped files for review and summarize
         if (skipped_files_to_review.length > 0) {
-            const tag = '<!-- openai-skipped-files -->';
             // make bullet points for skipped files
             const comment = `
-${tag}
-
       ${skipped_files_to_review.length > 0
-                ? `
-### Files not reviewed due to max files limit (${skipped_files_to_review.length})
-- ${skipped_files_to_review.join('\n - ')}`
+                ? `<details>
+<summary>Files not reviewed due to max files limit (${skipped_files_to_review.length})</summary>
+- ${skipped_files_to_review.join('\n - ')}
+</details>
+`
                 : ''}
       `;
-            await commenter.comment(comment, tag, 'replace');
+            if (comment.length > 0) {
+                await commenter.comment(comment, lib_commenter/* SUMMARIZE_TAG */.Rp, 'append');
+            }
         }
     }
 };
