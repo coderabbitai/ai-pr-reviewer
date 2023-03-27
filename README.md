@@ -60,10 +60,6 @@ jobs:
           review_comment_lgtm: false
 ```
 
-### Configuration
-
-See also: [./action.yml](./action.yml)
-
 ### Conversation with OpenAI
 
 You can reply to a review comment made by this action and get a response based
@@ -73,6 +69,7 @@ tagging it in the comment (`@openai`).
 Examples:
 
 > @openai Can you please review this block of code?
+
 > @openai Please generate a test plan for this file.
 
 Note: A review comment is a comment made on a diff or a file in the pull
@@ -96,22 +93,9 @@ request.
   [here](https://platform.openai.com/account/api-keys). Please add this key to
   your GitHub Action secrets.
 
-#### Inputs
+### Prompts & Configuration
 
-- `debug`: Enable debug mode, will show messages and responses between OpenAI
-  server in CI logs.
-- `max_files_to_summarize`: Maximum number of files to be summarized. Less than
-  or equal to 0 means no limit.
-- `max_files_to_review`: Maximum number of files to be reviewed. Less than or
-  equal to 0
-- `review_comment_lgtm`: Leave comments even the patch is LGTM
-- `path_filters`: Rules to filter files to be reviewed.
-- `temperature`: Temperature of the GPT-3 model.
-- `system_message`: The message to be sent to OpenAI to start a conversation.
-
-### Prompt templates:
-
-See: [./action.yml](./action.yml)
+See: [action.yml](./action.yml)
 
 Any suggestions or pull requests for improving the prompts are highly
 appreciated.
