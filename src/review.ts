@@ -237,7 +237,11 @@ ${filter_ignored_files.length > 0
           ? `
 <details>
 <summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+
+### Ignored files
+
 * ${filter_ignored_files.map(file => file.filename).join('\n* ')}
+
 </details>
 `
           : ''
@@ -248,7 +252,11 @@ ${skipped_files_to_summarize.length > 0
 <details>
 <summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length
           })</summary>
+
+### Not summarized
+
 * ${skipped_files_to_summarize.join('\n* ')}
+
 </details>
 `
           : ''
@@ -453,7 +461,11 @@ ${skipped_files_to_summarize.length > 0
           ? `<details>
 <summary>Files not reviewed due to max files limit (${skipped_files_to_review.length
           })</summary>
+
+### Not reviewed
+
 * ${skipped_files_to_review.join('\n* ')}
+
 </details>
 `
           : ''
