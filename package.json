@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.5.0",
-    "@types/node": "^18.15.10",
+    "@types/node": "^18.15.11",
     "@typescript-eslint/parser": "^5.57.0",
     "@vercel/ncc": "^0.36.1",
     "chatgpt": "^5.1.3",
