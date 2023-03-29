@@ -239,7 +239,7 @@ export class Options {
       this.max_model_tokens = 8100
       this.max_tokens_for_extra_content = 6000
     } else {
-      this.max_model_tokens = 2048
+      this.max_model_tokens = 4000
       this.max_tokens_for_extra_content = 2000
     }
 
