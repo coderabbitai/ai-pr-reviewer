@@ -5594,7 +5594,7 @@ class Options {
     openai_timeout_ms;
     openai_concurrency_limit;
     max_tokens_for_extra_content;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '60000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
@@ -5606,8 +5606,11 @@ class Options {
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        if (this.openai_model === 'gpt-4') {
-            this.max_tokens_for_extra_content = 4000;
+        if (this.openai_model === 'gpt-4-32k') {
+            this.max_tokens_for_extra_content = 30000;
+        }
+        else if (this.openai_model === 'gpt-4') {
+            this.max_tokens_for_extra_content = 6000;
         }
         else if (this.openai_model === 'gpt-3.5-turbo') {
             this.max_tokens_for_extra_content = 2000;
