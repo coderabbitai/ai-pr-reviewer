@@ -263,6 +263,8 @@ export class Options {
     core.info(
       `max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`
     )
+    core.info(`max_model_tokens: ${this.max_model_tokens}`)
+    core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`)
   }
 
   check_path(path: string): boolean {
