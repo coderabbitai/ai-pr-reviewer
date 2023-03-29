@@ -203,9 +203,10 @@ export class Options {
   openai_retries: number
   openai_timeout_ms: number
   openai_concurrency_limit: number
-  max_tokens_for_extra_content: number
   max_model_tokens: number
+  max_tokens_for_request: number
   max_tokens_for_response: number
+  max_tokens_for_extra_content: number
 
   constructor(
     debug: boolean,
@@ -234,17 +235,20 @@ export class Options {
 
     if (this.openai_model === 'gpt-4-32k') {
       this.max_model_tokens = 32700
-      this.max_tokens_for_extra_content = 30000
+      this.max_tokens_for_response = 4000
     } else if (this.openai_model === 'gpt-4') {
       this.max_model_tokens = 8100
-      this.max_tokens_for_extra_content = 6000
+      this.max_tokens_for_response = 2000
     } else {
       this.max_model_tokens = 4000
-      this.max_tokens_for_extra_content = 2000
+      this.max_tokens_for_response = 1000
     }
 
-    this.max_tokens_for_response =
-      this.max_model_tokens - this.max_tokens_for_extra_content
+    // calculate the max tokens for the request and response
+    this.max_tokens_for_request =
+      this.max_model_tokens - this.max_tokens_for_response
+    // use half the request tokens for extra content
+    this.max_tokens_for_extra_content = this.max_tokens_for_request / 2
   }
 
   // print all options using core.info
