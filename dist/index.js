@@ -3898,6 +3898,8 @@ __nccwpck_require__.r(__webpack_exports__);
 
 async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    // print options
+    options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // initialize openai bot
     let bot = null;
@@ -5618,6 +5620,21 @@ class Options {
         else {
             this.max_tokens_for_extra_content = 1000;
         }
+    }
+    // print all options using core.info
+    print() {
+        core.info(`debug: ${this.debug}`);
+        core.info(`max_files_to_summarize: ${this.max_files_to_summarize}`);
+        core.info(`max_files_to_review: ${this.max_files_to_review}`);
+        core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
+        core.info(`path_filters: ${this.path_filters}`);
+        core.info(`system_message: ${this.system_message}`);
+        core.info(`openai_model: ${this.openai_model}`);
+        core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
+        core.info(`openai_retries: ${this.openai_retries}`);
+        core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
+        core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`);
+        core.info(`max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`);
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
