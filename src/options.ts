@@ -248,7 +248,7 @@ export class Options {
     this.max_tokens_for_request =
       this.max_model_tokens - this.max_tokens_for_response
     // use half the request tokens for extra content
-    this.max_tokens_for_extra_content = this.max_tokens_for_request / 2
+    this.max_tokens_for_extra_content = this.max_tokens_for_request / 1.5
   }
 
   // print all options using core.info
