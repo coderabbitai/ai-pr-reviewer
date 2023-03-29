@@ -204,6 +204,8 @@ export class Options {
   openai_timeout_ms: number
   openai_concurrency_limit: number
   max_tokens_for_extra_content: number
+  max_model_tokens: number
+  max_tokens_for_response: number
 
   constructor(
     debug: boolean,
@@ -231,14 +233,18 @@ export class Options {
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
 
     if (this.openai_model === 'gpt-4-32k') {
+      this.max_model_tokens = 32700
       this.max_tokens_for_extra_content = 30000
     } else if (this.openai_model === 'gpt-4') {
+      this.max_model_tokens = 8100
       this.max_tokens_for_extra_content = 6000
-    } else if (this.openai_model === 'gpt-3.5-turbo') {
-      this.max_tokens_for_extra_content = 2000
     } else {
-      this.max_tokens_for_extra_content = 1000
+      this.max_model_tokens = 2048
+      this.max_tokens_for_extra_content = 2000
     }
+
+    this.max_tokens_for_response =
+      this.max_model_tokens - this.max_tokens_for_extra_content
   }
 
   // print all options using core.info

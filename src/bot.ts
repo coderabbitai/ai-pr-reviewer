@@ -23,6 +23,8 @@ export class Bot {
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
+        maxModelTokens: options.max_model_tokens,
+        maxResponseTokens: options.max_tokens_for_response,
         completionParams: {
           temperature: options.openai_model_temperature,
           model: options.openai_model
