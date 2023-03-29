@@ -264,11 +264,12 @@ export class Options {
     core.info(`openai_retries: ${this.openai_retries}`)
     core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)
     core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`)
+    core.info(`max_model_tokens: ${this.max_model_tokens}`)
+    core.info(`max_tokens_for_request: ${this.max_tokens_for_request}`)
+    core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`)
     core.info(
       `max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`
     )
-    core.info(`max_model_tokens: ${this.max_model_tokens}`)
-    core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`)
   }
 
   check_path(path: string): boolean {
