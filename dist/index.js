@@ -5597,9 +5597,10 @@ class Options {
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
-    max_tokens_for_extra_content;
     max_model_tokens;
+    max_tokens_for_request;
     max_tokens_for_response;
+    max_tokens_for_extra_content;
     constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
@@ -5614,18 +5615,21 @@ class Options {
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
         if (this.openai_model === 'gpt-4-32k') {
             this.max_model_tokens = 32700;
-            this.max_tokens_for_extra_content = 30000;
+            this.max_tokens_for_response = 4000;
         }
         else if (this.openai_model === 'gpt-4') {
             this.max_model_tokens = 8100;
-            this.max_tokens_for_extra_content = 6000;
+            this.max_tokens_for_response = 2000;
         }
         else {
-            this.max_model_tokens = 2048;
-            this.max_tokens_for_extra_content = 2000;
+            this.max_model_tokens = 4000;
+            this.max_tokens_for_response = 1000;
         }
-        this.max_tokens_for_response =
-            this.max_model_tokens - this.max_tokens_for_extra_content;
+        // calculate the max tokens for the request and response
+        this.max_tokens_for_request =
+            this.max_model_tokens - this.max_tokens_for_response;
+        // use half the request tokens for extra content
+        this.max_tokens_for_extra_content = this.max_tokens_for_request / 2;
     }
     // print all options using core.info
     print() {
@@ -5641,6 +5645,8 @@ class Options {
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
         core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`);
         core.info(`max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`);
+        core.info(`max_model_tokens: ${this.max_model_tokens}`);
+        core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`);
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
