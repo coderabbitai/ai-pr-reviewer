@@ -18,6 +18,10 @@ async function run(): Promise<void> {
     core.getInput('openai_timeout_ms'),
     core.getInput('openai_concurrency_limit')
   )
+
+  // print options
+  options.print()
+
   const prompts: Prompts = new Prompts(
     core.getInput('review_beginning'),
     core.getInput('review_file'),

@@ -241,6 +241,24 @@ export class Options {
     }
   }
 
+  // print all options using core.info
+  print(): void {
+    core.info(`debug: ${this.debug}`)
+    core.info(`max_files_to_summarize: ${this.max_files_to_summarize}`)
+    core.info(`max_files_to_review: ${this.max_files_to_review}`)
+    core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
+    core.info(`path_filters: ${this.path_filters}`)
+    core.info(`system_message: ${this.system_message}`)
+    core.info(`openai_model: ${this.openai_model}`)
+    core.info(`openai_model_temperature: ${this.openai_model_temperature}`)
+    core.info(`openai_retries: ${this.openai_retries}`)
+    core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)
+    core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`)
+    core.info(
+      `max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`
+    )
+  }
+
   check_path(path: string): boolean {
     const ok = this.path_filters.check(path)
     core.info(`checking path: ${path} => ${ok}`)
