@@ -142,7 +142,7 @@ export const codeReview = async (
   if (files_to_review.length > 0) {
     // Summary Stage
     const [, summarize_begin_ids] = await bot.chat(
-      prompts.render_summarize_beginning(inputs),
+      prompts.render_summarize_beginning_and_diff(inputs),
       {}
     )
 
@@ -164,7 +164,7 @@ export const codeReview = async (
           // summarize diff
           try {
             const [summarize_resp] = await bot.chat(
-              prompts.render_summarize_file_diff(ins),
+              prompts.render_comment_beginning(ins),
               summarize_begin_ids
             )
             if (!summarize_resp) {

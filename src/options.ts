@@ -7,8 +7,7 @@ export class Prompts {
   review_file_diff: string
   review_patch_begin: string
   review_patch: string
-  summarize_beginning: string
-  summarize_file_diff: string
+  summarize_beginning_and_diff: string
   summarize: string
   summarize_release_notes: string
   comment_beginning: string
@@ -22,8 +21,7 @@ export class Prompts {
     review_file_diff = '',
     review_patch_begin = '',
     review_patch = '',
-    summarize_beginning = '',
-    summarize_file_diff = '',
+    summarize_beginning_and_diff = '',
     summarize = '',
     summarize_release_notes = '',
     comment_beginning = '',
@@ -36,8 +34,7 @@ export class Prompts {
     this.review_file_diff = review_file_diff
     this.review_patch_begin = review_patch_begin
     this.review_patch = review_patch
-    this.summarize_beginning = summarize_beginning
-    this.summarize_file_diff = summarize_file_diff
+    this.summarize_beginning_and_diff = summarize_beginning_and_diff
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
     this.comment_beginning = comment_beginning
@@ -66,12 +63,8 @@ export class Prompts {
     return inputs.render(this.review_patch)
   }
 
-  render_summarize_beginning(inputs: Inputs): string {
-    return inputs.render(this.summarize_beginning)
-  }
-
-  render_summarize_file_diff(inputs: Inputs): string {
-    return inputs.render(this.summarize_file_diff)
+  render_summarize_beginning_and_diff(inputs: Inputs): string {
+    return inputs.render(this.summarize_beginning_and_diff)
   }
 
   render_summarize(inputs: Inputs): string {
@@ -198,7 +191,8 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
-  openai_model: string
+  openai_summary_model: string
+  openai_review_model: string
   openai_model_temperature: number
   openai_retries: number
   openai_timeout_ms: number
@@ -215,7 +209,8 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    openai_model = 'gpt-3.5-turbo',
+    openai_summary_model = 'gpt-3.5-turbo',
+    openai_review_model = 'gpt-4.0',
     openai_model_temperature = '0.0',
     openai_retries = '3',
     openai_timeout_ms = '120000',
@@ -227,16 +222,19 @@ export class Options {
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
-    this.openai_model = openai_model
+    this.openai_summary_model = openai_summary_model
+    this.openai_review_model = openai_review_model
     this.openai_model_temperature = parseFloat(openai_model_temperature)
     this.openai_retries = parseInt(openai_retries)
     this.openai_timeout_ms = parseInt(openai_timeout_ms)
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
 
-    if (this.openai_model === 'gpt-4-32k') {
+    // TODO: add tokens for 3.5-turbo model
+
+    if (this.openai_review_model === 'gpt-4-32k') {
       this.max_model_tokens = 32700
       this.max_tokens_for_response = 4000
-    } else if (this.openai_model === 'gpt-4') {
+    } else if (this.openai_review_model === 'gpt-4') {
       this.max_model_tokens = 8100
       this.max_tokens_for_response = 2000
     } else {
@@ -259,7 +257,8 @@ export class Options {
     core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
     core.info(`path_filters: ${this.path_filters}`)
     core.info(`system_message: ${this.system_message}`)
-    core.info(`openai_model: ${this.openai_model}`)
+    core.info(`openai_model: ${this.openai_summary_model}`)
+    core.info(`openai_model: ${this.openai_review_model}`)
     core.info(`openai_model_temperature: ${this.openai_model_temperature}`)
     core.info(`openai_retries: ${this.openai_retries}`)
     core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)

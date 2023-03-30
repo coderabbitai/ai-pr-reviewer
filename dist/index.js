@@ -3902,7 +3902,7 @@ async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // initialize openai bot
     let bot = null;
     try {
@@ -5454,22 +5454,20 @@ class Prompts {
     review_file_diff;
     review_patch_begin;
     review_patch;
-    summarize_beginning;
-    summarize_file_diff;
+    summarize_beginning_and_diff;
     summarize;
     summarize_release_notes;
     comment_beginning;
     comment_file;
     comment_file_diff;
     comment;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning_and_diff = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
         this.review_patch_begin = review_patch_begin;
         this.review_patch = review_patch;
-        this.summarize_beginning = summarize_beginning;
-        this.summarize_file_diff = summarize_file_diff;
+        this.summarize_beginning_and_diff = summarize_beginning_and_diff;
         this.summarize = summarize;
         this.summarize_release_notes = summarize_release_notes;
         this.comment_beginning = comment_beginning;
@@ -5492,11 +5490,8 @@ class Prompts {
     render_review_patch(inputs) {
         return inputs.render(this.review_patch);
     }
-    render_summarize_beginning(inputs) {
-        return inputs.render(this.summarize_beginning);
-    }
-    render_summarize_file_diff(inputs) {
-        return inputs.render(this.summarize_file_diff);
+    render_summarize_beginning_and_diff(inputs) {
+        return inputs.render(this.summarize_beginning_and_diff);
     }
     render_summarize(inputs) {
         return inputs.render(this.summarize);
@@ -6126,7 +6121,7 @@ const codeReview = async (bot, options, prompts) => {
     const files_to_review = filtered_files_to_review.filter(file => file !== null);
     if (files_to_review.length > 0) {
         // Summary Stage
-        const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
+        const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning_and_diff(inputs), {});
         const generateSummary = async (filename, file_content, file_diff) => {
             const ins = inputs.clone();
             ins.filename = filename;
