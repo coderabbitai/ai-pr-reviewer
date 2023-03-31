@@ -3376,26 +3376,43 @@ const retry = async (fn, args, times) => {
 class Bot {
     api = null; // not free
     options;
-    constructor(options) {
-        this.options = options;
-        if (process.env.OPENAI_API_KEY) {
-            this.api = new ChatGPTAPI({
+    summary;
+
+      constructor(options, summary) {
+          this.options = options
+          if (process.env.OPENAI_API_KEY) {
+            // check for summary and based on that set the model
+            if (summary) {
+              this.api = new openai.ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
                 maxModelTokens: options.max_model_tokens,
                 maxResponseTokens: options.max_tokens_for_response,
                 completionParams: {
-                    temperature: options.openai_model_temperature,
-                    model: options.openai_model
+                  temperature: options.openai_model_temperature,
+                  model: options.openai_summary_model
                 }
-            });
+              })
+            } else {
+            this.api = new openai.ChatGPTAPI({
+            systemMessage: options.system_message,
+            apiKey: process.env.OPENAI_API_KEY,
+            debug: options.debug,
+            maxModelTokens: options.max_model_tokens,
+            maxResponseTokens: options.max_tokens_for_response,
+            completionParams: {
+                temperature: options.openai_model_temperature,
+                model: options.openai_review_model
+            }
+          })
         }
-        else {
-            const err = "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available";
-            throw new Error(err);
+        } else {
+        const err =
+          "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
+          throw new Error(err)
         }
-    }
+      }
     chat = async (message, ids) => {
         let new_ids = {};
         let response = '';

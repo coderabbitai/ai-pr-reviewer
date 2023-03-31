@@ -144,7 +144,7 @@ inputs:
   openai_review_model:
     required: false
     description: 'Model to use'
-    default: 'gpt-4.0'
+    default: 'gpt-3.5-turbo'
   review_beginning:
     required: false
     description: 'The beginning prompt of a code review dialog'

@@ -15,7 +15,8 @@ const context = github.context
 const repo = context.repo
 
 export const codeReview = async (
-  bot: Bot,
+  botReview: Bot,
+  botSummarize: Bot,
   options: Options,
   prompts: Prompts
 ) => {
@@ -141,7 +142,7 @@ export const codeReview = async (
 
   if (files_to_review.length > 0) {
     // Summary Stage
-    const [, summarize_begin_ids] = await bot.chat(
+    const [, summarize_begin_ids] = await botSummarize.chat(
       prompts.render_summarize_beginning_and_diff(inputs),
       {}
     )
@@ -163,7 +164,7 @@ export const codeReview = async (
         if (file_diff_tokens < options.max_tokens_for_extra_content) {
           // summarize diff
           try {
-            const [summarize_resp] = await bot.chat(
+            const [summarize_resp] = await botSummarize.chat(
               prompts.render_comment_beginning(ins),
               summarize_begin_ids
             )
@@ -217,7 +218,7 @@ ${filename}: ${summary}
 
     // final summary
     const [summarize_final_response, summarize_final_response_ids] =
-      await bot.chat(prompts.render_summarize(inputs), next_summarize_ids)
+      await botSummarize.chat(prompts.render_summarize(inputs), next_summarize_ids)
     if (!summarize_final_response) {
       core.info('summarize: nothing obtained from openai')
     } else {
@@ -268,7 +269,7 @@ ${skipped_files_to_summarize.length > 0
     }
 
     // final release notes
-    const [release_notes_response, release_notes_ids] = await bot.chat(
+    const [release_notes_response, release_notes_ids] = await botSummarize.chat(
       prompts.render_summarize_release_notes(inputs),
       next_summarize_ids
     )
@@ -282,7 +283,7 @@ ${skipped_files_to_summarize.length > 0
     }
 
     // Review Stage
-    const [, review_begin_ids] = await bot.chat(
+    const [, review_begin_ids] = await botReview.chat(
       prompts.render_review_beginning(inputs),
       {}
     )
@@ -307,7 +308,7 @@ ${skipped_files_to_summarize.length > 0
         if (file_content_tokens < options.max_tokens_for_extra_content) {
           try {
             // review file
-            const [resp, review_file_ids] = await bot.chat(
+            const [resp, review_file_ids] = await botReview.chat(
               prompts.render_review_file(ins),
               next_review_ids
             )
@@ -340,7 +341,7 @@ ${skipped_files_to_summarize.length > 0
         if (file_diff_tokens < options.max_tokens_for_extra_content) {
           try {
             // review diff
-            const [resp, review_diff_ids] = await bot.chat(
+            const [resp, review_diff_ids] = await botReview.chat(
               prompts.render_review_file_diff(ins),
               next_review_ids
             )
@@ -360,7 +361,7 @@ ${skipped_files_to_summarize.length > 0
       }
 
       // review_patch_begin
-      const [, patch_begin_ids] = await bot.chat(
+      const [, patch_begin_ids] = await botReview.chat(
         prompts.render_review_patch_begin(ins),
         next_review_ids
       )
@@ -395,7 +396,7 @@ ${skipped_files_to_summarize.length > 0
         }
 
         try {
-          const [response, patch_ids] = await bot.chat(
+          const [response, patch_ids] = await botReview.chat(
             prompts.render_review_patch(ins),
             next_review_ids
           )

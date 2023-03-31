@@ -38,13 +38,26 @@ async function run(): Promise<void> {
     core.getInput('comment')
   )
 
-  // initialize openai bot
-  let bot: Bot | null = null
+  // two bots will be created, one for summarizing, one for reviewing
+
+  let summary = true
+  let botSummarize: Bot | null = null
   try {
-    bot = new Bot(options)
+    botSummarize = new Bot(options, summary)
   } catch (e: any) {
     core.warning(
-      `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+      `Skipped: failed to create bot for summarizing, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+    )
+    return
+  }
+
+  summary = false
+  let botReview: Bot | null = null
+  try {
+    botReview = new Bot(options, summary)
+  } catch (e: any) {
+    core.warning(
+      `Skipped: failed to create bot for reviewing, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
   }
@@ -55,11 +68,11 @@ async function run(): Promise<void> {
       process.env.GITHUB_EVENT_NAME === 'pull_request' ||
       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
     ) {
-      await codeReview(bot, options, prompts)
+      await codeReview(botReview, botSummarize, options, prompts)
     } else if (
       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
     ) {
-      await handleReviewComment(bot, options, prompts)
+      await handleReviewComment(botReview, options, prompts)
     } else {
       core.warning('Skipped: this action only works on push event')
     }
