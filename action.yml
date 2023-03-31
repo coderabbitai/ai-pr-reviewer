@@ -51,6 +51,7 @@ inputs:
       !**/*.wasm
       !**/gen/**
       !**/_gen/**
+      !**/generated/**
       !**/vendor/**
   openai_summary_model:
     required: false
