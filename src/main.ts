@@ -40,10 +40,10 @@ async function run(): Promise<void> {
 
   // two bots will be created, one for summarizing, one for reviewing
 
-  let summary = true
+  let botModel = 'openai_summary_model'
   let botSummarize: Bot | null = null
   try {
-    botSummarize = new Bot(options, summary)
+    botSummarize = new Bot(options, botModel)
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create bot for summarizing, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
@@ -51,10 +51,10 @@ async function run(): Promise<void> {
     return
   }
 
-  summary = false
+  botModel = 'openai_review_model'
   let botReview: Bot | null = null
   try {
-    botReview = new Bot(options, summary)
+    botReview = new Bot(options, botModel)
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create bot for reviewing, please check your openai_api_key: ${e}, backtrace: ${e.stack}`

@@ -94,7 +94,7 @@ inputs:
     default: |
       $system_message
 
-      In this session, we will summarize a pull request. 
+      In this session, we will summarize a pull request and summarize a diff. 
 
       The pull request has the title "$title" and the following description:
 

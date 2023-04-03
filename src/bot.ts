@@ -16,11 +16,10 @@ export class Bot {
 
   private options: optionsJs.Options
 
-  constructor(options: optionsJs.Options, summary?: boolean) {
+  constructor(options: optionsJs.Options, botModel: string) {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
       // check for summary and based on that set the model
-      if (summary) {
         this.api = new openai.ChatGPTAPI({
           systemMessage: options.system_message,
           apiKey: process.env.OPENAI_API_KEY,
@@ -29,22 +28,9 @@ export class Bot {
           maxResponseTokens: options.max_tokens_for_response,
           completionParams: {
             temperature: options.openai_model_temperature,
-            model: options.openai_summary_model
+            model: botModel
           }
         })
-      } else {
-        this.api = new openai.ChatGPTAPI({
-          systemMessage: options.system_message,
-          apiKey: process.env.OPENAI_API_KEY,
-          debug: options.debug,
-          maxModelTokens: options.max_model_tokens,
-          maxResponseTokens: options.max_tokens_for_response,
-          completionParams: {
-            temperature: options.openai_model_temperature,
-            model: options.openai_review_model
-          }
-        })
-      }
     } else {
       const err =
         "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"

@@ -210,7 +210,7 @@ export class Options {
     path_filters: string[] | null = null,
     system_message = '',
     openai_summary_model = 'gpt-3.5-turbo',
-    openai_review_model = 'gpt-4.0',
+    openai_review_model = 'gpt-3.5-turbo',
     openai_model_temperature = '0.0',
     openai_retries = '3',
     openai_timeout_ms = '120000',
@@ -229,12 +229,10 @@ export class Options {
     this.openai_timeout_ms = parseInt(openai_timeout_ms)
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
 
-    // TODO: add tokens for 3.5-turbo model
-
-    if (this.openai_review_model === 'gpt-4-32k') {
+    if (this.openai_review_model === 'gpt-4-32k' || this.openai_review_model === 'gpt-4-32k') {
       this.max_model_tokens = 32700
       this.max_tokens_for_response = 4000
-    } else if (this.openai_review_model === 'gpt-4') {
+    } else if (this.openai_review_model === 'gpt-4' || this.openai_review_model === 'gpt-4') {
       this.max_model_tokens = 8100
       this.max_tokens_for_response = 2000
     } else {

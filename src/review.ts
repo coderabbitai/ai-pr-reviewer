@@ -141,11 +141,6 @@ export const codeReview = async (
   ) as [string, string, string, [number, string][]][]
 
   if (files_to_review.length > 0) {
-    // Summary Stage
-    const [, summarize_begin_ids] = await botSummarize.chat(
-      prompts.render_summarize_beginning_and_diff(inputs),
-      {}
-    )
 
     const generateSummary = async (
       filename: string,
@@ -166,7 +161,7 @@ export const codeReview = async (
           try {
             const [summarize_resp] = await botSummarize.chat(
               prompts.render_comment_beginning(ins),
-              summarize_begin_ids
+              {}
             )
             if (!summarize_resp) {
               core.info('summarize: nothing obtained from openai')
@@ -214,7 +209,7 @@ ${filename}: ${summary}
       }
     }
 
-    let next_summarize_ids = summarize_begin_ids
+    let next_summarize_ids = {}
 
     // final summary
     const [summarize_final_response, summarize_final_response_ids] =
