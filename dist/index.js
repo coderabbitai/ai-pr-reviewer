@@ -6133,20 +6133,23 @@ const codeReview = async (bot, options, prompts) => {
     // Filter out any null results
     const files_to_review = filtered_files_to_review.filter(file => file !== null);
 
-      
-    if (files_to_review.length > 0 && file_diff.length > 0) {
+      if (files_to_review.length > 0) {
+        // Summary Stage
+        const [, summarize_begin_ids] = await bot.chat(
+            prompts.render_summarize_beginning_and_diff(inputs), {});
         const generateSummary = async (filename, file_content, file_diff) => {
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
                 ins.file_content = file_content;
             }
+            if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (file_diff_tokens < options.max_tokens_for_extra_content) {
                     // summarize diff
                     try {
-                        const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), {});
+                        const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);  
                         if (!summarize_resp) {
                             core.info('summarize: nothing obtained from openai');
                             return null;
@@ -6160,8 +6163,11 @@ const codeReview = async (bot, options, prompts) => {
                         return null;
                     }
                 }
+            }
             return null;
         };
+
+      
         const summaryPromises = [];
         const skipped_files_to_summarize = [];
         for (const [filename, file_content, file_diff] of files_to_review) {
@@ -6183,7 +6189,7 @@ ${filename}: ${summary}
 `;
             }
         }
-        let next_summarize_ids = {};
+        let next_summarize_ids = summarize_begin_ids;
         // final summary
         const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
