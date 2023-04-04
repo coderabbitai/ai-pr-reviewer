@@ -53,7 +53,7 @@ inputs:
       !**/_gen/**
       !**/generated/**
       !**/vendor/**
-  openai_summary_model:
+  openai_model:
     required: false
     description: 'Model to use'
     default: 'gpt-3.5-turbo'
@@ -142,10 +142,6 @@ inputs:
       Below the release notes, generate a short, celebratory poem about the 
       changes in this PR and add this poem as a quote (> symbol). You can 
       use emojis in the poem, where they are relevant.
-  openai_review_model:
-    required: false
-    description: 'Model to use'
-    default: 'gpt-3.5-turbo'
   review_beginning:
     required: false
     description: 'The beginning prompt of a code review dialog'
