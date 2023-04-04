@@ -38,7 +38,8 @@ async function run(): Promise<void> {
   )
 
   // Create two bots, one for summary and one for review
-  let botModel = 'openai_summary_model'
+  let botModel = 'gpt-3.5-turbo'
+
   let summaryBot: Bot | null = null
   try {
     summaryBot = new Bot(options, botModel)
@@ -49,7 +50,7 @@ async function run(): Promise<void> {
     return
   }
   // initialize openai bot
-  botModel = 'openai_review_model'
+  botModel = 'gpt-3.5-turbo'
   let reviewBot: Bot | null = null
   try {
     reviewBot = new Bot(options, botModel)

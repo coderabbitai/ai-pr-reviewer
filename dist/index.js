@@ -3904,7 +3904,7 @@ async function run() {
     options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
-    let botModel = 'openai_summary_model';
+    let botModel = 'gpt-3.5-turbo';
     let summaryBot = null;
     try {
         summaryBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
@@ -3914,7 +3914,7 @@ async function run() {
         return;
     }
     // initialize openai bot
-    botModel = 'openai_review_model';
+    botModel = 'gpt-3.5-turbo';
     let reviewBot = null;
     try {
         reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
