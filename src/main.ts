@@ -61,7 +61,9 @@ async function run(): Promise<void> {
     ) {
       await handleReviewComment(bot, options, prompts)
     } else {
-      core.warning('Skipped: this action only works on push event')
+      core.warning(
+        'Skipped: this action only works on push events or pull_reques'
+      )
     }
   } catch (e: any) {
     if (e instanceof Error) {
