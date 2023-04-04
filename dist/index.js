@@ -3922,7 +3922,7 @@ async function run() {
             await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_reques');
         }
     }
     catch (e) {
