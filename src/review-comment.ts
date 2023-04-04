@@ -21,7 +21,7 @@ const repo = context.repo
 const ASK_BOT = '@openai'
 
 export const handleReviewComment = async (
-  bot: Bot,
+  botReview: Bot,
   options: Options,
   prompts: Prompts
 ) => {
@@ -135,7 +135,7 @@ export const handleReviewComment = async (
       }
 
       // begin comment generation
-      const [, comment_begin_ids] = await bot.chat(
+      const [, comment_begin_ids] = await botReview.chat(
         prompts.render_comment_beginning(inputs),
         {}
       )
@@ -144,7 +144,7 @@ export const handleReviewComment = async (
         inputs.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (file_content_tokens < options.max_tokens_for_extra_content) {
-          const [file_content_resp, file_content_ids] = await bot.chat(
+          const [file_content_resp, file_content_ids] = await botReview.chat(
             prompts.render_comment_file(inputs),
             next_comment_ids
           )
@@ -162,7 +162,7 @@ export const handleReviewComment = async (
         }
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (file_diff_tokens < options.max_tokens_for_extra_content) {
-          const [file_diff_resp, file_diff_ids] = await bot.chat(
+          const [file_diff_resp, file_diff_ids] = await botReview.chat(
             prompts.render_comment_file_diff(inputs),
             next_comment_ids
           )
@@ -172,7 +172,7 @@ export const handleReviewComment = async (
         }
       }
 
-      const [reply] = await bot.chat(
+      const [reply] = await botReview.chat(
         prompts.render_comment(inputs),
         next_comment_ids
       )

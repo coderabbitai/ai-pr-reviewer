@@ -3370,45 +3370,33 @@ const retry = async (fn, args, times) => {
 
 ;// CONCATENATED MODULE: ./lib/bot.js
 
+
+
+
 class Bot {
     api = null; // not free
     options;
-  constructor(options, summary) {
-    this.options = options;
-    if (process.env.OPENAI_API_KEY) {
-      // check for summary and based on that set the model
-      if (summary) {
-        this.api = new ChatGPTAPI({
-          systemMessage: options.system_message,
-          apiKey: process.env.OPENAI_API_KEY,
-          debug: options.debug,
-          maxModelTokens: options.max_model_tokens,
-          maxResponseTokens: options.max_tokens_for_response,
-          completionParams: {
-            temperature: options.openai_model_temperature,
-            model: options.openai_summary_model,
-          },
-        });
-      } else {
-        this.api = new ChatGPTAPI({
-          systemMessage: options.system_message,
-          apiKey: process.env.OPENAI_API_KEY,
-          debug: options.debug,
-          maxModelTokens: options.max_model_tokens,
-          maxResponseTokens: options.max_tokens_for_response,
-          completionParams: {
-            temperature: options.openai_model_temperature,
-            model: options.openai_review_model,
-          },
-        });
-      }
-    } else {
-      const err =
-        "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available";
-      throw new Error(err);
+    constructor(options, botModel) {
+        this.options = options;
+        if (process.env.OPENAI_API_KEY) {
+            // check for summary and based on that set the model
+            this.api = new ChatGPTAPI({
+                systemMessage: options.system_message,
+                apiKey: process.env.OPENAI_API_KEY,
+                debug: options.debug,
+                maxModelTokens: options.max_model_tokens,
+                maxResponseTokens: options.max_tokens_for_response,
+                completionParams: {
+                    temperature: options.openai_model_temperature,
+                    model: botModel
+                }
+            });
+        }
+        else {
+            const err = "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available";
+            throw new Error(err);
+        }
     }
-  }
-
     chat = async (message, ids) => {
         let new_ids = {};
         let response = '';
@@ -3912,27 +3900,37 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
-    // initialize openai bot
-    let bot = null;
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    // two bots will be created, one for summarizing, one for reviewing
+    let botModel = 'openai_summary_model';
+    let botSummarize = null;
     try {
-        bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options);
+        botSummarize = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot for summarizing, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        return;
+    }
+    botModel = 'openai_review_model';
+    let botReview = null;
+    try {
+        botReview = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot for reviewing, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     try {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(botReview, botSummarize, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, options, prompts);
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(botReview, options, prompts);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
@@ -5474,7 +5472,7 @@ class Prompts {
     comment_file;
     comment_file_diff;
     comment;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning_and_diff = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
+    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning_and_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
         this.review_beginning = review_beginning;
         this.review_file = review_file;
         this.review_file_diff = review_file_diff;
@@ -5600,7 +5598,8 @@ class Options {
     review_comment_lgtm;
     path_filters;
     system_message;
-    openai_model;
+    openai_summary_model;
+    openai_review_model;
     openai_model_temperature;
     openai_retries;
     openai_timeout_ms;
@@ -5609,23 +5608,24 @@ class Options {
     max_tokens_for_request;
     max_tokens_for_response;
     max_tokens_for_extra_content;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_summary_model = 'gpt-3.5-turbo', openai_review_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
-        this.openai_model = openai_model;
+        this.openai_summary_model = openai_summary_model;
+        this.openai_review_model = openai_review_model;
         this.openai_model_temperature = parseFloat(openai_model_temperature);
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        if (this.openai_model === 'gpt-4-32k') {
+        if (this.openai_review_model === 'gpt-4-32k' || this.openai_review_model === 'gpt-4-32k') {
             this.max_model_tokens = 32700;
             this.max_tokens_for_response = 4000;
         }
-        else if (this.openai_model === 'gpt-4') {
+        else if (this.openai_review_model === 'gpt-4' || this.openai_review_model === 'gpt-4') {
             this.max_model_tokens = 8100;
             this.max_tokens_for_response = 2000;
         }
@@ -5647,7 +5647,8 @@ class Options {
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
         core.info(`path_filters: ${this.path_filters}`);
         core.info(`system_message: ${this.system_message}`);
-        core.info(`openai_model: ${this.openai_model}`);
+        core.info(`openai_model: ${this.openai_summary_model}`);
+        core.info(`openai_model: ${this.openai_review_model}`);
         core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
         core.info(`openai_retries: ${this.openai_retries}`);
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
@@ -5736,7 +5737,7 @@ const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
-const handleReviewComment = async (bot, options, prompts) => {
+const handleReviewComment = async (botReview, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     if (context.eventName !== 'pull_request_review_comment') {
@@ -5825,13 +5826,13 @@ const handleReviewComment = async (bot, options, prompts) => {
                 inputs.summary = summary.body;
             }
             // begin comment generation
-            const [, comment_begin_ids] = await bot.chat(prompts.render_comment_beginning(inputs), {});
+            const [, comment_begin_ids] = await botReview.chat(prompts.render_comment_beginning(inputs), {});
             let next_comment_ids = comment_begin_ids;
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_tokens < options.max_tokens_for_extra_content) {
-                    const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
+                    const [file_content_resp, file_content_ids] = await botReview.chat(prompts.render_comment_file(inputs), next_comment_ids);
                     if (file_content_resp) {
                         next_comment_ids = file_content_ids;
                     }
@@ -5845,13 +5846,13 @@ const handleReviewComment = async (bot, options, prompts) => {
                 }
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < options.max_tokens_for_extra_content) {
-                    const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
+                    const [file_diff_resp, file_diff_ids] = await botReview.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
                     if (file_diff_resp) {
                         next_comment_ids = file_diff_ids;
                     }
                 }
             }
-            const [reply] = await bot.chat(prompts.render_comment(inputs), next_comment_ids);
+            const [reply] = await botReview.chat(prompts.render_comment(inputs), next_comment_ids);
             if (topLevelComment) {
                 await commenter.review_comment_reply(pull_number, topLevelComment, reply);
             }
@@ -6043,7 +6044,7 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const codeReview = async (bot, options, prompts) => {
+const codeReview = async (botReview, botSummarize, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
     if (context.eventName !== 'pull_request' &&
@@ -6132,11 +6133,7 @@ const codeReview = async (bot, options, prompts) => {
     }));
     // Filter out any null results
     const files_to_review = filtered_files_to_review.filter(file => file !== null);
-
-      if (files_to_review.length > 0) {
-        // Summary Stage
-        const [, summarize_begin_ids] = await bot.chat(
-            prompts.render_summarize_beginning_and_diff(inputs), {});
+    if (files_to_review.length > 0) {
         const generateSummary = async (filename, file_content, file_diff) => {
             const ins = inputs.clone();
             ins.filename = filename;
@@ -6145,11 +6142,15 @@ const codeReview = async (bot, options, prompts) => {
             }
             if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
+            }
+            // Check if there is either file content or file diff to process
+            if (ins.file_content || ins.file_diff) {
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < options.max_tokens_for_extra_content) {
-                    // summarize diff
+                if (!ins.file_diff ||
+                    file_diff_tokens < options.max_tokens_for_extra_content) {
+                    // summarize content
                     try {
-                        const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);  
+                        const [summarize_resp] = await botSummarize.chat(prompts.render_summarize_beginning_and_diff(ins), {});
                         if (!summarize_resp) {
                             core.info('summarize: nothing obtained from openai');
                             return null;
@@ -6166,8 +6167,6 @@ const codeReview = async (bot, options, prompts) => {
             }
             return null;
         };
-
-      
         const summaryPromises = [];
         const skipped_files_to_summarize = [];
         for (const [filename, file_content, file_diff] of files_to_review) {
@@ -6189,9 +6188,9 @@ ${filename}: ${summary}
 `;
             }
         }
-        let next_summarize_ids = summarize_begin_ids;
+        let next_summarize_ids = {};
         // final summary
-        const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+        const [summarize_final_response, summarize_final_response_ids] = await botSummarize.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
             core.info('summarize: nothing obtained from openai');
         }
@@ -6237,7 +6236,7 @@ ${skipped_files_to_summarize.length > 0
             await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         }
         // final release notes
-        const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
+        const [release_notes_response, release_notes_ids] = await botSummarize.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
             core.info('release notes: nothing obtained from openai');
         }
@@ -6248,7 +6247,7 @@ ${skipped_files_to_summarize.length > 0
             commenter.update_description(context.payload.pull_request.number, message);
         }
         // Review Stage
-        const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
+        const [, review_begin_ids] = await botReview.chat(prompts.render_review_beginning(inputs), {});
         const review = async (filename, file_content, file_diff, patches) => {
             // reset chat session for each file while reviewing
             let next_review_ids = review_begin_ids;
@@ -6261,7 +6260,7 @@ ${skipped_files_to_summarize.length > 0
                 if (file_content_tokens < options.max_tokens_for_extra_content) {
                     try {
                         // review file
-                        const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
+                        const [resp, review_file_ids] = await botReview.chat(prompts.render_review_file(ins), next_review_ids);
                         if (!resp) {
                             core.info('review: nothing obtained from openai');
                         }
@@ -6291,7 +6290,7 @@ ${skipped_files_to_summarize.length > 0
                 if (file_diff_tokens < options.max_tokens_for_extra_content) {
                     try {
                         // review diff
-                        const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
+                        const [resp, review_diff_ids] = await botReview.chat(prompts.render_review_file_diff(ins), next_review_ids);
                         if (!resp) {
                             core.info('review: nothing obtained from openai');
                         }
@@ -6308,7 +6307,7 @@ ${skipped_files_to_summarize.length > 0
                 }
             }
             // review_patch_begin
-            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
+            const [, patch_begin_ids] = await botReview.chat(prompts.render_review_patch_begin(ins), next_review_ids);
             next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
                 core.info(`Reviewing ${filename}:${line} with openai ...`);
@@ -6331,7 +6330,7 @@ ${skipped_files_to_summarize.length > 0
                     core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                 }
                 try {
-                    const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
+                    const [response, patch_ids] = await botReview.chat(prompts.render_review_patch(ins), next_review_ids);
                     if (!response) {
                         core.info('review: nothing obtained from openai');
                         continue;
