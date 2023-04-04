@@ -7,8 +7,9 @@ export class Prompts {
   review_file_diff: string
   review_patch_begin: string
   review_patch: string
-  summarize_beginning: string
-  summarize_file_diff: string
+  summarize_beginning_and_diff: string
+  // summarize_beginning: string
+  // summarize_file_diff: string
   summarize: string
   summarize_release_notes: string
   comment_beginning: string
@@ -22,8 +23,9 @@ export class Prompts {
     review_file_diff = '',
     review_patch_begin = '',
     review_patch = '',
-    summarize_beginning = '',
-    summarize_file_diff = '',
+    summarize_beginning_and_diff = '',
+    // summarize_beginning = '',
+    // summarize_file_diff = '',
     summarize = '',
     summarize_release_notes = '',
     comment_beginning = '',
@@ -36,8 +38,9 @@ export class Prompts {
     this.review_file_diff = review_file_diff
     this.review_patch_begin = review_patch_begin
     this.review_patch = review_patch
-    this.summarize_beginning = summarize_beginning
-    this.summarize_file_diff = summarize_file_diff
+    this.summarize_beginning_and_diff = summarize_beginning_and_diff
+    // this.summarize_beginning = summarize_beginning
+    // this.summarize_file_diff = summarize_file_diff
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
     this.comment_beginning = comment_beginning
@@ -66,13 +69,13 @@ export class Prompts {
     return inputs.render(this.review_patch)
   }
 
-  render_summarize_beginning(inputs: Inputs): string {
-    return inputs.render(this.summarize_beginning)
+  render_summarize_beginning_and_diff(inputs: Inputs): string {
+    return inputs.render(this.summarize_beginning_and_diff)
   }
 
-  render_summarize_file_diff(inputs: Inputs): string {
-    return inputs.render(this.summarize_file_diff)
-  }
+  // render_summarize_file_diff(inputs: Inputs): string {
+  // return inputs.render(this.summarize_file_diff)
+  // }
 
   render_summarize(inputs: Inputs): string {
     return inputs.render(this.summarize)

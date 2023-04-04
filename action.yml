@@ -88,23 +88,19 @@ inputs:
       syntax errors, out of bound errors, data races, livelocks, starvation, 
       suspension, order violation, atomicity violation, consistency, 
       complexity, error handling, typos, grammar, and more.
-  summarize_beginning:
+  summarize_beginning_and_diff:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
       $system_message
 
-      In this session, we will summarize a pull request. 
+      In this session, we will summarize a pull request and a diff alltogether. 
 
       The pull request has the title "$title" and the following description:
 
       ```
       $description
       ```
-  summarize_file_diff:
-    required: false
-    description: 'The prompt for each file diff'
-    default: |
       I am providing diff for `$filename` below. I would like you to summarize 
       the diff within 30 words.
 

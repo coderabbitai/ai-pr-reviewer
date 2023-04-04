@@ -140,12 +140,6 @@ export const codeReview = async (
   ) as [string, string, string, [number, string][]][]
 
   if (files_to_review.length > 0) {
-    // Summary Stage
-    const [, summarize_begin_ids] = await bot.chat(
-      prompts.render_summarize_beginning(inputs),
-      {}
-    )
-
     const generateSummary = async (
       filename: string,
       file_content: string,
@@ -157,16 +151,26 @@ export const codeReview = async (
       if (file_content.length > 0) {
         ins.file_content = file_content
       }
+
       if (file_diff.length > 0) {
         ins.file_diff = file_diff
+      }
+
+      // Check if there is either file content or file diff to process
+      if (ins.file_content || ins.file_diff) {
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < options.max_tokens_for_extra_content) {
-          // summarize diff
+
+        if (
+          !ins.file_diff ||
+          file_diff_tokens < options.max_tokens_for_extra_content
+        ) {
+          // summarize content
           try {
             const [summarize_resp] = await bot.chat(
-              prompts.render_summarize_file_diff(ins),
-              summarize_begin_ids
+              prompts.render_summarize_beginning_and_diff(ins),
+              {}
             )
+
             if (!summarize_resp) {
               core.info('summarize: nothing obtained from openai')
               return null
@@ -213,7 +217,7 @@ ${filename}: ${summary}
       }
     }
 
-    let next_summarize_ids = summarize_begin_ids
+    let next_summarize_ids = {}
 
     // final summary
     const [summarize_final_response, summarize_final_response_ids] =
@@ -233,8 +237,9 @@ ${filename}: ${summary}
 
 ---
 
-${filter_ignored_files.length > 0
-          ? `
+${
+  filter_ignored_files.length > 0
+    ? `
 <details>
 <summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
 
@@ -244,14 +249,16 @@ ${filter_ignored_files.length > 0
 
 </details>
 `
-          : ''
-        }
+    : ''
+}
 
-${skipped_files_to_summarize.length > 0
-          ? `
+${
+  skipped_files_to_summarize.length > 0
+    ? `
 <details>
-<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length
-          })</summary>
+<summary>Files not summarized due to max files limit (${
+        skipped_files_to_summarize.length
+      })</summary>
 
 ### Not summarized
 
@@ -259,8 +266,8 @@ ${skipped_files_to_summarize.length > 0
 
 </details>
 `
-          : ''
-        }
+    : ''
+}
 `
 
       next_summarize_ids = summarize_final_response_ids
@@ -457,10 +464,12 @@ ${skipped_files_to_summarize.length > 0
     if (skipped_files_to_review.length > 0) {
       // make bullet points for skipped files
       const comment = `
-      ${skipped_files_to_review.length > 0
+      ${
+        skipped_files_to_review.length > 0
           ? `<details>
-<summary>Files not reviewed due to max files limit (${skipped_files_to_review.length
-          })</summary>
+<summary>Files not reviewed due to max files limit (${
+              skipped_files_to_review.length
+            })</summary>
 
 ### Not reviewed
 
@@ -469,7 +478,7 @@ ${skipped_files_to_summarize.length > 0
 </details>
 `
           : ''
-        }
+      }
       `
       if (comment.length > 0) {
         await commenter.comment(comment, SUMMARIZE_TAG, 'append')
