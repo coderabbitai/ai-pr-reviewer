@@ -29,8 +29,6 @@ async function run(): Promise<void> {
     core.getInput('review_patch_begin'),
     core.getInput('review_patch'),
     core.getInput('summarize_beginning_and_diff'),
-    // core.getInput('summarize_beginning'),
-    // core.getInput('summarize_file_diff'),
     core.getInput('summarize'),
     core.getInput('summarize_release_notes'),
     core.getInput('comment_beginning'),
@@ -40,9 +38,10 @@ async function run(): Promise<void> {
   )
 
   // Create two bots, one for summary and one for review
+  let botModel = 'openai_summary_model'
   let summaryBot: Bot | null = null
   try {
-    summaryBot = new Bot(options)
+    summaryBot = new Bot(options, botModel)
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
@@ -50,9 +49,10 @@ async function run(): Promise<void> {
     return
   }
   // initialize openai bot
+  botModel = 'openai_review_model'
   let reviewBot: Bot | null = null
   try {
-    reviewBot = new Bot(options)
+    reviewBot = new Bot(options, botModel)
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
