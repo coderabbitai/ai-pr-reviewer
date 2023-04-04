@@ -3906,23 +3906,32 @@ async function run() {
     // core.getInput('summarize_beginning'),
     // core.getInput('summarize_file_diff'),
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
-    // initialize openai bot
-    let bot = null;
+    // Create two bots, one for summary and one for review
+    let summaryBot = null;
     try {
-        bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options);
+        summaryBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options);
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        return;
+    }
+    // initialize openai bot
+    let reviewBot = null;
+    try {
+        reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options);
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     try {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(summaryBot, reviewBot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, options, prompts);
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(reviewBot, options, prompts);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_reques');
@@ -6043,7 +6052,7 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const codeReview = async (bot, options, prompts) => {
+const codeReview = async (summaryBot, reviewBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
     if (context.eventName !== 'pull_request' &&
@@ -6149,7 +6158,7 @@ const codeReview = async (bot, options, prompts) => {
                     file_diff_tokens < options.max_tokens_for_extra_content) {
                     // summarize content
                     try {
-                        const [summarize_resp] = await bot.chat(prompts.render_summarize_beginning_and_diff(ins), {});
+                        const [summarize_resp] = await summaryBot.chat(prompts.render_summarize_beginning_and_diff(ins), {});
                         if (!summarize_resp) {
                             core.info('summarize: nothing obtained from openai');
                             return null;
@@ -6189,7 +6198,7 @@ ${filename}: ${summary}
         }
         let next_summarize_ids = {};
         // final summary
-        const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+        const [summarize_final_response, summarize_final_response_ids] = await summaryBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
             core.info('summarize: nothing obtained from openai');
         }
@@ -6235,7 +6244,7 @@ ${skipped_files_to_summarize.length > 0
             await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         }
         // final release notes
-        const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
+        const [release_notes_response, release_notes_ids] = await summaryBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
             core.info('release notes: nothing obtained from openai');
         }
@@ -6246,7 +6255,7 @@ ${skipped_files_to_summarize.length > 0
             commenter.update_description(context.payload.pull_request.number, message);
         }
         // Review Stage
-        const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
+        const [, review_begin_ids] = await reviewBot.chat(prompts.render_review_beginning(inputs), {});
         const review = async (filename, file_content, file_diff, patches) => {
             // reset chat session for each file while reviewing
             let next_review_ids = review_begin_ids;
@@ -6259,7 +6268,7 @@ ${skipped_files_to_summarize.length > 0
                 if (file_content_tokens < options.max_tokens_for_extra_content) {
                     try {
                         // review file
-                        const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
+                        const [resp, review_file_ids] = await reviewBot.chat(prompts.render_review_file(ins), next_review_ids);
                         if (!resp) {
                             core.info('review: nothing obtained from openai');
                         }
@@ -6289,7 +6298,7 @@ ${skipped_files_to_summarize.length > 0
                 if (file_diff_tokens < options.max_tokens_for_extra_content) {
                     try {
                         // review diff
-                        const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
+                        const [resp, review_diff_ids] = await reviewBot.chat(prompts.render_review_file_diff(ins), next_review_ids);
                         if (!resp) {
                             core.info('review: nothing obtained from openai');
                         }
@@ -6306,7 +6315,7 @@ ${skipped_files_to_summarize.length > 0
                 }
             }
             // review_patch_begin
-            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
+            const [, patch_begin_ids] = await reviewBot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
             next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
                 core.info(`Reviewing ${filename}:${line} with openai ...`);
@@ -6329,7 +6338,7 @@ ${skipped_files_to_summarize.length > 0
                     core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                 }
                 try {
-                    const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
+                    const [response, patch_ids] = await reviewBot.chat(prompts.render_review_patch(ins), next_review_ids);
                     if (!response) {
                         core.info('review: nothing obtained from openai');
                         continue;
