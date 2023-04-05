@@ -240,7 +240,7 @@ export class Options {
       this.max_summary_model_tokens = 5000
       this.max_summary_response_tokens = 1500
     } else {
-      this.max_summary_model_tokens = 3000
+      this.max_summary_model_tokens = 4000
       this.max_summary_response_tokens = 1000
     }
 
