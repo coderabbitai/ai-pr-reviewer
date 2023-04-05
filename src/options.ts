@@ -191,7 +191,9 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
-  openai_model: string
+  // openai_model: string
+  openai_summary_model: string
+  openai_review_model: string
   openai_model_temperature: number
   openai_retries: number
   openai_timeout_ms: number
@@ -208,7 +210,9 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    openai_model = 'gpt-3.5-turbo',
+    // openai_model = 'gpt-3.5-turbo',
+    openai_summary_model = 'gpt-3.5-turbo',
+    openai_review_model = 'gpt-3.5-turbo',
     openai_model_temperature = '0.0',
     openai_retries = '3',
     openai_timeout_ms = '120000',
@@ -220,22 +224,46 @@ export class Options {
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
-    this.openai_model = openai_model
+    // this.openai_model = openai_model
+    this.openai_summary_model = openai_summary_model
+    this.openai_review_model = openai_review_model
     this.openai_model_temperature = parseFloat(openai_model_temperature)
     this.openai_retries = parseInt(openai_retries)
     this.openai_timeout_ms = parseInt(openai_timeout_ms)
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
 
-    if (this.openai_model === 'gpt-4-32k') {
+    if (this.openai_summary_model === 'gpt-4-32k') {
       this.max_model_tokens = 32700
       this.max_tokens_for_response = 4000
-    } else if (this.openai_model === 'gpt-4') {
+    } else if (this.openai_summary_model === 'gpt-4') {
       this.max_model_tokens = 8100
       this.max_tokens_for_response = 2000
     } else {
       this.max_model_tokens = 4000
       this.max_tokens_for_response = 1000
     }
+
+    if (this.openai_review_model === 'gpt-4-32k') {
+      this.max_model_tokens = 32700
+      this.max_tokens_for_response = 4000
+    } else if (this.openai_review_model === 'gpt-4') {
+      this.max_model_tokens = 8100
+      this.max_tokens_for_response = 2000
+    } else {
+      this.max_model_tokens = 4000
+      this.max_tokens_for_response = 1000
+    }
+
+    // if (this.openai_model === 'gpt-4-32k') {
+    //   this.max_model_tokens = 32700
+    //   this.max_tokens_for_response = 4000
+    // } else if (this.openai_model === 'gpt-4') {
+    //   this.max_model_tokens = 8100
+    //   this.max_tokens_for_response = 2000
+    // } else {
+    //   this.max_model_tokens = 4000
+    //   this.max_tokens_for_response = 1000
+    // }
 
     // calculate the max tokens for the request and response
     this.max_tokens_for_request =
@@ -252,7 +280,9 @@ export class Options {
     core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
     core.info(`path_filters: ${this.path_filters}`)
     core.info(`system_message: ${this.system_message}`)
-    core.info(`openai_model: ${this.openai_model}`)
+    // core.info(`openai_model: ${this.openai_model}`)
+    core.info(`openai_summary_model: ${this.openai_summary_model}`)
+    core.info(`openai_review_model: ${this.openai_review_model}`)
     core.info(`openai_model_temperature: ${this.openai_model_temperature}`)
     core.info(`openai_retries: ${this.openai_retries}`)
     core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)

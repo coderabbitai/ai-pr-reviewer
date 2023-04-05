@@ -12,7 +12,9 @@ async function run(): Promise<void> {
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
     core.getInput('system_message'),
-    core.getInput('openai_model'),
+    // core.getInput('openai_model'),
+    core.getInput('openai_summary_model'),
+    core.getInput('openai_review_model'),
     core.getInput('openai_model_temperature'),
     core.getInput('openai_retries'),
     core.getInput('openai_timeout_ms'),
@@ -38,7 +40,7 @@ async function run(): Promise<void> {
   )
 
   // Create two bots, one for summary and one for review
-  let botModel = 'gpt-3.5-turbo'
+  let botModel = core.getInput('openai_summary_model')
 
   let summaryBot: Bot | null = null
   try {
@@ -49,8 +51,7 @@ async function run(): Promise<void> {
     )
     return
   }
-  // initialize openai bot
-  botModel = 'gpt-3.5-turbo'
+  botModel = core.getInput('openai_review_model')
   let reviewBot: Bot | null = null
   try {
     reviewBot = new Bot(options, botModel)

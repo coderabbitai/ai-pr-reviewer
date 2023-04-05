@@ -3899,12 +3899,14 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), 
+    // core.getInput('openai_model'),
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
-    let botModel = 'gpt-3.5-turbo';
+    let botModel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model');
     let summaryBot = null;
     try {
         summaryBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
@@ -3913,8 +3915,7 @@ async function run() {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
-    // initialize openai bot
-    botModel = 'gpt-3.5-turbo';
+    botModel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model');
     let reviewBot = null;
     try {
         reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
@@ -5598,7 +5599,9 @@ class Options {
     review_comment_lgtm;
     path_filters;
     system_message;
-    openai_model;
+    // openai_model: string
+    openai_summary_model;
+    openai_review_model;
     openai_model_temperature;
     openai_retries;
     openai_timeout_ms;
@@ -5607,23 +5610,27 @@ class Options {
     max_tokens_for_request;
     max_tokens_for_response;
     max_tokens_for_extra_content;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', 
+    // openai_model = 'gpt-3.5-turbo',
+    openai_summary_model = 'gpt-3.5-turbo', openai_review_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
-        this.openai_model = openai_model;
+        // this.openai_model = openai_model
+        this.openai_summary_model = openai_summary_model;
+        this.openai_review_model = openai_review_model;
         this.openai_model_temperature = parseFloat(openai_model_temperature);
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        if (this.openai_model === 'gpt-4-32k') {
+        if (this.openai_summary_model === 'gpt-4-32k') {
             this.max_model_tokens = 32700;
             this.max_tokens_for_response = 4000;
         }
-        else if (this.openai_model === 'gpt-4') {
+        else if (this.openai_summary_model === 'gpt-4') {
             this.max_model_tokens = 8100;
             this.max_tokens_for_response = 2000;
         }
@@ -5631,6 +5638,28 @@ class Options {
             this.max_model_tokens = 4000;
             this.max_tokens_for_response = 1000;
         }
+        if (this.openai_review_model === 'gpt-4-32k') {
+            this.max_model_tokens = 32700;
+            this.max_tokens_for_response = 4000;
+        }
+        else if (this.openai_review_model === 'gpt-4') {
+            this.max_model_tokens = 8100;
+            this.max_tokens_for_response = 2000;
+        }
+        else {
+            this.max_model_tokens = 4000;
+            this.max_tokens_for_response = 1000;
+        }
+        // if (this.openai_model === 'gpt-4-32k') {
+        //   this.max_model_tokens = 32700
+        //   this.max_tokens_for_response = 4000
+        // } else if (this.openai_model === 'gpt-4') {
+        //   this.max_model_tokens = 8100
+        //   this.max_tokens_for_response = 2000
+        // } else {
+        //   this.max_model_tokens = 4000
+        //   this.max_tokens_for_response = 1000
+        // }
         // calculate the max tokens for the request and response
         this.max_tokens_for_request =
             this.max_model_tokens - this.max_tokens_for_response;
@@ -5645,7 +5674,9 @@ class Options {
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
         core.info(`path_filters: ${this.path_filters}`);
         core.info(`system_message: ${this.system_message}`);
-        core.info(`openai_model: ${this.openai_model}`);
+        // core.info(`openai_model: ${this.openai_model}`)
+        core.info(`openai_summary_model: ${this.openai_summary_model}`);
+        core.info(`openai_review_model: ${this.openai_review_model}`);
         core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
         core.info(`openai_retries: ${this.openai_retries}`);
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);

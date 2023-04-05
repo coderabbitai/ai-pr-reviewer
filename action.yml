@@ -53,9 +53,13 @@ inputs:
       !**/_gen/**
       !**/generated/**
       !**/vendor/**
-  openai_model:
+  openai_summary_model:
     required: false
-    description: 'Model to use'
+    description: 'Model to use for summarization'
+    default: 'gpt-3.5-turbo'
+  openai_review_model:
+    required: false
+    description: 'Model to use for review'
     default: 'gpt-3.5-turbo'
   openai_model_temperature:
     required: false
@@ -137,7 +141,7 @@ inputs:
       "Test", "Chore", "Revert", and provide a bullet point list. For example: 
       "New Feature: An integrations page was added to the UI". Keep your 
       response within 50-100 words. Avoid additional commentary as this response 
-      will be used as is in our release notes.
+      wilFluxNinjal be used as is in our release notes.
 
       Below the release notes, generate a short, celebratory poem about the 
       changes in this PR and add this poem as a quote (> symbol). You can 
