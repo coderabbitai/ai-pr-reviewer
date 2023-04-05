@@ -5640,7 +5640,7 @@ class Options {
             this.max_summary_response_tokens = 1500;
         }
         else {
-            this.max_summary_model_tokens = 4000;
+            this.max_summary_model_tokens = 4500;
             this.max_summary_response_tokens = 1000;
         }
         if (this.openai_review_model === 'gpt-4-32k') {
@@ -5652,7 +5652,7 @@ class Options {
             this.max_review_response_tokens = 1500;
         }
         else {
-            this.max_review_model_tokens = 4000;
+            this.max_review_model_tokens = 4500;
             this.max_review_response_tokens = 1000;
         }
         // calculate the max tokens for the summary request and response
