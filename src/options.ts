@@ -240,7 +240,7 @@ export class Options {
       this.max_summary_model_tokens = 5000
       this.max_summary_response_tokens = 1500
     } else {
-      this.max_summary_model_tokens = 4500
+      this.max_summary_model_tokens = 3700
       this.max_summary_response_tokens = 1000
     }
 
@@ -251,7 +251,7 @@ export class Options {
       this.max_review_model_tokens = 5000
       this.max_review_response_tokens = 1500
     } else {
-      this.max_review_model_tokens = 4500
+      this.max_review_model_tokens = 3700
       this.max_review_response_tokens = 1000
     }
 
