@@ -163,7 +163,7 @@ export const codeReview = async (
 
         if (
           !ins.file_diff ||
-          file_diff_tokens < options.max_tokens_for_extra_content
+          file_diff_tokens < options.max_tokens_for_extra_summary_content
         ) {
           // summarize content
           try {
@@ -315,7 +315,7 @@ ${
       if (file_content.length > 0) {
         ins.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (file_content_tokens < options.max_tokens_for_extra_content) {
+        if (file_content_tokens < options.max_tokens_for_extra_review_content) {
           try {
             // review file
             const [resp, review_file_ids] = await reviewBot.chat(
@@ -348,7 +348,7 @@ ${
       if (file_diff.length > 0) {
         ins.file_diff = file_diff
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < options.max_tokens_for_extra_content) {
+        if (file_diff_tokens < options.max_tokens_for_extra_review_content) {
           try {
             // review diff
             const [resp, review_diff_ids] = await reviewBot.chat(

@@ -16,18 +16,18 @@ export class Bot {
 
   private options: optionsJs.Options
 
-  constructor(options: optionsJs.Options, botModel: string) {
+  constructor(options: optionsJs.Options, openaiOptions: any) {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
       this.api = new openai.ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
-        maxModelTokens: options.max_model_tokens,
-        maxResponseTokens: options.max_tokens_for_response,
+        maxModelTokens: openaiOptions.max_model_tokens,
+        maxResponseTokens: openaiOptions.max_tokens_for_response,
         completionParams: {
           temperature: options.openai_model_temperature,
-          model: botModel
+          model: openaiOptions.botModel
         }
       })
     } else {

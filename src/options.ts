@@ -191,17 +191,20 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
-  // openai_model: string
   openai_summary_model: string
   openai_review_model: string
   openai_model_temperature: number
   openai_retries: number
   openai_timeout_ms: number
   openai_concurrency_limit: number
-  max_model_tokens: number
-  max_tokens_for_request: number
-  max_tokens_for_response: number
-  max_tokens_for_extra_content: number
+  max_summary_model_tokens: number
+  max_review_model_tokens: number
+  max_summary_request_tokens: number
+  max_review_request_tokens: number
+  max_summary_response_tokens: number
+  max_review_response_tokens: number
+  max_tokens_for_extra_summary_content: number
+  max_tokens_for_extra_review_content: number
 
   constructor(
     debug: boolean,
@@ -210,7 +213,6 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    // openai_model = 'gpt-3.5-turbo',
     openai_summary_model = 'gpt-3.5-turbo',
     openai_review_model = 'gpt-3.5-turbo',
     openai_model_temperature = '0.0',
@@ -224,7 +226,6 @@ export class Options {
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
-    // this.openai_model = openai_model
     this.openai_summary_model = openai_summary_model
     this.openai_review_model = openai_review_model
     this.openai_model_temperature = parseFloat(openai_model_temperature)
@@ -233,43 +234,40 @@ export class Options {
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
 
     if (this.openai_summary_model === 'gpt-4-32k') {
-      this.max_model_tokens = 32700
-      this.max_tokens_for_response = 4000
+      this.max_summary_model_tokens = 20000
+      this.max_summary_response_tokens = 3000
     } else if (this.openai_summary_model === 'gpt-4') {
-      this.max_model_tokens = 8100
-      this.max_tokens_for_response = 2000
+      this.max_summary_model_tokens = 5000
+      this.max_summary_response_tokens = 1500
     } else {
-      this.max_model_tokens = 4000
-      this.max_tokens_for_response = 1000
+      this.max_summary_model_tokens = 3000
+      this.max_summary_response_tokens = 1000
     }
 
     if (this.openai_review_model === 'gpt-4-32k') {
-      this.max_model_tokens = 32700
-      this.max_tokens_for_response = 4000
+      this.max_review_model_tokens = 32700
+      this.max_review_response_tokens = 4000
     } else if (this.openai_review_model === 'gpt-4') {
-      this.max_model_tokens = 8100
-      this.max_tokens_for_response = 2000
+      this.max_review_model_tokens = 5000
+      this.max_review_response_tokens = 1500
     } else {
-      this.max_model_tokens = 4000
-      this.max_tokens_for_response = 1000
+      this.max_review_model_tokens = 4000
+      this.max_review_response_tokens = 1000
     }
 
-    // if (this.openai_model === 'gpt-4-32k') {
-    //   this.max_model_tokens = 32700
-    //   this.max_tokens_for_response = 4000
-    // } else if (this.openai_model === 'gpt-4') {
-    //   this.max_model_tokens = 8100
-    //   this.max_tokens_for_response = 2000
-    // } else {
-    //   this.max_model_tokens = 4000
-    //   this.max_tokens_for_response = 1000
-    // }
-
-    // calculate the max tokens for the request and response
-    this.max_tokens_for_request =
-      this.max_model_tokens - this.max_tokens_for_response
+    // calculate the max tokens for the summary request and response
+    this.max_summary_request_tokens =
+      this.max_summary_model_tokens - this.max_summary_response_tokens
     // use half the request tokens for extra content
-    this.max_tokens_for_extra_content = this.max_tokens_for_request / 1.5
+    this.max_tokens_for_extra_summary_content =
+      this.max_summary_request_tokens / 1.5
+
+    // calculate the max tokens for the review request and response
+    this.max_review_request_tokens =
+      this.max_review_model_tokens - this.max_review_response_tokens
+    // use half the request tokens for extra content
+    this.max_tokens_for_extra_review_content =
+      this.max_review_request_tokens / 1.5
   }
 
   // print all options using core.info
@@ -280,18 +278,21 @@ export class Options {
     core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
     core.info(`path_filters: ${this.path_filters}`)
     core.info(`system_message: ${this.system_message}`)
-    // core.info(`openai_model: ${this.openai_model}`)
     core.info(`openai_summary_model: ${this.openai_summary_model}`)
     core.info(`openai_review_model: ${this.openai_review_model}`)
     core.info(`openai_model_temperature: ${this.openai_model_temperature}`)
     core.info(`openai_retries: ${this.openai_retries}`)
     core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)
     core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`)
-    core.info(`max_model_tokens: ${this.max_model_tokens}`)
-    core.info(`max_tokens_for_request: ${this.max_tokens_for_request}`)
-    core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`)
+    core.info(`max_summary_model_tokens: ${this.max_summary_model_tokens}`)
+    core.info(`max_review_model_tokens: ${this.max_review_model_tokens}`)
+    core.info(`max_summary_request_tokens: ${this.max_summary_request_tokens}`)
+    core.info(`max_review_request_tokens: ${this.max_review_request_tokens}`)
     core.info(
-      `max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`
+      `max_tokens_for_extra_summary_content: ${this.max_tokens_for_extra_summary_content}`
+    )
+    core.info(
+      `max_tokens_for_extra_review_content: ${this.max_tokens_for_extra_review_content}`
     )
   }
 

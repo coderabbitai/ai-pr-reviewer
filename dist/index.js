@@ -3376,18 +3376,18 @@ const retry = async (fn, args, times) => {
 class Bot {
     api = null; // not free
     options;
-    constructor(options, botModel) {
+    constructor(options, openaiOptions) {
         this.options = options;
         if (process.env.OPENAI_API_KEY) {
             this.api = new ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
-                maxModelTokens: options.max_model_tokens,
-                maxResponseTokens: options.max_tokens_for_response,
+                maxModelTokens: openaiOptions.max_model_tokens,
+                maxResponseTokens: openaiOptions.max_tokens_for_response,
                 completionParams: {
                     temperature: options.openai_model_temperature,
-                    model: botModel
+                    model: openaiOptions.botModel
                 }
             });
         }
@@ -3899,26 +3899,31 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), 
-    // core.getInput('openai_model'),
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    const openaiOptions = {
+        botModel: options.openai_summary_model,
+        max_model_tokens: options.max_summary_model_tokens,
+        max_tokens_for_response: options.max_summary_model_tokens
+    };
     // Create two bots, one for summary and one for review
-    let botModel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model');
     let summaryBot = null;
     try {
-        summaryBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
+        summaryBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, openaiOptions);
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
-    botModel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model');
+    // Change struct content for review bot
+    openaiOptions.botModel = options.openai_review_model;
+    openaiOptions.max_model_tokens = options.max_review_model_tokens;
+    openaiOptions.max_tokens_for_response = options.max_review_model_tokens;
     let reviewBot = null;
     try {
-        reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, botModel);
+        reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, openaiOptions);
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
@@ -3934,7 +3939,7 @@ async function run() {
             await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(reviewBot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_reques');
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_request');
         }
     }
     catch (e) {
@@ -5599,27 +5604,27 @@ class Options {
     review_comment_lgtm;
     path_filters;
     system_message;
-    // openai_model: string
     openai_summary_model;
     openai_review_model;
     openai_model_temperature;
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
-    max_model_tokens;
-    max_tokens_for_request;
-    max_tokens_for_response;
-    max_tokens_for_extra_content;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', 
-    // openai_model = 'gpt-3.5-turbo',
-    openai_summary_model = 'gpt-3.5-turbo', openai_review_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    max_summary_model_tokens;
+    max_review_model_tokens;
+    max_summary_request_tokens;
+    max_review_request_tokens;
+    max_summary_response_tokens;
+    max_review_response_tokens;
+    max_tokens_for_extra_summary_content;
+    max_tokens_for_extra_review_content;
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_summary_model = 'gpt-3.5-turbo', openai_review_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
-        // this.openai_model = openai_model
         this.openai_summary_model = openai_summary_model;
         this.openai_review_model = openai_review_model;
         this.openai_model_temperature = parseFloat(openai_model_temperature);
@@ -5627,44 +5632,41 @@ class Options {
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
         if (this.openai_summary_model === 'gpt-4-32k') {
-            this.max_model_tokens = 32700;
-            this.max_tokens_for_response = 4000;
+            this.max_summary_model_tokens = 20000;
+            this.max_summary_response_tokens = 3000;
         }
         else if (this.openai_summary_model === 'gpt-4') {
-            this.max_model_tokens = 8100;
-            this.max_tokens_for_response = 2000;
+            this.max_summary_model_tokens = 5000;
+            this.max_summary_response_tokens = 1500;
         }
         else {
-            this.max_model_tokens = 4000;
-            this.max_tokens_for_response = 1000;
+            this.max_summary_model_tokens = 3000;
+            this.max_summary_response_tokens = 1000;
         }
         if (this.openai_review_model === 'gpt-4-32k') {
-            this.max_model_tokens = 32700;
-            this.max_tokens_for_response = 4000;
+            this.max_review_model_tokens = 32700;
+            this.max_review_response_tokens = 4000;
         }
         else if (this.openai_review_model === 'gpt-4') {
-            this.max_model_tokens = 8100;
-            this.max_tokens_for_response = 2000;
+            this.max_review_model_tokens = 5000;
+            this.max_review_response_tokens = 1500;
         }
         else {
-            this.max_model_tokens = 4000;
-            this.max_tokens_for_response = 1000;
+            this.max_review_model_tokens = 4000;
+            this.max_review_response_tokens = 1000;
         }
-        // if (this.openai_model === 'gpt-4-32k') {
-        //   this.max_model_tokens = 32700
-        //   this.max_tokens_for_response = 4000
-        // } else if (this.openai_model === 'gpt-4') {
-        //   this.max_model_tokens = 8100
-        //   this.max_tokens_for_response = 2000
-        // } else {
-        //   this.max_model_tokens = 4000
-        //   this.max_tokens_for_response = 1000
-        // }
-        // calculate the max tokens for the request and response
-        this.max_tokens_for_request =
-            this.max_model_tokens - this.max_tokens_for_response;
+        // calculate the max tokens for the summary request and response
+        this.max_summary_request_tokens =
+            this.max_summary_model_tokens - this.max_summary_response_tokens;
         // use half the request tokens for extra content
-        this.max_tokens_for_extra_content = this.max_tokens_for_request / 1.5;
+        this.max_tokens_for_extra_summary_content =
+            this.max_summary_request_tokens / 1.5;
+        // calculate the max tokens for the review request and response
+        this.max_review_request_tokens =
+            this.max_review_model_tokens - this.max_review_response_tokens;
+        // use half the request tokens for extra content
+        this.max_tokens_for_extra_review_content =
+            this.max_review_request_tokens / 1.5;
     }
     // print all options using core.info
     print() {
@@ -5674,17 +5676,18 @@ class Options {
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
         core.info(`path_filters: ${this.path_filters}`);
         core.info(`system_message: ${this.system_message}`);
-        // core.info(`openai_model: ${this.openai_model}`)
         core.info(`openai_summary_model: ${this.openai_summary_model}`);
         core.info(`openai_review_model: ${this.openai_review_model}`);
         core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
         core.info(`openai_retries: ${this.openai_retries}`);
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
         core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`);
-        core.info(`max_model_tokens: ${this.max_model_tokens}`);
-        core.info(`max_tokens_for_request: ${this.max_tokens_for_request}`);
-        core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`);
-        core.info(`max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`);
+        core.info(`max_summary_model_tokens: ${this.max_summary_model_tokens}`);
+        core.info(`max_review_model_tokens: ${this.max_review_model_tokens}`);
+        core.info(`max_summary_request_tokens: ${this.max_summary_request_tokens}`);
+        core.info(`max_review_request_tokens: ${this.max_review_request_tokens}`);
+        core.info(`max_tokens_for_extra_summary_content: ${this.max_tokens_for_extra_summary_content}`);
+        core.info(`max_tokens_for_extra_review_content: ${this.max_tokens_for_extra_review_content}`);
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
@@ -5859,7 +5862,7 @@ const handleReviewComment = async (bot, options, prompts) => {
             if (file_content.length > 0) {
                 inputs.file_content = file_content;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
-                if (file_content_tokens < options.max_tokens_for_extra_content) {
+                if (file_content_tokens < options.max_tokens_for_extra_review_content) {
                     const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
                     if (file_content_resp) {
                         next_comment_ids = file_content_ids;
@@ -5873,7 +5876,7 @@ const handleReviewComment = async (bot, options, prompts) => {
                     inputs.diff = file_diff;
                 }
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
-                if (file_diff_tokens < options.max_tokens_for_extra_content) {
+                if (file_diff_tokens < options.max_tokens_for_extra_review_content) {
                     const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
                     if (file_diff_resp) {
                         next_comment_ids = file_diff_ids;
@@ -6175,7 +6178,7 @@ const codeReview = async (summaryBot, reviewBot, options, prompts) => {
             if (ins.file_content || ins.file_diff) {
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (!ins.file_diff ||
-                    file_diff_tokens < options.max_tokens_for_extra_content) {
+                    file_diff_tokens < options.max_tokens_for_extra_summary_content) {
                     // summarize content
                     try {
                         const [summarize_resp] = await summaryBot.chat(prompts.render_summarize_beginning_and_diff(ins), {});
@@ -6285,7 +6288,7 @@ ${skipped_files_to_summarize.length > 0
             if (file_content.length > 0) {
                 ins.file_content = file_content;
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-                if (file_content_tokens < options.max_tokens_for_extra_content) {
+                if (file_content_tokens < options.max_tokens_for_extra_review_content) {
                     try {
                         // review file
                         const [resp, review_file_ids] = await reviewBot.chat(prompts.render_review_file(ins), next_review_ids);
@@ -6315,7 +6318,7 @@ ${skipped_files_to_summarize.length > 0
             if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < options.max_tokens_for_extra_content) {
+                if (file_diff_tokens < options.max_tokens_for_extra_review_content) {
                     try {
                         // review diff
                         const [resp, review_diff_ids] = await reviewBot.chat(prompts.render_review_file_diff(ins), next_review_ids);

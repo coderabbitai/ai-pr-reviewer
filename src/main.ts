@@ -12,7 +12,6 @@ async function run(): Promise<void> {
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
     core.getInput('system_message'),
-    // core.getInput('openai_model'),
     core.getInput('openai_summary_model'),
     core.getInput('openai_review_model'),
     core.getInput('openai_model_temperature'),
@@ -39,22 +38,32 @@ async function run(): Promise<void> {
     core.getInput('comment')
   )
 
+  const openaiOptions = {
+    botModel: options.openai_summary_model,
+    max_model_tokens: options.max_summary_model_tokens,
+    max_tokens_for_response: options.max_summary_model_tokens
+  }
+
   // Create two bots, one for summary and one for review
-  let botModel = core.getInput('openai_summary_model')
 
   let summaryBot: Bot | null = null
   try {
-    summaryBot = new Bot(options, botModel)
+    summaryBot = new Bot(options, openaiOptions)
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
   }
-  botModel = core.getInput('openai_review_model')
+
+  // Change struct content for review bot
+  openaiOptions.botModel = options.openai_review_model
+  openaiOptions.max_model_tokens = options.max_review_model_tokens
+  openaiOptions.max_tokens_for_response = options.max_review_model_tokens
+
   let reviewBot: Bot | null = null
   try {
-    reviewBot = new Bot(options, botModel)
+    reviewBot = new Bot(options, openaiOptions)
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
@@ -75,7 +84,7 @@ async function run(): Promise<void> {
       await handleReviewComment(reviewBot, options, prompts)
     } else {
       core.warning(
-        'Skipped: this action only works on push events or pull_reques'
+        'Skipped: this action only works on push events or pull_request'
       )
     }
   } catch (e: any) {
