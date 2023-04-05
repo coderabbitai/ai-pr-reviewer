@@ -41,7 +41,7 @@ async function run(): Promise<void> {
   const openaiOptions = {
     botModel: options.openai_summary_model,
     max_model_tokens: options.max_summary_model_tokens,
-    max_tokens_for_response: options.max_summary_model_tokens
+    max_tokens_for_response: options.max_summary_response_tokens
   }
 
   // Create two bots, one for summary and one for review
@@ -59,7 +59,7 @@ async function run(): Promise<void> {
   // Change struct content for review bot
   openaiOptions.botModel = options.openai_review_model
   openaiOptions.max_model_tokens = options.max_review_model_tokens
-  openaiOptions.max_tokens_for_response = options.max_review_model_tokens
+  openaiOptions.max_tokens_for_response = options.max_review_response_tokens
 
   let reviewBot: Bot | null = null
   try {

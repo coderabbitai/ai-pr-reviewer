@@ -3906,7 +3906,7 @@ async function run() {
     const openaiOptions = {
         botModel: options.openai_summary_model,
         max_model_tokens: options.max_summary_model_tokens,
-        max_tokens_for_response: options.max_summary_model_tokens
+        max_tokens_for_response: options.max_summary_response_tokens
     };
     // Create two bots, one for summary and one for review
     let summaryBot = null;
@@ -3920,7 +3920,7 @@ async function run() {
     // Change struct content for review bot
     openaiOptions.botModel = options.openai_review_model;
     openaiOptions.max_model_tokens = options.max_review_model_tokens;
-    openaiOptions.max_tokens_for_response = options.max_review_model_tokens;
+    openaiOptions.max_tokens_for_response = options.max_review_response_tokens;
     let reviewBot = null;
     try {
         reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, openaiOptions);
@@ -5640,7 +5640,7 @@ class Options {
             this.max_summary_response_tokens = 1500;
         }
         else {
-            this.max_summary_model_tokens = 4500;
+            this.max_summary_model_tokens = 4000;
             this.max_summary_response_tokens = 1000;
         }
         if (this.openai_review_model === 'gpt-4-32k') {
@@ -5652,7 +5652,7 @@ class Options {
             this.max_review_response_tokens = 1500;
         }
         else {
-            this.max_review_model_tokens = 4500;
+            this.max_review_model_tokens = 4000;
             this.max_review_response_tokens = 1000;
         }
         // calculate the max tokens for the summary request and response
