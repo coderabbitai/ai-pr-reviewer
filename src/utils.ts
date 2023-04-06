@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
 
-export const retry = async (
+export const retry = async <T = unknown>(
   fn: Function,
-  args: any[],
+  args: unknown[],
   times: number
-): Promise<any> => {
+): Promise<T | undefined> => {
   for (let i = 0; i < times; i++) {
     try {
       return await fn(...args)

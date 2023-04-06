@@ -6,6 +6,7 @@ import {Bot} from './bot.js'
 import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
+import {ChatGPTError} from 'chatgpt'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -18,7 +19,7 @@ export const codeReview = async (
   bot: Bot,
   options: Options,
   prompts: Prompts
-) => {
+): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
   const openai_concurrency_limit = pLimit(options.openai_concurrency_limit)
@@ -122,12 +123,7 @@ export const codeReview = async (
         patches.push([line, patch])
       }
       if (patches.length > 0) {
-        return [file.filename, file_content, file_diff, patches] as [
-          string,
-          string,
-          string,
-          [number, string][]
-        ]
+        return [file.filename, file_content, file_diff, patches]
       } else {
         return null
       }
@@ -233,8 +229,9 @@ ${filename}: ${summary}
 
 ---
 
-${filter_ignored_files.length > 0
-          ? `
+${
+  filter_ignored_files.length > 0
+    ? `
 <details>
 <summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
 
@@ -244,14 +241,16 @@ ${filter_ignored_files.length > 0
 
 </details>
 `
-          : ''
-        }
+    : ''
+}
 
-${skipped_files_to_summarize.length > 0
-          ? `
+${
+  skipped_files_to_summarize.length > 0
+    ? `
 <details>
-<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length
-          })</summary>
+<summary>Files not summarized due to max files limit (${
+        skipped_files_to_summarize.length
+      })</summary>
 
 ### Not summarized
 
@@ -259,8 +258,8 @@ ${skipped_files_to_summarize.length > 0
 
 </details>
 `
-          : ''
-        }
+    : ''
+}
 `
 
       next_summarize_ids = summarize_final_response_ids
@@ -388,10 +387,12 @@ ${skipped_files_to_summarize.length > 0
           } else {
             ins.comment_chain = 'no previous comments'
           }
-        } catch (e: any) {
-          core.warning(
-            `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
-          )
+        } catch (e: unknown) {
+          if (e instanceof ChatGPTError) {
+            core.warning(
+              `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+            )
+          }
         }
 
         try {
@@ -414,12 +415,14 @@ ${skipped_files_to_summarize.length > 0
             line,
             `${response}`
           )
-        } catch (e: any) {
-          core.warning(`Failed to comment: ${e}, skipping.
+        } catch (e: unknown) {
+          if (e instanceof ChatGPTError) {
+            core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)
+          }
         }
       }
     }
@@ -457,10 +460,12 @@ ${skipped_files_to_summarize.length > 0
     if (skipped_files_to_review.length > 0) {
       // make bullet points for skipped files
       const comment = `
-      ${skipped_files_to_review.length > 0
+      ${
+        skipped_files_to_review.length > 0
           ? `<details>
-<summary>Files not reviewed due to max files limit (${skipped_files_to_review.length
-          })</summary>
+<summary>Files not reviewed due to max files limit (${
+              skipped_files_to_review.length
+            })</summary>
 
 ### Not reviewed
 
@@ -469,7 +474,7 @@ ${skipped_files_to_summarize.length > 0
 </details>
 `
           : ''
-        }
+      }
       `
       if (comment.length > 0) {
         await commenter.comment(comment, SUMMARIZE_TAG, 'append')

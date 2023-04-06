@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import {ChatGPTError} from 'chatgpt'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -121,7 +123,7 @@ ${tag}`
           body: new_description
         })
       }
-    } catch (e: any) {
+    } catch (e) {
       core.warning(
         `Failed to get PR: ${e}, skipping adding release notes to description.`
       )
@@ -169,7 +171,7 @@ ${tag}`
           line
         })
       }
-    } catch (e: any) {
+    } catch (e) {
       core.warning(`Failed to post review comment: ${e}`)
     }
   }
@@ -239,7 +241,7 @@ ${COMMENT_REPLY_TAG}
     pull_number: number,
     path: string,
     line: number,
-    tag: string = ''
+    tag = ''
   ) {
     const existing_comments = await this.get_comments_at_line(
       pull_number,
@@ -300,7 +302,7 @@ ${chain}
         top_level_comment
       )
       return {chain, topLevelComment: top_level_comment}
-    } catch (e: any) {
+    } catch (e) {
       core.warning(`Failed to get conversation chain: ${e}`)
       return {
         chain: '',
@@ -347,8 +349,8 @@ ${chain}
       }
 
       return all_comments
-    } catch (e: any) {
-      console.warn(`Failed to list review comments: ${e}`)
+    } catch (e) {
+      core.warning(`Failed to list review comments: ${e}`)
       return all_comments
     }
   }
@@ -361,7 +363,7 @@ ${chain}
         issue_number: target,
         body
       })
-    } catch (e: any) {
+    } catch (e) {
       core.warning(`Failed to create comment: ${e}`)
     }
   }
@@ -379,7 +381,7 @@ ${chain}
       } else {
         await this.create(body, target)
       }
-    } catch (e: any) {
+    } catch (e) {
       core.warning(`Failed to replace comment: ${e}`)
     }
   }
@@ -397,7 +399,7 @@ ${chain}
       } else {
         await this.create(body, target)
       }
-    } catch (e: any) {
+    } catch (e) {
       core.warning(`Failed to append comment: ${e}`)
     }
   }
@@ -415,7 +417,7 @@ ${chain}
       } else {
         await this.create(body, target)
       }
-    } catch (e: any) {
+    } catch (e) {
       core.warning(`Failed to prepend comment: ${e}`)
     }
   }
@@ -430,7 +432,7 @@ ${chain}
       }
 
       return null
-    } catch (e: any) {
+    } catch (e: unknown) {
       core.warning(`Failed to find comment with tag: ${e}`)
       return null
     }
@@ -456,8 +458,10 @@ ${chain}
       }
 
       return all_comments
-    } catch (e: any) {
-      console.warn(`Failed to list comments: ${e}`)
+    } catch (e: unknown) {
+      if (e instanceof ChatGPTError) {
+        core.warning(`Failed to list comments: ${e}`)
+      }
       return all_comments
     }
   }
