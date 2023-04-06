@@ -1,12 +1,12 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import {ChatGPTError} from 'chatgpt'
 import pLimit from 'p-limit'
 import {Bot} from './bot.js'
 import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
-import {ChatGPTError} from 'chatgpt'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -159,7 +159,7 @@ export const codeReview = async (
 
         if (
           !ins.file_diff ||
-          file_diff_tokens < options.max_tokens_for_extra_summary_content
+          file_diff_tokens < options.summary_token_limits.extra_content_tokens
         ) {
           // summarize content
           try {
@@ -311,7 +311,9 @@ ${
       if (file_content.length > 0) {
         ins.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (file_content_tokens < options.max_tokens_for_extra_review_content) {
+        if (
+          file_content_tokens < options.review_token_limits.extra_content_tokens
+        ) {
           try {
             // review file
             const [resp, review_file_ids] = await reviewBot.chat(
@@ -344,7 +346,9 @@ ${
       if (file_diff.length > 0) {
         ins.file_diff = file_diff
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < options.max_tokens_for_extra_review_content) {
+        if (
+          file_diff_tokens < options.review_token_limits.extra_content_tokens
+        ) {
           try {
             // review diff
             const [resp, review_diff_ids] = await reviewBot.chat(

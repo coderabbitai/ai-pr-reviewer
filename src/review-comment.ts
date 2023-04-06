@@ -143,7 +143,9 @@ export const handleReviewComment = async (
       if (file_content.length > 0) {
         inputs.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (file_content_tokens < options.max_tokens_for_extra_review_content) {
+        if (
+          file_content_tokens < options.review_token_limits.extra_content_tokens
+        ) {
           const [file_content_resp, file_content_ids] = await bot.chat(
             prompts.render_comment_file(inputs),
             next_comment_ids
@@ -161,7 +163,9 @@ export const handleReviewComment = async (
           inputs.diff = file_diff
         }
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (file_diff_tokens < options.max_tokens_for_extra_review_content) {
+        if (
+          file_diff_tokens < options.review_token_limits.extra_content_tokens
+        ) {
           const [file_diff_resp, file_diff_ids] = await bot.chat(
             prompts.render_comment_file_diff(inputs),
             next_comment_ids

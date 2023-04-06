@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Bot} from './bot.js'
-import {Options, Prompts} from './options.js'
+import {OpenAIOptions, Options, Prompts} from './options.js'
 import {handleReviewComment} from './review-comment.js'
 import {codeReview} from './review.js'
 
@@ -38,17 +38,17 @@ async function run(): Promise<void> {
     core.getInput('comment')
   )
 
-  const openaiOptions = {
-    botModel: options.openai_summary_model,
-    max_model_tokens: options.max_summary_model_tokens,
-    max_tokens_for_response: options.max_summary_response_tokens
-  }
-
   // Create two bots, one for summary and one for review
 
   let summaryBot: Bot | null = null
   try {
-    summaryBot = new Bot(options, openaiOptions)
+    summaryBot = new Bot(
+      options,
+      new OpenAIOptions(
+        options.openai_summary_model,
+        options.summary_token_limits
+      )
+    )
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
@@ -56,14 +56,15 @@ async function run(): Promise<void> {
     return
   }
 
-  // Change struct content for review bot
-  openaiOptions.botModel = options.openai_review_model
-  openaiOptions.max_model_tokens = options.max_review_model_tokens
-  openaiOptions.max_tokens_for_response = options.max_review_response_tokens
-
   let reviewBot: Bot | null = null
   try {
-    reviewBot = new Bot(options, openaiOptions)
+    reviewBot = new Bot(
+      options,
+      new OpenAIOptions(
+        options.openai_review_model,
+        options.review_token_limits
+      )
+    )
   } catch (e: any) {
     core.warning(
       `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
