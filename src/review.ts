@@ -6,6 +6,7 @@ import {Bot} from './bot.js'
 import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
+import {ChatGPTError} from 'chatgpt'
 
 const token = core.getInput('token')
   ? core.getInput('token')
@@ -386,10 +387,12 @@ ${
           } else {
             ins.comment_chain = 'no previous comments'
           }
-        } catch (e: any) {
-          core.warning(
-            `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
-          )
+        } catch (e: unknown) {
+          if (e instanceof ChatGPTError) {
+            core.warning(
+              `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+            )
+          }
         }
 
         try {
@@ -412,12 +415,14 @@ ${
             line,
             `${response}`
           )
-        } catch (e: any) {
-          core.warning(`Failed to comment: ${e}, skipping.
+        } catch (e: unknown) {
+          if (e instanceof ChatGPTError) {
+            core.warning(`Failed to comment: ${e}, skipping.
         backtrace: ${e.stack}
         filename: ${filename}
         line: ${line}
         patch: ${patch}`)
+          }
         }
       }
     }
