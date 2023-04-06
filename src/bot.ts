@@ -38,14 +38,14 @@ export class Bot {
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-    let new_ids: Ids = {}
-    let response = ''
+    let res: [string, Ids] = ['', {}]
     try {
-      ;[response, new_ids] = await this.chat_(message, ids)
-    } catch (e: any) {
-      core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
-    } finally {
-      return [response, new_ids]
+      res = await this.chat_(message, ids)
+      return res
+    } catch (e: unknown) {
+      if (e instanceof openai.ChatGPTError)
+        core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
+      return res
     }
   }
 
@@ -59,7 +59,7 @@ export class Bot {
       core.info(`sending to openai: ${message}`)
     }
 
-    let response: openai.ChatMessage | null = null
+    let response: openai.ChatMessage | undefined
 
     if (this.api) {
       const opts: openai.SendMessageOptions = {
@@ -69,15 +69,16 @@ export class Bot {
         opts.parentMessageId = ids.parentMessageId
       }
       try {
-        response = await utils.retry(
+        response = await utils.retry<openai.ChatMessage>(
           this.api.sendMessage.bind(this.api),
           [message, opts],
           this.options.openai_retries
         )
-      } catch (e: any) {
-        core.info(
-          `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
-        )
+      } catch (e: unknown) {
+        if (e instanceof openai.ChatGPTError)
+          core.info(
+            `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
+          )
       }
       const end = Date.now()
       core.info(`response: ${JSON.stringify(response)}`)
