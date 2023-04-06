@@ -2,69 +2,32 @@ import * as core from '@actions/core'
 import {minimatch} from 'minimatch'
 
 export class Prompts {
-  review_beginning: string
-  review_file: string
   review_file_diff: string
-  review_patch_begin: string
-  review_patch: string
-  summarize_beginning_and_diff: string
+  summarize_file_diff: string
   summarize: string
   summarize_release_notes: string
-  comment_beginning: string
-  comment_file: string
-  comment_file_diff: string
   comment: string
 
   constructor(
-    review_beginning = '',
-    review_file = '',
     review_file_diff = '',
-    review_patch_begin = '',
-    review_patch = '',
-    summarize_beginning_and_diff = '',
+    summarize_file_diff = '',
     summarize = '',
     summarize_release_notes = '',
-    comment_beginning = '',
-    comment_file = '',
-    comment_file_diff = '',
     comment = ''
   ) {
-    this.review_beginning = review_beginning
-    this.review_file = review_file
     this.review_file_diff = review_file_diff
-    this.review_patch_begin = review_patch_begin
-    this.review_patch = review_patch
-    this.summarize_beginning_and_diff = summarize_beginning_and_diff
+    this.summarize_file_diff = summarize_file_diff
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
-    this.comment_beginning = comment_beginning
-    this.comment_file = comment_file
-    this.comment_file_diff = comment_file_diff
     this.comment = comment
-  }
-
-  render_review_beginning(inputs: Inputs): string {
-    return inputs.render(this.review_beginning)
-  }
-
-  render_review_file(inputs: Inputs): string {
-    return inputs.render(this.review_file)
   }
 
   render_review_file_diff(inputs: Inputs): string {
     return inputs.render(this.review_file_diff)
   }
 
-  render_review_patch_begin(inputs: Inputs): string {
-    return inputs.render(this.review_patch_begin)
-  }
-
-  render_review_patch(inputs: Inputs): string {
-    return inputs.render(this.review_patch)
-  }
-
-  render_summarize_beginning_and_diff(inputs: Inputs): string {
-    return inputs.render(this.summarize_beginning_and_diff)
+  render_summarize_file_diff(inputs: Inputs): string {
+    return inputs.render(this.summarize_file_diff)
   }
 
   render_summarize(inputs: Inputs): string {
@@ -74,15 +37,7 @@ export class Prompts {
   render_summarize_release_notes(inputs: Inputs): string {
     return inputs.render(this.summarize_release_notes)
   }
-  render_comment_beginning(inputs: Inputs): string {
-    return inputs.render(this.comment_beginning)
-  }
-  render_comment_file(inputs: Inputs): string {
-    return inputs.render(this.comment_file)
-  }
-  render_comment_file_diff(inputs: Inputs): string {
-    return inputs.render(this.comment_file_diff)
-  }
+
   render_comment(inputs: Inputs): string {
     return inputs.render(this.comment)
   }
@@ -96,7 +51,7 @@ export class Inputs {
   filename: string
   file_content: string
   file_diff: string
-  patch: string
+  patches: string
   diff: string
   comment_chain: string
   comment: string
@@ -109,7 +64,7 @@ export class Inputs {
     filename = 'unknown',
     file_content = 'file contents cannot be provided',
     file_diff = 'file diff cannot be provided',
-    patch = 'patch cannot be provided',
+    patches = '',
     diff = 'no diff',
     comment_chain = 'no other comments on this patch',
     comment = 'no comment provided'
@@ -121,7 +76,7 @@ export class Inputs {
     this.filename = filename
     this.file_content = file_content
     this.file_diff = file_diff
-    this.patch = patch
+    this.patches = patches
     this.diff = diff
     this.comment_chain = comment_chain
     this.comment = comment
@@ -136,7 +91,7 @@ export class Inputs {
       this.filename,
       this.file_content,
       this.file_diff,
-      this.patch,
+      this.patches,
       this.diff,
       this.comment_chain,
       this.comment
@@ -168,8 +123,8 @@ export class Inputs {
     if (this.file_diff) {
       content = content.replace('$file_diff', this.file_diff)
     }
-    if (this.patch) {
-      content = content.replace('$patch', this.patch)
+    if (this.patches) {
+      content = content.replace('$patches', this.patches)
     }
     if (this.diff) {
       content = content.replace('$diff', this.diff)

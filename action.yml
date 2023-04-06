@@ -84,15 +84,10 @@ inputs:
     default: |
       You are `@openai` (aka `github-actions[bot]`), a highly
       experienced software engineer with a strong ability to review 
-      code changes thoroughly.
-
-      Your role today is to conduct code and documentation reviews, and 
-      generate code and documentation if asked to do so. You will point 
-      out potential issues such as security (e.g. XSS), logic errors, 
-      syntax errors, out of bound errors, data races, livelocks, starvation, 
-      suspension, order violation, atomicity violation, consistency, 
-      complexity, error handling, typos, grammar, and more.
-  summarize_beginning_and_diff:
+      code changes thoroughly. Your role today is to conduct code 
+      and documentation reviews, and generate code and documentation 
+      if asked to do so.
+  summarize_file_diff:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
@@ -106,7 +101,7 @@ inputs:
       $description
       ```
       I am providing diff for `$filename` below. I would like you to summarize 
-      the diff within 30 words.
+      the diff within 50 words.
 
       ```diff
       $file_diff
@@ -146,15 +141,11 @@ inputs:
       Below the release notes, generate a short, celebratory poem about the 
       changes in this PR and add this poem as a quote (> symbol). You can 
       use emojis in the poem, where they are relevant.
-  review_beginning:
+  review_file_diff:
     required: false
-    description: 'The beginning prompt of a code review dialog'
+    description: 'The prompt for each file'
     default: |
       $system_message
-
-      I will provide you with some files and the entire diff to help you build 
-      context, unless the content is too large. Then, I will send you each patch 
-      from the diff for review.
 
       The pull request has the title "$title" and the following description:
 
@@ -167,58 +158,47 @@ inputs:
       ```
       $summary
       ```
-  review_file:
-    required: false
-    description: 'The prompt for each file'
-    default: |
-      Here is the content of `$filename` for context. Please use this context 
-      when reviewing patches.
+
+      Here is the content of `$filename` and diff.
 
       ```
       $file_content
       ```
 
-      Reply "LGTM!" if the existing code in this file looks correct. If there 
-      are serious issues in the existing code please let me know and I will 
-      add your comment on the pull request for this file.
-  review_file_diff:
-    required: false
-    description: 'The prompt for each file diff'
-    default: |
-      Here is the entire diff for `$filename` for context. Please use this context 
-      when reviewing patches.
+      Below is the format for a diff patch and `---` 
+      separator is used between patches. 
 
-      ```diff
-      $file_diff
+      <line>: 
+      ```text
+      <comment chain on patch>
       ```
-  review_patch_begin:
-    required: false
-    description: 'The prompt for each file diff'
-    default: |
-      Next, I will send you a series of patches. Each patch consists of a diff snippet, 
-      and your task is to review every patch. Identify any bug risks or provide 
-      improvement suggestions. Otherwise, if the patch is acceptable, please reply 
-      "LGTM!" with a short comment. 
+      ```diff
+      <patch>
+      ```
+
+      Your review for each patch should be the below format with 
+      `---` separator between review comments:
+
+      <line>:
+      <review>
+
+      Patches for review -
+
+      $patches
+
+      Identify any bug risks or provide improvement suggestions 
+      in these patches. Otherwise, if the patch is acceptable, 
+      please reply "LGTM!" with a short comment.
+
+      You will point out potential issues such as security (e.g. XSS), 
+      logic errors, syntax errors, out of bound errors, data races, 
+      livelocks, starvation, suspension, order violation, atomicity 
+      violation, consistency, complexity, error handling, typos, 
+      grammar, and more.
 
       Your responses will be recorded as review comments on the pull request. 
       Markdown format is preferred for your responses.
-  review_patch:
-    required: false
-    description: 'The prompt for each chunks/patches'
-    default: |
-      $filename
-
-      Existing comments on the patch, though some of them may be outdated. 
-      Please use them as additional context.
-      ```
-      $comment_chain
-      ```
-
-      Diff for review:
-      ```diff
-      $patch
-      ```
-  comment_beginning:
+  comment:
     required: false
     description: 'Prompt for comment'
     default: |
@@ -243,28 +223,19 @@ inputs:
       ```
       $summary
       ```
-  comment_file:
-    required: false
-    description: 'Prompt for file'
-    default: |
-      Here is the content of `$filename` for context.
+
+      Here is the content of file.
 
       ```
       $file_content
       ```
-  comment_file_diff:
-    required: false
-    description: 'Prompt for file diff'
-    default: |
-      Here is the entire diff for `$filename` for context.
+
+      Here is the entire diff.
 
       ```diff
       $file_diff
       ```
-  comment:
-    required: false
-    description: 'Prompt for comment'
-    default: |
+
       I would like you to follow the instructions in the new 
       comment made on a conversation chain on a code review diff.
 

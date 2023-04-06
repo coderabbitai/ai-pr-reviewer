@@ -2729,19 +2729,19 @@ async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning_and_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
-    let summaryBot = null;
+    let lightBot = null;
     try {
-        summaryBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_summary_model, options.summary_token_limits));
+        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_summary_model, options.summary_token_limits));
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
-    let reviewBot = null;
+    let heavyBot = null;
     try {
-        reviewBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_review_model, options.review_token_limits));
+        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_review_model, options.review_token_limits));
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
@@ -2751,10 +2751,10 @@ async function run() {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(summaryBot, reviewBot, options, prompts);
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(lightBot, heavyBot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(reviewBot, options, prompts);
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(heavyBot, options, prompts);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_request');
@@ -4285,64 +4285,29 @@ minimatch.unescape = unescape_unescape;
 
 
 class Prompts {
-    review_beginning;
-    review_file;
     review_file_diff;
-    review_patch_begin;
-    review_patch;
-    summarize_beginning_and_diff;
+    summarize_file_diff;
     summarize;
     summarize_release_notes;
-    comment_beginning;
-    comment_file;
-    comment_file_diff;
     comment;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning_and_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
-        this.review_beginning = review_beginning;
-        this.review_file = review_file;
+    constructor(review_file_diff = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment = '') {
         this.review_file_diff = review_file_diff;
-        this.review_patch_begin = review_patch_begin;
-        this.review_patch = review_patch;
-        this.summarize_beginning_and_diff = summarize_beginning_and_diff;
+        this.summarize_file_diff = summarize_file_diff;
         this.summarize = summarize;
         this.summarize_release_notes = summarize_release_notes;
-        this.comment_beginning = comment_beginning;
-        this.comment_file = comment_file;
-        this.comment_file_diff = comment_file_diff;
         this.comment = comment;
-    }
-    render_review_beginning(inputs) {
-        return inputs.render(this.review_beginning);
-    }
-    render_review_file(inputs) {
-        return inputs.render(this.review_file);
     }
     render_review_file_diff(inputs) {
         return inputs.render(this.review_file_diff);
     }
-    render_review_patch_begin(inputs) {
-        return inputs.render(this.review_patch_begin);
-    }
-    render_review_patch(inputs) {
-        return inputs.render(this.review_patch);
-    }
-    render_summarize_beginning_and_diff(inputs) {
-        return inputs.render(this.summarize_beginning_and_diff);
+    render_summarize_file_diff(inputs) {
+        return inputs.render(this.summarize_file_diff);
     }
     render_summarize(inputs) {
         return inputs.render(this.summarize);
     }
     render_summarize_release_notes(inputs) {
         return inputs.render(this.summarize_release_notes);
-    }
-    render_comment_beginning(inputs) {
-        return inputs.render(this.comment_beginning);
-    }
-    render_comment_file(inputs) {
-        return inputs.render(this.comment_file);
-    }
-    render_comment_file_diff(inputs) {
-        return inputs.render(this.comment_file_diff);
     }
     render_comment(inputs) {
         return inputs.render(this.comment);
@@ -4356,11 +4321,11 @@ class Inputs {
     filename;
     file_content;
     file_diff;
-    patch;
+    patches;
     diff;
     comment_chain;
     comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patch = 'patch cannot be provided', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -4368,13 +4333,13 @@ class Inputs {
         this.filename = filename;
         this.file_content = file_content;
         this.file_diff = file_diff;
-        this.patch = patch;
+        this.patches = patches;
         this.diff = diff;
         this.comment_chain = comment_chain;
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patch, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -4401,8 +4366,8 @@ class Inputs {
         if (this.file_diff) {
             content = content.replace('$file_diff', this.file_diff);
         }
-        if (this.patch) {
-            content = content.replace('$patch', this.patch);
+        if (this.patches) {
+            content = content.replace('$patches', this.patches);
         }
         if (this.diff) {
             content = content.replace('$diff', this.diff);
@@ -4576,7 +4541,7 @@ const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
-const handleReviewComment = async (bot, options, prompts) => {
+const handleReviewComment = async (heavyBot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     if (context.eventName !== 'pull_request_review_comment') {
@@ -4664,34 +4629,23 @@ const handleReviewComment = async (bot, options, prompts) => {
             if (summary) {
                 inputs.summary = summary.body;
             }
-            // begin comment generation
-            const [, comment_begin_ids] = await bot.chat(prompts.render_comment_beginning(inputs), {});
-            let next_comment_ids = comment_begin_ids;
             if (file_content.length > 0) {
-                inputs.file_content = file_content;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_tokens < options.review_token_limits.extra_content_tokens) {
-                    const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
-                    if (file_content_resp) {
-                        next_comment_ids = file_content_ids;
-                    }
+                    inputs.file_content = file_content;
                 }
             }
             if (file_diff.length > 0) {
-                inputs.file_diff = file_diff;
                 // use file diff if no diff was found in the comment
                 if (inputs.diff.length === 0) {
                     inputs.diff = file_diff;
                 }
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_tokens < options.review_token_limits.extra_content_tokens) {
-                    const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
-                    if (file_diff_resp) {
-                        next_comment_ids = file_diff_ids;
-                    }
+                    inputs.file_diff = file_diff;
                 }
             }
-            const [reply] = await bot.chat(prompts.render_comment(inputs), next_comment_ids);
+            const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
             if (topLevelComment) {
                 await commenter.review_comment_reply(pull_number, topLevelComment, reply);
             }
@@ -4886,7 +4840,7 @@ const token = core.getInput('token')
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const codeReview = async (summaryBot, reviewBot, options, prompts) => {
+const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
     if (context.eventName !== 'pull_request' &&
@@ -4958,7 +4912,6 @@ const codeReview = async (summaryBot, reviewBot, options, prompts) => {
         }
         let file_diff = '';
         if (file.patch) {
-            core.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
         }
         const patches = [];
@@ -4980,7 +4933,10 @@ const codeReview = async (summaryBot, reviewBot, options, prompts) => {
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
-                ins.file_content = file_content;
+                if (tokenizer/* get_token_count */.u(file_content) <
+                    options.summary_token_limits.extra_content_tokens) {
+                    ins.file_content = file_content;
+                }
             }
             if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
@@ -4992,7 +4948,7 @@ const codeReview = async (summaryBot, reviewBot, options, prompts) => {
                     file_diff_tokens < options.summary_token_limits.extra_content_tokens) {
                     // summarize content
                     try {
-                        const [summarize_resp] = await summaryBot.chat(prompts.render_summarize_beginning_and_diff(ins), {});
+                        const [summarize_resp] = await lightBot.chat(prompts.render_summarize_file_diff(ins), {});
                         if (!summarize_resp) {
                             core.info('summarize: nothing obtained from openai');
                             return null;
@@ -5032,7 +4988,7 @@ ${filename}: ${summary}
         }
         let next_summarize_ids = {};
         // final summary
-        const [summarize_final_response, summarize_final_response_ids] = await summaryBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+        const [summarize_final_response, summarize_final_response_ids] = await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
             core.info('summarize: nothing obtained from openai');
         }
@@ -5074,98 +5030,47 @@ ${skipped_files_to_summarize.length > 0
 `
                 : ''}
 `;
-            next_summarize_ids = summarize_final_response_ids;
             await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+            // final release notes
+            next_summarize_ids = summarize_final_response_ids;
+            const [release_notes_response, release_notes_ids] = await heavyBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
+            if (!release_notes_response) {
+                core.info('release notes: nothing obtained from openai');
+            }
+            else {
+                next_summarize_ids = release_notes_ids;
+                let message = '### Summary by OpenAI\n\n';
+                message += release_notes_response;
+                commenter.update_description(context.payload.pull_request.number, message);
+            }
         }
-        // final release notes
-        const [release_notes_response, release_notes_ids] = await summaryBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
-        if (!release_notes_response) {
-            core.info('release notes: nothing obtained from openai');
-        }
-        else {
-            next_summarize_ids = release_notes_ids;
-            let message = '### Summary by OpenAI\n\n';
-            message += release_notes_response;
-            commenter.update_description(context.payload.pull_request.number, message);
-        }
-        // Review Stage
-        const [, review_begin_ids] = await reviewBot.chat(prompts.render_review_beginning(inputs), {});
-        const review = async (filename, file_content, file_diff, patches) => {
-            // reset chat session for each file while reviewing
-            let next_review_ids = review_begin_ids;
+        const review = async (filename, file_content, patches) => {
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
-                ins.file_content = file_content;
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
                 if (file_content_tokens < options.review_token_limits.extra_content_tokens) {
-                    try {
-                        // review file
-                        const [resp, review_file_ids] = await reviewBot.chat(prompts.render_review_file(ins), next_review_ids);
-                        if (!resp) {
-                            core.info('review: nothing obtained from openai');
-                        }
-                        else {
-                            next_review_ids = review_file_ids;
-                            if (!resp.includes('LGTM')) {
-                                // TODO: add file level comments via API once it's available
-                                // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
-                                // For now comment on the PR itself
-                                const tag = `<!-- openai-review-file-${filename} -->`;
-                                const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`;
-                                await commenter.comment(comment, tag, 'replace');
-                            }
-                        }
-                    }
-                    catch (error) {
-                        core.warning(`review: error from openai: ${error}`);
-                    }
+                    ins.file_content = file_content;
                 }
                 else {
                     core.info(`skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`);
                 }
             }
-            if (file_diff.length > 0) {
-                ins.file_diff = file_diff;
-                const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < options.review_token_limits.extra_content_tokens) {
-                    try {
-                        // review diff
-                        const [resp, review_diff_ids] = await reviewBot.chat(prompts.render_review_file_diff(ins), next_review_ids);
-                        if (!resp) {
-                            core.info('review: nothing obtained from openai');
-                        }
-                        else {
-                            next_review_ids = review_diff_ids;
-                        }
-                    }
-                    catch (error) {
-                        core.warning(`review: error from openai: ${error}`);
-                    }
-                }
-                else {
-                    core.info(`skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`);
-                }
-            }
-            // review_patch_begin
-            const [, patch_begin_ids] = await reviewBot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
-            next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
-                core.info(`Reviewing ${filename}:${line} with openai ...`);
-                ins.patch = patch;
                 if (!context.payload.pull_request) {
                     core.warning('No pull request found, skipping.');
                     continue;
                 }
+                let comment_chain = 'no comments on this patch';
                 try {
                     // get existing comments on the line
                     const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                     if (all_chains.length > 0) {
-                        ins.comment_chain = all_chains;
+                        comment_chain = all_chains;
                     }
                     else {
-                        ins.comment_chain = 'no previous comments';
+                        comment_chain = 'no previous comments';
                     }
                 }
                 catch (e) {
@@ -5173,40 +5078,46 @@ ${skipped_files_to_summarize.length > 0
                         core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                     }
                 }
-                try {
-                    const [response, patch_ids] = await reviewBot.chat(prompts.render_review_patch(ins), next_review_ids);
-                    if (!response) {
-                        core.info('review: nothing obtained from openai');
-                        continue;
-                    }
-                    next_review_ids = patch_ids;
-                    if (!options.review_comment_lgtm && response.includes('LGTM')) {
-                        continue;
-                    }
-                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
+                ins.patches += `${line}:
+\`\`\`text
+${comment_chain}
+\`\`\`diff
+${patch}
+\`\`\`
+---
+`;
+            }
+            // perform review
+            try {
+                const [response] = await heavyBot.chat(prompts.render_review_file_diff(ins), {});
+                if (!response) {
+                    core.info('review: nothing obtained from openai');
+                    return;
                 }
-                catch (e) {
-                    if (e instanceof build/* ChatGPTError */.sK) {
-                        core.warning(`Failed to comment: ${e}, skipping.
-        backtrace: ${e.stack}
-        filename: ${filename}
-        line: ${line}
-        patch: ${patch}`);
+                // parse review
+                const reviewMap = parseOpenAIReview(response);
+                for (const [line, review_comment] of reviewMap) {
+                    // check for LGTM
+                    if (!options.review_comment_lgtm && review_comment.includes('LGTM')) {
+                        continue;
                     }
+                    if (!context.payload.pull_request) {
+                        core.warning('No pull request found, skipping.');
+                        continue;
+                    }
+                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${review_comment}`);
                 }
             }
+            catch (e) {
+                core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`);
+            }
         };
-        // Use Promise.all to run file review processes in parallel
-        //     openai_concurrency_limit(async () =>
-        //       review(filename, file_content, file_diff, patches)
-        //     )
-        // )
         const reviewPromises = [];
         const skipped_files_to_review = [];
-        for (const [filename, file_content, file_diff, patches] of files_to_review) {
+        for (const [filename, file_content, , patches] of files_to_review) {
             if (options.max_files_to_review <= 0 ||
                 reviewPromises.length < options.max_files_to_review) {
-                reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, file_diff, patches)));
+                reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, patches)));
             }
             else {
                 skipped_files_to_review.push(filename);
@@ -5271,6 +5182,50 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
+function parseOpenAIReview(response) {
+    const reviews = new Map();
+    // Split the response into lines
+    const lines = response.split('\n');
+    // Regular expression to match the line number and comment format
+    const lineNumberRegex = /^(\d+):\s*$/;
+    const commentSeparator = '---';
+    let currentLineNumber = null;
+    let currentComment = '';
+    for (const line of lines) {
+        // Check if the line matches the line number format
+        const lineNumberMatch = line.match(lineNumberRegex);
+        if (lineNumberMatch) {
+            // If there is a previous comment, store it in the reviews Map
+            if (currentLineNumber !== null) {
+                reviews.set(currentLineNumber, currentComment.trim());
+            }
+            // Set the current line number and reset the comment
+            currentLineNumber = parseInt(lineNumberMatch[1], 10);
+            currentComment = '';
+            continue;
+        }
+        // Check if the line is a comment separator
+        if (line.trim() === commentSeparator) {
+            // If there is a previous comment, store it in the reviews Map
+            if (currentLineNumber !== null) {
+                reviews.set(currentLineNumber, currentComment.trim());
+            }
+            // Reset the current line number and comment
+            currentLineNumber = null;
+            currentComment = '';
+            continue;
+        }
+        // If there is a current line number, add the line to the current comment
+        if (currentLineNumber !== null) {
+            currentComment += `${line}\n`;
+        }
+    }
+    // If there is a comment at the end of the response, store it in the reviews Map
+    if (currentLineNumber !== null) {
+        reviews.set(currentLineNumber, currentComment.trim());
+    }
+    return reviews;
+}
 
 
 /***/ }),

@@ -21,7 +21,7 @@ const repo = context.repo
 const ASK_BOT = '@openai'
 
 export const handleReviewComment = async (
-  bot: Bot,
+  heavyBot: Bot,
   options: Options,
   prompts: Prompts
 ) => {
@@ -134,30 +134,16 @@ export const handleReviewComment = async (
         inputs.summary = summary.body
       }
 
-      // begin comment generation
-      const [, comment_begin_ids] = await bot.chat(
-        prompts.render_comment_beginning(inputs),
-        {}
-      )
-      let next_comment_ids = comment_begin_ids
       if (file_content.length > 0) {
-        inputs.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
           file_content_tokens < options.review_token_limits.extra_content_tokens
         ) {
-          const [file_content_resp, file_content_ids] = await bot.chat(
-            prompts.render_comment_file(inputs),
-            next_comment_ids
-          )
-          if (file_content_resp) {
-            next_comment_ids = file_content_ids
-          }
+          inputs.file_content = file_content
         }
       }
 
       if (file_diff.length > 0) {
-        inputs.file_diff = file_diff
         // use file diff if no diff was found in the comment
         if (inputs.diff.length === 0) {
           inputs.diff = file_diff
@@ -166,20 +152,11 @@ export const handleReviewComment = async (
         if (
           file_diff_tokens < options.review_token_limits.extra_content_tokens
         ) {
-          const [file_diff_resp, file_diff_ids] = await bot.chat(
-            prompts.render_comment_file_diff(inputs),
-            next_comment_ids
-          )
-          if (file_diff_resp) {
-            next_comment_ids = file_diff_ids
-          }
+          inputs.file_diff = file_diff
         }
       }
 
-      const [reply] = await bot.chat(
-        prompts.render_comment(inputs),
-        next_comment_ids
-      )
+      const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {})
 
       if (topLevelComment) {
         await commenter.review_comment_reply(

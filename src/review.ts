@@ -16,8 +16,8 @@ const context = github.context
 const repo = context.repo
 
 export const codeReview = async (
-  summaryBot: Bot,
-  reviewBot: Bot,
+  lightBot: Bot,
+  heavyBot: Bot,
   options: Options,
   prompts: Prompts
 ): Promise<void> => {
@@ -114,7 +114,6 @@ export const codeReview = async (
 
       let file_diff = ''
       if (file.patch) {
-        core.info(`diff for ${file.filename}: ${file.patch}`)
         file_diff = file.patch
       }
 
@@ -146,7 +145,12 @@ export const codeReview = async (
       ins.filename = filename
 
       if (file_content.length > 0) {
-        ins.file_content = file_content
+        if (
+          tokenizer.get_token_count(file_content) <
+          options.summary_token_limits.extra_content_tokens
+        ) {
+          ins.file_content = file_content
+        }
       }
 
       if (file_diff.length > 0) {
@@ -163,8 +167,8 @@ export const codeReview = async (
         ) {
           // summarize content
           try {
-            const [summarize_resp] = await summaryBot.chat(
-              prompts.render_summarize_beginning_and_diff(ins),
+            const [summarize_resp] = await lightBot.chat(
+              prompts.render_summarize_file_diff(ins),
               {}
             )
 
@@ -218,10 +222,7 @@ ${filename}: ${summary}
 
     // final summary
     const [summarize_final_response, summarize_final_response_ids] =
-      await summaryBot.chat(
-        prompts.render_summarize(inputs),
-        next_summarize_ids
-      )
+      await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
     if (!summarize_final_response) {
       core.info('summarize: nothing obtained from openai')
     } else {
@@ -270,72 +271,43 @@ ${
 }
 `
 
-      next_summarize_ids = summarize_final_response_ids
       await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
-    }
 
-    // final release notes
-    const [release_notes_response, release_notes_ids] = await summaryBot.chat(
-      prompts.render_summarize_release_notes(inputs),
-      next_summarize_ids
-    )
-    if (!release_notes_response) {
-      core.info('release notes: nothing obtained from openai')
-    } else {
-      next_summarize_ids = release_notes_ids
-      let message = '### Summary by OpenAI\n\n'
-      message += release_notes_response
-      commenter.update_description(context.payload.pull_request.number, message)
+      // final release notes
+      next_summarize_ids = summarize_final_response_ids
+      const [release_notes_response, release_notes_ids] = await heavyBot.chat(
+        prompts.render_summarize_release_notes(inputs),
+        next_summarize_ids
+      )
+      if (!release_notes_response) {
+        core.info('release notes: nothing obtained from openai')
+      } else {
+        next_summarize_ids = release_notes_ids
+        let message = '### Summary by OpenAI\n\n'
+        message += release_notes_response
+        commenter.update_description(
+          context.payload.pull_request.number,
+          message
+        )
+      }
     }
-
-    // Review Stage
-    const [, review_begin_ids] = await reviewBot.chat(
-      prompts.render_review_beginning(inputs),
-      {}
-    )
 
     const review = async (
       filename: string,
       file_content: string,
-      file_diff: string,
       patches: [number, string][]
     ): Promise<void> => {
-      // reset chat session for each file while reviewing
-      let next_review_ids = review_begin_ids
-
       // make a copy of inputs
       const ins: Inputs = inputs.clone()
 
       ins.filename = filename
 
       if (file_content.length > 0) {
-        ins.file_content = file_content
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
           file_content_tokens < options.review_token_limits.extra_content_tokens
         ) {
-          try {
-            // review file
-            const [resp, review_file_ids] = await reviewBot.chat(
-              prompts.render_review_file(ins),
-              next_review_ids
-            )
-            if (!resp) {
-              core.info('review: nothing obtained from openai')
-            } else {
-              next_review_ids = review_file_ids
-              if (!resp.includes('LGTM')) {
-                // TODO: add file level comments via API once it's available
-                // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
-                // For now comment on the PR itself
-                const tag = `<!-- openai-review-file-${filename} -->`
-                const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`
-                await commenter.comment(comment, tag, 'replace')
-              }
-            }
-          } catch (error) {
-            core.warning(`review: error from openai: ${error}`)
-          }
+          ins.file_content = file_content
         } else {
           core.info(
             `skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`
@@ -343,48 +315,12 @@ ${
         }
       }
 
-      if (file_diff.length > 0) {
-        ins.file_diff = file_diff
-        const file_diff_tokens = tokenizer.get_token_count(file_diff)
-        if (
-          file_diff_tokens < options.review_token_limits.extra_content_tokens
-        ) {
-          try {
-            // review diff
-            const [resp, review_diff_ids] = await reviewBot.chat(
-              prompts.render_review_file_diff(ins),
-              next_review_ids
-            )
-            if (!resp) {
-              core.info('review: nothing obtained from openai')
-            } else {
-              next_review_ids = review_diff_ids
-            }
-          } catch (error) {
-            core.warning(`review: error from openai: ${error}`)
-          }
-        } else {
-          core.info(
-            `skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`
-          )
-        }
-      }
-
-      // review_patch_begin
-      const [, patch_begin_ids] = await reviewBot.chat(
-        prompts.render_review_patch_begin(ins),
-        next_review_ids
-      )
-      next_review_ids = patch_begin_ids
-
       for (const [line, patch] of patches) {
-        core.info(`Reviewing ${filename}:${line} with openai ...`)
-        ins.patch = patch
         if (!context.payload.pull_request) {
           core.warning('No pull request found, skipping.')
           continue
         }
-
+        let comment_chain = 'no comments on this patch'
         try {
           // get existing comments on the line
           const all_chains = await commenter.get_conversation_chains_at_line(
@@ -395,9 +331,9 @@ ${
           )
 
           if (all_chains.length > 0) {
-            ins.comment_chain = all_chains
+            comment_chain = all_chains
           } else {
-            ins.comment_chain = 'no previous comments'
+            comment_chain = 'no previous comments'
           }
         } catch (e: unknown) {
           if (e instanceof ChatGPTError) {
@@ -406,18 +342,34 @@ ${
             )
           }
         }
-
-        try {
-          const [response, patch_ids] = await reviewBot.chat(
-            prompts.render_review_patch(ins),
-            next_review_ids
-          )
-          if (!response) {
-            core.info('review: nothing obtained from openai')
+        ins.patches += `${line}:
+\`\`\`text
+${comment_chain}
+\`\`\`diff
+${patch}
+\`\`\`
+---
+`
+      }
+      // perform review
+      try {
+        const [response] = await heavyBot.chat(
+          prompts.render_review_file_diff(ins),
+          {}
+        )
+        if (!response) {
+          core.info('review: nothing obtained from openai')
+          return
+        }
+        // parse review
+        const reviewMap = parseOpenAIReview(response)
+        for (const [line, review_comment] of reviewMap) {
+          // check for LGTM
+          if (!options.review_comment_lgtm && review_comment.includes('LGTM')) {
             continue
           }
-          next_review_ids = patch_ids
-          if (!options.review_comment_lgtm && response.includes('LGTM')) {
+          if (!context.payload.pull_request) {
+            core.warning('No pull request found, skipping.')
             continue
           }
           await commenter.review_comment(
@@ -425,40 +377,24 @@ ${
             commits[commits.length - 1].sha,
             filename,
             line,
-            `${response}`
+            `${review_comment}`
           )
-        } catch (e: unknown) {
-          if (e instanceof ChatGPTError) {
-            core.warning(`Failed to comment: ${e}, skipping.
-        backtrace: ${e.stack}
-        filename: ${filename}
-        line: ${line}
-        patch: ${patch}`)
-          }
         }
+      } catch (e: any) {
+        core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`)
       }
     }
 
-    // Use Promise.all to run file review processes in parallel
-    //     openai_concurrency_limit(async () =>
-    //       review(filename, file_content, file_diff, patches)
-    //     )
-    // )
     const reviewPromises = []
     const skipped_files_to_review = []
-    for (const [
-      filename,
-      file_content,
-      file_diff,
-      patches
-    ] of files_to_review) {
+    for (const [filename, file_content, , patches] of files_to_review) {
       if (
         options.max_files_to_review <= 0 ||
         reviewPromises.length < options.max_files_to_review
       ) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
-            review(filename, file_content, file_diff, patches)
+            review(filename, file_content, patches)
           )
         )
       } else {
@@ -532,4 +468,60 @@ const patch_comment_line = (patch: string): number => {
   } else {
     return -1
   }
+}
+
+function parseOpenAIReview(response: string): Map<number, string> {
+  const reviews = new Map<number, string>()
+
+  // Split the response into lines
+  const lines = response.split('\n')
+
+  // Regular expression to match the line number and comment format
+  const lineNumberRegex = /^(\d+):\s*$/
+  const commentSeparator = '---'
+
+  let currentLineNumber: number | null = null
+  let currentComment = ''
+
+  for (const line of lines) {
+    // Check if the line matches the line number format
+    const lineNumberMatch = line.match(lineNumberRegex)
+
+    if (lineNumberMatch) {
+      // If there is a previous comment, store it in the reviews Map
+      if (currentLineNumber !== null) {
+        reviews.set(currentLineNumber, currentComment.trim())
+      }
+
+      // Set the current line number and reset the comment
+      currentLineNumber = parseInt(lineNumberMatch[1], 10)
+      currentComment = ''
+      continue
+    }
+
+    // Check if the line is a comment separator
+    if (line.trim() === commentSeparator) {
+      // If there is a previous comment, store it in the reviews Map
+      if (currentLineNumber !== null) {
+        reviews.set(currentLineNumber, currentComment.trim())
+      }
+
+      // Reset the current line number and comment
+      currentLineNumber = null
+      currentComment = ''
+      continue
+    }
+
+    // If there is a current line number, add the line to the current comment
+    if (currentLineNumber !== null) {
+      currentComment += `${line}\n`
+    }
+  }
+
+  // If there is a comment at the end of the response, store it in the reviews Map
+  if (currentLineNumber !== null) {
+    reviews.set(currentLineNumber, currentComment.trim())
+  }
+
+  return reviews
 }

@@ -24,25 +24,18 @@ async function run(): Promise<void> {
   options.print()
 
   const prompts: Prompts = new Prompts(
-    core.getInput('review_beginning'),
-    core.getInput('review_file'),
     core.getInput('review_file_diff'),
-    core.getInput('review_patch_begin'),
-    core.getInput('review_patch'),
-    core.getInput('summarize_beginning_and_diff'),
+    core.getInput('summarize_file_diff'),
     core.getInput('summarize'),
     core.getInput('summarize_release_notes'),
-    core.getInput('comment_beginning'),
-    core.getInput('comment_file'),
-    core.getInput('comment_file_diff'),
     core.getInput('comment')
   )
 
   // Create two bots, one for summary and one for review
 
-  let summaryBot: Bot | null = null
+  let lightBot: Bot | null = null
   try {
-    summaryBot = new Bot(
+    lightBot = new Bot(
       options,
       new OpenAIOptions(
         options.openai_summary_model,
@@ -56,9 +49,9 @@ async function run(): Promise<void> {
     return
   }
 
-  let reviewBot: Bot | null = null
+  let heavyBot: Bot | null = null
   try {
-    reviewBot = new Bot(
+    heavyBot = new Bot(
       options,
       new OpenAIOptions(
         options.openai_review_model,
@@ -78,11 +71,11 @@ async function run(): Promise<void> {
       process.env.GITHUB_EVENT_NAME === 'pull_request' ||
       process.env.GITHUB_EVENT_NAME === 'pull_request_target'
     ) {
-      await codeReview(summaryBot, reviewBot, options, prompts)
+      await codeReview(lightBot, heavyBot, options, prompts)
     } else if (
       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
     ) {
-      await handleReviewComment(reviewBot, options, prompts)
+      await handleReviewComment(heavyBot, options, prompts)
     } else {
       core.warning(
         'Skipped: this action only works on push events or pull_request'
