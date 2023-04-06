@@ -18,7 +18,7 @@ export const codeReview = async (
   bot: Bot,
   options: Options,
   prompts: Prompts
-) => {
+): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
   const openai_concurrency_limit = pLimit(options.openai_concurrency_limit)
@@ -122,12 +122,7 @@ export const codeReview = async (
         patches.push([line, patch])
       }
       if (patches.length > 0) {
-        return [file.filename, file_content, file_diff, patches] as [
-          string,
-          string,
-          string,
-          [number, string][]
-        ]
+        return [file.filename, file_content, file_diff, patches]
       } else {
         return null
       }
@@ -233,8 +228,9 @@ ${filename}: ${summary}
 
 ---
 
-${filter_ignored_files.length > 0
-          ? `
+${
+  filter_ignored_files.length > 0
+    ? `
 <details>
 <summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
 
@@ -244,14 +240,16 @@ ${filter_ignored_files.length > 0
 
 </details>
 `
-          : ''
-        }
+    : ''
+}
 
-${skipped_files_to_summarize.length > 0
-          ? `
+${
+  skipped_files_to_summarize.length > 0
+    ? `
 <details>
-<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length
-          })</summary>
+<summary>Files not summarized due to max files limit (${
+        skipped_files_to_summarize.length
+      })</summary>
 
 ### Not summarized
 
@@ -259,8 +257,8 @@ ${skipped_files_to_summarize.length > 0
 
 </details>
 `
-          : ''
-        }
+    : ''
+}
 `
 
       next_summarize_ids = summarize_final_response_ids
@@ -457,10 +455,12 @@ ${skipped_files_to_summarize.length > 0
     if (skipped_files_to_review.length > 0) {
       // make bullet points for skipped files
       const comment = `
-      ${skipped_files_to_review.length > 0
+      ${
+        skipped_files_to_review.length > 0
           ? `<details>
-<summary>Files not reviewed due to max files limit (${skipped_files_to_review.length
-          })</summary>
+<summary>Files not reviewed due to max files limit (${
+              skipped_files_to_review.length
+            })</summary>
 
 ### Not reviewed
 
@@ -469,7 +469,7 @@ ${skipped_files_to_summarize.length > 0
 </details>
 `
           : ''
-        }
+      }
       `
       if (comment.length > 0) {
         await commenter.comment(comment, SUMMARIZE_TAG, 'append')
