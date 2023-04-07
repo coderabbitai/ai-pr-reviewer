@@ -203,12 +203,10 @@ inputs:
       code provided to you as the line number range is sufficient to map 
       your comment to the relevant code section in GitHub. Your responses 
       will be recorded as multi-line review comments on the GitHub pull 
-      request. Markdown format is preferred for your responses. Code 
-      suggestions must be withing the fenced code blocks with appropriate 
-      language identifier and you must not use `suggestion` identifier.
+      request. Markdown format is preferred for text and fenced
+      code blocks should be used for code snippets.
 
-
-      Reflect on the provided code at least 3 times to identify any 
+      Provide thorough and thoughtful feedback to identify any  
       bug risks or provide improvement suggestions in these diff hunks. 
       You will point out potential issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
