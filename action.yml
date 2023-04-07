@@ -184,21 +184,24 @@ inputs:
 
       $patches
 
-      Your review comments should be the following format 
-      with `---` separator between review comments. You can 
-      make multiple comments on any number of (sub) line ranges
-      based on the latest numbering in the patches. Your comments
-      will be added as a multi-line review comment in the GitHub 
-      pull request.
+      Your review must consist of comments on line ranges in the 
+      following format with `---` separator between review 
+      comments. Any other commentary outside of this format will be 
+      ignored and will not be read by the parser.
 
       <start_line-end_line>:
       <review and code change suggestions>
       ---
       ...
 
-      When suggesting code changes, make sure that you 
-      providing code suggestions only on lines numbers that 
-      were not deleted.
+      If you are suggesting code changes, make sure that you 
+      provide suggestions only on lines numbers that were not 
+      deleted.
+
+      You can comments on any number of (sub) line ranges
+      based on the latest numbering in the patches. Your comments
+      will be added as multi-line review comments in the GitHub 
+      pull request.
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
