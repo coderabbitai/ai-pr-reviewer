@@ -94,30 +94,31 @@ inputs:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      GitHub pull request has the title "$title" and the following description:
+      GitHub pull request has the title - 
+      `$title` 
 
+      Here is the description -
       ```
       $description
       ```
-      I am providing diff for `$filename` below. I would like you to summarize 
-      the diff within 50 words.
 
+      Here is the diff for `$filename` -
       ```diff
       $file_diff
       ```
+
+      I would like you to summarize the diff within 50 words.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      This is the end of the summarization session. Below is the summary you have 
-      generated so far for each file.
-
+      Here is the summary of changes you have generated for each file -
       ```
       $summary
       ```
 
-      Please provide your final response in the `markdown` format with 
-      the following content:
+      Provide your final response in the `markdown` format with 
+      the following content -
         - Thank the user for letting you participate in the code review. 
         - High-level summary (comment on the overall change instead of 
           specific files within 80 words)
@@ -125,10 +126,12 @@ inputs:
           similar changes together into one row to save space.
 
       Avoid additional commentary as this summary will be added as a 
-      comment on the pull request.
+      comment on the GitHub pull request.
   summarize_release_notes:
     required: false
-    description: 'The prompt for generating release notes'
+    description:
+      'The prompt for generating release notes in the same chat as summarize
+      stage'
     default: |
       Create concise release notes in `markdown` format for this pull request, 
       focusing on its purpose and user story. You can classify the changes as 
@@ -145,33 +148,37 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      GitHub pull request has the title "$title" and the following description:
+      GitHub pull request has the title - 
+      `$title` 
 
+      Here is the description -
       ```
       $description
       ```
 
-      The OpenAI-generated summary is as follows:
-
+      Here is the OpenAI generated summary -
       ```
       $summary
       ```
 
-      Content of `$filename` is follows.
-
+      Here is the content of file `$filename` -
       ```
       $file_content
       ```
 
-      Format for changes and review comments on line ranges. 
-      `---` separator is used.
-
+      Format for changes and review comments (if any) 
+      on line ranges -
       <start_line-end_line>: 
       ```diff
       <diff_hunk>
       ```
       ```text
-      <existing review comments on diff_hunk, if any>
+      <existing review comments>
+      ```
+      ---
+      <start_line-end_line>: 
+      ```diff
+      <diff_hunk>
       ```
       ---
       ...
@@ -181,20 +188,29 @@ inputs:
       displaying added, removed, and unchanged lines with 
       "+" or "-" prefixes and surrounding context lines. 
 
-      Diff hunks for review are below -
-
+      Changes for review -
       $patches
 
       Your review must consist of comments in the below format 
       with a separator between review comments. Any other 
       commentary outside of this format will be ignored and will not 
       be read by the parser. Make sure to use the line numbers exactly 
-      as provided above.
-
+      as provided above -
       <start_line-end_line>:
       <review>
       ---
+      <start_line-end_line>:
+      <review>
+      ```suggestion
+      <replacement code from start_line>
+      ```
+      ---
       ...
+
+      The replacement code you suggest must not be in the diff format and 
+      must the exact code that will replace existing code from the start_line. 
+      The suggestion must include context lines from diff hunk even if they 
+      are unchanged.
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
@@ -213,52 +229,42 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      A comment was made on a review for a diff hunk on file 
-      `$filename`. I would like you to follow the instructions 
-      in that comment. 
+      A comment was made on a GitHub pull request review for a 
+      diff hunk on file `$filename`. I would like you to follow 
+      the instructions in that comment. 
 
-      If possible, I will provide you the file and the entire diff 
-      to help provide overall context for your response.
+      Here is the title -
+      `$title`
 
-      The pull request has the title "$title" and the following 
-      description:
-
+      Here is the description-
       ```
       $description
       ```
 
-      The OpenAI-generated summary is as follows:
-
+      Here is the OpenAI generated summary -
       ```
       $summary
       ```
 
-      Here is the content of file.
-
+      Here is the content of file -
       ```
       $file_content
       ```
 
-      Here is the entire diff.
-
+      Here is the entire diff -
       ```diff
       $file_diff
       ```
 
-      I would like you to follow the instructions in the new 
-      comment made on a conversation chain on a code review diff.
-
-      Diff being commented on:
-
+      Here is diff being commented on -
       ```diff
       $diff
       ```
 
-      The format of the conversation chain is:
+      The format of the conversation chain is -
       `user: comment`
 
-      Conversation chain (including the new comment):
-
+      Conversation chain (including the new comment) -
       ```
       $comment_chain
       ```
@@ -273,8 +279,7 @@ inputs:
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".
 
-      The comment/request that you need to directly reply to:
-
+      The comment/request that you need to directly reply to -
       ```
       $comment
       ```
