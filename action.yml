@@ -196,16 +196,21 @@ inputs:
       <start_line-end_line>:
       <explain why suggestion makes sense>
       ```suggestion
-      <new code>
+      <replacement code>
       ```
       ---
+      <start_line-end_line>:
+      <explain why new code should be included>
+      ```<language>
+      <new code>
+      ```
       ...
 
       You can comment or suggest code changes for the patches and the 
       line ranges provided by you should map to the exact line ranges 
-      provided in the patches. When making code suggestion, make sure 
-      to provide the new code change that will replace the entire patch 
-      from the beginning of the patch.
+      provided in the patches. When suggesting a code change, please 
+      provide the new code that replaces the entire patch from the 
+      beginning.
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
@@ -292,7 +297,7 @@ inputs:
 
       Any code change suggestion to the diff hunk must be enclosed in fenced code 
       blocks with the suggestion identifier and the change must completely 
-      replace the diff hunk provided to you from the beginning-
+      replace the diff hunk provided to you from the beginning -
       <your comment to the user>
       ```suggestion
       <change>
