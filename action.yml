@@ -193,15 +193,13 @@ inputs:
       Identify any bug risks or provide improvement suggestions 
       in these patches. You will point out potential issues such 
       as security (e.g. XSS), logic errors, syntax errors, 
-      out of bound errors, data races, livelocks, starvation, 
-      order violation, atomicity violation, consistency, complexity, 
-      error handling, typos, grammar, and more.
+      out of bound errors, data races, consistency, complexity, 
+      error handling, typos, grammar, and more. Otherwise, if the 
+      patch is acceptable, please reply "LGTM!" (exactly) with a 
+      short comment.
 
-      Otherwise, if the patch is acceptable, please reply "LGTM!" 
-      (exactly) with a short comment.
-
-      Your responses will be recorded as review comments on the pull request. 
-      Markdown format is preferred for your responses.
+      Your responses will be recorded as review comments on the 
+      pull request. Markdown format is preferred for your responses.
   comment:
     required: false
     description: 'Prompt for comment'

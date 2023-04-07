@@ -2426,6 +2426,7 @@ ${tag}`;
             const comments = await this.get_comments_at_line(pull_number, path, line);
             for (const comment of comments) {
                 if (comment.body.includes(tag)) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${line}: ${message}`);
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -2437,6 +2438,7 @@ ${tag}`;
                 }
             }
             if (!found) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${line}: ${message}`);
                 await octokit.pulls.createReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,

@@ -149,6 +149,7 @@ ${tag}`
       const comments = await this.get_comments_at_line(pull_number, path, line)
       for (const comment of comments) {
         if (comment.body.includes(tag)) {
+          core.info(`Updating review comment for ${path}:${line}: ${message}`)
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,
@@ -161,6 +162,7 @@ ${tag}`
       }
 
       if (!found) {
+        core.info(`Creating new review comment for ${path}:${line}: ${message}`)
         await octokit.pulls.createReviewComment({
           owner: repo.owner,
           repo: repo.repo,
