@@ -5171,10 +5171,10 @@ ${comment_chain}
         };
         const reviewPromises = [];
         const skipped_files_to_review = [];
-        for (const [filename, file_content, , hunks] of files_to_review) {
+        for (const [filename, file_content, , patches] of files_to_review) {
             if (options.max_files_to_review <= 0 ||
                 reviewPromises.length < options.max_files_to_review) {
-                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, hunks)));
+                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
             }
             else {
                 skipped_files_to_review.push(filename);
@@ -5255,7 +5255,7 @@ const parse_hunk = (hunk) => {
     }
     const old_hunk_lines = [];
     const new_hunk_lines = [];
-    let old_line = hunkInfo.old_hunk.start_line;
+    //let old_line = hunkInfo.old_hunk.start_line
     let new_line = hunkInfo.new_hunk.start_line;
     const lines = hunk.split('\n').slice(1); // Skip the @@ line
     // Remove the last line if it's empty
@@ -5265,7 +5265,7 @@ const parse_hunk = (hunk) => {
     lines.forEach(line => {
         if (line.startsWith('-')) {
             old_hunk_lines.push(`${line.substring(1)}`);
-            old_line++;
+            //old_line++
         }
         else if (line.startsWith('+')) {
             new_hunk_lines.push(`${new_line}: ${line.substring(1)}`);
@@ -5274,7 +5274,7 @@ const parse_hunk = (hunk) => {
         else {
             old_hunk_lines.push(`${line}`);
             new_hunk_lines.push(`${new_line}: ${line}`);
-            old_line++;
+            //old_line++
             new_line++;
         }
     });

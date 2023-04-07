@@ -435,14 +435,14 @@ ${comment_chain}
 
     const reviewPromises = []
     const skipped_files_to_review = []
-    for (const [filename, file_content, , hunks] of files_to_review) {
+    for (const [filename, file_content, , patches] of files_to_review) {
       if (
         options.max_files_to_review <= 0 ||
         reviewPromises.length < options.max_files_to_review
       ) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
-            do_review(filename, file_content, hunks)
+            do_review(filename, file_content, patches)
           )
         )
       } else {
@@ -542,7 +542,7 @@ const parse_hunk = (
   const old_hunk_lines: string[] = []
   const new_hunk_lines: string[] = []
 
-  let old_line = hunkInfo.old_hunk.start_line
+  //let old_line = hunkInfo.old_hunk.start_line
   let new_line = hunkInfo.new_hunk.start_line
 
   const lines = hunk.split('\n').slice(1) // Skip the @@ line
@@ -555,14 +555,14 @@ const parse_hunk = (
   lines.forEach(line => {
     if (line.startsWith('-')) {
       old_hunk_lines.push(`${line.substring(1)}`)
-      old_line++
+      //old_line++
     } else if (line.startsWith('+')) {
       new_hunk_lines.push(`${new_line}: ${line.substring(1)}`)
       new_line++
     } else {
       old_hunk_lines.push(`${line}`)
       new_hunk_lines.push(`${new_line}: ${line}`)
-      old_line++
+      //old_line++
       new_line++
     }
   })
