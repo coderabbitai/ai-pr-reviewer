@@ -201,7 +201,7 @@ inputs:
       <start_line-end_line>:
       <explain why suggestion makes sense>
       ```suggestion
-      <replacement code>
+      <replacement code that completely replaces the line range>
       ```
       ---
       <start_line-end_line>:
@@ -213,9 +213,11 @@ inputs:
 
       You can comment or suggest code changes for the patches and the 
       line ranges provided by you should map to the exact line ranges 
-      provided in the patches. When suggesting a code change, please 
-      provide the new code that replaces the entire patch from the 
-      beginning.
+      provided in the patches. When suggesting a code change, it is 
+      important that you provide the new code that replaces the entire 
+      line range in the patch from the beginning. Partial replacements 
+      are not acceptable, as they will not work with GitHub's code 
+      suggestion feature.
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these patches. 
