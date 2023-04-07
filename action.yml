@@ -98,9 +98,7 @@ inputs:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      In this session, we will summarize a pull request and a diff alltogether. 
-
-      The pull request has the title "$title" and the following description:
+      GitHub pull request has the title "$title" and the following description:
 
       ```
       $description
@@ -151,7 +149,7 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      The pull request has the title "$title" and the following description:
+      GitHub pull request has the title "$title" and the following description:
 
       ```
       $description
@@ -186,15 +184,21 @@ inputs:
 
       $patches
 
-      Your review for each patch should be the following format 
-      with `---` separator between review comments. Make sure 
-      to use the line numbers ranges exactly where you want to make
-      code suggestions -
+      Your review comments should be the following format 
+      with `---` separator between review comments. You can 
+      make multiple comments on any number of (sub) line ranges
+      based on the latest numbering in the patches. Your comments
+      will be added as a multi-line review comment in the GitHub 
+      pull request.
 
       <start_line-end_line>:
       <review and code change suggestions>
       ---
       ...
+
+      When suggesting code changes, make sure that you 
+      providing code suggestions only on lines numbers that 
+      were not deleted.
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
@@ -207,8 +211,7 @@ inputs:
       as-is, please include "LGTM!" (exact word) in your short 
       review comment.
 
-      Your responses will be recorded as review comments on the 
-      pull request. Markdown format is preferred for your responses. 
+      Markdown format is preferred for your responses. 
       Any code change suggestion in the review must be enclosed in 
       fenced code blocks with the suggestion identifier - 
       ```suggestion
