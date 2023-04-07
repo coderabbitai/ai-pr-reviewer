@@ -355,7 +355,7 @@ ${
             )
           }
         }
-        ins.patches += `${end_line}:
+        ins.patches += `${start_line}-${end_line}:
 \`\`\`text
 ${comment_chain}
 \`\`\`

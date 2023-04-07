@@ -5094,7 +5094,7 @@ ${skipped_files_to_summarize.length > 0
                         core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                     }
                 }
-                ins.patches += `${end_line}:
+                ins.patches += `${start_line}-${end_line}:
 \`\`\`text
 ${comment_chain}
 \`\`\`
