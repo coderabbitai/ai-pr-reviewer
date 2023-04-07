@@ -189,7 +189,7 @@ inputs:
       ---
       ...
 
-      Reflect on the provided code a few times to identify any bug risks 
+      Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
       You will point out potential issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
