@@ -167,8 +167,8 @@ inputs:
       $file_content
       ```
 
-      Below is the format for diff patches. `---` 
-      separator is used between patches. 
+      Below is the format for patches. `---` 
+      separator is used between patches.
 
       <start_line-end_line>: 
       ```diff
@@ -180,12 +180,17 @@ inputs:
       ---
       ...
 
-      Patches for review -
+      The <diff_hunk> is in the unidiff format which 
+      represent the differences between two text files, 
+      displaying added, removed, and unchanged lines with 
+      "+" or "-" prefixes and surrounding context lines. 
+
+      Patches for review are below -
 
       $patches
 
-      Your review must consist of comments in the following format 
-      with `---` separator between review comments. Any other 
+      Your review must consist of comments in the below format 
+      with a separator between review comments. Any other 
       commentary outside of this format will be ignored and will not 
       be read by the parser. Your comments will be added as multi-line 
       review comments in the GitHub pull request.
@@ -196,27 +201,24 @@ inputs:
       <start_line-end_line>:
       <explain why suggestion makes sense>
       ```suggestion
-      <new code>
+      <replacement code>
       ```
       ---
+      <start_line-end_line>:
+      <explain why new code should be included>
+      ```<language>
+      <new code>
+      ```
       ...
 
-      You can comment or suggest code changes for any number 
-      of (sub) line ranges within the line ranges 
-      (start_line and end_line) as long as your line ranges are 
-      within the line ranges in the patches.
-      When suggesting code changes, the line ranges provided by you should 
-      map to exact line ranges that you wish to replace in the code 
-      with your new code suggestion. For example, if you are suggesting 
-      to replace 2 lines in code then the example comment could be -
-      100-101:
-      ```suggestion
-      print "Hello world"
-      end
-      ```
+      You can comment or suggest code changes for the patches and the 
+      line ranges provided by you should map to the exact line ranges 
+      provided in the patches. When suggesting a code change, please 
+      provide the new code that replaces the entire patch from the 
+      beginning.
 
-      Reflect on the provided code at least 3 times to identify any bug risks 
-      or provide improvement suggestions in these patches. 
+      Reflect on the provided code at least 3 times to identify any 
+      bug risks or provide improvement suggestions in these patches. 
       You will point out potential issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
       complexity, error handling, typos, grammar, maintainability, 
@@ -295,10 +297,12 @@ inputs:
 
       If the comment contains instructions/requests for you, please comply. 
       For example, if the comment is asking you to generate documentation 
-      comments on the code, in your reply please generate the required code.
-      Any code change suggestion in the response must be enclosed in fenced code 
-      blocks with the suggestion identifier and must be in the line range
-      of diff hunk provided to you -
+      comments on the code, in your reply please generate the required code
+      and provide as fenced code block in markdown.
+
+      Any code change suggestion to the diff hunk must be enclosed in fenced code 
+      blocks with the suggestion identifier and the change must completely 
+      replace the diff hunk provided to you from the beginning -
       <your comment to the user>
       ```suggestion
       <change>
