@@ -207,8 +207,8 @@ inputs:
 
       It's important that <start_line_number_new_code> and 
       <end_line_number_new_code> for each review must be within 
-      line ranges of new hunks as you cannot make comments 
-      on line numbers of old hunks. Don't echo back the 
+      line ranges of new_hunks as you cannot make comments 
+      on line numbers of old_hunks. Don't echo back the 
       code provided to you as the line number range is sufficient to map 
       your comment to the relevant code section in GitHub. Your responses 
       will be recorded as multi-line review comments on the GitHub pull 

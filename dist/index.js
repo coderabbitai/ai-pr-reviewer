@@ -4941,12 +4941,12 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             if (!hunks) {
                 continue;
             }
-            const hunks_str = `old hunk:
+            const hunks_str = `old_hunk:
 \`\`\`
 ${hunks.old_hunk}
 \`\`\`
 ---
-new hunk:
+new_hunk:
 \`\`\`
 ${hunks.new_hunk}
 \`\`\`
