@@ -16,18 +16,21 @@ export class Bot {
 
   private options: optionsJs.Options
 
-  constructor(options: optionsJs.Options) {
+  constructor(
+    options: optionsJs.Options,
+    openaiOptions: optionsJs.OpenAIOptions
+  ) {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
       this.api = new openai.ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
         debug: options.debug,
-        maxModelTokens: options.max_model_tokens,
-        maxResponseTokens: options.max_tokens_for_response,
+        maxModelTokens: openaiOptions.token_limits.max_tokens,
+        maxResponseTokens: openaiOptions.token_limits.response_tokens,
         completionParams: {
           temperature: options.openai_model_temperature,
-          model: options.openai_model
+          model: openaiOptions.model
         }
       })
     } else {
@@ -54,9 +57,6 @@ export class Bot {
     const start = Date.now()
     if (!message) {
       return ['', {}]
-    }
-    if (this.options.debug) {
-      core.info(`sending to openai: ${message}`)
     }
 
     let response: openai.ChatMessage | undefined

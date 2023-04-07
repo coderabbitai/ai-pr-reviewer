@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 6877:
+/***/ 474:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -2172,1185 +2172,8 @@ if (!globalThis.fetch) {
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
-// EXTERNAL MODULE: ./node_modules/keyv/src/index.js
-var src = __nccwpck_require__(1531);
-;// CONCATENATED MODULE: ./node_modules/p-timeout/index.js
-class TimeoutError extends Error {
-	constructor(message) {
-		super(message);
-		this.name = 'TimeoutError';
-	}
-}
-
-/**
-An error to be thrown when the request is aborted by AbortController.
-DOMException is thrown instead of this Error when DOMException is available.
-*/
-class p_timeout_AbortError extends Error {
-	constructor(message) {
-		super();
-		this.name = 'AbortError';
-		this.message = message;
-	}
-}
-
-/**
-TODO: Remove AbortError and just throw DOMException when targeting Node 18.
-*/
-const getDOMException = errorMessage => globalThis.DOMException === undefined
-	? new p_timeout_AbortError(errorMessage)
-	: new DOMException(errorMessage);
-
-/**
-TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
-*/
-const getAbortedReason = signal => {
-	const reason = signal.reason === undefined
-		? getDOMException('This operation was aborted.')
-		: signal.reason;
-
-	return reason instanceof Error ? reason : getDOMException(reason);
-};
-
-function pTimeout(promise, options) {
-	const {
-		milliseconds,
-		fallback,
-		message,
-		customTimers = {setTimeout, clearTimeout},
-	} = options;
-
-	let timer;
-
-	const cancelablePromise = new Promise((resolve, reject) => {
-		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
-			throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
-		}
-
-		if (milliseconds === Number.POSITIVE_INFINITY) {
-			resolve(promise);
-			return;
-		}
-
-		if (options.signal) {
-			const {signal} = options;
-			if (signal.aborted) {
-				reject(getAbortedReason(signal));
-			}
-
-			signal.addEventListener('abort', () => {
-				reject(getAbortedReason(signal));
-			});
-		}
-
-		// We create the error outside of `setTimeout` to preserve the stack trace.
-		const timeoutError = new TimeoutError();
-
-		timer = customTimers.setTimeout.call(undefined, () => {
-			if (fallback) {
-				try {
-					resolve(fallback());
-				} catch (error) {
-					reject(error);
-				}
-
-				return;
-			}
-
-			if (typeof promise.cancel === 'function') {
-				promise.cancel();
-			}
-
-			if (message === false) {
-				resolve();
-			} else if (message instanceof Error) {
-				reject(message);
-			} else {
-				timeoutError.message = message ?? `Promise timed out after ${milliseconds} milliseconds`;
-				reject(timeoutError);
-			}
-		}, milliseconds);
-
-		(async () => {
-			try {
-				resolve(await promise);
-			} catch (error) {
-				reject(error);
-			} finally {
-				customTimers.clearTimeout.call(undefined, timer);
-			}
-		})();
-	});
-
-	cancelablePromise.clear = () => {
-		customTimers.clearTimeout.call(undefined, timer);
-		timer = undefined;
-	};
-
-	return cancelablePromise;
-}
-
-;// CONCATENATED MODULE: ./node_modules/quick-lru/index.js
-class QuickLRU extends Map {
-	constructor(options = {}) {
-		super();
-
-		if (!(options.maxSize && options.maxSize > 0)) {
-			throw new TypeError('`maxSize` must be a number greater than 0');
-		}
-
-		if (typeof options.maxAge === 'number' && options.maxAge === 0) {
-			throw new TypeError('`maxAge` must be a number greater than 0');
-		}
-
-		// TODO: Use private class fields when ESLint supports them.
-		this.maxSize = options.maxSize;
-		this.maxAge = options.maxAge || Number.POSITIVE_INFINITY;
-		this.onEviction = options.onEviction;
-		this.cache = new Map();
-		this.oldCache = new Map();
-		this._size = 0;
-	}
-
-	// TODO: Use private class methods when targeting Node.js 16.
-	_emitEvictions(cache) {
-		if (typeof this.onEviction !== 'function') {
-			return;
-		}
-
-		for (const [key, item] of cache) {
-			this.onEviction(key, item.value);
-		}
-	}
-
-	_deleteIfExpired(key, item) {
-		if (typeof item.expiry === 'number' && item.expiry <= Date.now()) {
-			if (typeof this.onEviction === 'function') {
-				this.onEviction(key, item.value);
-			}
-
-			return this.delete(key);
-		}
-
-		return false;
-	}
-
-	_getOrDeleteIfExpired(key, item) {
-		const deleted = this._deleteIfExpired(key, item);
-		if (deleted === false) {
-			return item.value;
-		}
-	}
-
-	_getItemValue(key, item) {
-		return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
-	}
-
-	_peek(key, cache) {
-		const item = cache.get(key);
-
-		return this._getItemValue(key, item);
-	}
-
-	_set(key, value) {
-		this.cache.set(key, value);
-		this._size++;
-
-		if (this._size >= this.maxSize) {
-			this._size = 0;
-			this._emitEvictions(this.oldCache);
-			this.oldCache = this.cache;
-			this.cache = new Map();
-		}
-	}
-
-	_moveToRecent(key, item) {
-		this.oldCache.delete(key);
-		this._set(key, item);
-	}
-
-	* _entriesAscending() {
-		for (const item of this.oldCache) {
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield item;
-				}
-			}
-		}
-
-		for (const item of this.cache) {
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield item;
-			}
-		}
-	}
-
-	get(key) {
-		if (this.cache.has(key)) {
-			const item = this.cache.get(key);
-
-			return this._getItemValue(key, item);
-		}
-
-		if (this.oldCache.has(key)) {
-			const item = this.oldCache.get(key);
-			if (this._deleteIfExpired(key, item) === false) {
-				this._moveToRecent(key, item);
-				return item.value;
-			}
-		}
-	}
-
-	set(key, value, {maxAge = this.maxAge} = {}) {
-		const expiry =
-			typeof maxAge === 'number' && maxAge !== Number.POSITIVE_INFINITY ?
-				Date.now() + maxAge :
-				undefined;
-		if (this.cache.has(key)) {
-			this.cache.set(key, {
-				value,
-				expiry
-			});
-		} else {
-			this._set(key, {value, expiry});
-		}
-	}
-
-	has(key) {
-		if (this.cache.has(key)) {
-			return !this._deleteIfExpired(key, this.cache.get(key));
-		}
-
-		if (this.oldCache.has(key)) {
-			return !this._deleteIfExpired(key, this.oldCache.get(key));
-		}
-
-		return false;
-	}
-
-	peek(key) {
-		if (this.cache.has(key)) {
-			return this._peek(key, this.cache);
-		}
-
-		if (this.oldCache.has(key)) {
-			return this._peek(key, this.oldCache);
-		}
-	}
-
-	delete(key) {
-		const deleted = this.cache.delete(key);
-		if (deleted) {
-			this._size--;
-		}
-
-		return this.oldCache.delete(key) || deleted;
-	}
-
-	clear() {
-		this.cache.clear();
-		this.oldCache.clear();
-		this._size = 0;
-	}
-
-	resize(newSize) {
-		if (!(newSize && newSize > 0)) {
-			throw new TypeError('`maxSize` must be a number greater than 0');
-		}
-
-		const items = [...this._entriesAscending()];
-		const removeCount = items.length - newSize;
-		if (removeCount < 0) {
-			this.cache = new Map(items);
-			this.oldCache = new Map();
-			this._size = items.length;
-		} else {
-			if (removeCount > 0) {
-				this._emitEvictions(items.slice(0, removeCount));
-			}
-
-			this.oldCache = new Map(items.slice(removeCount));
-			this.cache = new Map();
-			this._size = 0;
-		}
-
-		this.maxSize = newSize;
-	}
-
-	* keys() {
-		for (const [key] of this) {
-			yield key;
-		}
-	}
-
-	* values() {
-		for (const [, value] of this) {
-			yield value;
-		}
-	}
-
-	* [Symbol.iterator]() {
-		for (const item of this.cache) {
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield [key, value.value];
-			}
-		}
-
-		for (const item of this.oldCache) {
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield [key, value.value];
-				}
-			}
-		}
-	}
-
-	* entriesDescending() {
-		let items = [...this.cache];
-		for (let i = items.length - 1; i >= 0; --i) {
-			const item = items[i];
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield [key, value.value];
-			}
-		}
-
-		items = [...this.oldCache];
-		for (let i = items.length - 1; i >= 0; --i) {
-			const item = items[i];
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield [key, value.value];
-				}
-			}
-		}
-	}
-
-	* entriesAscending() {
-		for (const [key, value] of this._entriesAscending()) {
-			yield [key, value.value];
-		}
-	}
-
-	get size() {
-		if (!this._size) {
-			return this.oldCache.size;
-		}
-
-		let oldCacheSize = 0;
-		for (const key of this.oldCache.keys()) {
-			if (!this.cache.has(key)) {
-				oldCacheSize++;
-			}
-		}
-
-		return Math.min(this._size + oldCacheSize, this.maxSize);
-	}
-
-	entries() {
-		return this.entriesAscending();
-	}
-
-	forEach(callbackFunction, thisArgument = this) {
-		for (const [key, value] of this.entriesAscending()) {
-			callbackFunction.call(thisArgument, value, key, this);
-		}
-	}
-
-	get [Symbol.toStringTag]() {
-		return JSON.stringify([...this.entriesAscending()]);
-	}
-}
-
-// EXTERNAL MODULE: ./node_modules/chatgpt/node_modules/uuid/dist/index.js
-var uuid_dist = __nccwpck_require__(6201);
-;// CONCATENATED MODULE: ./node_modules/chatgpt/node_modules/uuid/wrapper.mjs
-
-const v1 = uuid_dist.v1;
-const v3 = uuid_dist.v3;
-const v4 = uuid_dist.v4;
-const v5 = uuid_dist.v5;
-const NIL = uuid_dist/* NIL */.zR;
-const version = uuid_dist/* version */.i8;
-const validate = uuid_dist/* validate */.Gu;
-const stringify = uuid_dist/* stringify */.Pz;
-const parse = uuid_dist/* parse */.Qc;
-
-// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/tiktoken.cjs
-var tiktoken = __nccwpck_require__(3171);
-;// CONCATENATED MODULE: ./node_modules/eventsource-parser/dist/index.mjs
-function createParser(onParse) {
-  let isFirstChunk;
-  let buffer;
-  let startingPosition;
-  let startingFieldLength;
-  let eventId;
-  let eventName;
-  let data;
-  reset();
-  return {
-    feed,
-    reset
-  };
-
-  function reset() {
-    isFirstChunk = true;
-    buffer = "";
-    startingPosition = 0;
-    startingFieldLength = -1;
-    eventId = void 0;
-    eventName = void 0;
-    data = "";
-  }
-
-  function feed(chunk) {
-    buffer = buffer ? buffer + chunk : chunk;
-
-    if (isFirstChunk && hasBom(buffer)) {
-      buffer = buffer.slice(BOM.length);
-    }
-
-    isFirstChunk = false;
-    const length = buffer.length;
-    let position = 0;
-    let discardTrailingNewline = false;
-
-    while (position < length) {
-      if (discardTrailingNewline) {
-        if (buffer[position] === "\n") {
-          ++position;
-        }
-
-        discardTrailingNewline = false;
-      }
-
-      let lineLength = -1;
-      let fieldLength = startingFieldLength;
-      let character;
-
-      for (let index = startingPosition; lineLength < 0 && index < length; ++index) {
-        character = buffer[index];
-
-        if (character === ":" && fieldLength < 0) {
-          fieldLength = index - position;
-        } else if (character === "\r") {
-          discardTrailingNewline = true;
-          lineLength = index - position;
-        } else if (character === "\n") {
-          lineLength = index - position;
-        }
-      }
-
-      if (lineLength < 0) {
-        startingPosition = length - position;
-        startingFieldLength = fieldLength;
-        break;
-      } else {
-        startingPosition = 0;
-        startingFieldLength = -1;
-      }
-
-      parseEventStreamLine(buffer, position, fieldLength, lineLength);
-      position += lineLength + 1;
-    }
-
-    if (position === length) {
-      buffer = "";
-    } else if (position > 0) {
-      buffer = buffer.slice(position);
-    }
-  }
-
-  function parseEventStreamLine(lineBuffer, index, fieldLength, lineLength) {
-    if (lineLength === 0) {
-      if (data.length > 0) {
-        onParse({
-          type: "event",
-          id: eventId,
-          event: eventName || void 0,
-          data: data.slice(0, -1)
-        });
-        data = "";
-        eventId = void 0;
-      }
-
-      eventName = void 0;
-      return;
-    }
-
-    const noValue = fieldLength < 0;
-    const field = lineBuffer.slice(index, index + (noValue ? lineLength : fieldLength));
-    let step = 0;
-
-    if (noValue) {
-      step = lineLength;
-    } else if (lineBuffer[index + fieldLength + 1] === " ") {
-      step = fieldLength + 2;
-    } else {
-      step = fieldLength + 1;
-    }
-
-    const position = index + step;
-    const valueLength = lineLength - step;
-    const value = lineBuffer.slice(position, position + valueLength).toString();
-
-    if (field === "data") {
-      data += value ? "".concat(value, "\n") : "\n";
-    } else if (field === "event") {
-      eventName = value;
-    } else if (field === "id" && !value.includes("\0")) {
-      eventId = value;
-    } else if (field === "retry") {
-      const retry = parseInt(value, 10);
-
-      if (!Number.isNaN(retry)) {
-        onParse({
-          type: "reconnect-interval",
-          value: retry
-        });
-      }
-    }
-  }
-}
-
-const BOM = [239, 187, 191];
-
-function hasBom(buffer) {
-  return BOM.every((charCode, index) => buffer.charCodeAt(index) === charCode);
-}
-
-
-//# sourceMappingURL=index.mjs.map
-
-;// CONCATENATED MODULE: ./node_modules/chatgpt/build/index.js
-// src/chatgpt-api.ts
-
-
-
-
-
-// src/tokenizer.ts
-
-var tokenizer = (0,tiktoken/* get_encoding */.iw)("cl100k_base");
-function encode(input) {
-  return tokenizer.encode(input);
-}
-
-// src/types.ts
-var ChatGPTError = class extends Error {
-};
-var openai;
-((openai2) => {
-})(openai || (openai = {}));
-
-// src/fetch.ts
-var build_fetch = globalThis.fetch;
-
-// src/fetch-sse.ts
-
-
-// src/stream-async-iterable.ts
-async function* streamAsyncIterable(stream) {
-  const reader = stream.getReader();
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        return;
-      }
-      yield value;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
-// src/fetch-sse.ts
-async function fetchSSE(url, options, fetch2 = build_fetch) {
-  const { onMessage, ...fetchOptions } = options;
-  const res = await fetch2(url, fetchOptions);
-  if (!res.ok) {
-    let reason;
-    try {
-      reason = await res.text();
-    } catch (err) {
-      reason = res.statusText;
-    }
-    const msg = `ChatGPT error ${res.status}: ${reason}`;
-    const error = new ChatGPTError(msg, { cause: res });
-    error.statusCode = res.status;
-    error.statusText = res.statusText;
-    throw error;
-  }
-  const parser = createParser((event) => {
-    if (event.type === "event") {
-      onMessage(event.data);
-    }
-  });
-  if (!res.body.getReader) {
-    const body = res.body;
-    if (!body.on || !body.read) {
-      throw new ChatGPTError('unsupported "fetch" implementation');
-    }
-    body.on("readable", () => {
-      let chunk;
-      while (null !== (chunk = body.read())) {
-        parser.feed(chunk.toString());
-      }
-    });
-  } else {
-    for await (const chunk of streamAsyncIterable(res.body)) {
-      const str = new TextDecoder().decode(chunk);
-      parser.feed(str);
-    }
-  }
-}
-
-// src/chatgpt-api.ts
-var CHATGPT_MODEL = "gpt-3.5-turbo";
-var USER_LABEL_DEFAULT = "User";
-var ASSISTANT_LABEL_DEFAULT = "ChatGPT";
-var ChatGPTAPI = class {
-  /**
-   * Creates a new client wrapper around OpenAI's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
-   *
-   * @param apiKey - OpenAI API key (required).
-   * @param apiBaseUrl - Optional override for the OpenAI API base URL.
-   * @param debug - Optional enables logging debugging info to stdout.
-   * @param completionParams - Param overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
-   * @param maxModelTokens - Optional override for the maximum number of tokens allowed by the model's context. Defaults to 4096.
-   * @param maxResponseTokens - Optional override for the minimum number of tokens allowed for the model's response. Defaults to 1000.
-   * @param messageStore - Optional [Keyv](https://github.com/jaredwray/keyv) store to persist chat messages to. If not provided, messages will be lost when the process exits.
-   * @param getMessageById - Optional function to retrieve a message by its ID. If not provided, the default implementation will be used (using an in-memory `messageStore`).
-   * @param upsertMessage - Optional function to insert or update a message. If not provided, the default implementation will be used (using an in-memory `messageStore`).
-   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
-   */
-  constructor(opts) {
-    const {
-      apiKey,
-      apiBaseUrl = "https://api.openai.com/v1",
-      debug = false,
-      messageStore,
-      completionParams,
-      systemMessage,
-      maxModelTokens = 4e3,
-      maxResponseTokens = 1e3,
-      getMessageById,
-      upsertMessage,
-      fetch: fetch2 = build_fetch
-    } = opts;
-    this._apiKey = apiKey;
-    this._apiBaseUrl = apiBaseUrl;
-    this._debug = !!debug;
-    this._fetch = fetch2;
-    this._completionParams = {
-      model: CHATGPT_MODEL,
-      temperature: 0.8,
-      top_p: 1,
-      presence_penalty: 1,
-      ...completionParams
-    };
-    this._systemMessage = systemMessage;
-    if (this._systemMessage === void 0) {
-      const currentDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-      this._systemMessage = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
-Knowledge cutoff: 2021-09-01
-Current date: ${currentDate}`;
-    }
-    this._maxModelTokens = maxModelTokens;
-    this._maxResponseTokens = maxResponseTokens;
-    this._getMessageById = getMessageById ?? this._defaultGetMessageById;
-    this._upsertMessage = upsertMessage ?? this._defaultUpsertMessage;
-    if (messageStore) {
-      this._messageStore = messageStore;
-    } else {
-      this._messageStore = new src({
-        store: new QuickLRU({ maxSize: 1e4 })
-      });
-    }
-    if (!this._apiKey) {
-      throw new Error("OpenAI missing required apiKey");
-    }
-    if (!this._fetch) {
-      throw new Error("Invalid environment; fetch is not defined");
-    }
-    if (typeof this._fetch !== "function") {
-      throw new Error('Invalid "fetch" is not a function');
-    }
-  }
-  /**
-   * Sends a message to the OpenAI chat completions endpoint, waits for the response
-   * to resolve, and returns the response.
-   *
-   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
-   *
-   * If you want to receive a stream of partial responses, use `opts.onProgress`.
-   *
-   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI chat completions API. You can override the `systemMessage` in `opts` to customize the assistant's instructions.
-   *
-   * @param message - The prompt message to send
-   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
-   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
-   * @param opts.systemMessage - Optional override for the chat "system message" which acts as instructions to the model (defaults to the ChatGPT system message)
-   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
-   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
-   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
-   *
-   * @returns The response from ChatGPT
-   */
-  async sendMessage(text, opts = {}) {
-    const {
-      parentMessageId,
-      messageId = v4(),
-      timeoutMs,
-      onProgress,
-      stream = onProgress ? true : false,
-      completionParams
-    } = opts;
-    let { abortSignal } = opts;
-    let abortController = null;
-    if (timeoutMs && !abortSignal) {
-      abortController = new AbortController();
-      abortSignal = abortController.signal;
-    }
-    const message = {
-      role: "user",
-      id: messageId,
-      parentMessageId,
-      text
-    };
-    await this._upsertMessage(message);
-    const { messages, maxTokens, numTokens } = await this._buildMessages(
-      text,
-      opts
-    );
-    const result = {
-      role: "assistant",
-      id: v4(),
-      parentMessageId: messageId,
-      text: ""
-    };
-    const responseP = new Promise(
-      async (resolve, reject) => {
-        var _a, _b;
-        const url = `${this._apiBaseUrl}/chat/completions`;
-        const headers = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this._apiKey}`
-        };
-        const body = {
-          max_tokens: maxTokens,
-          ...this._completionParams,
-          ...completionParams,
-          messages,
-          stream
-        };
-        if (this._debug) {
-          console.log(`sendMessage (${numTokens} tokens)`, body);
-        }
-        if (stream) {
-          fetchSSE(
-            url,
-            {
-              method: "POST",
-              headers,
-              body: JSON.stringify(body),
-              signal: abortSignal,
-              onMessage: (data) => {
-                var _a2;
-                if (data === "[DONE]") {
-                  result.text = result.text.trim();
-                  return resolve(result);
-                }
-                try {
-                  const response = JSON.parse(data);
-                  if (response.id) {
-                    result.id = response.id;
-                  }
-                  if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
-                    const delta = response.choices[0].delta;
-                    result.delta = delta.content;
-                    if (delta == null ? void 0 : delta.content)
-                      result.text += delta.content;
-                    result.detail = response;
-                    if (delta.role) {
-                      result.role = delta.role;
-                    }
-                    onProgress == null ? void 0 : onProgress(result);
-                  }
-                } catch (err) {
-                  console.warn("OpenAI stream SEE event unexpected error", err);
-                  return reject(err);
-                }
-              }
-            },
-            this._fetch
-          ).catch(reject);
-        } else {
-          try {
-            const res = await this._fetch(url, {
-              method: "POST",
-              headers,
-              body: JSON.stringify(body),
-              signal: abortSignal
-            });
-            if (!res.ok) {
-              const reason = await res.text();
-              const msg = `OpenAI error ${res.status || res.statusText}: ${reason}`;
-              const error = new ChatGPTError(msg, { cause: res });
-              error.statusCode = res.status;
-              error.statusText = res.statusText;
-              return reject(error);
-            }
-            const response = await res.json();
-            if (this._debug) {
-              console.log(response);
-            }
-            if (response == null ? void 0 : response.id) {
-              result.id = response.id;
-            }
-            if ((_a = response == null ? void 0 : response.choices) == null ? void 0 : _a.length) {
-              const message2 = response.choices[0].message;
-              result.text = message2.content;
-              if (message2.role) {
-                result.role = message2.role;
-              }
-            } else {
-              const res2 = response;
-              return reject(
-                new Error(
-                  `OpenAI error: ${((_b = res2 == null ? void 0 : res2.detail) == null ? void 0 : _b.message) || (res2 == null ? void 0 : res2.detail) || "unknown"}`
-                )
-              );
-            }
-            result.detail = response;
-            return resolve(result);
-          } catch (err) {
-            return reject(err);
-          }
-        }
-      }
-    ).then((message2) => {
-      return this._upsertMessage(message2).then(() => message2);
-    });
-    if (timeoutMs) {
-      if (abortController) {
-        ;
-        responseP.cancel = () => {
-          abortController.abort();
-        };
-      }
-      return pTimeout(responseP, {
-        milliseconds: timeoutMs,
-        message: "OpenAI timed out waiting for response"
-      });
-    } else {
-      return responseP;
-    }
-  }
-  get apiKey() {
-    return this._apiKey;
-  }
-  set apiKey(apiKey) {
-    this._apiKey = apiKey;
-  }
-  async _buildMessages(text, opts) {
-    const { systemMessage = this._systemMessage } = opts;
-    let { parentMessageId } = opts;
-    const userLabel = USER_LABEL_DEFAULT;
-    const assistantLabel = ASSISTANT_LABEL_DEFAULT;
-    const maxNumTokens = this._maxModelTokens - this._maxResponseTokens;
-    let messages = [];
-    if (systemMessage) {
-      messages.push({
-        role: "system",
-        content: systemMessage
-      });
-    }
-    const systemMessageOffset = messages.length;
-    let nextMessages = text ? messages.concat([
-      {
-        role: "user",
-        content: text,
-        name: opts.name
-      }
-    ]) : messages;
-    let numTokens = 0;
-    do {
-      const prompt = nextMessages.reduce((prompt2, message) => {
-        switch (message.role) {
-          case "system":
-            return prompt2.concat([`Instructions:
-${message.content}`]);
-          case "user":
-            return prompt2.concat([`${userLabel}:
-${message.content}`]);
-          default:
-            return prompt2.concat([`${assistantLabel}:
-${message.content}`]);
-        }
-      }, []).join("\n\n");
-      const nextNumTokensEstimate = await this._getTokenCount(prompt);
-      const isValidPrompt = nextNumTokensEstimate <= maxNumTokens;
-      if (prompt && !isValidPrompt) {
-        break;
-      }
-      messages = nextMessages;
-      numTokens = nextNumTokensEstimate;
-      if (!isValidPrompt) {
-        break;
-      }
-      if (!parentMessageId) {
-        break;
-      }
-      const parentMessage = await this._getMessageById(parentMessageId);
-      if (!parentMessage) {
-        break;
-      }
-      const parentMessageRole = parentMessage.role || "user";
-      nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
-        {
-          role: parentMessageRole,
-          content: parentMessage.text,
-          name: parentMessage.name
-        },
-        ...nextMessages.slice(systemMessageOffset)
-      ]);
-      parentMessageId = parentMessage.parentMessageId;
-    } while (true);
-    const maxTokens = Math.max(
-      1,
-      Math.min(this._maxModelTokens - numTokens, this._maxResponseTokens)
-    );
-    return { messages, maxTokens, numTokens };
-  }
-  async _getTokenCount(text) {
-    text = text.replace(/<\|endoftext\|>/g, "");
-    return encode(text).length;
-  }
-  async _defaultGetMessageById(id) {
-    const res = await this._messageStore.get(id);
-    return res;
-  }
-  async _defaultUpsertMessage(message) {
-    await this._messageStore.set(message.id, message);
-  }
-};
-
-// src/chatgpt-unofficial-proxy-api.ts
-
-
-
-// src/utils.ts
-var uuidv4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-function isValidUUIDv4(str) {
-  return str && uuidv4Re.test(str);
-}
-
-// src/chatgpt-unofficial-proxy-api.ts
-var ChatGPTUnofficialProxyAPI = class {
-  /**
-   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
-   */
-  constructor(opts) {
-    const {
-      accessToken,
-      apiReverseProxyUrl = "https://bypass.duti.tech/api/conversation",
-      model = "text-davinci-002-render-sha",
-      debug = false,
-      headers,
-      fetch: fetch2 = build_fetch
-    } = opts;
-    this._accessToken = accessToken;
-    this._apiReverseProxyUrl = apiReverseProxyUrl;
-    this._debug = !!debug;
-    this._model = model;
-    this._fetch = fetch2;
-    this._headers = headers;
-    if (!this._accessToken) {
-      throw new Error("ChatGPT invalid accessToken");
-    }
-    if (!this._fetch) {
-      throw new Error("Invalid environment; fetch is not defined");
-    }
-    if (typeof this._fetch !== "function") {
-      throw new Error('Invalid "fetch" is not a function');
-    }
-  }
-  get accessToken() {
-    return this._accessToken;
-  }
-  set accessToken(value) {
-    this._accessToken = value;
-  }
-  /**
-   * Sends a message to ChatGPT, waits for the response to resolve, and returns
-   * the response.
-   *
-   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
-   *
-   * If you want to receive a stream of partial responses, use `opts.onProgress`.
-   * If you want to receive the full response, including message and conversation IDs,
-   * you can use `opts.onConversationResponse` or use the `ChatGPTAPI.getConversation`
-   * helper.
-   *
-   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI completions API. You can override the `promptPrefix` and `promptSuffix` in `opts` to customize the prompt.
-   *
-   * @param message - The prompt message to send
-   * @param opts.conversationId - Optional ID of a conversation to continue (defaults to a random UUID)
-   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
-   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
-   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
-   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
-   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   *
-   * @returns The response from ChatGPT
-   */
-  async sendMessage(text, opts = {}) {
-    if (!!opts.conversationId !== !!opts.parentMessageId) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId and parentMessageId must both be set or both be undefined"
-      );
-    }
-    if (opts.conversationId && !isValidUUIDv4(opts.conversationId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId is not a valid v4 UUID"
-      );
-    }
-    if (opts.parentMessageId && !isValidUUIDv4(opts.parentMessageId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: parentMessageId is not a valid v4 UUID"
-      );
-    }
-    if (opts.messageId && !isValidUUIDv4(opts.messageId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: messageId is not a valid v4 UUID"
-      );
-    }
-    const {
-      conversationId,
-      parentMessageId = uuidv42(),
-      messageId = uuidv42(),
-      action = "next",
-      timeoutMs,
-      onProgress
-    } = opts;
-    let { abortSignal } = opts;
-    let abortController = null;
-    if (timeoutMs && !abortSignal) {
-      abortController = new AbortController();
-      abortSignal = abortController.signal;
-    }
-    const body = {
-      action,
-      messages: [
-        {
-          id: messageId,
-          role: "user",
-          content: {
-            content_type: "text",
-            parts: [text]
-          }
-        }
-      ],
-      model: this._model,
-      parent_message_id: parentMessageId
-    };
-    if (conversationId) {
-      body.conversation_id = conversationId;
-    }
-    const result = {
-      role: "assistant",
-      id: uuidv42(),
-      parentMessageId: messageId,
-      conversationId,
-      text: ""
-    };
-    const responseP = new Promise((resolve, reject) => {
-      const url = this._apiReverseProxyUrl;
-      const headers = {
-        ...this._headers,
-        Authorization: `Bearer ${this._accessToken}`,
-        Accept: "text/event-stream",
-        "Content-Type": "application/json"
-      };
-      if (this._debug) {
-        console.log("POST", url, { body, headers });
-      }
-      fetchSSE(
-        url,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: abortSignal,
-          onMessage: (data) => {
-            var _a, _b, _c;
-            if (data === "[DONE]") {
-              return resolve(result);
-            }
-            try {
-              const convoResponseEvent = JSON.parse(data);
-              if (convoResponseEvent.conversation_id) {
-                result.conversationId = convoResponseEvent.conversation_id;
-              }
-              if ((_a = convoResponseEvent.message) == null ? void 0 : _a.id) {
-                result.id = convoResponseEvent.message.id;
-              }
-              const message = convoResponseEvent.message;
-              if (message) {
-                let text2 = (_c = (_b = message == null ? void 0 : message.content) == null ? void 0 : _b.parts) == null ? void 0 : _c[0];
-                if (text2) {
-                  result.text = text2;
-                  if (onProgress) {
-                    onProgress(result);
-                  }
-                }
-              }
-            } catch (err) {
-            }
-          }
-        },
-        this._fetch
-      ).catch((err) => {
-        const errMessageL = err.toString().toLowerCase();
-        if (result.text && (errMessageL === "error: typeerror: terminated" || errMessageL === "typeerror: terminated")) {
-          return resolve(result);
-        } else {
-          return reject(err);
-        }
-      });
-    });
-    if (timeoutMs) {
-      if (abortController) {
-        ;
-        responseP.cancel = () => {
-          abortController.abort();
-        };
-      }
-      return pTimeout2(responseP, {
-        milliseconds: timeoutMs,
-        message: "ChatGPT timed out waiting for response"
-      });
-    } else {
-      return responseP;
-    }
-  }
-};
-
-//# sourceMappingURL=index.js.map
+// EXTERNAL MODULE: ./node_modules/chatgpt/build/index.js + 4 modules
+var build = __nccwpck_require__(2353);
 ;// CONCATENATED MODULE: ./lib/utils.js
 
 const retry = async (fn, args, times) => {
@@ -3376,18 +2199,18 @@ const retry = async (fn, args, times) => {
 class Bot {
     api = null; // not free
     options;
-    constructor(options) {
+    constructor(options, openaiOptions) {
         this.options = options;
         if (process.env.OPENAI_API_KEY) {
-            this.api = new ChatGPTAPI({
+            this.api = new build/* ChatGPTAPI */.EN({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
-                maxModelTokens: options.max_model_tokens,
-                maxResponseTokens: options.max_tokens_for_response,
+                maxModelTokens: openaiOptions.token_limits.max_tokens,
+                maxResponseTokens: openaiOptions.token_limits.response_tokens,
                 completionParams: {
                     temperature: options.openai_model_temperature,
-                    model: options.openai_model
+                    model: openaiOptions.model
                 }
             });
         }
@@ -3397,17 +2220,15 @@ class Bot {
         }
     }
     chat = async (message, ids) => {
-        let new_ids = {};
-        let response = '';
+        let res = ['', {}];
         try {
-            ;
-            [response, new_ids] = await this.chat_(message, ids);
+            res = await this.chat_(message, ids);
+            return res;
         }
         catch (e) {
-            core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
-        }
-        finally {
-            return [response, new_ids];
+            if (e instanceof build/* ChatGPTError */.sK)
+                core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
+            return res;
         }
     };
     chat_ = async (message, ids) => {
@@ -3416,10 +2237,7 @@ class Bot {
         if (!message) {
             return ['', {}];
         }
-        if (this.options.debug) {
-            core.info(`sending to openai: ${message}`);
-        }
-        let response = null;
+        let response;
         if (this.api) {
             const opts = {
                 timeoutMs: this.options.openai_timeout_ms
@@ -3431,7 +2249,8 @@ class Bot {
                 response = await retry(this.api.sendMessage.bind(this.api), [message, opts], this.options.openai_retries);
             }
             catch (e) {
-                core.info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`);
+                if (e instanceof build/* ChatGPTError */.sK)
+                    core.info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`);
             }
             const end = Date.now();
             core.info(`response: ${JSON.stringify(response)}`);
@@ -3480,14 +2299,17 @@ class Bot {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1231);
+/* harmony import */ var chatgpt__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2353);
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
 
 
 
 const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit */ .v({ auth: `token ${token}` });
+const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .v({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
@@ -3604,6 +2426,7 @@ ${tag}`;
             const comments = await this.get_comments_at_line(pull_number, path, line);
             for (const comment of comments) {
                 if (comment.body.includes(tag)) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${line}: ${message}`);
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -3615,6 +2438,7 @@ ${tag}`;
                 }
             }
             if (!found) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${line}: ${message}`);
                 await octokit.pulls.createReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
@@ -3762,7 +2586,7 @@ ${chain}
             return all_comments;
         }
         catch (e) {
-            console.warn(`Failed to list review comments: ${e}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to list review comments: ${e}`);
             return all_comments;
         }
     }
@@ -3872,7 +2696,9 @@ ${chain}
             return all_comments;
         }
         catch (e) {
-            console.warn(`Failed to list comments: ${e}`);
+            if (e instanceof chatgpt__WEBPACK_IMPORTED_MODULE_2__/* .ChatGPTError */ .sK) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to list comments: ${e}`);
+            }
             return all_comments;
         }
     }
@@ -3889,7 +2715,7 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6877);
+/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(474);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9698);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5947);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2612);
@@ -3899,30 +2725,38 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch_begin'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_patch'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_beginning'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
-    // initialize openai bot
-    let bot = null;
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    // Create two bots, one for summary and one for review
+    let lightBot = null;
     try {
-        bot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options);
+        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_summary_model, options.summary_token_limits));
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        return;
+    }
+    let heavyBot = null;
+    try {
+        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_review_model, options.review_token_limits));
+    }
+    catch (e) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     try {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(bot, options, prompts);
+            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(lightBot, heavyBot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(bot, options, prompts);
+            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(heavyBot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push event');
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_request');
         }
     }
     catch (e) {
@@ -3956,11 +2790,12 @@ __webpack_async_result__();
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
   "kq": () => (/* binding */ Inputs),
+  "i0": () => (/* binding */ OpenAIOptions),
   "Ei": () => (/* binding */ Options),
   "jc": () => (/* binding */ Prompts)
 });
 
-// UNUSED EXPORTS: PathFilter
+// UNUSED EXPORTS: PathFilter, TokenLimits
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
@@ -5449,51 +4284,20 @@ minimatch.unescape = unescape_unescape;
 
 
 class Prompts {
-    review_beginning;
-    review_file;
     review_file_diff;
-    review_patch_begin;
-    review_patch;
-    summarize_beginning;
     summarize_file_diff;
     summarize;
     summarize_release_notes;
-    comment_beginning;
-    comment_file;
-    comment_file_diff;
     comment;
-    constructor(review_beginning = '', review_file = '', review_file_diff = '', review_patch_begin = '', review_patch = '', summarize_beginning = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment_beginning = '', comment_file = '', comment_file_diff = '', comment = '') {
-        this.review_beginning = review_beginning;
-        this.review_file = review_file;
+    constructor(review_file_diff = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment = '') {
         this.review_file_diff = review_file_diff;
-        this.review_patch_begin = review_patch_begin;
-        this.review_patch = review_patch;
-        this.summarize_beginning = summarize_beginning;
         this.summarize_file_diff = summarize_file_diff;
         this.summarize = summarize;
         this.summarize_release_notes = summarize_release_notes;
-        this.comment_beginning = comment_beginning;
-        this.comment_file = comment_file;
-        this.comment_file_diff = comment_file_diff;
         this.comment = comment;
-    }
-    render_review_beginning(inputs) {
-        return inputs.render(this.review_beginning);
-    }
-    render_review_file(inputs) {
-        return inputs.render(this.review_file);
     }
     render_review_file_diff(inputs) {
         return inputs.render(this.review_file_diff);
-    }
-    render_review_patch_begin(inputs) {
-        return inputs.render(this.review_patch_begin);
-    }
-    render_review_patch(inputs) {
-        return inputs.render(this.review_patch);
-    }
-    render_summarize_beginning(inputs) {
-        return inputs.render(this.summarize_beginning);
     }
     render_summarize_file_diff(inputs) {
         return inputs.render(this.summarize_file_diff);
@@ -5503,15 +4307,6 @@ class Prompts {
     }
     render_summarize_release_notes(inputs) {
         return inputs.render(this.summarize_release_notes);
-    }
-    render_comment_beginning(inputs) {
-        return inputs.render(this.comment_beginning);
-    }
-    render_comment_file(inputs) {
-        return inputs.render(this.comment_file);
-    }
-    render_comment_file_diff(inputs) {
-        return inputs.render(this.comment_file_diff);
     }
     render_comment(inputs) {
         return inputs.render(this.comment);
@@ -5525,11 +4320,11 @@ class Inputs {
     filename;
     file_content;
     file_diff;
-    patch;
+    patches;
     diff;
     comment_chain;
     comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patch = 'patch cannot be provided', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
@@ -5537,13 +4332,13 @@ class Inputs {
         this.filename = filename;
         this.file_content = file_content;
         this.file_diff = file_diff;
-        this.patch = patch;
+        this.patches = patches;
         this.diff = diff;
         this.comment_chain = comment_chain;
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patch, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -5570,8 +4365,8 @@ class Inputs {
         if (this.file_diff) {
             content = content.replace('$file_diff', this.file_diff);
         }
-        if (this.patch) {
-            content = content.replace('$patch', this.patch);
+        if (this.patches) {
+            content = content.replace('$patches', this.patches);
         }
         if (this.diff) {
             content = content.replace('$diff', this.diff);
@@ -5585,6 +4380,39 @@ class Inputs {
         return content;
     }
 }
+class TokenLimits {
+    max_tokens;
+    request_tokens;
+    response_tokens;
+    extra_content_tokens;
+    constructor(model = 'gpt-3.5-turbo') {
+        if (model === 'gpt-4-32k') {
+            this.max_tokens = 32000;
+            this.response_tokens = 4000;
+        }
+        else if (model === 'gpt-4') {
+            this.max_tokens = 5000;
+            this.response_tokens = 1500;
+        }
+        else {
+            this.max_tokens = 4000;
+            this.response_tokens = 1000;
+        }
+        this.request_tokens = this.max_tokens - this.response_tokens;
+        this.extra_content_tokens = this.request_tokens / 1.5;
+    }
+    string() {
+        return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}, extra_content_tokens=${this.extra_content_tokens}`;
+    }
+}
+class OpenAIOptions {
+    model;
+    token_limits;
+    constructor(model = 'gpt-3.5-turbo', token_limits = null) {
+        this.model = model;
+        this.token_limits = token_limits || new TokenLimits(model);
+    }
+}
 class Options {
     debug;
     max_files_to_summarize;
@@ -5592,44 +4420,29 @@ class Options {
     review_comment_lgtm;
     path_filters;
     system_message;
-    openai_model;
+    openai_summary_model;
+    openai_review_model;
     openai_model_temperature;
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
-    max_model_tokens;
-    max_tokens_for_request;
-    max_tokens_for_response;
-    max_tokens_for_extra_content;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    summary_token_limits;
+    review_token_limits;
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_summary_model = 'gpt-3.5-turbo', openai_review_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
-        this.openai_model = openai_model;
+        this.openai_summary_model = openai_summary_model;
+        this.openai_review_model = openai_review_model;
         this.openai_model_temperature = parseFloat(openai_model_temperature);
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        if (this.openai_model === 'gpt-4-32k') {
-            this.max_model_tokens = 32700;
-            this.max_tokens_for_response = 4000;
-        }
-        else if (this.openai_model === 'gpt-4') {
-            this.max_model_tokens = 8100;
-            this.max_tokens_for_response = 2000;
-        }
-        else {
-            this.max_model_tokens = 4000;
-            this.max_tokens_for_response = 1000;
-        }
-        // calculate the max tokens for the request and response
-        this.max_tokens_for_request =
-            this.max_model_tokens - this.max_tokens_for_response;
-        // use half the request tokens for extra content
-        this.max_tokens_for_extra_content = this.max_tokens_for_request / 1.5;
+        this.summary_token_limits = new TokenLimits(openai_summary_model);
+        this.review_token_limits = new TokenLimits(openai_review_model);
     }
     // print all options using core.info
     print() {
@@ -5639,15 +4452,14 @@ class Options {
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
         core.info(`path_filters: ${this.path_filters}`);
         core.info(`system_message: ${this.system_message}`);
-        core.info(`openai_model: ${this.openai_model}`);
+        core.info(`openai_summary_model: ${this.openai_summary_model}`);
+        core.info(`openai_review_model: ${this.openai_review_model}`);
         core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
         core.info(`openai_retries: ${this.openai_retries}`);
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
         core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`);
-        core.info(`max_model_tokens: ${this.max_model_tokens}`);
-        core.info(`max_tokens_for_request: ${this.max_tokens_for_request}`);
-        core.info(`max_tokens_for_response: ${this.max_tokens_for_response}`);
-        core.info(`max_tokens_for_extra_content: ${this.max_tokens_for_extra_content}`);
+        core.info(`summary_token_limits: ${this.summary_token_limits.string()}`);
+        core.info(`review_token_limits: ${this.review_token_limits.string()}`);
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
@@ -5728,7 +4540,7 @@ const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
-const handleReviewComment = async (bot, options, prompts) => {
+const handleReviewComment = async (heavyBot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
     const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
     if (context.eventName !== 'pull_request_review_comment') {
@@ -5816,34 +4628,23 @@ const handleReviewComment = async (bot, options, prompts) => {
             if (summary) {
                 inputs.summary = summary.body;
             }
-            // begin comment generation
-            const [, comment_begin_ids] = await bot.chat(prompts.render_comment_beginning(inputs), {});
-            let next_comment_ids = comment_begin_ids;
             if (file_content.length > 0) {
-                inputs.file_content = file_content;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
-                if (file_content_tokens < options.max_tokens_for_extra_content) {
-                    const [file_content_resp, file_content_ids] = await bot.chat(prompts.render_comment_file(inputs), next_comment_ids);
-                    if (file_content_resp) {
-                        next_comment_ids = file_content_ids;
-                    }
+                if (file_content_tokens < options.review_token_limits.extra_content_tokens) {
+                    inputs.file_content = file_content;
                 }
             }
             if (file_diff.length > 0) {
-                inputs.file_diff = file_diff;
                 // use file diff if no diff was found in the comment
                 if (inputs.diff.length === 0) {
                     inputs.diff = file_diff;
                 }
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
-                if (file_diff_tokens < options.max_tokens_for_extra_content) {
-                    const [file_diff_resp, file_diff_ids] = await bot.chat(prompts.render_comment_file_diff(inputs), next_comment_ids);
-                    if (file_diff_resp) {
-                        next_comment_ids = file_diff_ids;
-                    }
+                if (file_diff_tokens < options.review_token_limits.extra_content_tokens) {
+                    inputs.file_diff = file_diff;
                 }
             }
-            const [reply] = await bot.chat(prompts.render_comment(inputs), next_comment_ids);
+            const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
             if (topLevelComment) {
                 await commenter.review_comment_reply(pull_number, topLevelComment, reply);
             }
@@ -5876,6 +4677,8 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 // EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
 var dist_node = __nccwpck_require__(1231);
+// EXTERNAL MODULE: ./node_modules/chatgpt/build/index.js + 4 modules
+var build = __nccwpck_require__(2353);
 ;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
 /*
 How it works:
@@ -6029,13 +4832,14 @@ var tokenizer = __nccwpck_require__(652);
 
 
 
+
 const token = core.getInput('token')
     ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
 const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const codeReview = async (bot, options, prompts) => {
+const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
     if (context.eventName !== 'pull_request' &&
@@ -6107,7 +4911,6 @@ const codeReview = async (bot, options, prompts) => {
         }
         let file_diff = '';
         if (file.patch) {
-            core.info(`diff for ${file.filename}: ${file.patch}`);
             file_diff = file.patch;
         }
         const patches = [];
@@ -6125,21 +4928,26 @@ const codeReview = async (bot, options, prompts) => {
     // Filter out any null results
     const files_to_review = filtered_files_to_review.filter(file => file !== null);
     if (files_to_review.length > 0) {
-        // Summary Stage
-        const [, summarize_begin_ids] = await bot.chat(prompts.render_summarize_beginning(inputs), {});
         const generateSummary = async (filename, file_content, file_diff) => {
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
-                ins.file_content = file_content;
+                if (tokenizer/* get_token_count */.u(file_content) <
+                    options.summary_token_limits.extra_content_tokens) {
+                    ins.file_content = file_content;
+                }
             }
             if (file_diff.length > 0) {
                 ins.file_diff = file_diff;
+            }
+            // Check if there is either file content or file diff to process
+            if (ins.file_content || ins.file_diff) {
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < options.max_tokens_for_extra_content) {
-                    // summarize diff
+                if (!ins.file_diff ||
+                    file_diff_tokens < options.summary_token_limits.extra_content_tokens) {
+                    // summarize content
                     try {
-                        const [summarize_resp] = await bot.chat(prompts.render_summarize_file_diff(ins), summarize_begin_ids);
+                        const [summarize_resp] = await lightBot.chat(prompts.render_summarize_file_diff(ins), {});
                         if (!summarize_resp) {
                             core.info('summarize: nothing obtained from openai');
                             return null;
@@ -6177,9 +4985,9 @@ ${filename}: ${summary}
 `;
             }
         }
-        let next_summarize_ids = summarize_begin_ids;
+        let next_summarize_ids = {};
         // final summary
-        const [summarize_final_response, summarize_final_response_ids] = await bot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+        const [summarize_final_response, summarize_final_response_ids] = await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
         if (!summarize_final_response) {
             core.info('summarize: nothing obtained from openai');
         }
@@ -6221,135 +5029,95 @@ ${skipped_files_to_summarize.length > 0
 `
                 : ''}
 `;
-            next_summarize_ids = summarize_final_response_ids;
             await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+            // final release notes
+            next_summarize_ids = summarize_final_response_ids;
+            const [release_notes_response, release_notes_ids] = await heavyBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
+            if (!release_notes_response) {
+                core.info('release notes: nothing obtained from openai');
+            }
+            else {
+                next_summarize_ids = release_notes_ids;
+                let message = '### Summary by OpenAI\n\n';
+                message += release_notes_response;
+                commenter.update_description(context.payload.pull_request.number, message);
+            }
         }
-        // final release notes
-        const [release_notes_response, release_notes_ids] = await bot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
-        if (!release_notes_response) {
-            core.info('release notes: nothing obtained from openai');
-        }
-        else {
-            next_summarize_ids = release_notes_ids;
-            let message = '### Summary by OpenAI\n\n';
-            message += release_notes_response;
-            commenter.update_description(context.payload.pull_request.number, message);
-        }
-        // Review Stage
-        const [, review_begin_ids] = await bot.chat(prompts.render_review_beginning(inputs), {});
-        const review = async (filename, file_content, file_diff, patches) => {
-            // reset chat session for each file while reviewing
-            let next_review_ids = review_begin_ids;
+        const review = async (filename, file_content, patches) => {
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
-                ins.file_content = file_content;
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-                if (file_content_tokens < options.max_tokens_for_extra_content) {
-                    try {
-                        // review file
-                        const [resp, review_file_ids] = await bot.chat(prompts.render_review_file(ins), next_review_ids);
-                        if (!resp) {
-                            core.info('review: nothing obtained from openai');
-                        }
-                        else {
-                            next_review_ids = review_file_ids;
-                            if (!resp.includes('LGTM')) {
-                                // TODO: add file level comments via API once it's available
-                                // See: https://github.blog/changelog/2023-03-14-comment-on-files-in-a-pull-request-public-beta/
-                                // For now comment on the PR itself
-                                const tag = `<!-- openai-review-file-${filename} -->`;
-                                const comment = `${tag}\nReviewing existing code in: ${filename}\n\n${resp}`;
-                                await commenter.comment(comment, tag, 'replace');
-                            }
-                        }
-                    }
-                    catch (error) {
-                        core.warning(`review: error from openai: ${error}`);
-                    }
+                if (file_content_tokens < options.review_token_limits.extra_content_tokens) {
+                    ins.file_content = file_content;
                 }
                 else {
                     core.info(`skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`);
                 }
             }
-            if (file_diff.length > 0) {
-                ins.file_diff = file_diff;
-                const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-                if (file_diff_tokens < options.max_tokens_for_extra_content) {
-                    try {
-                        // review diff
-                        const [resp, review_diff_ids] = await bot.chat(prompts.render_review_file_diff(ins), next_review_ids);
-                        if (!resp) {
-                            core.info('review: nothing obtained from openai');
-                        }
-                        else {
-                            next_review_ids = review_diff_ids;
-                        }
-                    }
-                    catch (error) {
-                        core.warning(`review: error from openai: ${error}`);
-                    }
-                }
-                else {
-                    core.info(`skip sending diff of file: ${ins.filename} due to token count: ${file_diff_tokens}`);
-                }
-            }
-            // review_patch_begin
-            const [, patch_begin_ids] = await bot.chat(prompts.render_review_patch_begin(ins), next_review_ids);
-            next_review_ids = patch_begin_ids;
             for (const [line, patch] of patches) {
-                core.info(`Reviewing ${filename}:${line} with openai ...`);
-                ins.patch = patch;
                 if (!context.payload.pull_request) {
                     core.warning('No pull request found, skipping.');
                     continue;
                 }
+                let comment_chain = 'no comments on this patch';
                 try {
                     // get existing comments on the line
                     const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                     if (all_chains.length > 0) {
-                        ins.comment_chain = all_chains;
+                        comment_chain = all_chains;
                     }
                     else {
-                        ins.comment_chain = 'no previous comments';
+                        comment_chain = 'no previous comments';
                     }
                 }
                 catch (e) {
-                    core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
+                    if (e instanceof build/* ChatGPTError */.sK) {
+                        core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
+                    }
                 }
-                try {
-                    const [response, patch_ids] = await bot.chat(prompts.render_review_patch(ins), next_review_ids);
-                    if (!response) {
-                        core.info('review: nothing obtained from openai');
+                ins.patches += `${line}:
+\`\`\`text
+${comment_chain}
+\`\`\`
+\`\`\`diff
+${patch}
+\`\`\`
+---
+`;
+            }
+            // perform review
+            try {
+                const [response] = await heavyBot.chat(prompts.render_review_file_diff(ins), {});
+                if (!response) {
+                    core.info('review: nothing obtained from openai');
+                    return;
+                }
+                // parse review
+                const reviewMap = parseOpenAIReview(response, options.debug);
+                for (const [line, review_comment] of reviewMap) {
+                    // check for LGTM
+                    if (!options.review_comment_lgtm && review_comment.includes('LGTM')) {
                         continue;
                     }
-                    next_review_ids = patch_ids;
-                    if (!options.review_comment_lgtm && response.includes('LGTM')) {
+                    if (!context.payload.pull_request) {
+                        core.warning('No pull request found, skipping.');
                         continue;
                     }
-                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${response}`);
-                }
-                catch (e) {
-                    core.warning(`Failed to comment: ${e}, skipping.
-        backtrace: ${e.stack}
-        filename: ${filename}
-        line: ${line}
-        patch: ${patch}`);
+                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${review_comment}`);
                 }
             }
+            catch (e) {
+                core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`);
+            }
         };
-        // Use Promise.all to run file review processes in parallel
-        //     openai_concurrency_limit(async () =>
-        //       review(filename, file_content, file_diff, patches)
-        //     )
-        // )
         const reviewPromises = [];
         const skipped_files_to_review = [];
-        for (const [filename, file_content, file_diff, patches] of files_to_review) {
+        for (const [filename, file_content, , patches] of files_to_review) {
             if (options.max_files_to_review <= 0 ||
                 reviewPromises.length < options.max_files_to_review) {
-                reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, file_diff, patches)));
+                reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, patches)));
             }
             else {
                 skipped_files_to_review.push(filename);
@@ -6414,6 +5182,58 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
+function parseOpenAIReview(response, debug = false) {
+    const reviews = new Map();
+    // Split the response into lines
+    const lines = response.split('\n');
+    // Regular expression to match the line number and comment format
+    const lineNumberRegex = /(?:^|\s)(\d+):\s*$/;
+    const commentSeparator = '---';
+    let currentLineNumber = null;
+    let currentComment = '';
+    for (const line of lines) {
+        // Check if the line matches the line number format
+        const lineNumberMatch = line.match(lineNumberRegex);
+        if (lineNumberMatch) {
+            // If there is a previous comment, store it in the reviews Map
+            if (currentLineNumber !== null) {
+                reviews.set(currentLineNumber, currentComment.trim());
+                debug &&
+                    core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
+            }
+            // Set the current line number and reset the comment
+            currentLineNumber = parseInt(lineNumberMatch[1], 10);
+            currentComment = '';
+            debug && core.info(`Found line number: ${currentLineNumber}`);
+            continue;
+        }
+        // Check if the line is a comment separator
+        if (line.trim() === commentSeparator) {
+            // If there is a previous comment, store it in the reviews Map
+            if (currentLineNumber !== null) {
+                reviews.set(currentLineNumber, currentComment.trim());
+                debug &&
+                    core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
+            }
+            // Reset the current line number and comment
+            currentLineNumber = null;
+            currentComment = '';
+            debug && core.info('Found comment separator');
+            continue;
+        }
+        // If there is a current line number, add the line to the current comment
+        if (currentLineNumber !== null) {
+            currentComment += `${line}\n`;
+        }
+    }
+    // If there is a comment at the end of the response, store it in the reviews Map
+    if (currentLineNumber !== null) {
+        reviews.set(currentLineNumber, currentComment.trim());
+        debug &&
+            core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
+    }
+    return reviews;
+}
 
 
 /***/ }),
@@ -30151,6 +28971,1201 @@ try {
 } catch (error) {}
 /* c8 ignore end */
 
+
+/***/ }),
+
+/***/ 2353:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "EN": () => (/* binding */ ChatGPTAPI),
+  "sK": () => (/* binding */ ChatGPTError)
+});
+
+// UNUSED EXPORTS: ChatGPTUnofficialProxyAPI, openai
+
+// EXTERNAL MODULE: ./node_modules/keyv/src/index.js
+var src = __nccwpck_require__(1531);
+;// CONCATENATED MODULE: ./node_modules/p-timeout/index.js
+class TimeoutError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'TimeoutError';
+	}
+}
+
+/**
+An error to be thrown when the request is aborted by AbortController.
+DOMException is thrown instead of this Error when DOMException is available.
+*/
+class AbortError extends Error {
+	constructor(message) {
+		super();
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+/**
+TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+*/
+const getDOMException = errorMessage => globalThis.DOMException === undefined
+	? new AbortError(errorMessage)
+	: new DOMException(errorMessage);
+
+/**
+TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
+*/
+const getAbortedReason = signal => {
+	const reason = signal.reason === undefined
+		? getDOMException('This operation was aborted.')
+		: signal.reason;
+
+	return reason instanceof Error ? reason : getDOMException(reason);
+};
+
+function pTimeout(promise, options) {
+	const {
+		milliseconds,
+		fallback,
+		message,
+		customTimers = {setTimeout, clearTimeout},
+	} = options;
+
+	let timer;
+
+	const cancelablePromise = new Promise((resolve, reject) => {
+		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
+			throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
+		}
+
+		if (milliseconds === Number.POSITIVE_INFINITY) {
+			resolve(promise);
+			return;
+		}
+
+		if (options.signal) {
+			const {signal} = options;
+			if (signal.aborted) {
+				reject(getAbortedReason(signal));
+			}
+
+			signal.addEventListener('abort', () => {
+				reject(getAbortedReason(signal));
+			});
+		}
+
+		// We create the error outside of `setTimeout` to preserve the stack trace.
+		const timeoutError = new TimeoutError();
+
+		timer = customTimers.setTimeout.call(undefined, () => {
+			if (fallback) {
+				try {
+					resolve(fallback());
+				} catch (error) {
+					reject(error);
+				}
+
+				return;
+			}
+
+			if (typeof promise.cancel === 'function') {
+				promise.cancel();
+			}
+
+			if (message === false) {
+				resolve();
+			} else if (message instanceof Error) {
+				reject(message);
+			} else {
+				timeoutError.message = message ?? `Promise timed out after ${milliseconds} milliseconds`;
+				reject(timeoutError);
+			}
+		}, milliseconds);
+
+		(async () => {
+			try {
+				resolve(await promise);
+			} catch (error) {
+				reject(error);
+			} finally {
+				customTimers.clearTimeout.call(undefined, timer);
+			}
+		})();
+	});
+
+	cancelablePromise.clear = () => {
+		customTimers.clearTimeout.call(undefined, timer);
+		timer = undefined;
+	};
+
+	return cancelablePromise;
+}
+
+;// CONCATENATED MODULE: ./node_modules/quick-lru/index.js
+class QuickLRU extends Map {
+	constructor(options = {}) {
+		super();
+
+		if (!(options.maxSize && options.maxSize > 0)) {
+			throw new TypeError('`maxSize` must be a number greater than 0');
+		}
+
+		if (typeof options.maxAge === 'number' && options.maxAge === 0) {
+			throw new TypeError('`maxAge` must be a number greater than 0');
+		}
+
+		// TODO: Use private class fields when ESLint supports them.
+		this.maxSize = options.maxSize;
+		this.maxAge = options.maxAge || Number.POSITIVE_INFINITY;
+		this.onEviction = options.onEviction;
+		this.cache = new Map();
+		this.oldCache = new Map();
+		this._size = 0;
+	}
+
+	// TODO: Use private class methods when targeting Node.js 16.
+	_emitEvictions(cache) {
+		if (typeof this.onEviction !== 'function') {
+			return;
+		}
+
+		for (const [key, item] of cache) {
+			this.onEviction(key, item.value);
+		}
+	}
+
+	_deleteIfExpired(key, item) {
+		if (typeof item.expiry === 'number' && item.expiry <= Date.now()) {
+			if (typeof this.onEviction === 'function') {
+				this.onEviction(key, item.value);
+			}
+
+			return this.delete(key);
+		}
+
+		return false;
+	}
+
+	_getOrDeleteIfExpired(key, item) {
+		const deleted = this._deleteIfExpired(key, item);
+		if (deleted === false) {
+			return item.value;
+		}
+	}
+
+	_getItemValue(key, item) {
+		return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
+	}
+
+	_peek(key, cache) {
+		const item = cache.get(key);
+
+		return this._getItemValue(key, item);
+	}
+
+	_set(key, value) {
+		this.cache.set(key, value);
+		this._size++;
+
+		if (this._size >= this.maxSize) {
+			this._size = 0;
+			this._emitEvictions(this.oldCache);
+			this.oldCache = this.cache;
+			this.cache = new Map();
+		}
+	}
+
+	_moveToRecent(key, item) {
+		this.oldCache.delete(key);
+		this._set(key, item);
+	}
+
+	* _entriesAscending() {
+		for (const item of this.oldCache) {
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield item;
+				}
+			}
+		}
+
+		for (const item of this.cache) {
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield item;
+			}
+		}
+	}
+
+	get(key) {
+		if (this.cache.has(key)) {
+			const item = this.cache.get(key);
+
+			return this._getItemValue(key, item);
+		}
+
+		if (this.oldCache.has(key)) {
+			const item = this.oldCache.get(key);
+			if (this._deleteIfExpired(key, item) === false) {
+				this._moveToRecent(key, item);
+				return item.value;
+			}
+		}
+	}
+
+	set(key, value, {maxAge = this.maxAge} = {}) {
+		const expiry =
+			typeof maxAge === 'number' && maxAge !== Number.POSITIVE_INFINITY ?
+				Date.now() + maxAge :
+				undefined;
+		if (this.cache.has(key)) {
+			this.cache.set(key, {
+				value,
+				expiry
+			});
+		} else {
+			this._set(key, {value, expiry});
+		}
+	}
+
+	has(key) {
+		if (this.cache.has(key)) {
+			return !this._deleteIfExpired(key, this.cache.get(key));
+		}
+
+		if (this.oldCache.has(key)) {
+			return !this._deleteIfExpired(key, this.oldCache.get(key));
+		}
+
+		return false;
+	}
+
+	peek(key) {
+		if (this.cache.has(key)) {
+			return this._peek(key, this.cache);
+		}
+
+		if (this.oldCache.has(key)) {
+			return this._peek(key, this.oldCache);
+		}
+	}
+
+	delete(key) {
+		const deleted = this.cache.delete(key);
+		if (deleted) {
+			this._size--;
+		}
+
+		return this.oldCache.delete(key) || deleted;
+	}
+
+	clear() {
+		this.cache.clear();
+		this.oldCache.clear();
+		this._size = 0;
+	}
+
+	resize(newSize) {
+		if (!(newSize && newSize > 0)) {
+			throw new TypeError('`maxSize` must be a number greater than 0');
+		}
+
+		const items = [...this._entriesAscending()];
+		const removeCount = items.length - newSize;
+		if (removeCount < 0) {
+			this.cache = new Map(items);
+			this.oldCache = new Map();
+			this._size = items.length;
+		} else {
+			if (removeCount > 0) {
+				this._emitEvictions(items.slice(0, removeCount));
+			}
+
+			this.oldCache = new Map(items.slice(removeCount));
+			this.cache = new Map();
+			this._size = 0;
+		}
+
+		this.maxSize = newSize;
+	}
+
+	* keys() {
+		for (const [key] of this) {
+			yield key;
+		}
+	}
+
+	* values() {
+		for (const [, value] of this) {
+			yield value;
+		}
+	}
+
+	* [Symbol.iterator]() {
+		for (const item of this.cache) {
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield [key, value.value];
+			}
+		}
+
+		for (const item of this.oldCache) {
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield [key, value.value];
+				}
+			}
+		}
+	}
+
+	* entriesDescending() {
+		let items = [...this.cache];
+		for (let i = items.length - 1; i >= 0; --i) {
+			const item = items[i];
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield [key, value.value];
+			}
+		}
+
+		items = [...this.oldCache];
+		for (let i = items.length - 1; i >= 0; --i) {
+			const item = items[i];
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield [key, value.value];
+				}
+			}
+		}
+	}
+
+	* entriesAscending() {
+		for (const [key, value] of this._entriesAscending()) {
+			yield [key, value.value];
+		}
+	}
+
+	get size() {
+		if (!this._size) {
+			return this.oldCache.size;
+		}
+
+		let oldCacheSize = 0;
+		for (const key of this.oldCache.keys()) {
+			if (!this.cache.has(key)) {
+				oldCacheSize++;
+			}
+		}
+
+		return Math.min(this._size + oldCacheSize, this.maxSize);
+	}
+
+	entries() {
+		return this.entriesAscending();
+	}
+
+	forEach(callbackFunction, thisArgument = this) {
+		for (const [key, value] of this.entriesAscending()) {
+			callbackFunction.call(thisArgument, value, key, this);
+		}
+	}
+
+	get [Symbol.toStringTag]() {
+		return JSON.stringify([...this.entriesAscending()]);
+	}
+}
+
+// EXTERNAL MODULE: ./node_modules/chatgpt/node_modules/uuid/dist/index.js
+var dist = __nccwpck_require__(6201);
+;// CONCATENATED MODULE: ./node_modules/chatgpt/node_modules/uuid/wrapper.mjs
+
+const v1 = dist.v1;
+const v3 = dist.v3;
+const v4 = dist.v4;
+const v5 = dist.v5;
+const NIL = dist/* NIL */.zR;
+const version = dist/* version */.i8;
+const validate = dist/* validate */.Gu;
+const stringify = dist/* stringify */.Pz;
+const parse = dist/* parse */.Qc;
+
+// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/tiktoken.cjs
+var tiktoken = __nccwpck_require__(3171);
+;// CONCATENATED MODULE: ./node_modules/eventsource-parser/dist/index.mjs
+function createParser(onParse) {
+  let isFirstChunk;
+  let buffer;
+  let startingPosition;
+  let startingFieldLength;
+  let eventId;
+  let eventName;
+  let data;
+  reset();
+  return {
+    feed,
+    reset
+  };
+
+  function reset() {
+    isFirstChunk = true;
+    buffer = "";
+    startingPosition = 0;
+    startingFieldLength = -1;
+    eventId = void 0;
+    eventName = void 0;
+    data = "";
+  }
+
+  function feed(chunk) {
+    buffer = buffer ? buffer + chunk : chunk;
+
+    if (isFirstChunk && hasBom(buffer)) {
+      buffer = buffer.slice(BOM.length);
+    }
+
+    isFirstChunk = false;
+    const length = buffer.length;
+    let position = 0;
+    let discardTrailingNewline = false;
+
+    while (position < length) {
+      if (discardTrailingNewline) {
+        if (buffer[position] === "\n") {
+          ++position;
+        }
+
+        discardTrailingNewline = false;
+      }
+
+      let lineLength = -1;
+      let fieldLength = startingFieldLength;
+      let character;
+
+      for (let index = startingPosition; lineLength < 0 && index < length; ++index) {
+        character = buffer[index];
+
+        if (character === ":" && fieldLength < 0) {
+          fieldLength = index - position;
+        } else if (character === "\r") {
+          discardTrailingNewline = true;
+          lineLength = index - position;
+        } else if (character === "\n") {
+          lineLength = index - position;
+        }
+      }
+
+      if (lineLength < 0) {
+        startingPosition = length - position;
+        startingFieldLength = fieldLength;
+        break;
+      } else {
+        startingPosition = 0;
+        startingFieldLength = -1;
+      }
+
+      parseEventStreamLine(buffer, position, fieldLength, lineLength);
+      position += lineLength + 1;
+    }
+
+    if (position === length) {
+      buffer = "";
+    } else if (position > 0) {
+      buffer = buffer.slice(position);
+    }
+  }
+
+  function parseEventStreamLine(lineBuffer, index, fieldLength, lineLength) {
+    if (lineLength === 0) {
+      if (data.length > 0) {
+        onParse({
+          type: "event",
+          id: eventId,
+          event: eventName || void 0,
+          data: data.slice(0, -1)
+        });
+        data = "";
+        eventId = void 0;
+      }
+
+      eventName = void 0;
+      return;
+    }
+
+    const noValue = fieldLength < 0;
+    const field = lineBuffer.slice(index, index + (noValue ? lineLength : fieldLength));
+    let step = 0;
+
+    if (noValue) {
+      step = lineLength;
+    } else if (lineBuffer[index + fieldLength + 1] === " ") {
+      step = fieldLength + 2;
+    } else {
+      step = fieldLength + 1;
+    }
+
+    const position = index + step;
+    const valueLength = lineLength - step;
+    const value = lineBuffer.slice(position, position + valueLength).toString();
+
+    if (field === "data") {
+      data += value ? "".concat(value, "\n") : "\n";
+    } else if (field === "event") {
+      eventName = value;
+    } else if (field === "id" && !value.includes("\0")) {
+      eventId = value;
+    } else if (field === "retry") {
+      const retry = parseInt(value, 10);
+
+      if (!Number.isNaN(retry)) {
+        onParse({
+          type: "reconnect-interval",
+          value: retry
+        });
+      }
+    }
+  }
+}
+
+const BOM = [239, 187, 191];
+
+function hasBom(buffer) {
+  return BOM.every((charCode, index) => buffer.charCodeAt(index) === charCode);
+}
+
+
+//# sourceMappingURL=index.mjs.map
+
+;// CONCATENATED MODULE: ./node_modules/chatgpt/build/index.js
+// src/chatgpt-api.ts
+
+
+
+
+
+// src/tokenizer.ts
+
+var tokenizer = (0,tiktoken/* get_encoding */.iw)("cl100k_base");
+function encode(input) {
+  return tokenizer.encode(input);
+}
+
+// src/types.ts
+var ChatGPTError = class extends Error {
+};
+var openai;
+((openai2) => {
+})(openai || (openai = {}));
+
+// src/fetch.ts
+var fetch = globalThis.fetch;
+
+// src/fetch-sse.ts
+
+
+// src/stream-async-iterable.ts
+async function* streamAsyncIterable(stream) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return;
+      }
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// src/fetch-sse.ts
+async function fetchSSE(url, options, fetch2 = fetch) {
+  const { onMessage, ...fetchOptions } = options;
+  const res = await fetch2(url, fetchOptions);
+  if (!res.ok) {
+    let reason;
+    try {
+      reason = await res.text();
+    } catch (err) {
+      reason = res.statusText;
+    }
+    const msg = `ChatGPT error ${res.status}: ${reason}`;
+    const error = new ChatGPTError(msg, { cause: res });
+    error.statusCode = res.status;
+    error.statusText = res.statusText;
+    throw error;
+  }
+  const parser = createParser((event) => {
+    if (event.type === "event") {
+      onMessage(event.data);
+    }
+  });
+  if (!res.body.getReader) {
+    const body = res.body;
+    if (!body.on || !body.read) {
+      throw new ChatGPTError('unsupported "fetch" implementation');
+    }
+    body.on("readable", () => {
+      let chunk;
+      while (null !== (chunk = body.read())) {
+        parser.feed(chunk.toString());
+      }
+    });
+  } else {
+    for await (const chunk of streamAsyncIterable(res.body)) {
+      const str = new TextDecoder().decode(chunk);
+      parser.feed(str);
+    }
+  }
+}
+
+// src/chatgpt-api.ts
+var CHATGPT_MODEL = "gpt-3.5-turbo";
+var USER_LABEL_DEFAULT = "User";
+var ASSISTANT_LABEL_DEFAULT = "ChatGPT";
+var ChatGPTAPI = class {
+  /**
+   * Creates a new client wrapper around OpenAI's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
+   *
+   * @param apiKey - OpenAI API key (required).
+   * @param apiBaseUrl - Optional override for the OpenAI API base URL.
+   * @param debug - Optional enables logging debugging info to stdout.
+   * @param completionParams - Param overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+   * @param maxModelTokens - Optional override for the maximum number of tokens allowed by the model's context. Defaults to 4096.
+   * @param maxResponseTokens - Optional override for the minimum number of tokens allowed for the model's response. Defaults to 1000.
+   * @param messageStore - Optional [Keyv](https://github.com/jaredwray/keyv) store to persist chat messages to. If not provided, messages will be lost when the process exits.
+   * @param getMessageById - Optional function to retrieve a message by its ID. If not provided, the default implementation will be used (using an in-memory `messageStore`).
+   * @param upsertMessage - Optional function to insert or update a message. If not provided, the default implementation will be used (using an in-memory `messageStore`).
+   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
+   */
+  constructor(opts) {
+    const {
+      apiKey,
+      apiBaseUrl = "https://api.openai.com/v1",
+      debug = false,
+      messageStore,
+      completionParams,
+      systemMessage,
+      maxModelTokens = 4e3,
+      maxResponseTokens = 1e3,
+      getMessageById,
+      upsertMessage,
+      fetch: fetch2 = fetch
+    } = opts;
+    this._apiKey = apiKey;
+    this._apiBaseUrl = apiBaseUrl;
+    this._debug = !!debug;
+    this._fetch = fetch2;
+    this._completionParams = {
+      model: CHATGPT_MODEL,
+      temperature: 0.8,
+      top_p: 1,
+      presence_penalty: 1,
+      ...completionParams
+    };
+    this._systemMessage = systemMessage;
+    if (this._systemMessage === void 0) {
+      const currentDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      this._systemMessage = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
+Knowledge cutoff: 2021-09-01
+Current date: ${currentDate}`;
+    }
+    this._maxModelTokens = maxModelTokens;
+    this._maxResponseTokens = maxResponseTokens;
+    this._getMessageById = getMessageById ?? this._defaultGetMessageById;
+    this._upsertMessage = upsertMessage ?? this._defaultUpsertMessage;
+    if (messageStore) {
+      this._messageStore = messageStore;
+    } else {
+      this._messageStore = new src({
+        store: new QuickLRU({ maxSize: 1e4 })
+      });
+    }
+    if (!this._apiKey) {
+      throw new Error("OpenAI missing required apiKey");
+    }
+    if (!this._fetch) {
+      throw new Error("Invalid environment; fetch is not defined");
+    }
+    if (typeof this._fetch !== "function") {
+      throw new Error('Invalid "fetch" is not a function');
+    }
+  }
+  /**
+   * Sends a message to the OpenAI chat completions endpoint, waits for the response
+   * to resolve, and returns the response.
+   *
+   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
+   *
+   * If you want to receive a stream of partial responses, use `opts.onProgress`.
+   *
+   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI chat completions API. You can override the `systemMessage` in `opts` to customize the assistant's instructions.
+   *
+   * @param message - The prompt message to send
+   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
+   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
+   * @param opts.systemMessage - Optional override for the chat "system message" which acts as instructions to the model (defaults to the ChatGPT system message)
+   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
+   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
+   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+   *
+   * @returns The response from ChatGPT
+   */
+  async sendMessage(text, opts = {}) {
+    const {
+      parentMessageId,
+      messageId = v4(),
+      timeoutMs,
+      onProgress,
+      stream = onProgress ? true : false,
+      completionParams
+    } = opts;
+    let { abortSignal } = opts;
+    let abortController = null;
+    if (timeoutMs && !abortSignal) {
+      abortController = new AbortController();
+      abortSignal = abortController.signal;
+    }
+    const message = {
+      role: "user",
+      id: messageId,
+      parentMessageId,
+      text
+    };
+    await this._upsertMessage(message);
+    const { messages, maxTokens, numTokens } = await this._buildMessages(
+      text,
+      opts
+    );
+    const result = {
+      role: "assistant",
+      id: v4(),
+      parentMessageId: messageId,
+      text: ""
+    };
+    const responseP = new Promise(
+      async (resolve, reject) => {
+        var _a, _b;
+        const url = `${this._apiBaseUrl}/chat/completions`;
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this._apiKey}`
+        };
+        const body = {
+          max_tokens: maxTokens,
+          ...this._completionParams,
+          ...completionParams,
+          messages,
+          stream
+        };
+        if (this._debug) {
+          console.log(`sendMessage (${numTokens} tokens)`, body);
+        }
+        if (stream) {
+          fetchSSE(
+            url,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+              signal: abortSignal,
+              onMessage: (data) => {
+                var _a2;
+                if (data === "[DONE]") {
+                  result.text = result.text.trim();
+                  return resolve(result);
+                }
+                try {
+                  const response = JSON.parse(data);
+                  if (response.id) {
+                    result.id = response.id;
+                  }
+                  if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
+                    const delta = response.choices[0].delta;
+                    result.delta = delta.content;
+                    if (delta == null ? void 0 : delta.content)
+                      result.text += delta.content;
+                    result.detail = response;
+                    if (delta.role) {
+                      result.role = delta.role;
+                    }
+                    onProgress == null ? void 0 : onProgress(result);
+                  }
+                } catch (err) {
+                  console.warn("OpenAI stream SEE event unexpected error", err);
+                  return reject(err);
+                }
+              }
+            },
+            this._fetch
+          ).catch(reject);
+        } else {
+          try {
+            const res = await this._fetch(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+              signal: abortSignal
+            });
+            if (!res.ok) {
+              const reason = await res.text();
+              const msg = `OpenAI error ${res.status || res.statusText}: ${reason}`;
+              const error = new ChatGPTError(msg, { cause: res });
+              error.statusCode = res.status;
+              error.statusText = res.statusText;
+              return reject(error);
+            }
+            const response = await res.json();
+            if (this._debug) {
+              console.log(response);
+            }
+            if (response == null ? void 0 : response.id) {
+              result.id = response.id;
+            }
+            if ((_a = response == null ? void 0 : response.choices) == null ? void 0 : _a.length) {
+              const message2 = response.choices[0].message;
+              result.text = message2.content;
+              if (message2.role) {
+                result.role = message2.role;
+              }
+            } else {
+              const res2 = response;
+              return reject(
+                new Error(
+                  `OpenAI error: ${((_b = res2 == null ? void 0 : res2.detail) == null ? void 0 : _b.message) || (res2 == null ? void 0 : res2.detail) || "unknown"}`
+                )
+              );
+            }
+            result.detail = response;
+            return resolve(result);
+          } catch (err) {
+            return reject(err);
+          }
+        }
+      }
+    ).then((message2) => {
+      return this._upsertMessage(message2).then(() => message2);
+    });
+    if (timeoutMs) {
+      if (abortController) {
+        ;
+        responseP.cancel = () => {
+          abortController.abort();
+        };
+      }
+      return pTimeout(responseP, {
+        milliseconds: timeoutMs,
+        message: "OpenAI timed out waiting for response"
+      });
+    } else {
+      return responseP;
+    }
+  }
+  get apiKey() {
+    return this._apiKey;
+  }
+  set apiKey(apiKey) {
+    this._apiKey = apiKey;
+  }
+  async _buildMessages(text, opts) {
+    const { systemMessage = this._systemMessage } = opts;
+    let { parentMessageId } = opts;
+    const userLabel = USER_LABEL_DEFAULT;
+    const assistantLabel = ASSISTANT_LABEL_DEFAULT;
+    const maxNumTokens = this._maxModelTokens - this._maxResponseTokens;
+    let messages = [];
+    if (systemMessage) {
+      messages.push({
+        role: "system",
+        content: systemMessage
+      });
+    }
+    const systemMessageOffset = messages.length;
+    let nextMessages = text ? messages.concat([
+      {
+        role: "user",
+        content: text,
+        name: opts.name
+      }
+    ]) : messages;
+    let numTokens = 0;
+    do {
+      const prompt = nextMessages.reduce((prompt2, message) => {
+        switch (message.role) {
+          case "system":
+            return prompt2.concat([`Instructions:
+${message.content}`]);
+          case "user":
+            return prompt2.concat([`${userLabel}:
+${message.content}`]);
+          default:
+            return prompt2.concat([`${assistantLabel}:
+${message.content}`]);
+        }
+      }, []).join("\n\n");
+      const nextNumTokensEstimate = await this._getTokenCount(prompt);
+      const isValidPrompt = nextNumTokensEstimate <= maxNumTokens;
+      if (prompt && !isValidPrompt) {
+        break;
+      }
+      messages = nextMessages;
+      numTokens = nextNumTokensEstimate;
+      if (!isValidPrompt) {
+        break;
+      }
+      if (!parentMessageId) {
+        break;
+      }
+      const parentMessage = await this._getMessageById(parentMessageId);
+      if (!parentMessage) {
+        break;
+      }
+      const parentMessageRole = parentMessage.role || "user";
+      nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
+        {
+          role: parentMessageRole,
+          content: parentMessage.text,
+          name: parentMessage.name
+        },
+        ...nextMessages.slice(systemMessageOffset)
+      ]);
+      parentMessageId = parentMessage.parentMessageId;
+    } while (true);
+    const maxTokens = Math.max(
+      1,
+      Math.min(this._maxModelTokens - numTokens, this._maxResponseTokens)
+    );
+    return { messages, maxTokens, numTokens };
+  }
+  async _getTokenCount(text) {
+    text = text.replace(/<\|endoftext\|>/g, "");
+    return encode(text).length;
+  }
+  async _defaultGetMessageById(id) {
+    const res = await this._messageStore.get(id);
+    return res;
+  }
+  async _defaultUpsertMessage(message) {
+    await this._messageStore.set(message.id, message);
+  }
+};
+
+// src/chatgpt-unofficial-proxy-api.ts
+
+
+
+// src/utils.ts
+var uuidv4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isValidUUIDv4(str) {
+  return str && uuidv4Re.test(str);
+}
+
+// src/chatgpt-unofficial-proxy-api.ts
+var ChatGPTUnofficialProxyAPI = class {
+  /**
+   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
+   */
+  constructor(opts) {
+    const {
+      accessToken,
+      apiReverseProxyUrl = "https://bypass.duti.tech/api/conversation",
+      model = "text-davinci-002-render-sha",
+      debug = false,
+      headers,
+      fetch: fetch2 = fetch
+    } = opts;
+    this._accessToken = accessToken;
+    this._apiReverseProxyUrl = apiReverseProxyUrl;
+    this._debug = !!debug;
+    this._model = model;
+    this._fetch = fetch2;
+    this._headers = headers;
+    if (!this._accessToken) {
+      throw new Error("ChatGPT invalid accessToken");
+    }
+    if (!this._fetch) {
+      throw new Error("Invalid environment; fetch is not defined");
+    }
+    if (typeof this._fetch !== "function") {
+      throw new Error('Invalid "fetch" is not a function');
+    }
+  }
+  get accessToken() {
+    return this._accessToken;
+  }
+  set accessToken(value) {
+    this._accessToken = value;
+  }
+  /**
+   * Sends a message to ChatGPT, waits for the response to resolve, and returns
+   * the response.
+   *
+   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
+   *
+   * If you want to receive a stream of partial responses, use `opts.onProgress`.
+   * If you want to receive the full response, including message and conversation IDs,
+   * you can use `opts.onConversationResponse` or use the `ChatGPTAPI.getConversation`
+   * helper.
+   *
+   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI completions API. You can override the `promptPrefix` and `promptSuffix` in `opts` to customize the prompt.
+   *
+   * @param message - The prompt message to send
+   * @param opts.conversationId - Optional ID of a conversation to continue (defaults to a random UUID)
+   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
+   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
+   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
+   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
+   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   *
+   * @returns The response from ChatGPT
+   */
+  async sendMessage(text, opts = {}) {
+    if (!!opts.conversationId !== !!opts.parentMessageId) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId and parentMessageId must both be set or both be undefined"
+      );
+    }
+    if (opts.conversationId && !isValidUUIDv4(opts.conversationId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId is not a valid v4 UUID"
+      );
+    }
+    if (opts.parentMessageId && !isValidUUIDv4(opts.parentMessageId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: parentMessageId is not a valid v4 UUID"
+      );
+    }
+    if (opts.messageId && !isValidUUIDv4(opts.messageId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: messageId is not a valid v4 UUID"
+      );
+    }
+    const {
+      conversationId,
+      parentMessageId = uuidv42(),
+      messageId = uuidv42(),
+      action = "next",
+      timeoutMs,
+      onProgress
+    } = opts;
+    let { abortSignal } = opts;
+    let abortController = null;
+    if (timeoutMs && !abortSignal) {
+      abortController = new AbortController();
+      abortSignal = abortController.signal;
+    }
+    const body = {
+      action,
+      messages: [
+        {
+          id: messageId,
+          role: "user",
+          content: {
+            content_type: "text",
+            parts: [text]
+          }
+        }
+      ],
+      model: this._model,
+      parent_message_id: parentMessageId
+    };
+    if (conversationId) {
+      body.conversation_id = conversationId;
+    }
+    const result = {
+      role: "assistant",
+      id: uuidv42(),
+      parentMessageId: messageId,
+      conversationId,
+      text: ""
+    };
+    const responseP = new Promise((resolve, reject) => {
+      const url = this._apiReverseProxyUrl;
+      const headers = {
+        ...this._headers,
+        Authorization: `Bearer ${this._accessToken}`,
+        Accept: "text/event-stream",
+        "Content-Type": "application/json"
+      };
+      if (this._debug) {
+        console.log("POST", url, { body, headers });
+      }
+      fetchSSE(
+        url,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: abortSignal,
+          onMessage: (data) => {
+            var _a, _b, _c;
+            if (data === "[DONE]") {
+              return resolve(result);
+            }
+            try {
+              const convoResponseEvent = JSON.parse(data);
+              if (convoResponseEvent.conversation_id) {
+                result.conversationId = convoResponseEvent.conversation_id;
+              }
+              if ((_a = convoResponseEvent.message) == null ? void 0 : _a.id) {
+                result.id = convoResponseEvent.message.id;
+              }
+              const message = convoResponseEvent.message;
+              if (message) {
+                let text2 = (_c = (_b = message == null ? void 0 : message.content) == null ? void 0 : _b.parts) == null ? void 0 : _c[0];
+                if (text2) {
+                  result.text = text2;
+                  if (onProgress) {
+                    onProgress(result);
+                  }
+                }
+              }
+            } catch (err) {
+            }
+          }
+        },
+        this._fetch
+      ).catch((err) => {
+        const errMessageL = err.toString().toLowerCase();
+        if (result.text && (errMessageL === "error: typeerror: terminated" || errMessageL === "typeerror: terminated")) {
+          return resolve(result);
+        } else {
+          return reject(err);
+        }
+      });
+    });
+    if (timeoutMs) {
+      if (abortController) {
+        ;
+        responseP.cancel = () => {
+          abortController.abort();
+        };
+      }
+      return pTimeout2(responseP, {
+        milliseconds: timeoutMs,
+        message: "ChatGPT timed out waiting for response"
+      });
+    } else {
+      return responseP;
+    }
+  }
+};
+
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
