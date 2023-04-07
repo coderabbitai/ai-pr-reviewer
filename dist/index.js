@@ -5078,6 +5078,7 @@ ${skipped_files_to_summarize.length > 0
                 ins.patches += `${line}:
 \`\`\`text
 ${comment_chain}
+\`\`\`
 \`\`\`diff
 ${patch}
 \`\`\`

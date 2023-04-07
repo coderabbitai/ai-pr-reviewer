@@ -345,6 +345,7 @@ ${
         ins.patches += `${line}:
 \`\`\`text
 ${comment_chain}
+\`\`\`
 \`\`\`diff
 ${patch}
 \`\`\`
