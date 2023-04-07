@@ -2438,7 +2438,7 @@ ${tag}`;
                 }
             }
             if (!found) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${end_line}: ${message}`);
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${start_line}-${end_line}: ${message}`);
                 await octokit.pulls.createReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
@@ -2453,7 +2453,7 @@ ${tag}`;
             }
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment: ${e}`);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment, for ${path}:${start_line}-${end_line}: ${e}`);
         }
     }
     async review_comment_reply(pull_number, top_level_comment, message) {
@@ -2507,9 +2507,11 @@ ${COMMENT_REPLY_TAG}
     async get_comments_at_range(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
         return comments.filter((comment) => comment.path === path &&
-            comment.start_line === start_line &&
-            comment.line === end_line &&
-            comment.body !== '');
+            comment.body !== '' &&
+            ((comment.start_line &&
+                comment.start_line >= start_line &&
+                comment.line <= end_line) ||
+                comment.line === end_line));
     }
     async get_conversation_chains_at_range(pull_number, path, start_line, end_line, tag = '') {
         const existing_comments = await this.get_comments_at_range(pull_number, path, start_line, end_line);
@@ -4901,7 +4903,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             filter_selected_files.push(file);
         }
     }
-    // find patches to review
+    // find hunks to review
     const filtered_files_to_review = await Promise.all(filter_selected_files.map(async (file) => {
         // retrieve file contents
         let file_content = '';
@@ -4934,12 +4936,27 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         const patches = [];
         for (const patch of split_patch(file.patch)) {
             const patch_lines = patch_start_end_line(patch);
-            if (!patch_lines ||
-                patch_lines.start_line === -1 ||
-                patch_lines.end_line === -1) {
+            if (!patch_lines) {
                 continue;
             }
-            patches.push([patch_lines.start_line, patch_lines.end_line, patch]);
+            const hunks = parse_patch(patch);
+            if (!hunks) {
+                continue;
+            }
+            const hunks_str = `
+\`\`\`new_hunk
+${hunks.new_hunk}
+\`\`\`
+
+\`\`\`old_hunk
+${hunks.old_hunk}
+\`\`\`
+`;
+            patches.push([
+                patch_lines.new_hunk.start_line,
+                patch_lines.new_hunk.end_line,
+                hunks_str
+            ]);
         }
         if (patches.length > 0) {
             return [file.filename, file_content, file_diff, patches];
@@ -5098,6 +5115,13 @@ ${skipped_files_to_summarize.length > 0
                     else {
                         comment_chain = '';
                     }
+                    // check comment_chain tokens and skip if too long
+                    const comment_chain_tokens = tokenizer/* get_token_count */.u(comment_chain);
+                    if (comment_chain_tokens >
+                        options.heavy_token_limits.extra_content_tokens) {
+                        core.info(`skip sending comment chain of file: ${ins.filename} due to token count: ${comment_chain_tokens}`);
+                        comment_chain = '';
+                    }
                 }
                 catch (e) {
                     if (e instanceof build/* ChatGPTError */.sK) {
@@ -5105,14 +5129,11 @@ ${skipped_files_to_summarize.length > 0
                     }
                 }
                 ins.patches += `
-${start_line}-${end_line}:
-\`\`\`diff
 ${patch}
-\`\`\`
 `;
                 if (comment_chain !== '') {
                     ins.patches += `
-\`\`\`text
+\`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `;
@@ -5208,16 +5229,59 @@ const patch_start_end_line = (patch) => {
     const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm;
     const match = pattern.exec(patch);
     if (match) {
-        const begin = parseInt(match[4]);
-        const diff = parseInt(match[5]);
+        const old_begin = parseInt(match[2]);
+        const old_diff = parseInt(match[3]);
+        const new_begin = parseInt(match[4]);
+        const new_diff = parseInt(match[5]);
         return {
-            start_line: begin,
-            end_line: begin + diff - 1
+            old_hunk: {
+                start_line: old_begin,
+                end_line: old_begin + old_diff - 1
+            },
+            new_hunk: {
+                start_line: new_begin,
+                end_line: new_begin + new_diff - 1
+            }
         };
     }
     else {
         return null;
     }
+};
+const parse_patch = (patch) => {
+    const hunkInfo = patch_start_end_line(patch);
+    if (!hunkInfo) {
+        return null;
+    }
+    const old_hunk_lines = [];
+    const new_hunk_lines = [];
+    //let old_line = hunkInfo.old_hunk.start_line
+    let new_line = hunkInfo.new_hunk.start_line;
+    const lines = patch.split('\n').slice(1); // Skip the @@ line
+    // Remove the last line if it's empty
+    if (lines[lines.length - 1] === '') {
+        lines.pop();
+    }
+    for (const line of lines) {
+        if (line.startsWith('-')) {
+            old_hunk_lines.push(`${line.substring(1)}`);
+            //old_line++
+        }
+        else if (line.startsWith('+')) {
+            new_hunk_lines.push(`${new_line}: ${line.substring(1)}`);
+            new_line++;
+        }
+        else {
+            old_hunk_lines.push(`${line}`);
+            new_hunk_lines.push(`${new_line}: ${line}`);
+            //old_line++
+            new_line++;
+        }
+    }
+    return {
+        old_hunk: old_hunk_lines.join('\n'),
+        new_hunk: new_hunk_lines.join('\n')
+    };
 };
 function parseOpenAIReview(response, debug = false) {
     const reviews = new Map();

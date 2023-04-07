@@ -171,7 +171,7 @@ ${tag}`
 
       if (!found) {
         core.info(
-          `Creating new review comment for ${path}:${end_line}: ${message}`
+          `Creating new review comment for ${path}:${start_line}-${end_line}: ${message}`
         )
         await octokit.pulls.createReviewComment({
           owner: repo.owner,
@@ -186,7 +186,9 @@ ${tag}`
         })
       }
     } catch (e) {
-      core.warning(`Failed to post review comment: ${e}`)
+      core.warning(
+        `Failed to post review comment, for ${path}:${start_line}-${end_line}: ${e}`
+      )
     }
   }
 
@@ -253,9 +255,11 @@ ${COMMENT_REPLY_TAG}
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
-        comment.start_line === start_line &&
-        comment.line === end_line &&
-        comment.body !== ''
+        comment.body !== '' &&
+        ((comment.start_line &&
+          comment.start_line >= start_line &&
+          comment.line <= end_line) ||
+          comment.line === end_line)
     )
   }
 

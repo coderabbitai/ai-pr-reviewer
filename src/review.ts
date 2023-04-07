@@ -79,7 +79,7 @@ export const codeReview = async (
     }
   }
 
-  // find patches to review
+  // find hunks to review
   const filtered_files_to_review: (
     | [string, string, string, [number, number, string][]]
     | null
@@ -120,14 +120,27 @@ export const codeReview = async (
       const patches: [number, number, string][] = []
       for (const patch of split_patch(file.patch)) {
         const patch_lines = patch_start_end_line(patch)
-        if (
-          !patch_lines ||
-          patch_lines.start_line === -1 ||
-          patch_lines.end_line === -1
-        ) {
+        if (!patch_lines) {
           continue
         }
-        patches.push([patch_lines.start_line, patch_lines.end_line, patch])
+        const hunks = parse_patch(patch)
+        if (!hunks) {
+          continue
+        }
+        const hunks_str = `
+\`\`\`new_hunk
+${hunks.new_hunk}
+\`\`\`
+
+\`\`\`old_hunk
+${hunks.old_hunk}
+\`\`\`
+`
+        patches.push([
+          patch_lines.new_hunk.start_line,
+          patch_lines.new_hunk.end_line,
+          hunks_str
+        ])
       }
       if (patches.length > 0) {
         return [file.filename, file_content, file_diff, patches]
@@ -348,6 +361,17 @@ ${
           } else {
             comment_chain = ''
           }
+          // check comment_chain tokens and skip if too long
+          const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
+          if (
+            comment_chain_tokens >
+            options.heavy_token_limits.extra_content_tokens
+          ) {
+            core.info(
+              `skip sending comment chain of file: ${ins.filename} due to token count: ${comment_chain_tokens}`
+            )
+            comment_chain = ''
+          }
         } catch (e: unknown) {
           if (e instanceof ChatGPTError) {
             core.warning(
@@ -356,14 +380,11 @@ ${
           }
         }
         ins.patches += `
-${start_line}-${end_line}:
-\`\`\`diff
 ${patch}
-\`\`\`
 `
         if (comment_chain !== '') {
           ins.patches += `
-\`\`\`text
+\`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `
@@ -484,18 +505,71 @@ const split_patch = (patch: string | null | undefined): string[] => {
 
 const patch_start_end_line = (
   patch: string
-): {start_line: number; end_line: number} | null => {
+): {
+  old_hunk: {start_line: number; end_line: number}
+  new_hunk: {start_line: number; end_line: number}
+} | null => {
   const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
   const match = pattern.exec(patch)
   if (match) {
-    const begin = parseInt(match[4])
-    const diff = parseInt(match[5])
+    const old_begin = parseInt(match[2])
+    const old_diff = parseInt(match[3])
+    const new_begin = parseInt(match[4])
+    const new_diff = parseInt(match[5])
     return {
-      start_line: begin,
-      end_line: begin + diff - 1
+      old_hunk: {
+        start_line: old_begin,
+        end_line: old_begin + old_diff - 1
+      },
+      new_hunk: {
+        start_line: new_begin,
+        end_line: new_begin + new_diff - 1
+      }
     }
   } else {
     return null
+  }
+}
+
+const parse_patch = (
+  patch: string
+): {old_hunk: string; new_hunk: string} | null => {
+  const hunkInfo = patch_start_end_line(patch)
+  if (!hunkInfo) {
+    return null
+  }
+
+  const old_hunk_lines: string[] = []
+  const new_hunk_lines: string[] = []
+
+  //let old_line = hunkInfo.old_hunk.start_line
+  let new_line = hunkInfo.new_hunk.start_line
+
+  const lines = patch.split('\n').slice(1) // Skip the @@ line
+
+  // Remove the last line if it's empty
+  if (lines[lines.length - 1] === '') {
+    lines.pop()
+  }
+
+  for (const line of lines) {
+    if (line.startsWith('-')) {
+      old_hunk_lines.push(`${line.substring(1)}`)
+      //old_line++
+    } else if (line.startsWith('+')) {
+      new_hunk_lines.push(`${new_line}: ${line.substring(1)}`)
+      new_line++
+    } else {
+      old_hunk_lines.push(`${line}`)
+      new_hunk_lines.push(`${new_line}: ${line}`)
+      //old_line++
+      new_line++
+    }
+  }
+
+  return {
+    old_hunk: old_hunk_lines.join('\n'),
+    new_hunk: new_hunk_lines.join('\n')
   }
 }
 
