@@ -201,7 +201,7 @@ inputs:
       <start_line-end_line>:
       <explain why suggestion makes sense>
       ```suggestion
-      <replacement code that completely replaces the line range>
+      <replacement code that from start_line, with necessary changes>
       ```
       ---
       <start_line-end_line>:
