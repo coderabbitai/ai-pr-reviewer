@@ -185,8 +185,8 @@ export class Options {
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
-  openai_summary_model: string
-  openai_review_model: string
+  openai_light_model: string
+  openai_heavy_model: string
   openai_model_temperature: number
   openai_retries: number
   openai_timeout_ms: number
@@ -201,8 +201,8 @@ export class Options {
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
-    openai_summary_model = 'gpt-3.5-turbo',
-    openai_review_model = 'gpt-3.5-turbo',
+    openai_light_model = 'gpt-3.5-turbo',
+    openai_heavy_model = 'gpt-3.5-turbo',
     openai_model_temperature = '0.0',
     openai_retries = '3',
     openai_timeout_ms = '120000',
@@ -214,14 +214,14 @@ export class Options {
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
-    this.openai_summary_model = openai_summary_model
-    this.openai_review_model = openai_review_model
+    this.openai_light_model = openai_light_model
+    this.openai_heavy_model = openai_heavy_model
     this.openai_model_temperature = parseFloat(openai_model_temperature)
     this.openai_retries = parseInt(openai_retries)
     this.openai_timeout_ms = parseInt(openai_timeout_ms)
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
-    this.summary_token_limits = new TokenLimits(openai_summary_model)
-    this.review_token_limits = new TokenLimits(openai_review_model)
+    this.summary_token_limits = new TokenLimits(openai_light_model)
+    this.review_token_limits = new TokenLimits(openai_heavy_model)
   }
 
   // print all options using core.info
@@ -232,8 +232,8 @@ export class Options {
     core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
     core.info(`path_filters: ${this.path_filters}`)
     core.info(`system_message: ${this.system_message}`)
-    core.info(`openai_summary_model: ${this.openai_summary_model}`)
-    core.info(`openai_review_model: ${this.openai_review_model}`)
+    core.info(`openai_light_model: ${this.openai_light_model}`)
+    core.info(`openai_heavy_model: ${this.openai_heavy_model}`)
     core.info(`openai_model_temperature: ${this.openai_model_temperature}`)
     core.info(`openai_retries: ${this.openai_retries}`)
     core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)
