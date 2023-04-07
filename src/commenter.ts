@@ -353,7 +353,13 @@ ${chain}
     return top_level_comment
   }
 
+  private reviewCommentsCache: Record<number, any[]> = {}
+
   async list_review_comments(target: number) {
+    if (this.reviewCommentsCache[target]) {
+      return this.reviewCommentsCache[target]
+    }
+
     const all_comments: any[] = []
     let page = 1
     try {
@@ -372,6 +378,7 @@ ${chain}
         }
       }
 
+      this.reviewCommentsCache[target] = all_comments
       return all_comments
     } catch (e) {
       core.warning(`Failed to list review comments: ${e}`)
@@ -462,7 +469,13 @@ ${chain}
     }
   }
 
+  private issueCommentsCache: Record<number, any[]> = {}
+
   async list_comments(target: number) {
+    if (this.issueCommentsCache[target]) {
+      return this.issueCommentsCache[target]
+    }
+
     const all_comments: any[] = []
     let page = 1
     try {
@@ -481,6 +494,7 @@ ${chain}
         }
       }
 
+      this.issueCommentsCache[target] = all_comments
       return all_comments
     } catch (e: unknown) {
       if (e instanceof ChatGPTError) {

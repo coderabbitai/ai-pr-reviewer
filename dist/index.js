@@ -2570,7 +2570,11 @@ ${chain}
         }
         return top_level_comment;
     }
+    reviewCommentsCache = {};
     async list_review_comments(target) {
+        if (this.reviewCommentsCache[target]) {
+            return this.reviewCommentsCache[target];
+        }
         const all_comments = [];
         let page = 1;
         try {
@@ -2588,6 +2592,7 @@ ${chain}
                     break;
                 }
             }
+            this.reviewCommentsCache[target] = all_comments;
             return all_comments;
         }
         catch (e) {
@@ -2680,7 +2685,11 @@ ${chain}
             return null;
         }
     }
+    issueCommentsCache = {};
     async list_comments(target) {
+        if (this.issueCommentsCache[target]) {
+            return this.issueCommentsCache[target];
+        }
         const all_comments = [];
         let page = 1;
         try {
@@ -2698,6 +2707,7 @@ ${chain}
                     break;
                 }
             }
+            this.issueCommentsCache[target] = all_comments;
             return all_comments;
         }
         catch (e) {
