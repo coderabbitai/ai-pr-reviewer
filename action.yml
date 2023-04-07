@@ -188,17 +188,13 @@ inputs:
       Your review must consist of comments in the below format 
       with a separator between review comments. Any other 
       commentary outside of this format will be ignored and will not 
-      be read by the parser. Your comments will be added as multi-line 
-      review comments in the GitHub pull request.
+      be read by the parser. Make sure to use the line numbers exactly 
+      as provided above.
 
       <start_line-end_line>:
       <your review comment>
       ---
       ...
-
-      You can comment or suggest code changes and the 
-      line ranges (start_line and end_line) provided by you 
-      should map to the exact line ranges provided in the diff hunks. 
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
