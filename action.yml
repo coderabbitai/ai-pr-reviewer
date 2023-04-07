@@ -196,9 +196,9 @@ inputs:
       ---
       ...
 
-      You can comment or suggest code changes for the diff hunks and the 
-      line ranges provided by you should map to the exact line ranges 
-      provided in the diff hunks. 
+      You can comment or suggest code changes and the 
+      line ranges (start_line and end_line) provided by you 
+      should map to the exact line ranges provided in the diff hunks. 
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
