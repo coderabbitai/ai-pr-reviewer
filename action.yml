@@ -186,8 +186,9 @@ inputs:
 
       Your review must consist of comments in the following format 
       with `---` separator between review comments. Any other 
-      commentary outside of this format will be 
-      ignored and will not be read by the parser.
+      commentary outside of this format will be ignored and will not 
+      be read by the parser. Your comments will be added as multi-line 
+      review comments in the GitHub pull request.
 
       <start_line-end_line>:
       <review comment>
@@ -203,11 +204,16 @@ inputs:
       You can comment or suggest code changes for any number 
       of (sub) line ranges within the line ranges 
       (start_line and end_line) as long as your line ranges are 
-      within the line ranges in the patches. Your comments will 
-      be added as multi-line review comments in the GitHub pull request.
+      within the line ranges in the patches.
       When suggesting code changes, the line ranges provided by you should 
       map to exact line ranges that you wish to replace in the code 
-      with your new code suggestion.
+      with your new code suggestion. For example, if you are suggesting 
+      to replace 2 lines in code then the example comment could be -
+      100-101:
+      ```suggestion
+      print "Hello world"
+      end
+      ```
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
