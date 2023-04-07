@@ -169,25 +169,20 @@ inputs:
 
       Format for changes and review comments (if any) -
 
-      old_hunk:
-      ```
+      ```old_hunk
       <old code with line numbers>
       ```
-      new_hunk:
-      ```
+      ```new_hunk
       <new code with line numbers>
       ```
-      comment_chain:
-      ```text
+      ```comment_chain
       <existing review comments>
       ```
       ---
-      old_hunk:
-      ```
+      ```old_hunk
       <old code with line numbers>
       ```
-      new_hunk:
-      ```
+      ```new_hunk
       <new code with line numbers>
       ```
       ---

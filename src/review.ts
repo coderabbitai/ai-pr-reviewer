@@ -127,12 +127,10 @@ export const codeReview = async (
         if (!hunks) {
           continue
         }
-        const hunks_str = `old_hunk:
-\`\`\`
+        const hunks_str = `\`\`\`old_hunk
 ${hunks.old_hunk}
 \`\`\`
-new_hunk:
-\`\`\`
+\`\`\`new_hunk
 ${hunks.new_hunk}
 \`\`\`
 `
@@ -337,7 +335,6 @@ ${
 `
           line_number += 1
         }
-        core.info(`file_content: ${file_content}`)
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
           file_content_tokens < options.heavy_token_limits.extra_content_tokens
@@ -371,6 +368,7 @@ ${
           } else {
             comment_chain = ''
           }
+          core.info(`comment_chain: ${comment_chain}`)
           // check comment_chain tokens and skip if too long
           const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
           if (
@@ -394,8 +392,7 @@ ${patch}
 `
         if (comment_chain !== '') {
           ins.patches += `
-comment_chain:
-\`\`\`text
+\`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `
