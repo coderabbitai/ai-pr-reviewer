@@ -196,8 +196,9 @@ inputs:
       data races, consistency, complexity, error handling, typos, 
       grammar, and so on. 
 
-      If there are no issues and the patch is acceptable, please 
-      include "LGTM!" (exact word) in your short review comment.
+      If there are no issues or suggestions and the patch is acceptable 
+      as-is, please include "LGTM!" (exact word) in your short 
+      review comment.
 
       Your responses will be recorded as review comments on the 
       pull request. Markdown format is preferred for your responses.
