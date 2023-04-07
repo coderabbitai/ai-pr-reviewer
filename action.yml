@@ -159,18 +159,18 @@ inputs:
       $summary
       ```
 
-      Here is the content of `$filename` and diff.
+      Content of `$filename` is follows.
 
       ```
       $file_content
       ```
 
-      Below is the format for a diff patch and `---` 
+      Below is the format for diff patches. `---` 
       separator is used between patches. 
 
       <line>: 
       ```text
-      <comment chain on patch>
+      <review comments on patch, if any>
       ```
       ```diff
       <patch>
@@ -178,25 +178,26 @@ inputs:
       ---
       ...
 
-      Your review for each patch should be the below format with 
-      `---` separator between review comments:
+      Patches for review -
+
+      $patches
+
+      Your review for each patch should be the following format 
+      with `---` separator between review comments:
 
       <line>:
       <review>
       ---
       ...
 
-      Patches for review -
-
-      $patches
-
       Identify any bug risks or provide improvement suggestions 
       in these patches. You will point out potential issues such 
-      as security (e.g. XSS), logic errors, syntax errors, 
-      out of bound errors, data races, consistency, complexity, 
-      error handling, typos, grammar, and more. Otherwise, if the 
-      patch is acceptable, please reply "LGTM!" (exactly) with a 
-      short comment.
+      as security, logic errors, syntax errors, out of bound errors, 
+      data races, consistency, complexity, error handling, typos, 
+      grammar, and so on. 
+
+      If there are no issues and the patch is acceptable, please 
+      include "LGTM!" (exact word) in your short review comment.
 
       Your responses will be recorded as review comments on the 
       pull request. Markdown format is preferred for your responses.
