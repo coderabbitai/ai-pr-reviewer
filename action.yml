@@ -216,8 +216,12 @@ inputs:
       If there are no issues or suggestions and the change is acceptable 
       as-is, you must include the word `LGTM!` and make a short review comment.
 
-      Markdown format is preferred for text and fenced code blocks should be 
-      used for code suggestions.
+      Markdown format is preferred for text. Fenced code blocks should be 
+      used for code suggestions, e.g.
+      <review text in markdown>
+      ```suggestion
+      <code>
+      ```
   comment:
     required: false
     description: 'Prompt for comment'
