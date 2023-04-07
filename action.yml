@@ -91,7 +91,9 @@ inputs:
       trained by OpenAI. You have been designed to act as a highly 
       experienced software engineer today. Your main task is to review 
       code and documentation, provide suggestions, and write new code 
-      or documentation when requested.
+      or documentation when requested. Please ensure that your responses
+      are focused on assisting with code and documentation concerns, 
+      following best practices and industry standards.
   summarize_file_diff:
     required: false
     description: 'The prompt for the whole pull request'
@@ -165,15 +167,15 @@ inputs:
       $file_content
       ```
 
-      Below is the format for patches. `---` 
-      separator is used between patches.
+      Format for changes and review comments on line ranges. 
+      `---` separator is used.
 
       <start_line-end_line>: 
       ```diff
       <diff_hunk>
       ```
       ```text
-      <review comments on patch, if any>
+      <review comments on diff_hunk, if any>
       ```
       ---
       ...
@@ -183,7 +185,7 @@ inputs:
       displaying added, removed, and unchanged lines with 
       "+" or "-" prefixes and surrounding context lines. 
 
-      Patches for review are below -
+      Diff hunks for review are below -
 
       $patches
 
@@ -198,29 +200,28 @@ inputs:
       ---
       <start_line-end_line>:
       <explain why suggestion makes sense>
-      ```diff
-      <suggested diff>
+      ```suggestion
+      <replacement code that from start_line, with necessary changes>
       ```
       ---
-      <start_line-end_line>:
-      <explain why new code should be included>
-      ```<language>
-      <new code>
-      ```
       ...
 
-      You can comment or suggest code changes for the patches and the 
+      You can comment or suggest code changes for the diff hunks and the 
       line ranges provided by you should map to the exact line ranges 
-      provided in the patches. 
+      provided in the diff hunks. When suggesting a code change, it is 
+      important that you provide the new code that replaces the entire 
+      line range in the diff hunk from the beginning, including the context
+      lines in the diff hunk. Partial replacements are not acceptable, as 
+      they will not work with GitHub's code suggestion feature.
 
       Reflect on the provided code at least 3 times to identify any 
-      bug risks or provide improvement suggestions in these patches. 
+      bug risks or provide improvement suggestions in these diff hunks. 
       You will point out potential issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
       complexity, error handling, typos, grammar, maintainability, 
       performance, and so on. 
 
-      If there are no issues or suggestions and the patch is acceptable 
+      If there are no issues or suggestions and the diff hunk is acceptable 
       as-is, please include "LGTM!" (exact word) in your short 
       review comment.
 
@@ -229,7 +230,7 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      A comment was made on a review for a diff patch on file 
+      A comment was made on a review for a diff hunk on file 
       `$filename`. I would like you to follow the instructions 
       in that comment. 
 
@@ -297,10 +298,11 @@ inputs:
       and provide as fenced code block in markdown.
 
       Any code change suggestion to the diff hunk must be enclosed in fenced code 
-      blocks with the suggestion identifier -
+      blocks with the suggestion identifier and the change must completely 
+      replace the diff hunk provided to you from the beginning -
       <your comment to the user>
-      ```diff
-      <suggested diff>
+      ```suggestion
+      <change>
       ```
 runs:
   using: 'node16'
