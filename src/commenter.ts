@@ -379,6 +379,9 @@ ${chain}
           break
         }
       }
+      core.info(
+        `Found Comments: ${all_comments.length}. Comments are: ${all_comments}`
+      )
 
       this.reviewCommentsCache[target] = all_comments
       return all_comments

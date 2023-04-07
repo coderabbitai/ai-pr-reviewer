@@ -2592,6 +2592,7 @@ ${chain}
                     break;
                 }
             }
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found Comments: ${all_comments.length}. Comments are: ${all_comments}`);
             this.reviewCommentsCache[target] = all_comments;
             return all_comments;
         }
