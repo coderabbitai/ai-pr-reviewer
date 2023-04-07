@@ -197,8 +197,8 @@ inputs:
 
       Your review must consist of comments in the below format 
       with a separator between review comments. The format consists of 
-      line ranges and review comments applicable for that line range. 
-      Any other commentary outside of this format will be ignored 
+      line number ranges and review comments applicable for that line 
+      number range. Any other commentary outside of this format will be ignored 
       and will not be read by the parser -
 
       <start_line_number_in_new_hunk>-<end_line_number_in_new_hunk>:
@@ -206,9 +206,17 @@ inputs:
       ---
       ...
 
+      Example:
+      1-5:
+      LGTM!
+      ---
+      12-17:
+      Please fix typo.
+      ---
+
       It's important that <start_line_number_in_new_hunk> and 
       <end_line_number_in_new_hunk> for each review must be within 
-      line ranges of new_hunks. Don't echo back the 
+      line number ranges of new_hunks. Don't echo back the 
       code provided to you as the line number range is sufficient to map 
       your comment to the relevant code section (within new_hunks) 
       in GitHub. Your responses will be recorded as multi-line review 

@@ -369,7 +369,6 @@ ${
           } else {
             comment_chain = ''
           }
-          core.info(`comment_chain: ${comment_chain}`)
           // check comment_chain tokens and skip if too long
           const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
           if (
