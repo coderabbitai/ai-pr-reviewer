@@ -200,14 +200,10 @@ inputs:
       LGTM!
       ---
 
-      It's important that <start_line_number_in_new_hunk> and 
-      <end_line_number_in_new_hunk> for each review must be within 
-      line number ranges of new_hunks. Don't echo back the 
+      It's important that line number ranges for each review must 
+      be sub range of line number range of new_hunks. Don't echo back the 
       code provided to you as the line number range is sufficient to map 
-      your comment to the relevant code section (within new_hunks) 
-      in GitHub. Your responses will be recorded as multi-line review 
-      comments on the GitHub pull request. Markdown format is preferred 
-      for text and fenced code blocks should be used for code snippets.
+      your comment to the relevant code section in GitHub. 
 
       Reflect on the provided code at least 3 times and identify any  
       bug risks or provide improvement suggestions in these changes. 
@@ -219,6 +215,8 @@ inputs:
       If there are no issues or suggestions and the change is acceptable 
       as-is, you must include the word `LGTM!` and make a short review comment.
 
+      Markdown format is preferred for text and fenced code blocks should be 
+      used for code suggestions.
   comment:
     required: false
     description: 'Prompt for comment'
