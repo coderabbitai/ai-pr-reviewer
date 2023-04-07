@@ -53,6 +53,10 @@ inputs:
       !**/_gen/**
       !**/generated/**
       !**/vendor/**
+  summary_only:
+    required: false
+    description: 'Only provide the summary and skip the code review.'
+    default: 'false'
   openai_light_model:
     required: false
     description:

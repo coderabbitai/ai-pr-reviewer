@@ -7,6 +7,7 @@ import {codeReview} from './review.js'
 async function run(): Promise<void> {
   const options: Options = new Options(
     core.getBooleanInput('debug'),
+    core.getBooleanInput('summary_only'),
     core.getInput('max_files_to_summarize'),
     core.getInput('max_files_to_review'),
     core.getBooleanInput('review_comment_lgtm'),
@@ -37,10 +38,7 @@ async function run(): Promise<void> {
   try {
     lightBot = new Bot(
       options,
-      new OpenAIOptions(
-        options.openai_light_model,
-        options.summary_token_limits
-      )
+      new OpenAIOptions(options.openai_light_model, options.light_token_limits)
     )
   } catch (e: any) {
     core.warning(
@@ -53,7 +51,7 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(
       options,
-      new OpenAIOptions(options.openai_heavy_model, options.review_token_limits)
+      new OpenAIOptions(options.openai_heavy_model, options.heavy_token_limits)
     )
   } catch (e: any) {
     core.warning(
