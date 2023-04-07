@@ -130,7 +130,8 @@ inputs:
         - Table of files and their summaries. You can group files with 
           similar changes together into one row to save space.
 
-      Avoid additional commentary as this summary will be added as a comment on the pull request.
+      Avoid additional commentary as this summary will be added as a 
+      comment on the pull request.
   summarize_release_notes:
     required: false
     description: 'The prompt for generating release notes'
@@ -206,7 +207,12 @@ inputs:
       review comment.
 
       Your responses will be recorded as review comments on the 
-      pull request. Markdown format is preferred for your responses.
+      pull request. Markdown format is preferred for your responses. Any
+      code suggestions that you suggest must be enclosed in fenced code 
+      blocks with the suggestion identifier - 
+      ```suggestion
+      <code>
+      ```
   comment:
     required: false
     description: 'Prompt for comment'
@@ -267,6 +273,11 @@ inputs:
       If the comment contains instructions/requests for you, please comply. 
       For example, if the comment is asking you to generate documentation 
       comments on the code, in your reply please generate the required code.
+      Any code suggestions that you suggest must be enclosed in fenced code 
+      blocks with the suggestion identifier - 
+      ```suggestion
+      <code>
+      ```
 
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".
