@@ -5093,7 +5093,7 @@ ${patch}
                     return;
                 }
                 // parse review
-                const reviewMap = parseOpenAIReview(response);
+                const reviewMap = parseOpenAIReview(response, options.debug);
                 for (const [line, review_comment] of reviewMap) {
                     // check for LGTM
                     if (!options.review_comment_lgtm && review_comment.includes('LGTM')) {
@@ -5180,12 +5180,12 @@ const patch_comment_line = (patch) => {
         return -1;
     }
 };
-function parseOpenAIReview(response) {
+function parseOpenAIReview(response, debug = false) {
     const reviews = new Map();
     // Split the response into lines
     const lines = response.split('\n');
     // Regular expression to match the line number and comment format
-    const lineNumberRegex = /^(\d+):\s*$/;
+    const lineNumberRegex = /(?:^|\s)(\d+):\s*$/;
     const commentSeparator = '---';
     let currentLineNumber = null;
     let currentComment = '';
@@ -5196,10 +5196,13 @@ function parseOpenAIReview(response) {
             // If there is a previous comment, store it in the reviews Map
             if (currentLineNumber !== null) {
                 reviews.set(currentLineNumber, currentComment.trim());
+                debug &&
+                    core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
             }
             // Set the current line number and reset the comment
             currentLineNumber = parseInt(lineNumberMatch[1], 10);
             currentComment = '';
+            debug && core.info(`Found line number: ${currentLineNumber}`);
             continue;
         }
         // Check if the line is a comment separator
@@ -5207,10 +5210,13 @@ function parseOpenAIReview(response) {
             // If there is a previous comment, store it in the reviews Map
             if (currentLineNumber !== null) {
                 reviews.set(currentLineNumber, currentComment.trim());
+                debug &&
+                    core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
             }
             // Reset the current line number and comment
             currentLineNumber = null;
             currentComment = '';
+            debug && core.info('Found comment separator');
             continue;
         }
         // If there is a current line number, add the line to the current comment
@@ -5221,6 +5227,8 @@ function parseOpenAIReview(response) {
     // If there is a comment at the end of the response, store it in the reviews Map
     if (currentLineNumber !== null) {
         reviews.set(currentLineNumber, currentComment.trim());
+        debug &&
+            core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
     }
     return reviews;
 }
