@@ -168,26 +168,16 @@ inputs:
       ```
 
       Format for changes and review comments (if any) -
-
-
       ```new_hunk
       <new code with line numbers>
       ```
 
       ```old_hunk
-      <old code with line numbers>
+      <old code>
       ```
 
       ```comment_chain
       <existing review comments>
-      ```
-      ---
-      ```new_hunk
-      <new code with line numbers>
-      ```
-
-      ```old_hunk
-      <old code with line numbers>
       ```
       ---
       ...
@@ -200,7 +190,6 @@ inputs:
       line number ranges and review comments applicable for that line 
       number range. Any other commentary outside of this format will be ignored 
       and will not be read by the parser -
-
       <start_line_number_in_new_hunk>-<end_line_number_in_new_hunk>:
       <your review>
       ---

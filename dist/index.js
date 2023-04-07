@@ -5092,14 +5092,6 @@ ${skipped_files_to_summarize.length > 0
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
-                const lines = file_content.split('\n');
-                let line_number = 1;
-                file_content = '';
-                for (const line of lines) {
-                    file_content += `${line_number}: ${line}
-`;
-                    line_number += 1;
-                }
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
                 if (file_content_tokens < options.heavy_token_limits.extra_content_tokens) {
                     ins.file_content = file_content;
@@ -5272,7 +5264,7 @@ const parse_hunk = (hunk) => {
     }
     lines.forEach(line => {
         if (line.startsWith('-')) {
-            old_hunk_lines.push(`${old_line}: ${line.substring(1)}`);
+            old_hunk_lines.push(`${line.substring(1)}`);
             old_line++;
         }
         else if (line.startsWith('+')) {
@@ -5280,7 +5272,7 @@ const parse_hunk = (hunk) => {
             new_line++;
         }
         else {
-            old_hunk_lines.push(`${old_line}: ${line}`);
+            old_hunk_lines.push(`${line}`);
             new_hunk_lines.push(`${new_line}: ${line}`);
             old_line++;
             new_line++;
