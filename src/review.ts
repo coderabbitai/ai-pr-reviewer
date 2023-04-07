@@ -329,21 +329,21 @@ ${
       ins.filename = filename
 
       if (file_content.length > 0) {
+        // rewrite file_content to preprend line numbers and colon before each line
+        const lines = file_content.split('\n')
+        let line_number = 1
+        file_content = ''
+        for (const line of lines) {
+          file_content += `${line_number}: ${line}
+`
+          line_number += 1
+        }
+        core.info(`file_content: ${file_content}`)
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
           file_content_tokens < options.heavy_token_limits.extra_content_tokens
         ) {
-          // rewrite file_content to preprend line numbers and colon before each line
-          const lines = file_content.split('\n')
-          let line_number = 1
-          file_content = ''
-          for (const line of lines) {
-            file_content += `${line_number}: ${line}
-`
-            line_number += 1
-          }
           ins.file_content = file_content
-          core.info(`file_content: ${file_content}`)
         } else {
           core.info(
             `skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`
@@ -557,6 +557,11 @@ const parse_hunk = (
   let new_line = hunkInfo.new_hunk.start_line
 
   const lines = hunk.split('\n').slice(1) // Skip the @@ line
+
+  // Remove the last line if it's empty
+  if (lines[lines.length - 1] === '') {
+    lines.pop()
+  }
 
   lines.forEach(line => {
     if (line.startsWith('-')) {

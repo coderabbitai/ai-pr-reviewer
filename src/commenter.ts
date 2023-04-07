@@ -171,7 +171,7 @@ ${tag}`
 
       if (!found) {
         core.info(
-          `Creating new review comment for ${path}:${end_line}: ${message}`
+          `Creating new review comment for ${path}:${start_line}-${end_line}: ${message}`
         )
         await octokit.pulls.createReviewComment({
           owner: repo.owner,
@@ -186,7 +186,9 @@ ${tag}`
         })
       }
     } catch (e) {
-      core.warning(`Failed to post review comment: ${e}`)
+      core.warning(
+        `Failed to post review comment, for ${path}:${start_line}-${end_line}: ${e}`
+      )
     }
   }
 
