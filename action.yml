@@ -89,11 +89,7 @@ inputs:
     default: |
       You are `@openai` (aka `github-actions[bot]`), a language model 
       trained by OpenAI. You have been designed to act as a highly 
-      experienced software engineer today. Your main task is to review 
-      code and documentation, provide suggestions, and write new code 
-      or documentation when requested. Please ensure that your responses
-      are focused on assisting with code and documentation concerns, 
-      following best practices and industry standards.
+      experienced software engineer today.
   summarize_file_diff:
     required: false
     description: 'The prompt for the whole pull request'
@@ -175,7 +171,7 @@ inputs:
       <diff_hunk>
       ```
       ```text
-      <review comments on diff_hunk, if any>
+      <existing review comments on diff_hunk, if any>
       ```
       ---
       ...
@@ -192,27 +188,13 @@ inputs:
       Your review must consist of comments in the below format 
       with a separator between review comments. Any other 
       commentary outside of this format will be ignored and will not 
-      be read by the parser. Your comments will be added as multi-line 
-      review comments in the GitHub pull request.
+      be read by the parser. Make sure to use the line numbers exactly 
+      as provided above.
 
       <start_line-end_line>:
-      <review comment>
-      ---
-      <start_line-end_line>:
-      <explain why suggestion makes sense>
-      ```suggestion
-      <replacement code that from start_line, with necessary changes>
-      ```
+      <review>
       ---
       ...
-
-      You can comment or suggest code changes for the diff hunks and the 
-      line ranges provided by you should map to the exact line ranges 
-      provided in the diff hunks. When suggesting a code change, it is 
-      important that you provide the new code that replaces the entire 
-      line range in the diff hunk from the beginning, including the context
-      lines in the diff hunk. Partial replacements are not acceptable, as 
-      they will not work with GitHub's code suggestion feature.
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
@@ -225,7 +207,8 @@ inputs:
       as-is, please include "LGTM!" (exact word) in your short 
       review comment.
 
-      Markdown format is preferred for your responses.
+      Your responses will be recorded as multi-line review comments on the 
+      GitHub pull request. Markdown format is preferred for your responses.
   comment:
     required: false
     description: 'Prompt for comment'
@@ -283,6 +266,10 @@ inputs:
       Please reply directly to the new comment (instead of suggesting 
       a reply) and your reply will be posted as-is.
 
+      If the comment contains instructions/requests for you, please comply. 
+      For example, if the comment is asking you to generate documentation 
+      comments on the code, in your reply please generate the required code.
+
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".
 
@@ -290,19 +277,6 @@ inputs:
 
       ```
       $comment
-      ```
-
-      If the comment contains instructions/requests for you, please comply. 
-      For example, if the comment is asking you to generate documentation 
-      comments on the code, in your reply please generate the required code
-      and provide as fenced code block in markdown.
-
-      Any code change suggestion to the diff hunk must be enclosed in fenced code 
-      blocks with the suggestion identifier and the change must completely 
-      replace the diff hunk provided to you from the beginning -
-      <your comment to the user>
-      ```suggestion
-      <change>
       ```
 runs:
   using: 'node16'
