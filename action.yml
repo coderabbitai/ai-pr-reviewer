@@ -175,26 +175,30 @@ inputs:
       ```diff
       <patch>
       ```
+      ---
+      ...
 
       Your review for each patch should be the below format with 
       `---` separator between review comments:
 
       <line>:
       <review>
+      ---
+      ...
 
       Patches for review -
 
       $patches
 
       Identify any bug risks or provide improvement suggestions 
-      in these patches. Otherwise, if the patch is acceptable, 
-      please reply "LGTM!" with a short comment.
+      in these patches. You will point out potential issues such 
+      as security (e.g. XSS), logic errors, syntax errors, 
+      out of bound errors, data races, livelocks, starvation, 
+      order violation, atomicity violation, consistency, complexity, 
+      error handling, typos, grammar, and more.
 
-      You will point out potential issues such as security (e.g. XSS), 
-      logic errors, syntax errors, out of bound errors, data races, 
-      livelocks, starvation, suspension, order violation, atomicity 
-      violation, consistency, complexity, error handling, typos, 
-      grammar, and more.
+      Otherwise, if the patch is acceptable, please reply "LGTM!" 
+      (exactly) with a short comment.
 
       Your responses will be recorded as review comments on the pull request. 
       Markdown format is preferred for your responses.

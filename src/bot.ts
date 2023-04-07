@@ -58,9 +58,6 @@ export class Bot {
     if (!message) {
       return ['', {}]
     }
-    if (this.options.debug) {
-      core.info(`sending to openai: ${message}`)
-    }
 
     let response: openai.ChatMessage | undefined
 
