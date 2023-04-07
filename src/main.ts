@@ -12,8 +12,8 @@ async function run(): Promise<void> {
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
     core.getInput('system_message'),
-    core.getInput('openai_summary_model'),
-    core.getInput('openai_review_model'),
+    core.getInput('openai_light_model'),
+    core.getInput('openai_heavy_model'),
     core.getInput('openai_model_temperature'),
     core.getInput('openai_retries'),
     core.getInput('openai_timeout_ms'),
@@ -38,7 +38,7 @@ async function run(): Promise<void> {
     lightBot = new Bot(
       options,
       new OpenAIOptions(
-        options.openai_summary_model,
+        options.openai_light_model,
         options.summary_token_limits
       )
     )
@@ -53,10 +53,7 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(
       options,
-      new OpenAIOptions(
-        options.openai_review_model,
-        options.review_token_limits
-      )
+      new OpenAIOptions(options.openai_heavy_model, options.review_token_limits)
     )
   } catch (e: any) {
     core.warning(

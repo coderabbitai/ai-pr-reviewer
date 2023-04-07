@@ -2725,14 +2725,14 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_summary_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_review_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
-        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_summary_model, options.summary_token_limits));
+        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_light_model, options.summary_token_limits));
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
@@ -2740,7 +2740,7 @@ async function run() {
     }
     let heavyBot = null;
     try {
-        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_review_model, options.review_token_limits));
+        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_heavy_model, options.review_token_limits));
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
@@ -4420,29 +4420,29 @@ class Options {
     review_comment_lgtm;
     path_filters;
     system_message;
-    openai_summary_model;
-    openai_review_model;
+    openai_light_model;
+    openai_heavy_model;
     openai_model_temperature;
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
     summary_token_limits;
     review_token_limits;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_summary_model = 'gpt-3.5-turbo', openai_review_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_light_model = 'gpt-3.5-turbo', openai_heavy_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
-        this.openai_summary_model = openai_summary_model;
-        this.openai_review_model = openai_review_model;
+        this.openai_light_model = openai_light_model;
+        this.openai_heavy_model = openai_heavy_model;
         this.openai_model_temperature = parseFloat(openai_model_temperature);
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        this.summary_token_limits = new TokenLimits(openai_summary_model);
-        this.review_token_limits = new TokenLimits(openai_review_model);
+        this.summary_token_limits = new TokenLimits(openai_light_model);
+        this.review_token_limits = new TokenLimits(openai_heavy_model);
     }
     // print all options using core.info
     print() {
@@ -4452,8 +4452,8 @@ class Options {
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
         core.info(`path_filters: ${this.path_filters}`);
         core.info(`system_message: ${this.system_message}`);
-        core.info(`openai_summary_model: ${this.openai_summary_model}`);
-        core.info(`openai_review_model: ${this.openai_review_model}`);
+        core.info(`openai_light_model: ${this.openai_light_model}`);
+        core.info(`openai_heavy_model: ${this.openai_heavy_model}`);
         core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
         core.info(`openai_retries: ${this.openai_retries}`);
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
