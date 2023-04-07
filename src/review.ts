@@ -387,18 +387,18 @@ ${
             )
           }
         }
-        ins.hunks += `
+        ins.patches += `
 ${patch}
 `
         if (comment_chain !== '') {
-          ins.hunks += `
+          ins.patches += `
 \`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `
         }
 
-        ins.hunks += `
+        ins.patches += `
 ---
 `
       }

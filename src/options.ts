@@ -51,7 +51,7 @@ export class Inputs {
   filename: string
   file_content: string
   file_diff: string
-  hunks: string
+  patches: string
   diff: string
   comment_chain: string
   comment: string
@@ -76,7 +76,7 @@ export class Inputs {
     this.filename = filename
     this.file_content = file_content
     this.file_diff = file_diff
-    this.hunks = patches
+    this.patches = patches
     this.diff = diff
     this.comment_chain = comment_chain
     this.comment = comment
@@ -91,7 +91,7 @@ export class Inputs {
       this.filename,
       this.file_content,
       this.file_diff,
-      this.hunks,
+      this.patches,
       this.diff,
       this.comment_chain,
       this.comment
@@ -123,8 +123,8 @@ export class Inputs {
     if (this.file_diff) {
       content = content.replace('$file_diff', this.file_diff)
     }
-    if (this.hunks) {
-      content = content.replace('$patches', this.hunks)
+    if (this.patches) {
+      content = content.replace('$patches', this.patches)
     }
     if (this.diff) {
       content = content.replace('$diff', this.diff)

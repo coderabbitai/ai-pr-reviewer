@@ -4335,7 +4335,7 @@ class Inputs {
     filename;
     file_content;
     file_diff;
-    hunks;
+    patches;
     diff;
     comment_chain;
     comment;
@@ -4347,13 +4347,13 @@ class Inputs {
         this.filename = filename;
         this.file_content = file_content;
         this.file_diff = file_diff;
-        this.hunks = patches;
+        this.patches = patches;
         this.diff = diff;
         this.comment_chain = comment_chain;
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.hunks, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -4380,8 +4380,8 @@ class Inputs {
         if (this.file_diff) {
             content = content.replace('$file_diff', this.file_diff);
         }
-        if (this.hunks) {
-            content = content.replace('$patches', this.hunks);
+        if (this.patches) {
+            content = content.replace('$patches', this.patches);
         }
         if (this.diff) {
             content = content.replace('$diff', this.diff);
@@ -5134,17 +5134,17 @@ ${skipped_files_to_summarize.length > 0
                         core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                     }
                 }
-                ins.hunks += `
+                ins.patches += `
 ${patch}
 `;
                 if (comment_chain !== '') {
-                    ins.hunks += `
+                    ins.patches += `
 \`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `;
                 }
-                ins.hunks += `
+                ins.patches += `
 ---
 `;
             }
