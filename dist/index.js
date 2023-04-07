@@ -4335,7 +4335,7 @@ class Inputs {
     filename;
     file_content;
     file_diff;
-    patches;
+    hunks;
     diff;
     comment_chain;
     comment;
@@ -4347,13 +4347,13 @@ class Inputs {
         this.filename = filename;
         this.file_content = file_content;
         this.file_diff = file_diff;
-        this.patches = patches;
+        this.hunks = patches;
         this.diff = diff;
         this.comment_chain = comment_chain;
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.hunks, this.diff, this.comment_chain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -4380,8 +4380,8 @@ class Inputs {
         if (this.file_diff) {
             content = content.replace('$file_diff', this.file_diff);
         }
-        if (this.patches) {
-            content = content.replace('$patches', this.patches);
+        if (this.hunks) {
+            content = content.replace('$patches', this.hunks);
         }
         if (this.diff) {
             content = content.replace('$diff', this.diff);
@@ -4901,7 +4901,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             filter_selected_files.push(file);
         }
     }
-    // find patches to review
+    // find hunks to review
     const filtered_files_to_review = await Promise.all(filter_selected_files.map(async (file) => {
         // retrieve file contents
         let file_content = '';
@@ -4941,11 +4941,13 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             if (!hunks) {
                 continue;
             }
-            const hunks_str = `\`\`\`old_hunk
-${hunks.old_hunk}
-\`\`\`
+            const hunks_str = `
 \`\`\`new_hunk
 ${hunks.new_hunk}
+\`\`\`
+
+\`\`\`old_hunk
+${hunks.old_hunk}
 \`\`\`
 `;
             patches.push([
@@ -5088,7 +5090,6 @@ ${skipped_files_to_summarize.length > 0
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
-                // rewrite file_content to preprend line numbers and colon before each line
                 const lines = file_content.split('\n');
                 let line_number = 1;
                 file_content = '';
@@ -5134,17 +5135,17 @@ ${skipped_files_to_summarize.length > 0
                         core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                     }
                 }
-                ins.patches += `
+                ins.hunks += `
 ${patch}
 `;
                 if (comment_chain !== '') {
-                    ins.patches += `
+                    ins.hunks += `
 \`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `;
                 }
-                ins.patches += `
+                ins.hunks += `
 ---
 `;
             }
@@ -5177,10 +5178,10 @@ ${comment_chain}
         };
         const reviewPromises = [];
         const skipped_files_to_review = [];
-        for (const [filename, file_content, , patches] of files_to_review) {
+        for (const [filename, file_content, , hunks] of files_to_review) {
             if (options.max_files_to_review <= 0 ||
                 reviewPromises.length < options.max_files_to_review) {
-                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
+                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, hunks)));
             }
             else {
                 skipped_files_to_review.push(filename);

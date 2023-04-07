@@ -79,7 +79,7 @@ export const codeReview = async (
     }
   }
 
-  // find patches to review
+  // find hunks to review
   const filtered_files_to_review: (
     | [string, string, string, [number, number, string][]]
     | null
@@ -127,11 +127,13 @@ export const codeReview = async (
         if (!hunks) {
           continue
         }
-        const hunks_str = `\`\`\`old_hunk
-${hunks.old_hunk}
-\`\`\`
+        const hunks_str = `
 \`\`\`new_hunk
 ${hunks.new_hunk}
+\`\`\`
+
+\`\`\`old_hunk
+${hunks.old_hunk}
 \`\`\`
 `
         patches.push([
@@ -326,7 +328,6 @@ ${
       ins.filename = filename
 
       if (file_content.length > 0) {
-        // rewrite file_content to preprend line numbers and colon before each line
         const lines = file_content.split('\n')
         let line_number = 1
         file_content = ''
@@ -387,18 +388,18 @@ ${
             )
           }
         }
-        ins.patches += `
+        ins.hunks += `
 ${patch}
 `
         if (comment_chain !== '') {
-          ins.patches += `
+          ins.hunks += `
 \`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `
         }
 
-        ins.patches += `
+        ins.hunks += `
 ---
 `
       }
@@ -443,14 +444,14 @@ ${comment_chain}
 
     const reviewPromises = []
     const skipped_files_to_review = []
-    for (const [filename, file_content, , patches] of files_to_review) {
+    for (const [filename, file_content, , hunks] of files_to_review) {
       if (
         options.max_files_to_review <= 0 ||
         reviewPromises.length < options.max_files_to_review
       ) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
-            do_review(filename, file_content, patches)
+            do_review(filename, file_content, hunks)
           )
         )
       } else {

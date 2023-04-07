@@ -169,21 +169,25 @@ inputs:
 
       Format for changes and review comments (if any) -
 
-      ```old_hunk
-      <old code with line numbers>
-      ```
+
       ```new_hunk
       <new code with line numbers>
       ```
+
+      ```old_hunk
+      <old code with line numbers>
+      ```
+
       ```comment_chain
       <existing review comments>
       ```
       ---
-      ```old_hunk
-      <old code with line numbers>
-      ```
       ```new_hunk
       <new code with line numbers>
+      ```
+
+      ```old_hunk
+      <old code with line numbers>
       ```
       ---
       ...
@@ -212,14 +216,14 @@ inputs:
       request. Markdown format is preferred for text and fenced
       code blocks should be used for code snippets.
 
-      Provide thorough and thoughtful feedback to identify any  
-      bug risks or provide improvement suggestions in these diff hunks. 
+      Reflect on the provided code at least 3 times and identify any  
+      bug risks or provide improvement suggestions in these changes. 
       You will point out potential issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
       complexity, error handling, typos, grammar, maintainability, 
       performance, and so on. 
 
-      If there are no issues or suggestions and the diff hunk is acceptable 
+      If there are no issues or suggestions and the change is acceptable 
       as-is, please include "LGTM!" (exact word) in your short 
       review comment.
 
