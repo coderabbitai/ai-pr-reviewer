@@ -207,12 +207,7 @@ inputs:
       review comment.
 
       Your responses will be recorded as review comments on the 
-      pull request. Markdown format is preferred for your responses. Any
-      code suggestions that you suggest must be enclosed in fenced code 
-      blocks with the suggestion identifier - 
-      ```suggestion
-      <code>
-      ```
+      pull request. Markdown format is preferred for your responses.
   comment:
     required: false
     description: 'Prompt for comment'
@@ -273,11 +268,6 @@ inputs:
       If the comment contains instructions/requests for you, please comply. 
       For example, if the comment is asking you to generate documentation 
       comments on the code, in your reply please generate the required code.
-      Any code suggestions that you suggest must be enclosed in fenced code 
-      blocks with the suggestion identifier - 
-      ```suggestion
-      <code>
-      ```
 
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".
