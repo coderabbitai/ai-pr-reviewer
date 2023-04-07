@@ -167,8 +167,7 @@ inputs:
       $file_content
       ```
 
-      Below is the format for diff hunks 
-      and review comments on line ranges. 
+      Format for changes and review comments on line ranges. 
       `---` separator is used.
 
       <start_line-end_line>: 
@@ -205,11 +204,6 @@ inputs:
       <replacement code that from start_line, with necessary changes>
       ```
       ---
-      <start_line-end_line>:
-      <explain why new code should be included>
-      ```<language>
-      <new code>
-      ```
       ...
 
       You can comment or suggest code changes for the diff hunks and the 
