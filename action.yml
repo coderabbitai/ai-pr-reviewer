@@ -183,27 +183,25 @@ inputs:
       ---
       ...
 
-      The <diff_hunk> is in the unidiff format which 
-      represent the differences between two text files, 
-      displaying added, removed, and unchanged lines with 
-      "+" or "-" prefixes and surrounding context lines. 
+      The <diff_hunk> is in the unidiff format.
 
       Changes for review -
       $patches
 
       Your review must consist of comments in the below format 
-      with a separator between review comments Any other 
-      commentary outside of this format will be ignored and will not 
-      be read by the parser -
+      with a separator between review comments. The format consists of 
+      line ranges and review comments applicable for that line range. 
+      Any other commentary outside of this format will be ignored 
+      and will not be read by the parser -
       <review_start_line-review_end_line>:
-      <code review comment for code between review_start_line and review_end_line>
+      <your review>
       ---
       ...
 
-      Make sure your comments are not outside the line ranges in the changes. 
-      i.e. <review_start_line> and <review_end_line> for each review must be 
-      within line ranges in the changes above and you can comment on 
-      sub-line ranges, if needed.
+      Make sure <review_start_line> and <review_end_line> for each review 
+      must be within line ranges in the changes above. Don't echo back the 
+      code provided to you as the line number range is sufficient to map 
+      your comment to the relevant code section in GitHub.
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
