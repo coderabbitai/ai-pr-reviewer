@@ -217,8 +217,7 @@ inputs:
       performance, and so on. 
 
       If there are no issues or suggestions and the change is acceptable 
-      as-is, please include "LGTM!" (exact word) in your short 
-      review comment.
+      as-is, you must include the word `LGTM!` and make a short review comment.
 
   comment:
     required: false
