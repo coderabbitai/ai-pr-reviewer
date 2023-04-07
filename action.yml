@@ -167,7 +167,7 @@ inputs:
       ```
 
       Format for changes and review comments (if any) 
-      on line ranges -
+      on line ranges (line numbers in new file) -
       <start_line-end_line>: 
       ```diff
       <diff_hunk>
@@ -195,23 +195,15 @@ inputs:
       with a separator between review comments Any other 
       commentary outside of this format will be ignored and will not 
       be read by the parser -
-      <start_line-end_line>:
-      <review>
-      ---
-      <replace_start_line-replace_end_line>:
-      <review>
-      ```suggestion
-      <new code from replace_start_line to replace_end_line>
-      ```
+      <review_start_line-review_end_line>:
+      <code review comment for code between review_start_line and review_end_line>
       ---
       ...
 
-      Make sure your comments are not outside the line ranges in the changes,
-      though you can comment on sub-line ranges. If you want to suggest code 
-      changes, the replacement code you suggest must not be in the diff format 
-      and must be exact code that will replace existing code between 
-      <replace_start_line> and <replace_end_line> based in line number in the 
-      new file.
+      Make sure your comments are not outside the line ranges in the changes. 
+      i.e. <review_start_line> and <review_end_line> for each review must be 
+      within line ranges in the changes above and you can comment on 
+      sub-line ranges, if needed.
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
