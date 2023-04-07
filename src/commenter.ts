@@ -253,8 +253,8 @@ ${COMMENT_REPLY_TAG}
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
-        comment.start_line === start_line &&
-        comment.line === end_line &&
+        comment.start_line >= start_line &&
+        comment.line <= end_line &&
         comment.body !== ''
     )
   }
