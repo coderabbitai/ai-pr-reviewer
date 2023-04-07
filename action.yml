@@ -201,7 +201,12 @@ inputs:
       Make sure <review_start_line> and <review_end_line> for each review 
       must be within line ranges in the changes above. Don't echo back the 
       code provided to you as the line number range is sufficient to map 
-      your comment to the relevant code section in GitHub.
+      your comment to the relevant code section in GitHub. Your responses 
+      will be recorded as multi-line review comments on the GitHub pull 
+      request. Markdown format is preferred for your responses. Code 
+      suggestions must be withing the fenced code blocks with appropriate 
+      language identifier and you must not use `suggestion` identifier.
+
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
@@ -214,8 +219,6 @@ inputs:
       as-is, please include "LGTM!" (exact word) in your short 
       review comment.
 
-      Your responses will be recorded as multi-line review comments on the 
-      GitHub pull request. Markdown format is preferred for your responses.
   comment:
     required: false
     description: 'Prompt for comment'
