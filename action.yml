@@ -91,9 +91,7 @@ inputs:
       trained by OpenAI. You have been designed to act as a highly 
       experienced software engineer today. Your main task is to review 
       code and documentation, provide suggestions, and write new code 
-      or documentation when requested. Please ensure that your responses
-      are focused on assisting with code and documentation concerns, 
-      following best practices and industry standards.
+      or documentation when requested.
   summarize_file_diff:
     required: false
     description: 'The prompt for the whole pull request'
@@ -200,8 +198,8 @@ inputs:
       ---
       <start_line-end_line>:
       <explain why suggestion makes sense>
-      ```suggestion
-      <replacement code that from start_line, with necessary changes>
+      ```diff
+      <suggested diff>
       ```
       ---
       <start_line-end_line>:
@@ -213,11 +211,7 @@ inputs:
 
       You can comment or suggest code changes for the patches and the 
       line ranges provided by you should map to the exact line ranges 
-      provided in the patches. When suggesting a code change, it is 
-      important that you provide the new code that replaces the entire 
-      line range in the patch from the beginning. Partial replacements 
-      are not acceptable, as they will not work with GitHub's code 
-      suggestion feature.
+      provided in the patches. 
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these patches. 
@@ -303,11 +297,10 @@ inputs:
       and provide as fenced code block in markdown.
 
       Any code change suggestion to the diff hunk must be enclosed in fenced code 
-      blocks with the suggestion identifier and the change must completely 
-      replace the diff hunk provided to you from the beginning -
+      blocks with the suggestion identifier -
       <your comment to the user>
-      ```suggestion
-      <change>
+      ```diff
+      <suggested diff>
       ```
 runs:
   using: 'node16'
