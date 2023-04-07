@@ -387,7 +387,11 @@ ${comment_chain}
         const reviewMap = parseOpenAIReview(response, options.debug)
         for (const [, review] of reviewMap) {
           // check for LGTM
-          if (!options.review_comment_lgtm && review.comment.includes('LGTM')) {
+          if (
+            !options.review_comment_lgtm &&
+            (review.comment.includes('LGTM') ||
+              review.comment.includes('looks good to me'))
+          ) {
             continue
           }
           if (!context.payload.pull_request) {
