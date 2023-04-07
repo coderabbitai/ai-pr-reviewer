@@ -205,6 +205,9 @@ inputs:
       (start_line and end_line) as long as your line ranges are 
       within the line ranges in the patches. Your comments will 
       be added as multi-line review comments in the GitHub pull request.
+      When suggesting code changes, the line ranges provided by you should 
+      map to exact line ranges that you wish to replace in the code 
+      with your new code suggestion.
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
