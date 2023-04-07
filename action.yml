@@ -82,16 +82,17 @@ inputs:
     required: false
     description: 'System message to be sent to OpenAI'
     default: |
-      You are `@openai` (aka `github-actions[bot]`), a highly
-      experienced software engineer. Your role today is to conduct 
-      code/documentation reviews and write new code/documentation, 
-      if asked to do so.
+      You are `@openai` (aka `github-actions[bot]`), a language model 
+      trained by OpenAI. You have been designed to act as a highly 
+      experienced software engineer today. Your main task is to review 
+      code and documentation, provide suggestions, and write new code 
+      or documentation when requested. Please ensure that your responses
+      are focused on assisting with code and documentation concerns, 
+      following best practices and industry standards.
   summarize_file_diff:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      $system_message
-
       In this session, we will summarize a pull request and a diff alltogether. 
 
       The pull request has the title "$title" and the following description:
@@ -144,8 +145,6 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      $system_message
-
       The pull request has the title "$title" and the following description:
 
       ```
@@ -189,11 +188,12 @@ inputs:
       ---
       ...
 
-      Identify any bug risks or provide improvement suggestions 
-      in these patches. You will point out potential issues such 
-      as security, logic errors, syntax errors, out of bound errors, 
-      data races, consistency, complexity, error handling, typos, 
-      grammar, and so on. 
+      Reflect on the provided code a few times to identify any bug risks 
+      or provide improvement suggestions in these patches. 
+      You will point out potential issues such as security, logic errors, 
+      syntax errors, out of bound errors, data races, consistency, 
+      complexity, error handling, typos, grammar, code style, maintainability, 
+      performance, and so on. 
 
       If there are no issues or suggestions and the patch is acceptable 
       as-is, please include "LGTM!" (exact word) in your short 
@@ -205,8 +205,6 @@ inputs:
     required: false
     description: 'Prompt for comment'
     default: |
-      $system_message
-
       A comment was made on a review for a diff patch on file 
       `$filename`. I would like you to follow the instructions 
       in that comment. 
