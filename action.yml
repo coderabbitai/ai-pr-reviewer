@@ -205,6 +205,9 @@ inputs:
       1-5:
       LGTM!
       ---
+      6-6:
+      LGTM!
+      ---
 
       Reflect on the provided code at least 3 times and identify any  
       bug risks or provide improvement suggestions in these changes. 
@@ -217,11 +220,14 @@ inputs:
       as-is, you must include the word `LGTM!` and make a short review comment.
 
       Markdown format is preferred for text. Fenced code blocks should be 
-      used for code suggestions, e.g.
+      used for code suggestions that replace exact lines ranges -
+
+      start-end:
       <review text in markdown>
       ```suggestion
-      <code>
+      <replacement code between start and end lines>
       ```
+      ---
   comment:
     required: false
     description: 'Prompt for comment'
