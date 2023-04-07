@@ -4939,7 +4939,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             if (!patch_lines) {
                 continue;
             }
-            const hunks = parse_hunk(patch);
+            const hunks = parse_patch(patch);
             if (!hunks) {
                 continue;
             }
@@ -5248,8 +5248,8 @@ const patch_start_end_line = (patch) => {
         return null;
     }
 };
-const parse_hunk = (hunk) => {
-    const hunkInfo = patch_start_end_line(hunk);
+const parse_patch = (patch) => {
+    const hunkInfo = patch_start_end_line(patch);
     if (!hunkInfo) {
         return null;
     }
@@ -5257,7 +5257,7 @@ const parse_hunk = (hunk) => {
     const new_hunk_lines = [];
     //let old_line = hunkInfo.old_hunk.start_line
     let new_line = hunkInfo.new_hunk.start_line;
-    const lines = hunk.split('\n').slice(1); // Skip the @@ line
+    const lines = patch.split('\n').slice(1); // Skip the @@ line
     // Remove the last line if it's empty
     if (lines[lines.length - 1] === '') {
         lines.pop();
