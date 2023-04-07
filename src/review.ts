@@ -147,7 +147,7 @@ export const codeReview = async (
       if (file_content.length > 0) {
         if (
           tokenizer.get_token_count(file_content) <
-          options.summary_token_limits.extra_content_tokens
+          options.light_token_limits.extra_content_tokens
         ) {
           ins.file_content = file_content
         }
@@ -163,7 +163,7 @@ export const codeReview = async (
 
         if (
           !ins.file_diff ||
-          file_diff_tokens < options.summary_token_limits.extra_content_tokens
+          file_diff_tokens < options.light_token_limits.extra_content_tokens
         ) {
           // summarize content
           try {
@@ -292,6 +292,11 @@ ${
       }
     }
 
+    if (options.summary_only === true) {
+      core.info('summary_only is true, exiting')
+      return
+    }
+
     const review = async (
       filename: string,
       file_content: string,
@@ -305,7 +310,7 @@ ${
       if (file_content.length > 0) {
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
-          file_content_tokens < options.review_token_limits.extra_content_tokens
+          file_content_tokens < options.heavy_token_limits.extra_content_tokens
         ) {
           ins.file_content = file_content
         } else {

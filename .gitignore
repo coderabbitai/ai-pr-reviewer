@@ -98,8 +98,28 @@ Thumbs.db
 __tests__/runner/*
 lib/**/*
 
+### Tags
+# Ignore tags created by etags, ctags, gtags (GNU global) and cscope
+TAGS
+.TAGS
+!TAGS/
+tags
+.tags
+!tags/
+gtags.files
+GTAGS
+GRTAGS
+GPATH
+GSYMS
+cscope.files
+cscope.out
+cscope.in.out
+cscope.po.out
+tags.temp
+tags.lock
+
+
 # Local testing
 .env
 .secrets
 bin/act
-

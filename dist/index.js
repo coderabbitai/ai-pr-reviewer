@@ -2725,14 +2725,14 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
-        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_light_model, options.summary_token_limits));
+        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_light_model, options.light_token_limits));
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
@@ -2740,7 +2740,7 @@ async function run() {
     }
     let heavyBot = null;
     try {
-        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_heavy_model, options.review_token_limits));
+        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_heavy_model, options.heavy_token_limits));
     }
     catch (e) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
@@ -4415,6 +4415,7 @@ class OpenAIOptions {
 }
 class Options {
     debug;
+    summary_only;
     max_files_to_summarize;
     max_files_to_review;
     review_comment_lgtm;
@@ -4426,10 +4427,11 @@ class Options {
     openai_retries;
     openai_timeout_ms;
     openai_concurrency_limit;
-    summary_token_limits;
-    review_token_limits;
-    constructor(debug, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_light_model = 'gpt-3.5-turbo', openai_heavy_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    light_token_limits;
+    heavy_token_limits;
+    constructor(debug, summary_only, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_light_model = 'gpt-3.5-turbo', openai_heavy_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
+        this.summary_only = summary_only;
         this.max_files_to_summarize = parseInt(max_files_to_summarize);
         this.max_files_to_review = parseInt(max_files_to_review);
         this.review_comment_lgtm = review_comment_lgtm;
@@ -4441,12 +4443,13 @@ class Options {
         this.openai_retries = parseInt(openai_retries);
         this.openai_timeout_ms = parseInt(openai_timeout_ms);
         this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        this.summary_token_limits = new TokenLimits(openai_light_model);
-        this.review_token_limits = new TokenLimits(openai_heavy_model);
+        this.light_token_limits = new TokenLimits(openai_light_model);
+        this.heavy_token_limits = new TokenLimits(openai_heavy_model);
     }
     // print all options using core.info
     print() {
         core.info(`debug: ${this.debug}`);
+        core.info(`summary_only: ${this.summary_only}`);
         core.info(`max_files_to_summarize: ${this.max_files_to_summarize}`);
         core.info(`max_files_to_review: ${this.max_files_to_review}`);
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
@@ -4458,8 +4461,8 @@ class Options {
         core.info(`openai_retries: ${this.openai_retries}`);
         core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
         core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`);
-        core.info(`summary_token_limits: ${this.summary_token_limits.string()}`);
-        core.info(`review_token_limits: ${this.review_token_limits.string()}`);
+        core.info(`summary_token_limits: ${this.light_token_limits.string()}`);
+        core.info(`review_token_limits: ${this.heavy_token_limits.string()}`);
     }
     check_path(path) {
         const ok = this.path_filters.check(path);
@@ -4630,7 +4633,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             }
             if (file_content.length > 0) {
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
-                if (file_content_tokens < options.review_token_limits.extra_content_tokens) {
+                if (file_content_tokens < options.heavy_token_limits.extra_content_tokens) {
                     inputs.file_content = file_content;
                 }
             }
@@ -4640,7 +4643,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                     inputs.diff = file_diff;
                 }
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
-                if (file_diff_tokens < options.review_token_limits.extra_content_tokens) {
+                if (file_diff_tokens < options.heavy_token_limits.extra_content_tokens) {
                     inputs.file_diff = file_diff;
                 }
             }
@@ -4933,7 +4936,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             ins.filename = filename;
             if (file_content.length > 0) {
                 if (tokenizer/* get_token_count */.u(file_content) <
-                    options.summary_token_limits.extra_content_tokens) {
+                    options.light_token_limits.extra_content_tokens) {
                     ins.file_content = file_content;
                 }
             }
@@ -4944,7 +4947,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             if (ins.file_content || ins.file_diff) {
                 const file_diff_tokens = tokenizer/* get_token_count */.u(file_diff);
                 if (!ins.file_diff ||
-                    file_diff_tokens < options.summary_token_limits.extra_content_tokens) {
+                    file_diff_tokens < options.light_token_limits.extra_content_tokens) {
                     // summarize content
                     try {
                         const [summarize_resp] = await lightBot.chat(prompts.render_summarize_file_diff(ins), {});
@@ -5043,13 +5046,17 @@ ${skipped_files_to_summarize.length > 0
                 commenter.update_description(context.payload.pull_request.number, message);
             }
         }
+        if (options.summary_only === true) {
+            core.info('summary_only is true, exiting');
+            return;
+        }
         const review = async (filename, file_content, patches) => {
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
             if (file_content.length > 0) {
                 const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-                if (file_content_tokens < options.review_token_limits.extra_content_tokens) {
+                if (file_content_tokens < options.heavy_token_limits.extra_content_tokens) {
                     ins.file_content = file_content;
                 }
                 else {

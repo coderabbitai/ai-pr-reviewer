@@ -180,6 +180,7 @@ export class OpenAIOptions {
 
 export class Options {
   debug: boolean
+  summary_only: boolean
   max_files_to_summarize: number
   max_files_to_review: number
   review_comment_lgtm: boolean
@@ -191,11 +192,12 @@ export class Options {
   openai_retries: number
   openai_timeout_ms: number
   openai_concurrency_limit: number
-  summary_token_limits: TokenLimits
-  review_token_limits: TokenLimits
+  light_token_limits: TokenLimits
+  heavy_token_limits: TokenLimits
 
   constructor(
     debug: boolean,
+    summary_only: boolean,
     max_files_to_summarize = '40',
     max_files_to_review = '0',
     review_comment_lgtm = false,
@@ -209,6 +211,7 @@ export class Options {
     openai_concurrency_limit = '4'
   ) {
     this.debug = debug
+    this.summary_only = summary_only
     this.max_files_to_summarize = parseInt(max_files_to_summarize)
     this.max_files_to_review = parseInt(max_files_to_review)
     this.review_comment_lgtm = review_comment_lgtm
@@ -220,13 +223,14 @@ export class Options {
     this.openai_retries = parseInt(openai_retries)
     this.openai_timeout_ms = parseInt(openai_timeout_ms)
     this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
-    this.summary_token_limits = new TokenLimits(openai_light_model)
-    this.review_token_limits = new TokenLimits(openai_heavy_model)
+    this.light_token_limits = new TokenLimits(openai_light_model)
+    this.heavy_token_limits = new TokenLimits(openai_heavy_model)
   }
 
   // print all options using core.info
   print(): void {
     core.info(`debug: ${this.debug}`)
+    core.info(`summary_only: ${this.summary_only}`)
     core.info(`max_files_to_summarize: ${this.max_files_to_summarize}`)
     core.info(`max_files_to_review: ${this.max_files_to_review}`)
     core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
@@ -238,8 +242,8 @@ export class Options {
     core.info(`openai_retries: ${this.openai_retries}`)
     core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)
     core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`)
-    core.info(`summary_token_limits: ${this.summary_token_limits.string()}`)
-    core.info(`review_token_limits: ${this.review_token_limits.string()}`)
+    core.info(`summary_token_limits: ${this.light_token_limits.string()}`)
+    core.info(`review_token_limits: ${this.heavy_token_limits.string()}`)
   }
 
   check_path(path: string): boolean {

@@ -137,7 +137,7 @@ export const handleReviewComment = async (
       if (file_content.length > 0) {
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
-          file_content_tokens < options.review_token_limits.extra_content_tokens
+          file_content_tokens < options.heavy_token_limits.extra_content_tokens
         ) {
           inputs.file_content = file_content
         }
@@ -150,7 +150,7 @@ export const handleReviewComment = async (
         }
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (
-          file_diff_tokens < options.review_token_limits.extra_content_tokens
+          file_diff_tokens < options.heavy_token_limits.extra_content_tokens
         ) {
           inputs.file_diff = file_diff
         }
