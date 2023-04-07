@@ -177,6 +177,7 @@ inputs:
       ```
       <new code with line numbers>
       ```
+      comment_chain:
       ```text
       <existing review comments>
       ```

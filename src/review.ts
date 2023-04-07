@@ -131,7 +131,6 @@ export const codeReview = async (
 \`\`\`
 ${hunks.old_hunk}
 \`\`\`
----
 new_hunk:
 \`\`\`
 ${hunks.new_hunk}
@@ -395,6 +394,7 @@ ${patch}
 `
         if (comment_chain !== '') {
           ins.patches += `
+comment_chain:
 \`\`\`text
 ${comment_chain}
 \`\`\`
