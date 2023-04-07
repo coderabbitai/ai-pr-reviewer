@@ -201,20 +201,19 @@ inputs:
       Any other commentary outside of this format will be ignored 
       and will not be read by the parser -
 
-      <start_line_number_new_code>-<end_line_number_new_code>:
+      <start_line_number_in_new_hunk>-<end_line_number_in_new_hunk>:
       <your review>
       ---
       ...
 
-      It's important that <start_line_number_new_code> and 
-      <end_line_number_new_code> for each review must be within 
-      line ranges of new_hunks as you cannot make comments 
-      on line numbers of old_hunks. Don't echo back the 
+      It's important that <start_line_number_in_new_hunk> and 
+      <end_line_number_in_new_hunk> for each review must be within 
+      line ranges of new_hunks. Don't echo back the 
       code provided to you as the line number range is sufficient to map 
-      your comment to the relevant code section in GitHub. Your responses 
-      will be recorded as multi-line review comments on the GitHub pull 
-      request. Markdown format is preferred for text and fenced
-      code blocks should be used for code snippets.
+      your comment to the relevant code section (within new_hunks) 
+      in GitHub. Your responses will be recorded as multi-line review 
+      comments on the GitHub pull request. Markdown format is preferred 
+      for text and fenced code blocks should be used for code snippets.
 
       Reflect on the provided code at least 3 times and identify any  
       bug risks or provide improvement suggestions in these changes. 
