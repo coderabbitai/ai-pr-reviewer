@@ -81,7 +81,7 @@ export const codeReview = async (
 
   // find patches to review
   const filtered_files_to_review: (
-    | [string, string, string, [number, string][]]
+    | [string, string, string, [number, number, string][]]
     | null
   )[] = await Promise.all(
     filter_selected_files.map(async file => {
@@ -117,10 +117,17 @@ export const codeReview = async (
         file_diff = file.patch
       }
 
-      const patches: [number, string][] = []
+      const patches: [number, number, string][] = []
       for (const patch of split_patch(file.patch)) {
-        const line = patch_comment_line(patch)
-        patches.push([line, patch])
+        const patch_lines = patch_start_end_line(patch)
+        if (
+          !patch_lines ||
+          patch_lines.start_line === -1 ||
+          patch_lines.end_line === -1
+        ) {
+          continue
+        }
+        patches.push([patch_lines.start_line, patch_lines.end_line, patch])
       }
       if (patches.length > 0) {
         return [file.filename, file_content, file_diff, patches]
@@ -133,7 +140,7 @@ export const codeReview = async (
   // Filter out any null results
   const files_to_review = filtered_files_to_review.filter(
     file => file !== null
-  ) as [string, string, string, [number, string][]][]
+  ) as [string, string, string, [number, number, string][]][]
 
   if (files_to_review.length > 0) {
     const generateSummary = async (
@@ -297,10 +304,10 @@ ${
       return
     }
 
-    const review = async (
+    const do_review = async (
       filename: string,
       file_content: string,
-      patches: [number, string][]
+      patches: [number, number, string][]
     ): Promise<void> => {
       // make a copy of inputs
       const ins: Inputs = inputs.clone()
@@ -320,7 +327,7 @@ ${
         }
       }
 
-      for (const [line, patch] of patches) {
+      for (const [start_line, end_line, patch] of patches) {
         if (!context.payload.pull_request) {
           core.warning('No pull request found, skipping.')
           continue
@@ -328,17 +335,18 @@ ${
         let comment_chain = 'no comments on this patch'
         try {
           // get existing comments on the line
-          const all_chains = await commenter.get_conversation_chains_at_line(
+          const all_chains = await commenter.get_conversation_chains_at_range(
             context.payload.pull_request.number,
             filename,
-            line,
+            start_line,
+            end_line,
             COMMENT_REPLY_TAG
           )
 
           if (all_chains.length > 0) {
             comment_chain = all_chains
           } else {
-            comment_chain = 'no previous comments'
+            comment_chain = ''
           }
         } catch (e: unknown) {
           if (e instanceof ChatGPTError) {
@@ -347,13 +355,21 @@ ${
             )
           }
         }
-        ins.patches += `${line}:
-\`\`\`text
-${comment_chain}
-\`\`\`
+        ins.patches += `
+${start_line}-${end_line}:
 \`\`\`diff
 ${patch}
 \`\`\`
+`
+        if (comment_chain !== '') {
+          ins.patches += `
+\`\`\`text
+${comment_chain}
+\`\`\`
+`
+        }
+
+        ins.patches += `
 ---
 `
       }
@@ -369,9 +385,9 @@ ${patch}
         }
         // parse review
         const reviewMap = parseOpenAIReview(response, options.debug)
-        for (const [line, review_comment] of reviewMap) {
+        for (const [, review] of reviewMap) {
           // check for LGTM
-          if (!options.review_comment_lgtm && review_comment.includes('LGTM')) {
+          if (!options.review_comment_lgtm && review.comment.includes('LGTM')) {
             continue
           }
           if (!context.payload.pull_request) {
@@ -382,8 +398,9 @@ ${patch}
             context.payload.pull_request.number,
             commits[commits.length - 1].sha,
             filename,
-            line,
-            `${review_comment}`
+            review.start_line,
+            review.end_line,
+            `${review.comment}`
           )
         }
       } catch (e: any) {
@@ -400,7 +417,7 @@ ${patch}
       ) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
-            review(filename, file_content, patches)
+            do_review(filename, file_content, patches)
           )
         )
       } else {
@@ -437,9 +454,6 @@ ${patch}
   }
 }
 
-// Write a function that takes diff for a single file as a string
-// and splits the diff into separate patches
-
 const split_patch = (patch: string | null | undefined): string[] => {
   if (!patch) {
     return []
@@ -464,85 +478,114 @@ const split_patch = (patch: string | null | undefined): string[] => {
   return result
 }
 
-const patch_comment_line = (patch: string): number => {
+const patch_start_end_line = (
+  patch: string
+): {start_line: number; end_line: number} | null => {
   const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
   const match = pattern.exec(patch)
   if (match) {
     const begin = parseInt(match[4])
     const diff = parseInt(match[5])
-    return begin + diff - 1
+    return {
+      start_line: begin,
+      end_line: begin + diff - 1
+    }
   } else {
-    return -1
+    return null
   }
+}
+
+type Review = {
+  start_line: number
+  end_line: number
+  comment: string
 }
 
 function parseOpenAIReview(
   response: string,
   debug = false
-): Map<number, string> {
-  const reviews = new Map<number, string>()
+): Map<string, Review> {
+  const reviews = new Map<string, Review>()
 
   // Split the response into lines
   const lines = response.split('\n')
 
-  // Regular expression to match the line number and comment format
-  const lineNumberRegex = /(?:^|\s)(\d+):\s*$/
+  // Regular expression to match the line number range and comment format
+  const lineNumberRangeRegex = /(?:^|\s)(\d+)-(\d+):\s*$/
   const commentSeparator = '---'
 
-  let currentLineNumber: number | null = null
+  let currentStartLine: number | null = null
+  let currentEndLine: number | null = null
   let currentComment = ''
 
   for (const line of lines) {
-    // Check if the line matches the line number format
-    const lineNumberMatch = line.match(lineNumberRegex)
+    // Check if the line matches the line number range format
+    const lineNumberRangeMatch = line.match(lineNumberRangeRegex)
 
-    if (lineNumberMatch) {
+    if (lineNumberRangeMatch) {
       // If there is a previous comment, store it in the reviews Map
-      if (currentLineNumber !== null) {
-        reviews.set(currentLineNumber, currentComment.trim())
+      if (currentStartLine !== null && currentEndLine !== null) {
+        reviews.set(`${currentStartLine}-${currentEndLine}`, {
+          start_line: currentStartLine,
+          end_line: currentEndLine,
+          comment: currentComment.trim()
+        })
         debug &&
           core.info(
-            `Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`
+            `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
           )
       }
 
-      // Set the current line number and reset the comment
-      currentLineNumber = parseInt(lineNumberMatch[1], 10)
+      // Set the current line number range and reset the comment
+      currentStartLine = parseInt(lineNumberRangeMatch[1], 10)
+      currentEndLine = parseInt(lineNumberRangeMatch[2], 10)
       currentComment = ''
-      debug && core.info(`Found line number: ${currentLineNumber}`)
+      debug &&
+        core.info(
+          `Found line number range: ${currentStartLine}-${currentEndLine}`
+        )
       continue
     }
 
     // Check if the line is a comment separator
     if (line.trim() === commentSeparator) {
       // If there is a previous comment, store it in the reviews Map
-      if (currentLineNumber !== null) {
-        reviews.set(currentLineNumber, currentComment.trim())
+      if (currentStartLine !== null && currentEndLine !== null) {
+        reviews.set(`${currentStartLine}-${currentEndLine}`, {
+          start_line: currentStartLine,
+          end_line: currentEndLine,
+          comment: currentComment.trim()
+        })
         debug &&
           core.info(
-            `Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`
+            `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
           )
       }
 
-      // Reset the current line number and comment
-      currentLineNumber = null
+      // Reset the current line number range and comment
+      currentStartLine = null
+      currentEndLine = null
       currentComment = ''
       debug && core.info('Found comment separator')
       continue
     }
 
-    // If there is a current line number, add the line to the current comment
-    if (currentLineNumber !== null) {
+    // If there is a current line number range, add the line to the current comment
+    if (currentStartLine !== null && currentEndLine !== null) {
       currentComment += `${line}\n`
     }
   }
 
   // If there is a comment at the end of the response, store it in the reviews Map
-  if (currentLineNumber !== null) {
-    reviews.set(currentLineNumber, currentComment.trim())
+  if (currentStartLine !== null && currentEndLine !== null) {
+    reviews.set(`${currentStartLine}-${currentEndLine}`, {
+      start_line: currentStartLine,
+      end_line: currentEndLine,
+      comment: currentComment.trim()
+    })
     debug &&
       core.info(
-        `Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`
+        `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
       )
   }
 
