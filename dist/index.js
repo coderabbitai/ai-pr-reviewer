@@ -2414,7 +2414,7 @@ ${tag}`;
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, line, message, tag = COMMENT_TAG) {
+    async review_comment(pull_number, commit_id, path, start_line, end_line, message, tag = COMMENT_TAG) {
         message = `${COMMENT_GREETING}
 
 ${message}
@@ -2423,10 +2423,10 @@ ${tag}`;
         // replace comment made by this action
         try {
             let found = false;
-            const comments = await this.get_comments_at_line(pull_number, path, line);
+            const comments = await this.get_comments_at_lines(pull_number, path, start_line, end_line);
             for (const comment of comments) {
                 if (comment.body.includes(tag)) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${line}: ${message}`);
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${end_line}: ${message}`);
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -2438,7 +2438,7 @@ ${tag}`;
                 }
             }
             if (!found) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${line}: ${message}`);
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${end_line}: ${message}`);
                 await octokit.pulls.createReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
@@ -2446,7 +2446,9 @@ ${tag}`;
                     body: message,
                     commit_id,
                     path,
-                    line
+                    line: end_line,
+                    start_line,
+                    start_side: 'RIGHT'
                 });
             }
         }
@@ -2502,12 +2504,15 @@ ${COMMENT_REPLY_TAG}
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to update the top-level comment ${error}`);
         }
     }
-    async get_comments_at_line(pull_number, path, line) {
+    async get_comments_at_lines(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
-        return comments.filter((comment) => comment.path === path && comment.line === line && comment.body !== '');
+        return comments.filter((comment) => comment.path === path &&
+            comment.start_line === start_line &&
+            comment.line === end_line &&
+            comment.body !== '');
     }
-    async get_conversation_chains_at_line(pull_number, path, line, tag = '') {
-        const existing_comments = await this.get_comments_at_line(pull_number, path, line);
+    async get_conversation_chains_at_lines(pull_number, path, start_line, end_line, tag = '') {
+        const existing_comments = await this.get_comments_at_lines(pull_number, path, start_line, end_line);
         // find all top most comments
         const top_level_comments = [];
         for (const comment of existing_comments) {
@@ -4918,8 +4923,13 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         }
         const patches = [];
         for (const patch of split_patch(file.patch)) {
-            const line = patch_comment_line(patch);
-            patches.push([line, patch]);
+            const patch_lines = patch_start_end_line(patch);
+            if (!patch_lines ||
+                patch_lines.start_line === -1 ||
+                patch_lines.end_line === -1) {
+                continue;
+            }
+            patches.push([patch_lines.start_line, patch_lines.end_line, patch]);
         }
         if (patches.length > 0) {
             return [file.filename, file_content, file_diff, patches];
@@ -5050,7 +5060,7 @@ ${skipped_files_to_summarize.length > 0
             core.info('summary_only is true, exiting');
             return;
         }
-        const review = async (filename, file_content, patches) => {
+        const do_review = async (filename, file_content, patches) => {
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
@@ -5063,7 +5073,7 @@ ${skipped_files_to_summarize.length > 0
                     core.info(`skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`);
                 }
             }
-            for (const [line, patch] of patches) {
+            for (const [start_line, end_line, patch] of patches) {
                 if (!context.payload.pull_request) {
                     core.warning('No pull request found, skipping.');
                     continue;
@@ -5071,7 +5081,7 @@ ${skipped_files_to_summarize.length > 0
                 let comment_chain = 'no comments on this patch';
                 try {
                     // get existing comments on the line
-                    const all_chains = await commenter.get_conversation_chains_at_line(context.payload.pull_request.number, filename, line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
+                    const all_chains = await commenter.get_conversation_chains_at_lines(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                     if (all_chains.length > 0) {
                         comment_chain = all_chains;
                     }
@@ -5084,7 +5094,7 @@ ${skipped_files_to_summarize.length > 0
                         core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                     }
                 }
-                ins.patches += `${line}:
+                ins.patches += `${end_line}:
 \`\`\`text
 ${comment_chain}
 \`\`\`
@@ -5103,16 +5113,16 @@ ${patch}
                 }
                 // parse review
                 const reviewMap = parseOpenAIReview(response, options.debug);
-                for (const [line, review_comment] of reviewMap) {
+                for (const [, review] of reviewMap) {
                     // check for LGTM
-                    if (!options.review_comment_lgtm && review_comment.includes('LGTM')) {
+                    if (!options.review_comment_lgtm && review.comment.includes('LGTM')) {
                         continue;
                     }
                     if (!context.payload.pull_request) {
                         core.warning('No pull request found, skipping.');
                         continue;
                     }
-                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, line, `${review_comment}`);
+                    await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, review.start_line, review.end_line, `${review.comment}`);
                 }
             }
             catch (e) {
@@ -5124,7 +5134,7 @@ ${patch}
         for (const [filename, file_content, , patches] of files_to_review) {
             if (options.max_files_to_review <= 0 ||
                 reviewPromises.length < options.max_files_to_review) {
-                reviewPromises.push(openai_concurrency_limit(async () => review(filename, file_content, patches)));
+                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
             }
             else {
                 skipped_files_to_review.push(filename);
@@ -5153,8 +5163,6 @@ ${patch}
         }
     }
 };
-// Write a function that takes diff for a single file as a string
-// and splits the diff into separate patches
 const split_patch = (patch) => {
     if (!patch) {
         return [];
@@ -5177,67 +5185,86 @@ const split_patch = (patch) => {
     }
     return result;
 };
-const patch_comment_line = (patch) => {
+const patch_start_end_line = (patch) => {
     const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm;
     const match = pattern.exec(patch);
     if (match) {
         const begin = parseInt(match[4]);
         const diff = parseInt(match[5]);
-        return begin + diff - 1;
+        return {
+            start_line: begin,
+            end_line: begin + diff - 1
+        };
     }
     else {
-        return -1;
+        return null;
     }
 };
 function parseOpenAIReview(response, debug = false) {
     const reviews = new Map();
     // Split the response into lines
     const lines = response.split('\n');
-    // Regular expression to match the line number and comment format
-    const lineNumberRegex = /(?:^|\s)(\d+):\s*$/;
+    // Regular expression to match the line number range and comment format
+    const lineNumberRangeRegex = /(?:^|\s)(\d+)-(\d+):\s*$/;
     const commentSeparator = '---';
-    let currentLineNumber = null;
+    let currentStartLine = null;
+    let currentEndLine = null;
     let currentComment = '';
     for (const line of lines) {
-        // Check if the line matches the line number format
-        const lineNumberMatch = line.match(lineNumberRegex);
-        if (lineNumberMatch) {
+        // Check if the line matches the line number range format
+        const lineNumberRangeMatch = line.match(lineNumberRangeRegex);
+        if (lineNumberRangeMatch) {
             // If there is a previous comment, store it in the reviews Map
-            if (currentLineNumber !== null) {
-                reviews.set(currentLineNumber, currentComment.trim());
+            if (currentStartLine !== null && currentEndLine !== null) {
+                reviews.set(`${currentStartLine}-${currentEndLine}`, {
+                    start_line: currentStartLine,
+                    end_line: currentEndLine,
+                    comment: currentComment.trim()
+                });
                 debug &&
-                    core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
+                    core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
             }
-            // Set the current line number and reset the comment
-            currentLineNumber = parseInt(lineNumberMatch[1], 10);
+            // Set the current line number range and reset the comment
+            currentStartLine = parseInt(lineNumberRangeMatch[1], 10);
+            currentEndLine = parseInt(lineNumberRangeMatch[2], 10);
             currentComment = '';
-            debug && core.info(`Found line number: ${currentLineNumber}`);
+            debug &&
+                core.info(`Found line number range: ${currentStartLine}-${currentEndLine}`);
             continue;
         }
         // Check if the line is a comment separator
         if (line.trim() === commentSeparator) {
             // If there is a previous comment, store it in the reviews Map
-            if (currentLineNumber !== null) {
-                reviews.set(currentLineNumber, currentComment.trim());
+            if (currentStartLine !== null && currentEndLine !== null) {
+                reviews.set(`${currentStartLine}-${currentEndLine}`, {
+                    start_line: currentStartLine,
+                    end_line: currentEndLine,
+                    comment: currentComment.trim()
+                });
                 debug &&
-                    core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
+                    core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
             }
-            // Reset the current line number and comment
-            currentLineNumber = null;
+            // Reset the current line number range and comment
+            currentStartLine = null;
+            currentEndLine = null;
             currentComment = '';
             debug && core.info('Found comment separator');
             continue;
         }
-        // If there is a current line number, add the line to the current comment
-        if (currentLineNumber !== null) {
+        // If there is a current line number range, add the line to the current comment
+        if (currentStartLine !== null && currentEndLine !== null) {
             currentComment += `${line}\n`;
         }
     }
     // If there is a comment at the end of the response, store it in the reviews Map
-    if (currentLineNumber !== null) {
-        reviews.set(currentLineNumber, currentComment.trim());
+    if (currentStartLine !== null && currentEndLine !== null) {
+        reviews.set(`${currentStartLine}-${currentEndLine}`, {
+            start_line: currentStartLine,
+            end_line: currentEndLine,
+            comment: currentComment.trim()
+        });
         debug &&
-            core.info(`Stored comment for line ${currentLineNumber}: ${currentComment.trim()}`);
+            core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
     }
     return reviews;
 }

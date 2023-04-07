@@ -134,7 +134,8 @@ ${tag}`
     pull_number: number,
     commit_id: string,
     path: string,
-    line: number,
+    start_line: number,
+    end_line: number,
     message: string,
     tag: string = COMMENT_TAG
   ) {
@@ -146,10 +147,17 @@ ${tag}`
     // replace comment made by this action
     try {
       let found = false
-      const comments = await this.get_comments_at_line(pull_number, path, line)
+      const comments = await this.get_comments_at_lines(
+        pull_number,
+        path,
+        start_line,
+        end_line
+      )
       for (const comment of comments) {
         if (comment.body.includes(tag)) {
-          core.info(`Updating review comment for ${path}:${line}: ${message}`)
+          core.info(
+            `Updating review comment for ${path}:${end_line}: ${message}`
+          )
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
             repo: repo.repo,
@@ -162,7 +170,9 @@ ${tag}`
       }
 
       if (!found) {
-        core.info(`Creating new review comment for ${path}:${line}: ${message}`)
+        core.info(
+          `Creating new review comment for ${path}:${end_line}: ${message}`
+        )
         await octokit.pulls.createReviewComment({
           owner: repo.owner,
           repo: repo.repo,
@@ -170,7 +180,9 @@ ${tag}`
           body: message,
           commit_id,
           path,
-          line
+          line: end_line,
+          start_line,
+          start_side: 'RIGHT'
         })
       }
     } catch (e) {
@@ -231,24 +243,34 @@ ${COMMENT_REPLY_TAG}
     }
   }
 
-  async get_comments_at_line(pull_number: number, path: string, line: number) {
+  async get_comments_at_lines(
+    pull_number: number,
+    path: string,
+    start_line: number,
+    end_line: number
+  ) {
     const comments = await this.list_review_comments(pull_number)
     return comments.filter(
       (comment: any) =>
-        comment.path === path && comment.line === line && comment.body !== ''
+        comment.path === path &&
+        comment.start_line === start_line &&
+        comment.line === end_line &&
+        comment.body !== ''
     )
   }
 
-  async get_conversation_chains_at_line(
+  async get_conversation_chains_at_lines(
     pull_number: number,
     path: string,
-    line: number,
+    start_line: number,
+    end_line: number,
     tag = ''
   ) {
-    const existing_comments = await this.get_comments_at_line(
+    const existing_comments = await this.get_comments_at_lines(
       pull_number,
       path,
-      line
+      start_line,
+      end_line
     )
     // find all top most comments
     const top_level_comments = []

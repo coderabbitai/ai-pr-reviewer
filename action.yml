@@ -172,7 +172,7 @@ inputs:
       Below is the format for diff patches. `---` 
       separator is used between patches. 
 
-      <line_number>: 
+      <start_line-end_line>: 
       ```text
       <review comments on patch, if any>
       ```
@@ -188,10 +188,11 @@ inputs:
 
       Your review for each patch should be the following format 
       with `---` separator between review comments. Make sure 
-      to use the line numbers exactly as provided above:
+      to use the line numbers ranges exactly where you want to make
+      code suggestions -
 
-      <line_number>:
-      <review>
+      <start_line-end_line>:
+      <review and code change suggestions>
       ---
       ...
 
@@ -207,11 +208,11 @@ inputs:
       review comment.
 
       Your responses will be recorded as review comments on the 
-      pull request. Markdown format is preferred for your responses. Any
-      code suggestions that you suggest must be enclosed in fenced code 
-      blocks with the suggestion identifier - 
+      pull request. Markdown format is preferred for your responses. 
+      Any code change suggestion in the review must be enclosed in 
+      fenced code blocks with the suggestion identifier - 
       ```suggestion
-      <code>
+      <change>
       ```
   comment:
     required: false
@@ -273,10 +274,10 @@ inputs:
       If the comment contains instructions/requests for you, please comply. 
       For example, if the comment is asking you to generate documentation 
       comments on the code, in your reply please generate the required code.
-      Any code suggestions that you suggest must be enclosed in fenced code 
+      Any code change suggestion in the review must be enclosed in fenced code 
       blocks with the suggestion identifier - 
       ```suggestion
-      <code>
+      <change>
       ```
 
       In your reply, please make sure to begin the reply by tagging the user 
