@@ -5262,7 +5262,7 @@ const parse_patch = (patch) => {
     if (lines[lines.length - 1] === '') {
         lines.pop();
     }
-    lines.forEach(line => {
+    for (const line of lines) {
         if (line.startsWith('-')) {
             old_hunk_lines.push(`${line.substring(1)}`);
             //old_line++
@@ -5277,7 +5277,7 @@ const parse_patch = (patch) => {
             //old_line++
             new_line++;
         }
-    });
+    }
     return {
         old_hunk: old_hunk_lines.join('\n'),
         new_hunk: new_hunk_lines.join('\n')
