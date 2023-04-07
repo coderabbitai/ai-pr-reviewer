@@ -199,7 +199,7 @@ inputs:
       or provide improvement suggestions in these patches. 
       You will point out potential issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
-      complexity, error handling, typos, grammar, code style, maintainability, 
+      complexity, error handling, typos, grammar, maintainability, 
       performance, and so on. 
 
       If there are no issues or suggestions and the patch is acceptable 
