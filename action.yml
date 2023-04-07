@@ -184,20 +184,27 @@ inputs:
 
       $patches
 
-      Your review must consist of comments on line ranges in the 
-      following format with `---` separator between review 
-      comments. Any other commentary outside of this format will be 
+      Your review must consist of comments in the following format 
+      with `---` separator between review comments. Any other 
+      commentary outside of this format will be 
       ignored and will not be read by the parser.
 
       <start_line-end_line>:
-      <review and code change suggestions>
+      <review comment>
+      ---
+      <start_line-end_line>:
+      <explain why suggestion makes sense>
+      ```suggestion
+      <new code>
+      ```
       ---
       ...
 
       You can comment or suggest code changes for any number 
-      of (sub) line ranges within the line ranges given in the 
-      patches. Your comments will be added as multi-line review 
-      comments in the GitHub pull request.
+      of (sub) line ranges within the line ranges 
+      (start_line and end_line) as long as your line ranges are 
+      within the line ranges in the patches. Your comments will 
+      be added as multi-line review comments in the GitHub pull request.
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
@@ -210,13 +217,7 @@ inputs:
       as-is, please include "LGTM!" (exact word) in your short 
       review comment.
 
-      Markdown format is preferred for your responses. 
-      Any code change suggestion in the review must be enclosed in 
-      fenced code blocks with the suggestion identifier and must be
-      consistent with the line ranges that you are commenting on -
-      ```suggestion
-      <change>
-      ```
+      Markdown format is preferred for your responses.
   comment:
     required: false
     description: 'Prompt for comment'
@@ -274,16 +275,6 @@ inputs:
       Please reply directly to the new comment (instead of suggesting 
       a reply) and your reply will be posted as-is.
 
-      If the comment contains instructions/requests for you, please comply. 
-      For example, if the comment is asking you to generate documentation 
-      comments on the code, in your reply please generate the required code.
-      Any code change suggestion in the review must be enclosed in fenced code 
-      blocks with the suggestion identifier and must be in the line range
-      of diff hunk provided to you -
-      ```suggestion
-      <change>
-      ```
-
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".
 
@@ -291,6 +282,17 @@ inputs:
 
       ```
       $comment
+      ```
+
+      If the comment contains instructions/requests for you, please comply. 
+      For example, if the comment is asking you to generate documentation 
+      comments on the code, in your reply please generate the required code.
+      Any code change suggestion in the response must be enclosed in fenced code 
+      blocks with the suggestion identifier and must be in the line range
+      of diff hunk provided to you -
+      <your comment to the user>
+      ```suggestion
+      <change>
       ```
 runs:
   using: 'node16'
