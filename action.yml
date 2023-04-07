@@ -183,10 +183,7 @@ inputs:
       ---
       ...
 
-      The <diff_hunk> is in the unidiff format which 
-      represent the differences between two text files, 
-      displaying added, removed, and unchanged lines with 
-      "+" or "-" prefixes and surrounding context lines. 
+      The <diff_hunk> is in the unidiff format.
 
       Changes for review -
       $patches
