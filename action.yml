@@ -171,11 +171,11 @@ inputs:
       separator is used between patches. 
 
       <start_line-end_line>: 
+      ```diff
+      <diff_hunk>
+      ```
       ```text
       <review comments on patch, if any>
-      ```
-      ```diff
-      <patch>
       ```
       ---
       ...
@@ -213,7 +213,10 @@ inputs:
       Markdown format is preferred for your responses. 
       Any code change suggestion in the review must be enclosed in 
       fenced code blocks with the suggestion identifier and must be
-      consistent with the line ranges that you are commenting on.
+      consistent with the line ranges that you are commenting on -
+      ```suggestion
+      <change>
+      ```
   comment:
     required: false
     description: 'Prompt for comment'
@@ -275,8 +278,11 @@ inputs:
       For example, if the comment is asking you to generate documentation 
       comments on the code, in your reply please generate the required code.
       Any code change suggestion in the review must be enclosed in fenced code 
-      blocks with the suggestion identifier and must be on top of the diff 
-      hunk provided to you.
+      blocks with the suggestion identifier and must be in the line range
+      of diff hunk provided to you -
+      ```suggestion
+      <change>
+      ```
 
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".

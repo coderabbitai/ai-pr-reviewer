@@ -5086,7 +5086,7 @@ ${skipped_files_to_summarize.length > 0
                         comment_chain = all_chains;
                     }
                     else {
-                        comment_chain = 'no previous comments';
+                        comment_chain = '';
                     }
                 }
                 catch (e) {
@@ -5094,13 +5094,20 @@ ${skipped_files_to_summarize.length > 0
                         core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                     }
                 }
-                ins.patches += `${start_line}-${end_line}:
-\`\`\`text
-${comment_chain}
-\`\`\`
+                ins.patches += `
+${start_line}-${end_line}:
 \`\`\`diff
 ${patch}
 \`\`\`
+`;
+                if (comment_chain !== '') {
+                    ins.patches += `
+\`\`\`text
+${comment_chain}
+\`\`\`
+`;
+                }
+                ins.patches += `
 ---
 `;
             }

@@ -346,7 +346,7 @@ ${
           if (all_chains.length > 0) {
             comment_chain = all_chains
           } else {
-            comment_chain = 'no previous comments'
+            comment_chain = ''
           }
         } catch (e: unknown) {
           if (e instanceof ChatGPTError) {
@@ -355,13 +355,21 @@ ${
             )
           }
         }
-        ins.patches += `${start_line}-${end_line}:
-\`\`\`text
-${comment_chain}
-\`\`\`
+        ins.patches += `
+${start_line}-${end_line}:
 \`\`\`diff
 ${patch}
 \`\`\`
+`
+        if (comment_chain !== '') {
+          ins.patches += `
+\`\`\`text
+${comment_chain}
+\`\`\`
+`
+        }
+
+        ins.patches += `
 ---
 `
       }
