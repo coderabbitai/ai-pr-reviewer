@@ -252,6 +252,13 @@ ${COMMENT_REPLY_TAG}
     end_line: number
   ) {
     const comments = await this.list_review_comments(pull_number)
+    core.info(`Range provided: ${path}:${start_line}-${end_line}`)
+    // print each comment that was found and it's start_line and end_line
+    for (const comment of comments) {
+      core.info(
+        `Comment found: ${comment.path}:${comment.start_line}-${comment.end_line}`
+      )
+    }
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
@@ -379,9 +386,6 @@ ${chain}
           break
         }
       }
-      core.info(
-        `Found Comments: ${all_comments.length}. Comments are: ${all_comments}`
-      )
 
       this.reviewCommentsCache[target] = all_comments
       return all_comments

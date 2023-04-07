@@ -2506,6 +2506,11 @@ ${COMMENT_REPLY_TAG}
     }
     async get_comments_at_range(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Range provided: ${path}:${start_line}-${end_line}`);
+        // print each comment that was found and it's start_line and end_line
+        for (const comment of comments) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment found: ${comment.path}:${comment.start_line}-${comment.end_line}`);
+        }
         return comments.filter((comment) => comment.path === path &&
             comment.start_line >= start_line &&
             comment.line <= end_line &&
@@ -2592,7 +2597,6 @@ ${chain}
                     break;
                 }
             }
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Found Comments: ${all_comments.length}. Comments are: ${all_comments}`);
             this.reviewCommentsCache[target] = all_comments;
             return all_comments;
         }
