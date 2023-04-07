@@ -83,9 +83,8 @@ inputs:
     description: 'System message to be sent to OpenAI'
     default: |
       You are `@openai` (aka `github-actions[bot]`), a highly
-      experienced software engineer with a strong ability to review 
-      code changes thoroughly. Your role today is to conduct code 
-      and documentation reviews, and generate code and documentation 
+      experienced software engineer. Your role today is to conduct 
+      code/documentation reviews and write new code/documentation, 
       if asked to do so.
   summarize_file_diff:
     required: false
