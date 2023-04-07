@@ -194,14 +194,10 @@ inputs:
       ---
       ...
 
-      If you are suggesting code changes, make sure that you 
-      provide suggestions only on lines numbers that were not 
-      deleted.
-
-      You can comments on any number of (sub) line ranges
-      based on the latest numbering in the patches. Your comments
-      will be added as multi-line review comments in the GitHub 
-      pull request.
+      You can comment or suggest code changes for any number 
+      of (sub) line ranges within the line ranges given in the 
+      patches. Your comments will be added as multi-line review 
+      comments in the GitHub pull request.
 
       Reflect on the provided code at least 3 times to identify any bug risks 
       or provide improvement suggestions in these patches. 
@@ -216,10 +212,8 @@ inputs:
 
       Markdown format is preferred for your responses. 
       Any code change suggestion in the review must be enclosed in 
-      fenced code blocks with the suggestion identifier - 
-      ```suggestion
-      <change>
-      ```
+      fenced code blocks with the suggestion identifier and must be
+      consistent with the line ranges that you are commenting on.
   comment:
     required: false
     description: 'Prompt for comment'
@@ -281,10 +275,8 @@ inputs:
       For example, if the comment is asking you to generate documentation 
       comments on the code, in your reply please generate the required code.
       Any code change suggestion in the review must be enclosed in fenced code 
-      blocks with the suggestion identifier - 
-      ```suggestion
-      <change>
-      ```
+      blocks with the suggestion identifier and must be on top of the diff 
+      hunk provided to you.
 
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".

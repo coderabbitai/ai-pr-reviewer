@@ -335,7 +335,7 @@ ${
         let comment_chain = 'no comments on this patch'
         try {
           // get existing comments on the line
-          const all_chains = await commenter.get_conversation_chains_at_lines(
+          const all_chains = await commenter.get_conversation_chains_at_range(
             context.payload.pull_request.number,
             filename,
             start_line,

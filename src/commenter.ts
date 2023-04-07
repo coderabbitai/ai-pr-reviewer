@@ -147,7 +147,7 @@ ${tag}`
     // replace comment made by this action
     try {
       let found = false
-      const comments = await this.get_comments_at_lines(
+      const comments = await this.get_comments_at_range(
         pull_number,
         path,
         start_line,
@@ -243,7 +243,7 @@ ${COMMENT_REPLY_TAG}
     }
   }
 
-  async get_comments_at_lines(
+  async get_comments_at_range(
     pull_number: number,
     path: string,
     start_line: number,
@@ -259,14 +259,14 @@ ${COMMENT_REPLY_TAG}
     )
   }
 
-  async get_conversation_chains_at_lines(
+  async get_conversation_chains_at_range(
     pull_number: number,
     path: string,
     start_line: number,
     end_line: number,
     tag = ''
   ) {
-    const existing_comments = await this.get_comments_at_lines(
+    const existing_comments = await this.get_comments_at_range(
       pull_number,
       path,
       start_line,

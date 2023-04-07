@@ -2423,7 +2423,7 @@ ${tag}`;
         // replace comment made by this action
         try {
             let found = false;
-            const comments = await this.get_comments_at_lines(pull_number, path, start_line, end_line);
+            const comments = await this.get_comments_at_range(pull_number, path, start_line, end_line);
             for (const comment of comments) {
                 if (comment.body.includes(tag)) {
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${end_line}: ${message}`);
@@ -2504,15 +2504,15 @@ ${COMMENT_REPLY_TAG}
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to update the top-level comment ${error}`);
         }
     }
-    async get_comments_at_lines(pull_number, path, start_line, end_line) {
+    async get_comments_at_range(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
         return comments.filter((comment) => comment.path === path &&
             comment.start_line === start_line &&
             comment.line === end_line &&
             comment.body !== '');
     }
-    async get_conversation_chains_at_lines(pull_number, path, start_line, end_line, tag = '') {
-        const existing_comments = await this.get_comments_at_lines(pull_number, path, start_line, end_line);
+    async get_conversation_chains_at_range(pull_number, path, start_line, end_line, tag = '') {
+        const existing_comments = await this.get_comments_at_range(pull_number, path, start_line, end_line);
         // find all top most comments
         const top_level_comments = [];
         for (const comment of existing_comments) {
@@ -5081,7 +5081,7 @@ ${skipped_files_to_summarize.length > 0
                 let comment_chain = 'no comments on this patch';
                 try {
                     // get existing comments on the line
-                    const all_chains = await commenter.get_conversation_chains_at_lines(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
+                    const all_chains = await commenter.get_conversation_chains_at_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                     if (all_chains.length > 0) {
                         comment_chain = all_chains;
                     }
