@@ -166,7 +166,7 @@ inputs:
       Below is the format for diff patches. `---` 
       separator is used between patches. 
 
-      <line>: 
+      <line_number>: 
       ```text
       <review comments on patch, if any>
       ```
@@ -181,9 +181,10 @@ inputs:
       $patches
 
       Your review for each patch should be the following format 
-      with `---` separator between review comments:
+      with `---` separator between review comments. Make sure 
+      to use the line numbers exactly as provided above:
 
-      <line>:
+      <line_number>:
       <review>
       ---
       ...
