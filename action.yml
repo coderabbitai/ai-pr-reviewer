@@ -203,7 +203,9 @@ inputs:
       Make sure your comments are not outside the line ranges in the changes. 
       i.e. <review_start_line> and <review_end_line> for each review must be 
       within line ranges in the changes above and you can comment on 
-      sub-line ranges, if needed.
+      sub-line ranges, if needed. Don't echo back the code provided to you 
+      as the line number range is sufficient to map your comment to the relevant 
+      code section in GitHub.
 
       Reflect on the provided code at least 3 times to identify any 
       bug risks or provide improvement suggestions in these diff hunks. 
