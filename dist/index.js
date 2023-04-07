@@ -2439,17 +2439,32 @@ ${tag}`;
             }
             if (!found) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${start_line}-${end_line}: ${message}`);
-                await octokit.pulls.createReviewComment({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    body: message,
-                    commit_id,
-                    path,
-                    line: end_line,
-                    start_line,
-                    start_side: 'RIGHT'
-                });
+                // if start_line is same as end_line, it's a single line comment
+                // otherwise it's a multi-line comment
+                if (start_line === end_line) {
+                    await octokit.pulls.createReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        pull_number,
+                        body: message,
+                        commit_id,
+                        path,
+                        line: end_line
+                    });
+                }
+                else {
+                    await octokit.pulls.createReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        pull_number,
+                        body: message,
+                        commit_id,
+                        path,
+                        line: end_line,
+                        start_line,
+                        start_side: 'RIGHT'
+                    });
+                }
             }
         }
         catch (e) {
@@ -2508,7 +2523,7 @@ ${COMMENT_REPLY_TAG}
         const comments = await this.list_review_comments(pull_number);
         return comments.filter((comment) => comment.path === path &&
             comment.body !== '' &&
-            ((comment.start_line &&
+            ((comment.start_line !== undefined &&
                 comment.start_line >= start_line &&
                 comment.line <= end_line) ||
                 comment.line === end_line));
