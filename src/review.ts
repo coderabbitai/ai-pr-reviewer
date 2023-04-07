@@ -343,6 +343,7 @@ ${
             line_number += 1
           }
           ins.file_content = file_content
+          core.info(`file_content: ${file_content}`)
         } else {
           core.info(
             `skip sending content of file: ${ins.filename} due to token count: ${file_content_tokens}`

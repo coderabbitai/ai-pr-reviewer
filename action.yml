@@ -200,6 +200,7 @@ inputs:
       line ranges and review comments applicable for that line range. 
       Any other commentary outside of this format will be ignored 
       and will not be read by the parser -
+
       <start_line_number_new_code>-<end_line_number_new_code>:
       <your review>
       ---
