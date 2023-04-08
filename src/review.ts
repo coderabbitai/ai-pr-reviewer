@@ -370,7 +370,7 @@ ${
     ins.patches += `
 Format for changes and review comments (if any) -
   \`\`\`new_hunk_for_review
-  <new content with line numbers>
+  <new content annotated with line numbers>
   \`\`\`
   \`\`\`old_hunk_for_context
   <old content>
@@ -383,16 +383,18 @@ Format for changes and review comments (if any) -
 
 Response format expected -
   <start_line_number>-<end_line_number>:
-  <review>
+  <review comment>
+  <explanation of suggestion>
   \`\`\`suggestion
   <content that replaces everything between start_line_number and end_line_number>
   \`\`\`
   ---
   <start_line_number>-<end_line_number>:
-  <review>
+  <review comment>
   ---
   <start_line_number>-<end_line_number>:
-  <review>
+  <review_comment>
+  <explanation of suggestion>
   \`\`\`<language>
   <new content suggestion>
   \`\`\`
@@ -420,15 +422,15 @@ Instructions -
   be within the line number range of a specific new hunk. i.e. 
   <start_line_number> must be part of the same hunk as the 
   <end_line_number>, otherwise comment can't be posted.
-- Don't repeat the content, the line number range is enough to connect your 
-  comment to the sections in GitHub.
-- Markdown format is preferred for text. 
+- Don't repeat the provided content, the line number range is enough 
+  to map your comment to the correct sections in GitHub.
+- Markdown format is preferred for review comment text. 
 - Fenced code blocks must be used for new content and replacement 
   content suggestions. Replacement suggestions must be complete, 
   correctly formatted and most importantly, map exactly to the line 
   number ranges that need to be replaced inside the hunks. 
-  fenced code blocks. Do not include line numbers inside the suggestion
-  code blocks as they are already provided in the line number range.
+  fenced code blocks. Do not annotate line numbers inside the suggestion
+  code blocks as review section has line number range.
 - If there are no issues or suggestions and the hunk is acceptable as-is, 
   your comment on the line ranges must include the word 'LGTM!'.
 
