@@ -227,18 +227,13 @@ inputs:
         ---
 
       Instructions -
-      - Your response must be in the above format. Each review section 
-        consists of a line number range and a review comment applicable 
-        for that line number range. There is a separator between review 
-        sections. Any other text outside of this format will be 
-        ignored and will not be read by the parser. 
-      - It's important that line number ranges for each review section must 
-        be within the line number range of a specific new hunk, otherwise the 
-        comment can't be posted on GitHub. i.e. <start_line_number> should be
-        in the same hunk where <end_line_number> belongs to.
-      - Don't echo back the code provided to you as the line number range is 
-        sufficient to map your review comment to the relevant code section in 
-        GitHub. 
+      - Your response must be in the above format. Each review section has a 
+        line number range and a comment for that range. There's a separator 
+        between sections. Any text not in this format will be ignored. 
+      - <start_line_number> must be part of the same hunk as the 
+        <end_line_number>.
+      - Don't repeat the code, the line number range is enough to connect your 
+        comment to the code in GitHub.
       - Markdown format is preferred for text. 
       - Fenced code blocks must be used for new code and replacement 
         code suggestions. Code replacement suggestions must be complete, 
