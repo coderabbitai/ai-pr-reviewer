@@ -192,30 +192,43 @@ inputs:
       Your review must consist of comments in the below format 
       with a separator between review comments. The format consists of 
       line number range and review comment applicable for that line 
-      number range. Any other commentary outside of this format will be ignored
+      number range.  You can make multiple comments for each hunk.
+      Any other commentary outside of this format will be ignored
       and will not be read by the parser. It's important that line number 
       ranges for each review must be within line number range of new_hunks. 
       Don't echo back the code provided to you as the 
       line number range is sufficient to map your comment to the relevant code 
-      section in GitHub. You can make multiple comments for each hunk and
-      suggest new code that can replace code at those line number ranges.
+      section in GitHub.
 
-      <start_line_number_in_new_hunk>-<end_line_number_in_new_hunk>:
-      <your review>
+      Markdown format is preferred for text. Fenced code blocks should be 
+      used for complete code suggestions that replace code at those 
+      exact line number ranges -
+
+      <start_line_number>-<end_line_number>:
+      <review markdown>
+      ```suggestion
+      <replacement of code between start_line_number and end_line_number>
+      ```
+      ---
+      <start_line_number>-<end_line_number>:
+      <review markdown>
       ---
       ...
 
-      Example:
+      Examples -
+
       1-5:
       LGTM!
       ---
       6-6:
-      LGTM!
+      ```suggestion
+      print "Hello!"
+      ```
       ---
 
-      Reflect on the provided code at least 3 times and identify any  
+      Reflect on the provided code thoroughly and identify substantive  
       bug risks or provide improvement suggestions in these changes. 
-      You will point out potential issues such as security, logic errors, 
+      You will point out issues such as security, logic errors, 
       syntax errors, out of bound errors, data races, consistency, 
       complexity, error handling, typos, grammar, maintainability, 
       performance, and so on. 
@@ -223,15 +236,6 @@ inputs:
       If there are no issues or suggestions and the change is acceptable 
       as-is, you must include the word `LGTM!` and make a short review comment.
 
-      Markdown format is preferred for text. Fenced code blocks should be 
-      used for code suggestions that replace exact lines ranges -
-
-      start-end:
-      <review text in markdown>
-      ```suggestion
-      <replacement code between start and end lines>
-      ```
-      ---
   comment:
     required: false
     description: 'Prompt for comment'
