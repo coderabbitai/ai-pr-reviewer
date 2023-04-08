@@ -1,25 +1,25 @@
-name: "Combine PRs"
+name: 'Combine PRs'
 
 # Controls when the action will run - in this case triggered manually
 on:
   workflow_dispatch:
     inputs:
       branchPrefix:
-        description: "Branch prefix to find combinable PRs based on"
+        description: 'Branch prefix to find combinable PRs based on'
         required: true
-        default: "dependabot"
+        default: 'dependabot'
       mustBeGreen:
-        description: "Only combine PRs that are green (status is success)"
+        description: 'Only combine PRs that are green (status is success)'
         required: true
-        default: "true"
+        default: 'true'
       combineBranchName:
-        description: "Name of the branch to combine PRs into"
+        description: 'Name of the branch to combine PRs into'
         required: true
-        default: "combine-prs-branch"
+        default: 'combine-prs-branch'
       ignoreLabel:
-        description: "Exclude PRs with this label"
+        description: 'Exclude PRs with this label'
         required: true
-        default: "nocombine"
+        default: 'nocombine'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -53,7 +53,7 @@ jobs:
               repo: context.repo.repo
             });
 
-            group_labels = ["go", "python", "terraform"];
+            group_labels = ["javascript"];
             branches = {};
 
             base_branch = null;
@@ -118,9 +118,7 @@ jobs:
             }
 
             core.setOutput('base-branch', base_branch);
-            core.setOutput('branches-go', (branches["go"] || []).join(' '));
-            core.setOutput('branches-python', (branches["python"] || []).join(' '));
-            core.setOutput('branches-terraform', (branches["terraform"] || []).join(' '));
+            core.setOutput('branches-js', (branches["javascript"] || []).join(' '));
 
             return "ok"
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -131,12 +129,8 @@ jobs:
       - name: Created combined branch and PR
         env:
           BASE_BRANCH: ${{ steps.fetch-branch-names.outputs.base-branch }}
-          BRANCHES_1: ${{ steps.fetch-branch-names.outputs.branches-go }}
-          BRANCHES_2: ${{ steps.fetch-branch-names.outputs.branches-python }}
-          BRANCHES_3: ${{ steps.fetch-branch-names.outputs.branches-terraform }}
-          COMBINE_NAME_1: ${{ env.COMBINE_BRANCH_NAME }}-go
-          COMBINE_NAME_2: ${{ env.COMBINE_BRANCH_NAME }}-python
-          COMBINE_NAME_3: ${{ env.COMBINE_BRANCH_NAME }}-terraform
+          BRANCHES_1: ${{ steps.fetch-branch-names.outputs.branches-js }}
+          COMBINE_NAME_1: ${{ env.COMBINE_BRANCH_NAME }}-js
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
           set -x
