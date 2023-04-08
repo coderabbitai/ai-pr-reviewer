@@ -197,40 +197,25 @@ inputs:
       complexity, error handling, typos, grammar, maintainability, 
       performance, and so on.
 
-      Your response must consist of comments in the below format 
-      with a separator between review comments. The format consists of 
-      line number range and review comment applicable for that line 
-      number range. Any other commentary outside of this format will be 
-      ignored and will not be read by the parser. You can make multiple 
-      comments for each hunk. It's important that line number 
-      ranges for each review must be within line number range of new_hunks. 
-      Don't echo back the code provided to you as the 
-      line number range is sufficient to map your comment to the relevant code 
-      section in GitHub. Markdown format is preferred for text. Fenced code 
-      blocks should be used for new code and replacement code suggestions. 
-      Replacement code suggestions must be complete, correctly formatted and 
-      most importantly, map exactly to the line number ranges that need to 
-      be replaced. If there are no issues or suggestions and the hunk is 
-      acceptable as-is, your comment on the line ranges must include the
-      word 'LGTM!'.
+      Your response must be of the format -
 
         <start_line_number>-<end_line_number>:
-        <review markdown>
+        <review>
         ```suggestion
         <code that replaces everything between start_line_number and end_line_number>
         ```
         ---
         <start_line_number>-<end_line_number>:
-        <review markdown>
+        <review>
         ---
         <start_line_number>-<end_line_number>:
-        <review markdown>
+        <review>
         ```<language>
         <new code suggestion>
         ```
         ...
 
-      Examples -
+      Example -
 
         1-5:
         LGTM!
@@ -240,6 +225,22 @@ inputs:
         print "Hello!"
         ```
         ---
+
+      Your response must consist of review comments in the above format 
+      with a separator between review comments. The format consists of 
+      line number range and review comment applicable for that line 
+      number range. Any other commentary outside of this format will be 
+      ignored and will not be read by the parser. It's important that 
+      line number ranges for each review comment must be within line 
+      number range of new_hunks. Don't echo back the code provided to you as the 
+      line number range is sufficient to map your comment to the relevant code 
+      section in GitHub. Markdown format is preferred for text. Fenced code 
+      blocks should be used for new code and replacement code suggestions. 
+      Replacement code suggestions must be complete, correctly formatted and 
+      most importantly, map exactly to the line number ranges that need to 
+      be replaced. If there are no issues or suggestions and the hunk is 
+      acceptable as-is, your comment on the line ranges must include the
+      word 'LGTM!'.
 
   comment:
     required: false
