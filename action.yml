@@ -202,8 +202,8 @@ inputs:
       section in GitHub. Markdown format is preferred for text. Fenced code 
       blocks should be used for complete code suggestions that replace code 
       at those exact line number ranges. It's important that the code 
-      suggestions are complete and correctly formatted so that they can be 
-      committed as-is.
+      suggestions are complete, correctly formatted and without line number 
+      annotations so that they can be committed as-is.
 
         <start_line_number>-<end_line_number>:
         <review markdown>
