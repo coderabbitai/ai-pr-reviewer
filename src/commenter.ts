@@ -4,12 +4,9 @@ import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
 import {retry} from '@octokit/plugin-retry'
 
-const token = core.getInput('token')
-  ? core.getInput('token')
-  : process.env.GITHUB_TOKEN
+const token = core.getInput('token') || process.env.GITHUB_TOKEN;
 
-const RetryOctokit = Octokit.plugin(retry)
-const octokit = new RetryOctokit({auth: `token ${token}`})
+const octokit = new Octokit({auth: `token ${token}`}).plugin(retry);
 
 const context = github.context
 const repo = context.repo
