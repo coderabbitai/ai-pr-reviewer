@@ -172,7 +172,7 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      You will review a code change.
+      You will review a pull request.
 
       GitHub pull request title - 
       `$title` 

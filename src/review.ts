@@ -370,10 +370,10 @@ ${
     ins.patches += `
 Format for changes and review comments (if any) -
   \`\`\`new_hunk_for_review
-  <new code with line numbers>
+  <new content with line numbers>
   \`\`\`
   \`\`\`old_hunk_for_context
-  <old code>
+  <old content>
   \`\`\`
   \`\`\`comment_chains_for_context
   <comment chains>
@@ -385,7 +385,7 @@ Response format expected -
   <start_line_number>-<end_line_number>:
   <review>
   \`\`\`suggestion
-  <code that replaces everything between start_line_number and end_line_number>
+  <content that replaces everything between start_line_number and end_line_number>
   \`\`\`
   ---
   <start_line_number>-<end_line_number>:
@@ -394,7 +394,7 @@ Response format expected -
   <start_line_number>-<end_line_number>:
   <review>
   \`\`\`<language>
-  <new code suggestion>
+  <new content suggestion>
   \`\`\`
   ...
 
@@ -420,15 +420,15 @@ Instructions -
   be within the line number range of a specific new hunk. i.e. 
   <start_line_number> must be part of the same hunk as the 
   <end_line_number>, otherwise comment can't be posted.
-- Don't repeat the code, the line number range is enough to connect your 
-  comment to the code in GitHub.
+- Don't repeat the content, the line number range is enough to connect your 
+  comment to the sections in GitHub.
 - Markdown format is preferred for text. 
-- Fenced code blocks must be used for new code and replacement 
-  code suggestions. Code replacement suggestions must be complete, 
+- Fenced code blocks must be used for new content and replacement 
+  content suggestions. Replacement suggestions must be complete, 
   correctly formatted and most importantly, map exactly to the line 
   number ranges that need to be replaced inside the hunks. 
   fenced code blocks. Do not include line numbers inside the suggestion
-  code blocks.
+  code blocks as they are already provided in the line number range.
 - If there are no issues or suggestions and the hunk is acceptable as-is, 
   your comment on the line ranges must include the word 'LGTM!'.
 
