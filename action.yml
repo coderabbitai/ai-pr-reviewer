@@ -254,6 +254,8 @@ inputs:
         code suggestions. Code replacement suggestions must be complete, 
         correctly formatted and most importantly, map exactly to the line 
         number ranges that need to be replaced inside the hunks. 
+        fenced code blocks. Do not include line numbers inside the suggestion
+        code blocks.
       - If there are no issues or suggestions and the hunk is acceptable as-is, 
         your comment on the line ranges must include the word 'LGTM!'.
   comment:
