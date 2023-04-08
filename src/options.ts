@@ -143,7 +143,6 @@ export class TokenLimits {
   max_tokens: number
   request_tokens: number
   response_tokens: number
-  extra_content_tokens: number
 
   constructor(model = 'gpt-3.5-turbo') {
     if (model === 'gpt-4-32k') {
@@ -157,11 +156,10 @@ export class TokenLimits {
       this.response_tokens = 1000
     }
     this.request_tokens = this.max_tokens - this.response_tokens
-    this.extra_content_tokens = this.request_tokens / 1.5
   }
 
   string(): string {
-    return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}, extra_content_tokens=${this.extra_content_tokens}`
+    return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}`
   }
 }
 
