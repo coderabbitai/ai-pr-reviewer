@@ -400,7 +400,7 @@ ${
 
       let comment_chain = ''
       try {
-        const all_chains = await commenter.get_conversation_chains_at_range(
+        const all_chains = await commenter.get_conversation_chains_within_range(
           context.payload.pull_request.number,
           filename,
           start_line,

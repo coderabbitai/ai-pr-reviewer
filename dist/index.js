@@ -2539,7 +2539,7 @@ ${COMMENT_REPLY_TAG}
                 comment.line === end_line) ||
                 comment.line === end_line));
     }
-    async get_conversation_chains_at_range(pull_number, path, start_line, end_line, tag = '') {
+    async get_conversation_chains_within_range(pull_number, path, start_line, end_line, tag = '') {
         const existing_comments = await this.get_comments_within_range(pull_number, path, start_line, end_line);
         // find all top most comments
         const top_level_comments = [];
@@ -5187,7 +5187,7 @@ ${summaries_failed.length > 0
             patches_packed += 1;
             let comment_chain = '';
             try {
-                const all_chains = await commenter.get_conversation_chains_at_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
+                const all_chains = await commenter.get_conversation_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                 if (all_chains.length > 0) {
                     comment_chain = all_chains;
                 }

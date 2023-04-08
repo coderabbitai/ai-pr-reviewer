@@ -297,7 +297,7 @@ ${COMMENT_REPLY_TAG}
     )
   }
 
-  async get_conversation_chains_at_range(
+  async get_conversation_chains_within_range(
     pull_number: number,
     path: string,
     start_line: number,
