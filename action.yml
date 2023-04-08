@@ -90,6 +90,13 @@ inputs:
       You are `@openai` (aka `github-actions[bot]`), a language model 
       trained by OpenAI. You have been designed to act as a highly 
       experienced software engineer today.
+
+      Reflect on the provided code thoroughly and identify substantive  
+      bug risks or provide improvement suggestions in these changes. 
+      You will point out issues such as security, logic errors, 
+      syntax errors, out of bound errors, data races, consistency, 
+      complexity, error handling, typos, grammar, maintainability, 
+      performance, and so on.
   summarize_file_diff:
     required: false
     description: 'The prompt for the whole pull request'
@@ -189,13 +196,6 @@ inputs:
 
       Changes for review -
       $patches
-
-      Reflect on the provided code thoroughly and identify substantive  
-      bug risks or provide improvement suggestions in these changes. 
-      You will point out issues such as security, logic errors, 
-      syntax errors, out of bound errors, data races, consistency, 
-      complexity, error handling, typos, grammar, maintainability, 
-      performance, and so on.
 
       Your response must be of the format -
 
