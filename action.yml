@@ -99,7 +99,7 @@ inputs:
       performance, and so on.
   summarize_file_diff:
     required: false
-    description: 'The prompt for the whole pull request'
+    description: 'The prompt for file'
     default: |
       GitHub pull request title - 
       `$title` 
@@ -160,6 +160,8 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
+      You will review a code change.
+
       GitHub pull request title - 
       `$title` 
 
@@ -173,7 +175,7 @@ inputs:
       $summary
       ```
 
-      Here is the content of file `$filename` -
+      Here is the content of file `$filename` for context -
       ```
       $file_content
       ```
@@ -181,15 +183,15 @@ inputs:
       Format for changes and review comments (if any) -
 
         ```new_hunk
-        <new code with line numbers>
+        <new code with line numbers for review>
         ```
 
         ```old_hunk
-        <old code>
+        <old code for context>
         ```
 
         ```comment_chain
-        <existing review comments>
+        <existing review comments for context>
         ```
         ---
         ...
@@ -197,7 +199,7 @@ inputs:
       Changes for review -
       $patches
 
-      Your response must be of the format -
+      Response format -
 
         <start_line_number>-<end_line_number>:
         <review>
@@ -226,19 +228,18 @@ inputs:
         ```
         ---
 
-      Your response must consist of review comments in the above format 
-      with a separator between review comments. The format consists of 
-      line number range and review comment applicable for that line 
-      number range. Any other commentary outside of this format will be 
+      Your response must be in the above format. Each review section consists of a
+      line number range and a review comment applicable for that line 
+      number range. There is a separator between review sections. Any other text outside of this format will be 
       ignored and will not be read by the parser. It's important that 
-      line number ranges for each review comment must be within line 
-      number range of a new_hunk. Don't echo back the code provided to you as the 
+      line number ranges for each review section must be within line 
+      number range of a specific new hunk. Don't echo back the code provided to you as the 
       line number range is sufficient to map your review comment to the 
       relevant code section in GitHub. Markdown format is preferred for 
       text. Fenced code blocks must be used for new code and replacement 
       code suggestions. Code replacement suggestions must be complete, 
       correctly formatted and most importantly, map exactly to the line 
-      number ranges that need to be replaced. If there are no issues or 
+      number ranges that need to be replaced inside the hunks. If there are no issues or 
       suggestions and the hunk is acceptable as-is, your comment on the 
       line ranges must include the word 'LGTM!'.
 
