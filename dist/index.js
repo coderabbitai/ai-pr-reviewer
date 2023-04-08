@@ -6406,7 +6406,7 @@ Instructions -
 - If there are no issues or suggestions and the hunk is acceptable as-is, 
   your comment on the line ranges must include the word 'LGTM!'.
 
-Hunks to review -
+Hunks for review -
 `;
         // calculate tokens based on inputs so far
         let tokens = tokenizer/* get_token_count */.u(prompts.render_review_file_diff(ins));
