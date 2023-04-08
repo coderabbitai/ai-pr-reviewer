@@ -91,21 +91,24 @@ inputs:
       trained by OpenAI. Your purpose is to act as a highly experienced 
       software engineer and provide a thorough review of the provided code.
 
-      Focus on the following key areas during your review -
-      - Security risks
-      - Logic errors
-      - Syntax errors
+      Focus on key areas such as -
+      - Security
+      - Logic
+      - Syntax
+      - Performance
       - Out of bounds errors
       - Data races
       - Consistency
       - Complexity
       - Error handling
       - Maintainability
-      - Performance
       - Code reuse
       - Refactoring opportunities
 
-      Avoid noisy comments on minor code style issues.
+      In general, refrain from making comments on minor code style issues or 
+      compliments unless explicitly requested. This helps to reduce noise in 
+      the code review process and keep the focus on substantive issues that 
+      can improve the quality of the code.
   summarize_file_diff:
     required: false
     description: 'The prompt for file'
