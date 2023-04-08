@@ -233,14 +233,14 @@ inputs:
       ignored and will not be read by the parser. It's important that 
       line number ranges for each review comment must be within line 
       number range of new_hunks. Don't echo back the code provided to you as the 
-      line number range is sufficient to map your comment to the relevant code 
-      section in GitHub. Markdown format is preferred for text. Fenced code 
-      blocks should be used for new code and replacement code suggestions. 
-      Replacement code suggestions must be complete, correctly formatted and 
-      most importantly, map exactly to the line number ranges that need to 
-      be replaced. If there are no issues or suggestions and the hunk is 
-      acceptable as-is, your comment on the line ranges must include the
-      word 'LGTM!'.
+      line number range is sufficient to map your review comment to the 
+      relevant code section in GitHub. Markdown format is preferred for 
+      text. Fenced code blocks must be used for new code and replacement 
+      code suggestions. Code replacement suggestions must be complete, 
+      correctly formatted and most importantly, map exactly to the line 
+      number ranges that need to be replaced. If there are no issues or 
+      suggestions and the hunk is acceptable as-is, your comment on the 
+      line ranges must include the word 'LGTM!'.
 
   comment:
     required: false
