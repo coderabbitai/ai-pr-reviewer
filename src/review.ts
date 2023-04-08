@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import {retry} from '@octokit/plugin-retry'
 import pLimit from 'p-limit'
 import {Bot} from './bot.js'
 import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
@@ -10,7 +11,10 @@ import * as tokenizer from './tokenizer.js'
 const token = core.getInput('token')
   ? core.getInput('token')
   : process.env.GITHUB_TOKEN
-const octokit = new Octokit({auth: `token ${token}`})
+
+const RetryOctokit = Octokit.plugin(retry)
+const octokit = new RetryOctokit({auth: `token ${token}`})
+
 const context = github.context
 const repo = context.repo
 
@@ -127,11 +131,10 @@ export const codeReview = async (
           continue
         }
         const hunks_str = `
-\`\`\`new_hunk
+\`\`\`new_hunk_for_review
 ${hunks.new_hunk}
 \`\`\`
-
-\`\`\`old_hunk
+\`\`\`old_hunk_for_context
 ${hunks.old_hunk}
 \`\`\`
 `
@@ -272,6 +275,10 @@ ${filename}: ${summary}
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
 
+### Code suggestions
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
 ---
 
 ${
@@ -400,7 +407,7 @@ ${
 
       let comment_chain = ''
       try {
-        const all_chains = await commenter.get_conversation_chains_within_range(
+        const all_chains = await commenter.get_comment_chains_within_range(
           context.payload.pull_request.number,
           filename,
           start_line,
@@ -434,7 +441,7 @@ ${patch}
 `
       if (comment_chain !== '') {
         ins.patches += `
-\`\`\`comment_chain
+\`\`\`comment_chains_for_review
 ${comment_chain}
 \`\`\`
 `

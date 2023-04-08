@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
+import {retry} from '@octokit/plugin-retry'
 import {Bot} from './bot.js'
 import {
   Commenter,
@@ -15,7 +16,9 @@ const token = core.getInput('token')
   ? core.getInput('token')
   : process.env.GITHUB_TOKEN
 
-const octokit = new Octokit({auth: `token ${token}`})
+const RetryOctokit = Octokit.plugin(retry)
+const octokit = new RetryOctokit({auth: `token ${token}`})
+
 const context = github.context
 const repo = context.repo
 const ASK_BOT = '@openai'
@@ -72,7 +75,7 @@ export const handleReviewComment = async (
     inputs.filename = comment.path
 
     const {chain: comment_chain, topLevelComment} =
-      await commenter.get_conversation_chain(pull_number, comment)
+      await commenter.get_comment_chain(pull_number, comment)
     inputs.comment_chain = comment_chain
 
     // check whether this chain contains replies from the bot

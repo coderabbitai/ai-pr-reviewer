@@ -2,12 +2,13 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
-import {ChatGPTError} from 'chatgpt'
+import {retry} from '@octokit/plugin-retry'
 
-const token = core.getInput('token')
-  ? core.getInput('token')
-  : process.env.GITHUB_TOKEN
-const octokit = new Octokit({auth: `token ${token}`})
+const token = core.getInput('token') || process.env.GITHUB_TOKEN
+
+const RetryOctokit = Octokit.plugin(retry)
+const octokit = new RetryOctokit({auth: `token ${token}`})
+
 const context = github.context
 const repo = context.repo
 
@@ -297,7 +298,7 @@ ${COMMENT_REPLY_TAG}
     )
   }
 
-  async get_conversation_chains_within_range(
+  async get_comment_chains_within_range(
     pull_number: number,
     path: string,
     start_line: number,
@@ -322,7 +323,7 @@ ${COMMENT_REPLY_TAG}
     let chain_num = 0
     for (const top_level_comment of top_level_comments) {
       // get conversation chain
-      const chain = await this.compose_conversation_chain(
+      const chain = await this.compose_comment_chain(
         existing_comments,
         top_level_comment
       )
@@ -337,10 +338,7 @@ ${chain}
     return all_chains
   }
 
-  async compose_conversation_chain(
-    reviewComments: any[],
-    topLevelComment: any
-  ) {
+  async compose_comment_chain(reviewComments: any[], topLevelComment: any) {
     const conversationChain = reviewComments
       .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
       .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
@@ -352,14 +350,14 @@ ${chain}
     return conversationChain.join('\n---\n')
   }
 
-  async get_conversation_chain(pull_number: number, comment: any) {
+  async get_comment_chain(pull_number: number, comment: any) {
     try {
       const review_comments = await this.list_review_comments(pull_number)
       const top_level_comment = await this.get_top_level_comment(
         review_comments,
         comment
       )
-      const chain = await this.compose_conversation_chain(
+      const chain = await this.compose_comment_chain(
         review_comments,
         top_level_comment
       )
@@ -534,10 +532,8 @@ ${chain}
 
       this.issueCommentsCache[target] = all_comments
       return all_comments
-    } catch (e: unknown) {
-      if (e instanceof ChatGPTError) {
-        core.warning(`Failed to list comments: ${e}`)
-      }
+    } catch (e: any) {
+      core.warning(`Failed to list comments: ${e}`)
       return all_comments
     }
   }
