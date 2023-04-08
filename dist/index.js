@@ -2426,7 +2426,7 @@ ${tag}`;
             const comments = await this.get_comments_at_range(pull_number, path, start_line, end_line);
             for (const comment of comments) {
                 if (comment.body.includes(tag)) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${end_line}: ${message}`);
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${start_line}-${end_line}: ${message}`);
                     await octokit.pulls.updateReviewComment({
                         owner: repo.owner,
                         repo: repo.repo,
@@ -2521,7 +2521,7 @@ ${COMMENT_REPLY_TAG}
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to update the top-level comment ${error}`);
         }
     }
-    async get_comments_at_range(pull_number, path, start_line, end_line) {
+    async get_comments_within_range(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
         return comments.filter((comment) => comment.path === path &&
             comment.body !== '' &&
@@ -2530,8 +2530,17 @@ ${COMMENT_REPLY_TAG}
                 comment.line <= end_line) ||
                 comment.line === end_line));
     }
+    async get_comments_at_range(pull_number, path, start_line, end_line) {
+        const comments = await this.list_review_comments(pull_number);
+        return comments.filter((comment) => comment.path === path &&
+            comment.body !== '' &&
+            ((comment.start_line !== undefined &&
+                comment.start_line === start_line &&
+                comment.line === end_line) ||
+                comment.line === end_line));
+    }
     async get_conversation_chains_at_range(pull_number, path, start_line, end_line, tag = '') {
-        const existing_comments = await this.get_comments_at_range(pull_number, path, start_line, end_line);
+        const existing_comments = await this.get_comments_within_range(pull_number, path, start_line, end_line);
         // find all top most comments
         const top_level_comments = [];
         for (const comment of existing_comments) {
@@ -5178,7 +5187,6 @@ ${summaries_failed.length > 0
             patches_packed += 1;
             let comment_chain = '';
             try {
-                // get existing comments on the line
                 const all_chains = await commenter.get_conversation_chains_at_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                 if (all_chains.length > 0) {
                     comment_chain = all_chains;
@@ -5222,8 +5230,8 @@ ${comment_chain}
                 return;
             }
             // parse review
-            const reviewMap = parseOpenAIReview(response, options.debug);
-            for (const [, review] of reviewMap) {
+            const reviews = parseReview(response, options.debug);
+            for (const review of reviews) {
                 // check for LGTM
                 if (!options.review_comment_lgtm &&
                     (review.comment.includes('LGTM') ||
@@ -5372,8 +5380,9 @@ const parse_patch = (patch) => {
         new_hunk: new_hunk_lines.join('\n')
     };
 };
-function parseOpenAIReview(response, debug = false) {
-    const reviews = new Map();
+function parseReview(response, debug = false) {
+    // instantiate an array of reviews
+    const reviews = [];
     // Split the response into lines
     const lines = response.split('\n');
     // Regular expression to match the line number range and comment format
@@ -5386,9 +5395,9 @@ function parseOpenAIReview(response, debug = false) {
         // Check if the line matches the line number range format
         const lineNumberRangeMatch = line.match(lineNumberRangeRegex);
         if (lineNumberRangeMatch) {
-            // If there is a previous comment, store it in the reviews Map
+            // If there is a previous comment, store it in the reviews
             if (currentStartLine !== null && currentEndLine !== null) {
-                reviews.set(`${currentStartLine}-${currentEndLine}`, {
+                reviews.push({
                     start_line: currentStartLine,
                     end_line: currentEndLine,
                     comment: currentComment.trim()
@@ -5406,9 +5415,9 @@ function parseOpenAIReview(response, debug = false) {
         }
         // Check if the line is a comment separator
         if (line.trim() === commentSeparator) {
-            // If there is a previous comment, store it in the reviews Map
+            // If there is a previous comment, store it in the reviews
             if (currentStartLine !== null && currentEndLine !== null) {
-                reviews.set(`${currentStartLine}-${currentEndLine}`, {
+                reviews.push({
                     start_line: currentStartLine,
                     end_line: currentEndLine,
                     comment: currentComment.trim()
@@ -5428,9 +5437,9 @@ function parseOpenAIReview(response, debug = false) {
             currentComment += `${line}\n`;
         }
     }
-    // If there is a comment at the end of the response, store it in the reviews Map
+    // If there is a comment at the end of the response, store it in the reviews
     if (currentStartLine !== null && currentEndLine !== null) {
-        reviews.set(`${currentStartLine}-${currentEndLine}`, {
+        reviews.push({
             start_line: currentStartLine,
             end_line: currentEndLine,
             comment: currentComment.trim()
