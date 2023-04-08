@@ -190,7 +190,14 @@ inputs:
       Changes for review -
       $patches
 
-      Your review must consist of comments in the below format 
+      Reflect on the provided code thoroughly and identify substantive  
+      bug risks or provide improvement suggestions in these changes. 
+      You will point out issues such as security, logic errors, 
+      syntax errors, out of bound errors, data races, consistency, 
+      complexity, error handling, typos, grammar, maintainability, 
+      performance, and so on.
+
+      Your response must consist of comments in the below format 
       with a separator between review comments. The format consists of 
       line number range and review comment applicable for that line 
       number range. Any other commentary outside of this format will be 
@@ -203,7 +210,9 @@ inputs:
       blocks should be used for new code and replacement code suggestions. 
       Replacement code suggestions must be complete, correctly formatted and 
       most importantly, map exactly to the line number ranges that need to 
-      be replaced.
+      be replaced. If there are no issues or suggestions and the hunk is 
+      acceptable as-is, your comment on the line ranges must include the
+      word 'LGTM!'.
 
         <start_line_number>-<end_line_number>:
         <review markdown>
@@ -231,16 +240,6 @@ inputs:
         print "Hello!"
         ```
         ---
-
-      Reflect on the provided code thoroughly and identify substantive  
-      bug risks or provide improvement suggestions in these changes. 
-      You will point out issues such as security, logic errors, 
-      syntax errors, out of bound errors, data races, consistency, 
-      complexity, error handling, typos, grammar, maintainability, 
-      performance, and so on. 
-
-      If there are no issues or suggestions and the change is acceptable 
-      as-is, you must include the word `LGTM!` and make a short review comment.
 
   comment:
     required: false
