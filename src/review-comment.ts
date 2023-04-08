@@ -134,11 +134,20 @@ export const handleReviewComment = async (
         inputs.summary = summary.body
       }
 
+      // get tokens so far
+      let tokens = tokenizer.get_token_count(prompts.render_comment(inputs))
+
+      // pack file content and diff into the inputs if they are not too long
       if (file_content.length > 0) {
+        // count occurrences of $file_content in prompt
+        const file_content_count =
+          prompts.summarize_file_diff.split('$file_content').length - 1
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
-          file_content_tokens < options.heavy_token_limits.extra_content_tokens
+          tokens + file_content_tokens * file_content_count <=
+          options.heavy_token_limits.request_tokens
         ) {
+          tokens += file_content_tokens * file_content_count
           inputs.file_content = file_content
         }
       }
@@ -148,10 +157,15 @@ export const handleReviewComment = async (
         if (inputs.diff.length === 0) {
           inputs.diff = file_diff
         }
+        // count occurrences of $file_diff in prompt
+        const file_diff_count =
+          prompts.summarize_file_diff.split('$file_diff').length - 1
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (
-          file_diff_tokens < options.heavy_token_limits.extra_content_tokens
+          tokens + file_diff_tokens * file_diff_count <=
+          options.heavy_token_limits.request_tokens
         ) {
+          tokens += file_diff_tokens * file_diff_count
           inputs.file_diff = file_diff
         }
       }

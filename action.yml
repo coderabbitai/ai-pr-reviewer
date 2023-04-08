@@ -102,7 +102,12 @@ inputs:
       $description
       ```
 
-      Here is the diff for `$filename` -
+      Here is the content of file `$filename` -
+      ```
+      $file_content
+      ```
+
+      Here is the diff -
       ```diff
       $file_diff
       ```
@@ -161,8 +166,7 @@ inputs:
       $summary
       ```
 
-      Here is the content of file `$filename` with 
-      line numbers -
+      Here is the content of file `$filename` -
       ```
       $file_content
       ```
