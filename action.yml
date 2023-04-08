@@ -94,7 +94,7 @@ inputs:
       Reflect on the provided code thoroughly and identify substantive  
       bug risks or provide improvement suggestions in these changes. 
       You will point out issues such as security, logic errors, 
-      syntax errors, out of bound errors, data races, consistency, 
+      syntax errors, out of bounds errors, data races, consistency, 
       complexity, error handling, typos, grammar, maintainability, 
       performance, and so on.
   summarize_file_diff:
@@ -222,7 +222,7 @@ inputs:
         ---
         6-6:
         ```suggestion
-        print "Hello!"
+        print("Hello!")
         ```
         ---
 
@@ -232,7 +232,7 @@ inputs:
       number range. Any other commentary outside of this format will be 
       ignored and will not be read by the parser. It's important that 
       line number ranges for each review comment must be within line 
-      number range of new_hunks. Don't echo back the code provided to you as the 
+      number range of a hunk. Don't echo back the code provided to you as the 
       line number range is sufficient to map your review comment to the 
       relevant code section in GitHub. Markdown format is preferred for 
       text. Fenced code blocks must be used for new code and replacement 
