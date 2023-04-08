@@ -94,7 +94,7 @@ inputs:
     required: false
     description: 'The prompt for the whole pull request'
     default: |
-      GitHub pull request has the title - 
+      GitHub pull request title - 
       `$title` 
 
       Here is the description -
@@ -153,7 +153,7 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      GitHub pull request has the title - 
+      GitHub pull request title - 
       `$title` 
 
       Here is the description -
@@ -172,19 +172,20 @@ inputs:
       ```
 
       Format for changes and review comments (if any) -
-      ```new_hunk
-      <new code with line numbers>
-      ```
 
-      ```old_hunk
-      <old code>
-      ```
+        ```new_hunk
+        <new code with line numbers>
+        ```
 
-      ```comment_chain
-      <existing review comments>
-      ```
-      ---
-      ...
+        ```old_hunk
+        <old code>
+        ```
+
+        ```comment_chain
+        <existing review comments>
+        ```
+        ---
+        ...
 
       Changes for review -
       $patches
@@ -192,39 +193,39 @@ inputs:
       Your review must consist of comments in the below format 
       with a separator between review comments. The format consists of 
       line number range and review comment applicable for that line 
-      number range.  You can make multiple comments for each hunk.
-      Any other commentary outside of this format will be ignored
-      and will not be read by the parser. It's important that line number 
+      number range. Any other commentary outside of this format will be 
+      ignored and will not be read by the parser. You can make multiple 
+      comments for each hunk. It's important that line number 
       ranges for each review must be within line number range of new_hunks. 
       Don't echo back the code provided to you as the 
       line number range is sufficient to map your comment to the relevant code 
-      section in GitHub.
+      section in GitHub. Markdown format is preferred for text. Fenced code 
+      blocks should be used for complete code suggestions that replace code 
+      at those exact line number ranges. It's important that the code 
+      suggestions are complete and correctly formatted so that they can be 
+      committed as-is.
 
-      Markdown format is preferred for text. Fenced code blocks should be 
-      used for complete code suggestions that replace code at those 
-      exact line number ranges -
-
-      <start_line_number>-<end_line_number>:
-      <review markdown>
-      ```suggestion
-      <replacement of code between start_line_number and end_line_number>
-      ```
-      ---
-      <start_line_number>-<end_line_number>:
-      <review markdown>
-      ---
-      ...
+        <start_line_number>-<end_line_number>:
+        <review markdown>
+        ```suggestion
+        <code that replaces everything between start_line_number and end_line_number>
+        ```
+        ---
+        <start_line_number>-<end_line_number>:
+        <review markdown>
+        ---
+        ...
 
       Examples -
 
-      1-5:
-      LGTM!
-      ---
-      6-6:
-      ```suggestion
-      print "Hello!"
-      ```
-      ---
+        1-5:
+        LGTM!
+        ---
+        6-6:
+        ```suggestion
+        print "Hello!"
+        ```
+        ---
 
       Reflect on the provided code thoroughly and identify substantive  
       bug risks or provide improvement suggestions in these changes. 
