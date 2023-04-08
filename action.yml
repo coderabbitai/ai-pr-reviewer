@@ -233,8 +233,9 @@ inputs:
         sections. Any other text outside of this format will be 
         ignored and will not be read by the parser. 
       - It's important that line number ranges for each review section must 
-        be within line number range of a specific new hunk, otherwise the 
-        comment can't be posted on GitHub.
+        be within the line number range of a specific new hunk, otherwise the 
+        comment can't be posted on GitHub. i.e. <start_line_number> should be
+        in the same hunk where <end_line_number> belongs to.
       - Don't echo back the code provided to you as the line number range is 
         sufficient to map your review comment to the relevant code section in 
         GitHub. 
