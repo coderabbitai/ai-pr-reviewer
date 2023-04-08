@@ -365,6 +365,76 @@ ${
     // make a copy of inputs
     const ins: Inputs = inputs.clone()
     ins.filename = filename
+
+    // Pack instructions
+    ins.patches += `
+Format for changes and review comments (if any) -
+  \`\`\`new_hunk_for_review
+  <new content with line numbers>
+  \`\`\`
+  \`\`\`old_hunk_for_context
+  <old content>
+  \`\`\`
+  \`\`\`comment_chains_for_context
+  <comment chains>
+  \`\`\`
+  ---
+  ...
+
+Response format expected -
+  <start_line_number>-<end_line_number>:
+  <review>
+  \`\`\`suggestion
+  <content that replaces everything between start_line_number and end_line_number>
+  \`\`\`
+  ---
+  <start_line_number>-<end_line_number>:
+  <review>
+  ---
+  <start_line_number>-<end_line_number>:
+  <review>
+  \`\`\`<language>
+  <new content suggestion>
+  \`\`\`
+  ...
+
+Example response -
+  1-5:
+  LGTM!
+  ---
+  6-6:
+  \`\`\`suggestion
+  print("Hello!")
+  \`\`\`
+  \`\`\`go
+  log.Info().Msgf("Example")
+  \`\`\`
+  ---
+
+Instructions -
+- Your response must be in the above format. Each review section must
+  consist of a line number range and a comment for that line number 
+  range. There's a separator between review sections. Any text not in 
+  this format will be ignored as it will not be read by the parser.
+- It's important that line number ranges for each review section must 
+  be within the line number range of a specific new hunk. i.e. 
+  <start_line_number> must be part of the same hunk as the 
+  <end_line_number>, otherwise comment can't be posted.
+- Don't repeat the content, the line number range is enough to connect your 
+  comment to the sections in GitHub.
+- Markdown format is preferred for text. 
+- Fenced code blocks must be used for new content and replacement 
+  content suggestions. Replacement suggestions must be complete, 
+  correctly formatted and most importantly, map exactly to the line 
+  number ranges that need to be replaced inside the hunks. 
+  fenced code blocks. Do not include line numbers inside the suggestion
+  code blocks as they are already provided in the line number range.
+- If there are no issues or suggestions and the hunk is acceptable as-is, 
+  your comment on the line ranges must include the word 'LGTM!'.
+
+Hunks for review -
+`
+
     // calculate tokens based on inputs so far
     let tokens = tokenizer.get_token_count(prompts.render_review_file_diff(ins))
     // loop to calculate total patch tokens
