@@ -5603,12 +5603,12 @@ class TokenLimits {
     response_tokens;
     constructor(model = 'gpt-3.5-turbo') {
         if (model === 'gpt-4-32k') {
-            this.max_tokens = 32000;
+            this.max_tokens = 32700;
             this.response_tokens = 4000;
         }
         else if (model === 'gpt-4') {
-            this.max_tokens = 5000;
-            this.response_tokens = 1500;
+            this.max_tokens = 8100;
+            this.response_tokens = 2000;
         }
         else {
             this.max_tokens = 4000;
@@ -5856,8 +5856,9 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 // count occurrences of $file_content in prompt
                 const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
-                if (tokens + file_content_tokens * file_content_count <=
-                    options.heavy_token_limits.request_tokens) {
+                if (file_content_count > 0 &&
+                    tokens + file_content_tokens * file_content_count <=
+                        options.heavy_token_limits.request_tokens) {
                     tokens += file_content_tokens * file_content_count;
                     inputs.file_content = file_content;
                 }
@@ -5870,8 +5871,9 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 // count occurrences of $file_diff in prompt
                 const file_diff_count = prompts.summarize_file_diff.split('$file_diff').length - 1;
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
-                if (tokens + file_diff_tokens * file_diff_count <=
-                    options.heavy_token_limits.request_tokens) {
+                if (file_diff_count > 0 &&
+                    tokens + file_diff_tokens * file_diff_count <=
+                        options.heavy_token_limits.request_tokens) {
                     tokens += file_diff_tokens * file_diff_count;
                     inputs.file_diff = file_diff;
                 }
@@ -6207,8 +6209,9 @@ ${hunks.old_hunk}
             // count occurrences of $file_content in prompt
             const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
             const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-            if (tokens + file_content_tokens * file_content_count <=
-                options.light_token_limits.request_tokens) {
+            if (file_content_count > 0 &&
+                tokens + file_content_tokens * file_content_count <=
+                    options.light_token_limits.request_tokens) {
                 tokens += file_content_tokens * file_content_count;
                 ins.file_content = file_content;
             }
@@ -6352,8 +6355,9 @@ ${summaries_failed.length > 0
         // try packing file_content into this request
         const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
         const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-        if (tokens + file_content_tokens * file_content_count <=
-            options.heavy_token_limits.request_tokens) {
+        if (file_content_count > 0 &&
+            tokens + file_content_tokens * file_content_count <=
+                options.heavy_token_limits.request_tokens) {
             ins.file_content = file_content;
             tokens += file_content_tokens * file_content_count;
         }
