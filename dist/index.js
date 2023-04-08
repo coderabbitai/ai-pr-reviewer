@@ -3483,9 +3483,7 @@ class Bot {
 
 
 
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
-    : process.env.GITHUB_TOKEN;
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
 const RetryOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__/* .retry */ .XD);
 const octokit = new RetryOctokit({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
@@ -6271,7 +6269,7 @@ ${filename}: ${summary}
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
 
 ### Code suggestions
-- The bot will sometimes make code suggestion. Sometimes the line number ranges may be misaligned. Please make sure to review the suggestion carefully before committing.
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ---

@@ -276,7 +276,7 @@ ${filename}: ${summary}
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
 
 ### Code suggestions
-- The bot will sometimes make code suggestion. Sometimes the line number ranges may be misaligned. Please make sure to review the suggestion carefully before committing.
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ---
