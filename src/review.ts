@@ -198,8 +198,9 @@ ${hunks.old_hunk}
         prompts.summarize_file_diff.split('$file_content').length - 1
       const file_content_tokens = tokenizer.get_token_count(file_content)
       if (
+        file_content_count > 0 &&
         tokens + file_content_tokens * file_content_count <=
-        options.light_token_limits.request_tokens
+          options.light_token_limits.request_tokens
       ) {
         tokens += file_content_tokens * file_content_count
         ins.file_content = file_content
@@ -381,10 +382,10 @@ ${
     const file_content_count =
       prompts.summarize_file_diff.split('$file_content').length - 1
     const file_content_tokens = tokenizer.get_token_count(file_content)
-
     if (
+      file_content_count > 0 &&
       tokens + file_content_tokens * file_content_count <=
-      options.heavy_token_limits.request_tokens
+        options.heavy_token_limits.request_tokens
     ) {
       ins.file_content = file_content
       tokens += file_content_tokens * file_content_count
