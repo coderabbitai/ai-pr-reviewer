@@ -4723,8 +4723,6 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 // EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
 var dist_node = __nccwpck_require__(1231);
-// EXTERNAL MODULE: ./node_modules/chatgpt/build/index.js + 4 modules
-var build = __nccwpck_require__(2353);
 ;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
 /*
 How it works:
@@ -4871,7 +4869,6 @@ var lib_options = __nccwpck_require__(9698);
 // EXTERNAL MODULE: ./lib/tokenizer.js
 var tokenizer = __nccwpck_require__(652);
 ;// CONCATENATED MODULE: ./lib/review.js
-
 
 
 
@@ -5191,9 +5188,7 @@ ${summaries_failed.length > 0
                 }
             }
             catch (e) {
-                if (e instanceof build/* ChatGPTError */.sK) {
-                    core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
-                }
+                core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
             }
             // try packing comment_chain into this request
             const comment_chain_tokens = tokenizer/* get_token_count */.u(comment_chain);

@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {Octokit} from '@octokit/action'
-import {ChatGPTError} from 'chatgpt'
 import pLimit from 'p-limit'
 import {Bot} from './bot.js'
 import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
@@ -415,12 +414,10 @@ ${
         } else {
           comment_chain = ''
         }
-      } catch (e: unknown) {
-        if (e instanceof ChatGPTError) {
-          core.warning(
-            `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
-          )
-        }
+      } catch (e: any) {
+        core.warning(
+          `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+        )
       }
       // try packing comment_chain into this request
       const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
@@ -483,7 +480,7 @@ ${comment_chain}
             review.end_line,
             `${review.comment}`
           )
-        } catch (e: unknown) {
+        } catch (e: any) {
           reviews_failed.push(`${filename} comment failed (${e})`)
         }
       }
