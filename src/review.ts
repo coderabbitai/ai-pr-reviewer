@@ -155,108 +155,117 @@ ${hunks.old_hunk}
     file => file !== null
   ) as [string, string, string, [number, number, string][]][]
 
-  if (files_to_review.length > 0) {
-    const generateSummary = async (
-      filename: string,
-      file_content: string,
-      file_diff: string
-    ): Promise<[string, string] | null> => {
-      const ins = inputs.clone()
-      if (file_diff.length === 0) {
-        core.warning(`summarize: file_diff is empty, skip ${filename}`)
-        return null
-      }
+  if (files_to_review.length === 0) {
+    core.error(`Skipped: no files to review`)
+    return
+  }
 
-      ins.filename = filename
-      // render prompt based on inputs so far
-      let tokens = tokenizer.get_token_count(
-        prompts.render_summarize_file_diff(ins)
+  const summaries_failed: string[] = []
+  const do_summary = async (
+    filename: string,
+    file_content: string,
+    file_diff: string
+  ): Promise<[string, string] | null> => {
+    const ins = inputs.clone()
+    if (file_diff.length === 0) {
+      core.warning(`summarize: file_diff is empty, skip ${filename}`)
+      summaries_failed.push(`${filename} (empty diff)`)
+      return null
+    }
+
+    ins.filename = filename
+    // render prompt based on inputs so far
+    let tokens = tokenizer.get_token_count(
+      prompts.render_summarize_file_diff(ins)
+    )
+
+    const diff_tokens = tokenizer.get_token_count(file_diff)
+    if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
+      core.info(`summarize: diff tokens exceeds limit, skip ${filename}`)
+      summaries_failed.push(`${filename} (diff tokens exceeds limit)`)
+      return null
+    }
+
+    ins.file_diff = file_diff
+    tokens += file_diff.length
+
+    // optionally pack file_content
+    if (file_content.length > 0) {
+      // count occurrences of $file_content in prompt
+      const file_content_count =
+        prompts.summarize_file_diff.split('$file_content').length - 1
+      const file_content_tokens = tokenizer.get_token_count(file_content)
+      if (
+        tokens + file_content_tokens * file_content_count <=
+        options.light_token_limits.request_tokens
+      ) {
+        tokens += file_content_tokens * file_content_count
+        ins.file_content = file_content
+      }
+    }
+    // summarize content
+    try {
+      const [summarize_resp] = await lightBot.chat(
+        prompts.render_summarize_file_diff(ins),
+        {}
       )
 
-      const diff_tokens = tokenizer.get_token_count(file_diff)
-      if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
-        core.info(`summarize: diff tokens exceeds limit, skip ${filename}`)
+      if (!summarize_resp) {
+        core.info('summarize: nothing obtained from openai')
+        summaries_failed.push(`${filename} (nothing obtained from openai)`)
         return null
-      }
-
-      ins.file_diff = file_diff
-      tokens += file_diff.length
-
-      // optionally pack file_content
-      if (file_content.length > 0) {
-        // count occurrences of $file_content in prompt
-        const file_content_count =
-          prompts.summarize_file_diff.split('$file_content').length - 1
-        const file_content_tokens = tokenizer.get_token_count(file_content)
-        if (
-          tokens + file_content_tokens * file_content_count <=
-          options.light_token_limits.request_tokens
-        ) {
-          tokens += file_content_tokens * file_content_count
-          ins.file_content = file_content
-        }
-      }
-      // summarize content
-      try {
-        const [summarize_resp] = await lightBot.chat(
-          prompts.render_summarize_file_diff(ins),
-          {}
-        )
-
-        if (!summarize_resp) {
-          core.info('summarize: nothing obtained from openai')
-          return null
-        } else {
-          return [filename, summarize_resp]
-        }
-      } catch (error) {
-        core.warning(`summarize: error from openai: ${error}`)
-        return null
-      }
-    }
-
-    const summaryPromises = []
-    const skipped_files_to_summarize = []
-    for (const [filename, file_content, file_diff] of files_to_review) {
-      if (
-        options.max_files_to_summarize <= 0 ||
-        summaryPromises.length < options.max_files_to_summarize
-      ) {
-        summaryPromises.push(
-          openai_concurrency_limit(async () =>
-            generateSummary(filename, file_content, file_diff)
-          )
-        )
       } else {
-        skipped_files_to_summarize.push(filename)
+        return [filename, summarize_resp]
       }
+    } catch (error) {
+      core.warning(`summarize: error from openai: ${error}`)
+      summaries_failed.push(`${filename} (error from openai: ${error})`)
+      return null
     }
+  }
 
-    const summaries = (await Promise.all(summaryPromises)).filter(
-      summary => summary !== null
-    ) as [string, string][]
+  const summaryPromises = []
+  const skipped_files_to_summarize = []
+  for (const [filename, file_content, file_diff] of files_to_review) {
+    if (
+      options.max_files_to_summarize <= 0 ||
+      summaryPromises.length < options.max_files_to_summarize
+    ) {
+      summaryPromises.push(
+        openai_concurrency_limit(async () =>
+          do_summary(filename, file_content, file_diff)
+        )
+      )
+    } else {
+      skipped_files_to_summarize.push(filename)
+    }
+  }
 
-    if (summaries.length > 0) {
-      inputs.summary = ''
-      // join summaries into one
-      for (const [filename, summary] of summaries) {
-        inputs.summary += `---
+  const summaries = (await Promise.all(summaryPromises)).filter(
+    summary => summary !== null
+  ) as [string, string][]
+
+  if (summaries.length > 0) {
+    inputs.summary = ''
+    // join summaries into one
+    for (const [filename, summary] of summaries) {
+      inputs.summary += `---
 ${filename}: ${summary}
 `
-      }
     }
+  }
 
-    let next_summarize_ids = {}
+  let next_summarize_ids = {}
 
-    // final summary
-    const [summarize_final_response, summarize_final_response_ids] =
-      await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
-    if (!summarize_final_response) {
-      core.info('summarize: nothing obtained from openai')
-    } else {
-      inputs.summary = summarize_final_response
+  // final summary
+  const [summarize_final_response, summarize_final_response_ids] =
+    await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
+  if (!summarize_final_response) {
+    core.info('summarize: nothing obtained from openai')
+  } else {
+    inputs.summary = summarize_final_response
 
-      const summarize_comment = `${summarize_final_response}
+    const summarize_comment = `${summarize_final_response}
 
 ---
 
@@ -297,159 +306,175 @@ ${
 `
     : ''
 }
+
+${
+  summaries_failed.length > 0
+    ? `
+<details>
+<summary>Files not summarized due to errors (${
+        summaries_failed.length
+      })</summary>
+
+### Failed to summarize
+
+* ${summaries_failed.join('\n* ')}
+
+</details>
+`
+    : ''
+}
 `
 
-      await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
+    await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
 
-      // final release notes
-      next_summarize_ids = summarize_final_response_ids
-      const [release_notes_response, release_notes_ids] = await heavyBot.chat(
-        prompts.render_summarize_release_notes(inputs),
-        next_summarize_ids
-      )
-      if (!release_notes_response) {
-        core.info('release notes: nothing obtained from openai')
-      } else {
-        next_summarize_ids = release_notes_ids
-        let message = '### Summary by OpenAI\n\n'
-        message += release_notes_response
-        commenter.update_description(
-          context.payload.pull_request.number,
-          message
+    // final release notes
+    next_summarize_ids = summarize_final_response_ids
+    const [release_notes_response, release_notes_ids] = await heavyBot.chat(
+      prompts.render_summarize_release_notes(inputs),
+      next_summarize_ids
+    )
+    if (!release_notes_response) {
+      core.info('release notes: nothing obtained from openai')
+    } else {
+      next_summarize_ids = release_notes_ids
+      let message = '### Summary by OpenAI\n\n'
+      message += release_notes_response
+      commenter.update_description(context.payload.pull_request.number, message)
+    }
+  }
+
+  if (options.summary_only === true) {
+    core.info('summary_only is true, exiting')
+    return
+  }
+
+  // failed reviews array
+  const reviews_failed: string[] = []
+  const do_review = async (
+    filename: string,
+    file_content: string,
+    patches: [number, number, string][]
+  ): Promise<void> => {
+    // make a copy of inputs
+    const ins: Inputs = inputs.clone()
+    ins.filename = filename
+    // calculate tokens based on inputs so far
+    let tokens = tokenizer.get_token_count(prompts.render_review_file_diff(ins))
+    // loop to calculate total patch tokens
+    let patches_to_pack = 0
+    for (const [, , patch] of patches) {
+      const patch_tokens = tokenizer.get_token_count(patch)
+      if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
+        break
+      }
+      tokens += patch_tokens
+      patches_to_pack += 1
+    }
+
+    // try packing file_content into this request
+    const file_content_count =
+      prompts.summarize_file_diff.split('$file_content').length - 1
+    const file_content_tokens = tokenizer.get_token_count(file_content)
+
+    if (
+      tokens + file_content_tokens * file_content_count <=
+      options.heavy_token_limits.request_tokens
+    ) {
+      ins.file_content = file_content
+      tokens += file_content_tokens * file_content_count
+    }
+
+    let patches_packed = 0
+    for (const [start_line, end_line, patch] of patches) {
+      if (!context.payload.pull_request) {
+        core.warning('No pull request found, skipping.')
+        continue
+      }
+      // see if we can pack more patches into this request
+      if (patches_packed >= patches_to_pack) {
+        core.info(
+          `unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`
         )
+        break
       }
-    }
+      patches_packed += 1
 
-    if (options.summary_only === true) {
-      core.info('summary_only is true, exiting')
-      return
-    }
+      let comment_chain = ''
+      try {
+        // get existing comments on the line
+        const all_chains = await commenter.get_conversation_chains_at_range(
+          context.payload.pull_request.number,
+          filename,
+          start_line,
+          end_line,
+          COMMENT_REPLY_TAG
+        )
 
-    const do_review = async (
-      filename: string,
-      file_content: string,
-      patches: [number, number, string][]
-    ): Promise<void> => {
-      // make a copy of inputs
-      const ins: Inputs = inputs.clone()
-      ins.filename = filename
-      // calculate tokens based on inputs so far
-      let tokens = tokenizer.get_token_count(
-        prompts.render_review_file_diff(ins)
-      )
-      // loop to calculate total patch tokens
-      let patches_to_pack = 0
-      for (const [, , patch] of patches) {
-        const patch_tokens = tokenizer.get_token_count(patch)
-        if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
-          break
+        if (all_chains.length > 0) {
+          comment_chain = all_chains
+        } else {
+          comment_chain = ''
         }
-        tokens += patch_tokens
-        patches_to_pack += 1
+      } catch (e: unknown) {
+        if (e instanceof ChatGPTError) {
+          core.warning(
+            `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+          )
+        }
       }
-
-      // try packing file_content into this request
-      const file_content_count =
-        prompts.summarize_file_diff.split('$file_content').length - 1
-      const file_content_tokens = tokenizer.get_token_count(file_content)
-
+      // try packing comment_chain into this request
+      const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
       if (
-        tokens + file_content_tokens * file_content_count <=
+        tokens + comment_chain_tokens >
         options.heavy_token_limits.request_tokens
       ) {
-        ins.file_content = file_content
-        tokens += file_content_tokens * file_content_count
+        comment_chain = ''
+      } else {
+        tokens += comment_chain_tokens
       }
 
-      let patches_packed = 0
-      for (const [start_line, end_line, patch] of patches) {
-        if (!context.payload.pull_request) {
-          core.warning('No pull request found, skipping.')
-          continue
-        }
-        // see if we can pack more patches into this request
-        if (patches_packed >= patches_to_pack) {
-          core.info(
-            `unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`
-          )
-          break
-        }
-        patches_packed += 1
-
-        let comment_chain = ''
-        try {
-          // get existing comments on the line
-          const all_chains = await commenter.get_conversation_chains_at_range(
-            context.payload.pull_request.number,
-            filename,
-            start_line,
-            end_line,
-            COMMENT_REPLY_TAG
-          )
-
-          if (all_chains.length > 0) {
-            comment_chain = all_chains
-          } else {
-            comment_chain = ''
-          }
-        } catch (e: unknown) {
-          if (e instanceof ChatGPTError) {
-            core.warning(
-              `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
-            )
-          }
-        }
-        // try packing comment_chain into this request
-        const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
-        if (
-          tokens + comment_chain_tokens >
-          options.heavy_token_limits.request_tokens
-        ) {
-          comment_chain = ''
-        } else {
-          tokens += comment_chain_tokens
-        }
-
-        ins.patches += `
+      ins.patches += `
 ${patch}
 `
-        if (comment_chain !== '') {
-          ins.patches += `
+      if (comment_chain !== '') {
+        ins.patches += `
 \`\`\`comment_chain
 ${comment_chain}
 \`\`\`
 `
-        }
+      }
 
-        ins.patches += `
+      ins.patches += `
 ---
 `
+    }
+    // perform review
+    try {
+      const [response] = await heavyBot.chat(
+        prompts.render_review_file_diff(ins),
+        {}
+      )
+      if (!response) {
+        core.info('review: nothing obtained from openai')
+        reviews_failed.push(`${filename} (no response)`)
+        return
       }
-      // perform review
-      try {
-        const [response] = await heavyBot.chat(
-          prompts.render_review_file_diff(ins),
-          {}
-        )
-        if (!response) {
-          core.info('review: nothing obtained from openai')
-          return
+      // parse review
+      const reviewMap = parseOpenAIReview(response, options.debug)
+      for (const [, review] of reviewMap) {
+        // check for LGTM
+        if (
+          !options.review_comment_lgtm &&
+          (review.comment.includes('LGTM') ||
+            review.comment.includes('looks good to me'))
+        ) {
+          continue
         }
-        // parse review
-        const reviewMap = parseOpenAIReview(response, options.debug)
-        for (const [, review] of reviewMap) {
-          // check for LGTM
-          if (
-            !options.review_comment_lgtm &&
-            (review.comment.includes('LGTM') ||
-              review.comment.includes('looks good to me'))
-          ) {
-            continue
-          }
-          if (!context.payload.pull_request) {
-            core.warning('No pull request found, skipping.')
-            continue
-          }
+        if (!context.payload.pull_request) {
+          core.warning('No pull request found, skipping.')
+          continue
+        }
+        try {
           await commenter.review_comment(
             context.payload.pull_request.number,
             commits[commits.length - 1].sha,
@@ -458,35 +483,39 @@ ${comment_chain}
             review.end_line,
             `${review.comment}`
           )
+        } catch (e: unknown) {
+          reviews_failed.push(`${filename} comment failed (${e})`)
         }
-      } catch (e: any) {
-        core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`)
       }
+    } catch (e: any) {
+      core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`)
+      reviews_failed.push(`${filename} (${e})`)
     }
+  }
 
-    const reviewPromises = []
-    const skipped_files_to_review = []
-    for (const [filename, file_content, , patches] of files_to_review) {
-      if (
-        options.max_files_to_review <= 0 ||
-        reviewPromises.length < options.max_files_to_review
-      ) {
-        reviewPromises.push(
-          openai_concurrency_limit(async () =>
-            do_review(filename, file_content, patches)
-          )
+  const reviewPromises = []
+  const skipped_files_to_review = []
+  for (const [filename, file_content, , patches] of files_to_review) {
+    if (
+      options.max_files_to_review <= 0 ||
+      reviewPromises.length < options.max_files_to_review
+    ) {
+      reviewPromises.push(
+        openai_concurrency_limit(async () =>
+          do_review(filename, file_content, patches)
         )
-      } else {
-        skipped_files_to_review.push(filename)
-      }
+      )
+    } else {
+      skipped_files_to_review.push(filename)
     }
+  }
 
-    await Promise.all(reviewPromises)
+  await Promise.all(reviewPromises)
 
-    // comment about skipped files for review and summarize
-    if (skipped_files_to_review.length > 0) {
-      // make bullet points for skipped files
-      const comment = `
+  // comment about skipped files for review and summarize
+  if (skipped_files_to_review.length > 0) {
+    // make bullet points for skipped files
+    const comment = `
       ${
         skipped_files_to_review.length > 0
           ? `<details>
@@ -502,10 +531,23 @@ ${comment_chain}
 `
           : ''
       }
-      `
-      if (comment.length > 0) {
-        await commenter.comment(comment, SUMMARIZE_TAG, 'append')
+
+      ${
+        reviews_failed.length > 0
+          ? `<details>
+<summary>Files not reviewed due to errors (${reviews_failed.length})</summary>
+
+### Not reviewed
+
+* ${reviews_failed.join('\n* ')}
+
+</details>
+`
+          : ''
       }
+      `
+    if (comment.length > 0) {
+      await commenter.comment(comment, SUMMARIZE_TAG, 'append')
     }
   }
 }

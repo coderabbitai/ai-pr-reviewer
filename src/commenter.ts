@@ -203,6 +203,8 @@ ${tag}`
       core.warning(
         `Failed to post review comment, for ${path}:${start_line}-${end_line}: ${e}`
       )
+      // throw error
+      throw e
     }
   }
 
