@@ -156,7 +156,7 @@ ${tag}`
       for (const comment of comments) {
         if (comment.body.includes(tag)) {
           core.info(
-            `Updating review comment for ${path}:${end_line}: ${message}`
+            `Updating review comment for ${path}:${start_line}-${end_line}: ${message}`
           )
           await octokit.pulls.updateReviewComment({
             owner: repo.owner,
@@ -261,7 +261,7 @@ ${COMMENT_REPLY_TAG}
     }
   }
 
-  async get_comments_at_range(
+  async get_comments_within_range(
     pull_number: number,
     path: string,
     start_line: number,
@@ -279,14 +279,32 @@ ${COMMENT_REPLY_TAG}
     )
   }
 
-  async get_conversation_chains_at_range(
+  async get_comments_at_range(
+    pull_number: number,
+    path: string,
+    start_line: number,
+    end_line: number
+  ) {
+    const comments = await this.list_review_comments(pull_number)
+    return comments.filter(
+      (comment: any) =>
+        comment.path === path &&
+        comment.body !== '' &&
+        ((comment.start_line !== undefined &&
+          comment.start_line === start_line &&
+          comment.line === end_line) ||
+          comment.line === end_line)
+    )
+  }
+
+  async get_conversation_chains_within_range(
     pull_number: number,
     path: string,
     start_line: number,
     end_line: number,
     tag = ''
   ) {
-    const existing_comments = await this.get_comments_at_range(
+    const existing_comments = await this.get_comments_within_range(
       pull_number,
       path,
       start_line,

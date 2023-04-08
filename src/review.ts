@@ -400,8 +400,7 @@ ${
 
       let comment_chain = ''
       try {
-        // get existing comments on the line
-        const all_chains = await commenter.get_conversation_chains_at_range(
+        const all_chains = await commenter.get_conversation_chains_within_range(
           context.payload.pull_request.number,
           filename,
           start_line,
@@ -457,8 +456,8 @@ ${comment_chain}
         return
       }
       // parse review
-      const reviewMap = parseOpenAIReview(response, options.debug)
-      for (const [, review] of reviewMap) {
+      const reviews = parseReview(response, options.debug)
+      for (const review of reviews) {
         // check for LGTM
         if (
           !options.review_comment_lgtm &&
@@ -649,11 +648,9 @@ type Review = {
   comment: string
 }
 
-function parseOpenAIReview(
-  response: string,
-  debug = false
-): Map<string, Review> {
-  const reviews = new Map<string, Review>()
+function parseReview(response: string, debug = false): Review[] {
+  // instantiate an array of reviews
+  const reviews: Review[] = []
 
   // Split the response into lines
   const lines = response.split('\n')
@@ -671,9 +668,9 @@ function parseOpenAIReview(
     const lineNumberRangeMatch = line.match(lineNumberRangeRegex)
 
     if (lineNumberRangeMatch) {
-      // If there is a previous comment, store it in the reviews Map
+      // If there is a previous comment, store it in the reviews
       if (currentStartLine !== null && currentEndLine !== null) {
-        reviews.set(`${currentStartLine}-${currentEndLine}`, {
+        reviews.push({
           start_line: currentStartLine,
           end_line: currentEndLine,
           comment: currentComment.trim()
@@ -697,9 +694,9 @@ function parseOpenAIReview(
 
     // Check if the line is a comment separator
     if (line.trim() === commentSeparator) {
-      // If there is a previous comment, store it in the reviews Map
+      // If there is a previous comment, store it in the reviews
       if (currentStartLine !== null && currentEndLine !== null) {
-        reviews.set(`${currentStartLine}-${currentEndLine}`, {
+        reviews.push({
           start_line: currentStartLine,
           end_line: currentEndLine,
           comment: currentComment.trim()
@@ -724,9 +721,9 @@ function parseOpenAIReview(
     }
   }
 
-  // If there is a comment at the end of the response, store it in the reviews Map
+  // If there is a comment at the end of the response, store it in the reviews
   if (currentStartLine !== null && currentEndLine !== null) {
-    reviews.set(`${currentStartLine}-${currentEndLine}`, {
+    reviews.push({
       start_line: currentStartLine,
       end_line: currentEndLine,
       comment: currentComment.trim()
