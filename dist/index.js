@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 474:
+/***/ 6877:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -2172,8 +2172,1185 @@ if (!globalThis.fetch) {
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
-// EXTERNAL MODULE: ./node_modules/chatgpt/build/index.js + 4 modules
-var build = __nccwpck_require__(2353);
+// EXTERNAL MODULE: ./node_modules/keyv/src/index.js
+var src = __nccwpck_require__(1531);
+;// CONCATENATED MODULE: ./node_modules/p-timeout/index.js
+class TimeoutError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'TimeoutError';
+	}
+}
+
+/**
+An error to be thrown when the request is aborted by AbortController.
+DOMException is thrown instead of this Error when DOMException is available.
+*/
+class p_timeout_AbortError extends Error {
+	constructor(message) {
+		super();
+		this.name = 'AbortError';
+		this.message = message;
+	}
+}
+
+/**
+TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+*/
+const getDOMException = errorMessage => globalThis.DOMException === undefined
+	? new p_timeout_AbortError(errorMessage)
+	: new DOMException(errorMessage);
+
+/**
+TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
+*/
+const getAbortedReason = signal => {
+	const reason = signal.reason === undefined
+		? getDOMException('This operation was aborted.')
+		: signal.reason;
+
+	return reason instanceof Error ? reason : getDOMException(reason);
+};
+
+function pTimeout(promise, options) {
+	const {
+		milliseconds,
+		fallback,
+		message,
+		customTimers = {setTimeout, clearTimeout},
+	} = options;
+
+	let timer;
+
+	const cancelablePromise = new Promise((resolve, reject) => {
+		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
+			throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
+		}
+
+		if (milliseconds === Number.POSITIVE_INFINITY) {
+			resolve(promise);
+			return;
+		}
+
+		if (options.signal) {
+			const {signal} = options;
+			if (signal.aborted) {
+				reject(getAbortedReason(signal));
+			}
+
+			signal.addEventListener('abort', () => {
+				reject(getAbortedReason(signal));
+			});
+		}
+
+		// We create the error outside of `setTimeout` to preserve the stack trace.
+		const timeoutError = new TimeoutError();
+
+		timer = customTimers.setTimeout.call(undefined, () => {
+			if (fallback) {
+				try {
+					resolve(fallback());
+				} catch (error) {
+					reject(error);
+				}
+
+				return;
+			}
+
+			if (typeof promise.cancel === 'function') {
+				promise.cancel();
+			}
+
+			if (message === false) {
+				resolve();
+			} else if (message instanceof Error) {
+				reject(message);
+			} else {
+				timeoutError.message = message ?? `Promise timed out after ${milliseconds} milliseconds`;
+				reject(timeoutError);
+			}
+		}, milliseconds);
+
+		(async () => {
+			try {
+				resolve(await promise);
+			} catch (error) {
+				reject(error);
+			} finally {
+				customTimers.clearTimeout.call(undefined, timer);
+			}
+		})();
+	});
+
+	cancelablePromise.clear = () => {
+		customTimers.clearTimeout.call(undefined, timer);
+		timer = undefined;
+	};
+
+	return cancelablePromise;
+}
+
+;// CONCATENATED MODULE: ./node_modules/quick-lru/index.js
+class QuickLRU extends Map {
+	constructor(options = {}) {
+		super();
+
+		if (!(options.maxSize && options.maxSize > 0)) {
+			throw new TypeError('`maxSize` must be a number greater than 0');
+		}
+
+		if (typeof options.maxAge === 'number' && options.maxAge === 0) {
+			throw new TypeError('`maxAge` must be a number greater than 0');
+		}
+
+		// TODO: Use private class fields when ESLint supports them.
+		this.maxSize = options.maxSize;
+		this.maxAge = options.maxAge || Number.POSITIVE_INFINITY;
+		this.onEviction = options.onEviction;
+		this.cache = new Map();
+		this.oldCache = new Map();
+		this._size = 0;
+	}
+
+	// TODO: Use private class methods when targeting Node.js 16.
+	_emitEvictions(cache) {
+		if (typeof this.onEviction !== 'function') {
+			return;
+		}
+
+		for (const [key, item] of cache) {
+			this.onEviction(key, item.value);
+		}
+	}
+
+	_deleteIfExpired(key, item) {
+		if (typeof item.expiry === 'number' && item.expiry <= Date.now()) {
+			if (typeof this.onEviction === 'function') {
+				this.onEviction(key, item.value);
+			}
+
+			return this.delete(key);
+		}
+
+		return false;
+	}
+
+	_getOrDeleteIfExpired(key, item) {
+		const deleted = this._deleteIfExpired(key, item);
+		if (deleted === false) {
+			return item.value;
+		}
+	}
+
+	_getItemValue(key, item) {
+		return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
+	}
+
+	_peek(key, cache) {
+		const item = cache.get(key);
+
+		return this._getItemValue(key, item);
+	}
+
+	_set(key, value) {
+		this.cache.set(key, value);
+		this._size++;
+
+		if (this._size >= this.maxSize) {
+			this._size = 0;
+			this._emitEvictions(this.oldCache);
+			this.oldCache = this.cache;
+			this.cache = new Map();
+		}
+	}
+
+	_moveToRecent(key, item) {
+		this.oldCache.delete(key);
+		this._set(key, item);
+	}
+
+	* _entriesAscending() {
+		for (const item of this.oldCache) {
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield item;
+				}
+			}
+		}
+
+		for (const item of this.cache) {
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield item;
+			}
+		}
+	}
+
+	get(key) {
+		if (this.cache.has(key)) {
+			const item = this.cache.get(key);
+
+			return this._getItemValue(key, item);
+		}
+
+		if (this.oldCache.has(key)) {
+			const item = this.oldCache.get(key);
+			if (this._deleteIfExpired(key, item) === false) {
+				this._moveToRecent(key, item);
+				return item.value;
+			}
+		}
+	}
+
+	set(key, value, {maxAge = this.maxAge} = {}) {
+		const expiry =
+			typeof maxAge === 'number' && maxAge !== Number.POSITIVE_INFINITY ?
+				Date.now() + maxAge :
+				undefined;
+		if (this.cache.has(key)) {
+			this.cache.set(key, {
+				value,
+				expiry
+			});
+		} else {
+			this._set(key, {value, expiry});
+		}
+	}
+
+	has(key) {
+		if (this.cache.has(key)) {
+			return !this._deleteIfExpired(key, this.cache.get(key));
+		}
+
+		if (this.oldCache.has(key)) {
+			return !this._deleteIfExpired(key, this.oldCache.get(key));
+		}
+
+		return false;
+	}
+
+	peek(key) {
+		if (this.cache.has(key)) {
+			return this._peek(key, this.cache);
+		}
+
+		if (this.oldCache.has(key)) {
+			return this._peek(key, this.oldCache);
+		}
+	}
+
+	delete(key) {
+		const deleted = this.cache.delete(key);
+		if (deleted) {
+			this._size--;
+		}
+
+		return this.oldCache.delete(key) || deleted;
+	}
+
+	clear() {
+		this.cache.clear();
+		this.oldCache.clear();
+		this._size = 0;
+	}
+
+	resize(newSize) {
+		if (!(newSize && newSize > 0)) {
+			throw new TypeError('`maxSize` must be a number greater than 0');
+		}
+
+		const items = [...this._entriesAscending()];
+		const removeCount = items.length - newSize;
+		if (removeCount < 0) {
+			this.cache = new Map(items);
+			this.oldCache = new Map();
+			this._size = items.length;
+		} else {
+			if (removeCount > 0) {
+				this._emitEvictions(items.slice(0, removeCount));
+			}
+
+			this.oldCache = new Map(items.slice(removeCount));
+			this.cache = new Map();
+			this._size = 0;
+		}
+
+		this.maxSize = newSize;
+	}
+
+	* keys() {
+		for (const [key] of this) {
+			yield key;
+		}
+	}
+
+	* values() {
+		for (const [, value] of this) {
+			yield value;
+		}
+	}
+
+	* [Symbol.iterator]() {
+		for (const item of this.cache) {
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield [key, value.value];
+			}
+		}
+
+		for (const item of this.oldCache) {
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield [key, value.value];
+				}
+			}
+		}
+	}
+
+	* entriesDescending() {
+		let items = [...this.cache];
+		for (let i = items.length - 1; i >= 0; --i) {
+			const item = items[i];
+			const [key, value] = item;
+			const deleted = this._deleteIfExpired(key, value);
+			if (deleted === false) {
+				yield [key, value.value];
+			}
+		}
+
+		items = [...this.oldCache];
+		for (let i = items.length - 1; i >= 0; --i) {
+			const item = items[i];
+			const [key, value] = item;
+			if (!this.cache.has(key)) {
+				const deleted = this._deleteIfExpired(key, value);
+				if (deleted === false) {
+					yield [key, value.value];
+				}
+			}
+		}
+	}
+
+	* entriesAscending() {
+		for (const [key, value] of this._entriesAscending()) {
+			yield [key, value.value];
+		}
+	}
+
+	get size() {
+		if (!this._size) {
+			return this.oldCache.size;
+		}
+
+		let oldCacheSize = 0;
+		for (const key of this.oldCache.keys()) {
+			if (!this.cache.has(key)) {
+				oldCacheSize++;
+			}
+		}
+
+		return Math.min(this._size + oldCacheSize, this.maxSize);
+	}
+
+	entries() {
+		return this.entriesAscending();
+	}
+
+	forEach(callbackFunction, thisArgument = this) {
+		for (const [key, value] of this.entriesAscending()) {
+			callbackFunction.call(thisArgument, value, key, this);
+		}
+	}
+
+	get [Symbol.toStringTag]() {
+		return JSON.stringify([...this.entriesAscending()]);
+	}
+}
+
+// EXTERNAL MODULE: ./node_modules/chatgpt/node_modules/uuid/dist/index.js
+var uuid_dist = __nccwpck_require__(6201);
+;// CONCATENATED MODULE: ./node_modules/chatgpt/node_modules/uuid/wrapper.mjs
+
+const v1 = uuid_dist.v1;
+const v3 = uuid_dist.v3;
+const v4 = uuid_dist.v4;
+const v5 = uuid_dist.v5;
+const NIL = uuid_dist/* NIL */.zR;
+const version = uuid_dist/* version */.i8;
+const validate = uuid_dist/* validate */.Gu;
+const stringify = uuid_dist/* stringify */.Pz;
+const parse = uuid_dist/* parse */.Qc;
+
+// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/tiktoken.cjs
+var tiktoken = __nccwpck_require__(3171);
+;// CONCATENATED MODULE: ./node_modules/eventsource-parser/dist/index.mjs
+function createParser(onParse) {
+  let isFirstChunk;
+  let buffer;
+  let startingPosition;
+  let startingFieldLength;
+  let eventId;
+  let eventName;
+  let data;
+  reset();
+  return {
+    feed,
+    reset
+  };
+
+  function reset() {
+    isFirstChunk = true;
+    buffer = "";
+    startingPosition = 0;
+    startingFieldLength = -1;
+    eventId = void 0;
+    eventName = void 0;
+    data = "";
+  }
+
+  function feed(chunk) {
+    buffer = buffer ? buffer + chunk : chunk;
+
+    if (isFirstChunk && hasBom(buffer)) {
+      buffer = buffer.slice(BOM.length);
+    }
+
+    isFirstChunk = false;
+    const length = buffer.length;
+    let position = 0;
+    let discardTrailingNewline = false;
+
+    while (position < length) {
+      if (discardTrailingNewline) {
+        if (buffer[position] === "\n") {
+          ++position;
+        }
+
+        discardTrailingNewline = false;
+      }
+
+      let lineLength = -1;
+      let fieldLength = startingFieldLength;
+      let character;
+
+      for (let index = startingPosition; lineLength < 0 && index < length; ++index) {
+        character = buffer[index];
+
+        if (character === ":" && fieldLength < 0) {
+          fieldLength = index - position;
+        } else if (character === "\r") {
+          discardTrailingNewline = true;
+          lineLength = index - position;
+        } else if (character === "\n") {
+          lineLength = index - position;
+        }
+      }
+
+      if (lineLength < 0) {
+        startingPosition = length - position;
+        startingFieldLength = fieldLength;
+        break;
+      } else {
+        startingPosition = 0;
+        startingFieldLength = -1;
+      }
+
+      parseEventStreamLine(buffer, position, fieldLength, lineLength);
+      position += lineLength + 1;
+    }
+
+    if (position === length) {
+      buffer = "";
+    } else if (position > 0) {
+      buffer = buffer.slice(position);
+    }
+  }
+
+  function parseEventStreamLine(lineBuffer, index, fieldLength, lineLength) {
+    if (lineLength === 0) {
+      if (data.length > 0) {
+        onParse({
+          type: "event",
+          id: eventId,
+          event: eventName || void 0,
+          data: data.slice(0, -1)
+        });
+        data = "";
+        eventId = void 0;
+      }
+
+      eventName = void 0;
+      return;
+    }
+
+    const noValue = fieldLength < 0;
+    const field = lineBuffer.slice(index, index + (noValue ? lineLength : fieldLength));
+    let step = 0;
+
+    if (noValue) {
+      step = lineLength;
+    } else if (lineBuffer[index + fieldLength + 1] === " ") {
+      step = fieldLength + 2;
+    } else {
+      step = fieldLength + 1;
+    }
+
+    const position = index + step;
+    const valueLength = lineLength - step;
+    const value = lineBuffer.slice(position, position + valueLength).toString();
+
+    if (field === "data") {
+      data += value ? "".concat(value, "\n") : "\n";
+    } else if (field === "event") {
+      eventName = value;
+    } else if (field === "id" && !value.includes("\0")) {
+      eventId = value;
+    } else if (field === "retry") {
+      const retry = parseInt(value, 10);
+
+      if (!Number.isNaN(retry)) {
+        onParse({
+          type: "reconnect-interval",
+          value: retry
+        });
+      }
+    }
+  }
+}
+
+const BOM = [239, 187, 191];
+
+function hasBom(buffer) {
+  return BOM.every((charCode, index) => buffer.charCodeAt(index) === charCode);
+}
+
+
+//# sourceMappingURL=index.mjs.map
+
+;// CONCATENATED MODULE: ./node_modules/chatgpt/build/index.js
+// src/chatgpt-api.ts
+
+
+
+
+
+// src/tokenizer.ts
+
+var tokenizer = (0,tiktoken/* get_encoding */.iw)("cl100k_base");
+function encode(input) {
+  return tokenizer.encode(input);
+}
+
+// src/types.ts
+var ChatGPTError = class extends Error {
+};
+var openai;
+((openai2) => {
+})(openai || (openai = {}));
+
+// src/fetch.ts
+var build_fetch = globalThis.fetch;
+
+// src/fetch-sse.ts
+
+
+// src/stream-async-iterable.ts
+async function* streamAsyncIterable(stream) {
+  const reader = stream.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return;
+      }
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// src/fetch-sse.ts
+async function fetchSSE(url, options, fetch2 = build_fetch) {
+  const { onMessage, ...fetchOptions } = options;
+  const res = await fetch2(url, fetchOptions);
+  if (!res.ok) {
+    let reason;
+    try {
+      reason = await res.text();
+    } catch (err) {
+      reason = res.statusText;
+    }
+    const msg = `ChatGPT error ${res.status}: ${reason}`;
+    const error = new ChatGPTError(msg, { cause: res });
+    error.statusCode = res.status;
+    error.statusText = res.statusText;
+    throw error;
+  }
+  const parser = createParser((event) => {
+    if (event.type === "event") {
+      onMessage(event.data);
+    }
+  });
+  if (!res.body.getReader) {
+    const body = res.body;
+    if (!body.on || !body.read) {
+      throw new ChatGPTError('unsupported "fetch" implementation');
+    }
+    body.on("readable", () => {
+      let chunk;
+      while (null !== (chunk = body.read())) {
+        parser.feed(chunk.toString());
+      }
+    });
+  } else {
+    for await (const chunk of streamAsyncIterable(res.body)) {
+      const str = new TextDecoder().decode(chunk);
+      parser.feed(str);
+    }
+  }
+}
+
+// src/chatgpt-api.ts
+var CHATGPT_MODEL = "gpt-3.5-turbo";
+var USER_LABEL_DEFAULT = "User";
+var ASSISTANT_LABEL_DEFAULT = "ChatGPT";
+var ChatGPTAPI = class {
+  /**
+   * Creates a new client wrapper around OpenAI's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
+   *
+   * @param apiKey - OpenAI API key (required).
+   * @param apiBaseUrl - Optional override for the OpenAI API base URL.
+   * @param debug - Optional enables logging debugging info to stdout.
+   * @param completionParams - Param overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+   * @param maxModelTokens - Optional override for the maximum number of tokens allowed by the model's context. Defaults to 4096.
+   * @param maxResponseTokens - Optional override for the minimum number of tokens allowed for the model's response. Defaults to 1000.
+   * @param messageStore - Optional [Keyv](https://github.com/jaredwray/keyv) store to persist chat messages to. If not provided, messages will be lost when the process exits.
+   * @param getMessageById - Optional function to retrieve a message by its ID. If not provided, the default implementation will be used (using an in-memory `messageStore`).
+   * @param upsertMessage - Optional function to insert or update a message. If not provided, the default implementation will be used (using an in-memory `messageStore`).
+   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
+   */
+  constructor(opts) {
+    const {
+      apiKey,
+      apiBaseUrl = "https://api.openai.com/v1",
+      debug = false,
+      messageStore,
+      completionParams,
+      systemMessage,
+      maxModelTokens = 4e3,
+      maxResponseTokens = 1e3,
+      getMessageById,
+      upsertMessage,
+      fetch: fetch2 = build_fetch
+    } = opts;
+    this._apiKey = apiKey;
+    this._apiBaseUrl = apiBaseUrl;
+    this._debug = !!debug;
+    this._fetch = fetch2;
+    this._completionParams = {
+      model: CHATGPT_MODEL,
+      temperature: 0.8,
+      top_p: 1,
+      presence_penalty: 1,
+      ...completionParams
+    };
+    this._systemMessage = systemMessage;
+    if (this._systemMessage === void 0) {
+      const currentDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      this._systemMessage = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
+Knowledge cutoff: 2021-09-01
+Current date: ${currentDate}`;
+    }
+    this._maxModelTokens = maxModelTokens;
+    this._maxResponseTokens = maxResponseTokens;
+    this._getMessageById = getMessageById ?? this._defaultGetMessageById;
+    this._upsertMessage = upsertMessage ?? this._defaultUpsertMessage;
+    if (messageStore) {
+      this._messageStore = messageStore;
+    } else {
+      this._messageStore = new src({
+        store: new QuickLRU({ maxSize: 1e4 })
+      });
+    }
+    if (!this._apiKey) {
+      throw new Error("OpenAI missing required apiKey");
+    }
+    if (!this._fetch) {
+      throw new Error("Invalid environment; fetch is not defined");
+    }
+    if (typeof this._fetch !== "function") {
+      throw new Error('Invalid "fetch" is not a function');
+    }
+  }
+  /**
+   * Sends a message to the OpenAI chat completions endpoint, waits for the response
+   * to resolve, and returns the response.
+   *
+   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
+   *
+   * If you want to receive a stream of partial responses, use `opts.onProgress`.
+   *
+   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI chat completions API. You can override the `systemMessage` in `opts` to customize the assistant's instructions.
+   *
+   * @param message - The prompt message to send
+   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
+   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
+   * @param opts.systemMessage - Optional override for the chat "system message" which acts as instructions to the model (defaults to the ChatGPT system message)
+   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
+   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
+   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+   *
+   * @returns The response from ChatGPT
+   */
+  async sendMessage(text, opts = {}) {
+    const {
+      parentMessageId,
+      messageId = v4(),
+      timeoutMs,
+      onProgress,
+      stream = onProgress ? true : false,
+      completionParams
+    } = opts;
+    let { abortSignal } = opts;
+    let abortController = null;
+    if (timeoutMs && !abortSignal) {
+      abortController = new AbortController();
+      abortSignal = abortController.signal;
+    }
+    const message = {
+      role: "user",
+      id: messageId,
+      parentMessageId,
+      text
+    };
+    await this._upsertMessage(message);
+    const { messages, maxTokens, numTokens } = await this._buildMessages(
+      text,
+      opts
+    );
+    const result = {
+      role: "assistant",
+      id: v4(),
+      parentMessageId: messageId,
+      text: ""
+    };
+    const responseP = new Promise(
+      async (resolve, reject) => {
+        var _a, _b;
+        const url = `${this._apiBaseUrl}/chat/completions`;
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this._apiKey}`
+        };
+        const body = {
+          max_tokens: maxTokens,
+          ...this._completionParams,
+          ...completionParams,
+          messages,
+          stream
+        };
+        if (this._debug) {
+          console.log(`sendMessage (${numTokens} tokens)`, body);
+        }
+        if (stream) {
+          fetchSSE(
+            url,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+              signal: abortSignal,
+              onMessage: (data) => {
+                var _a2;
+                if (data === "[DONE]") {
+                  result.text = result.text.trim();
+                  return resolve(result);
+                }
+                try {
+                  const response = JSON.parse(data);
+                  if (response.id) {
+                    result.id = response.id;
+                  }
+                  if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
+                    const delta = response.choices[0].delta;
+                    result.delta = delta.content;
+                    if (delta == null ? void 0 : delta.content)
+                      result.text += delta.content;
+                    result.detail = response;
+                    if (delta.role) {
+                      result.role = delta.role;
+                    }
+                    onProgress == null ? void 0 : onProgress(result);
+                  }
+                } catch (err) {
+                  console.warn("OpenAI stream SEE event unexpected error", err);
+                  return reject(err);
+                }
+              }
+            },
+            this._fetch
+          ).catch(reject);
+        } else {
+          try {
+            const res = await this._fetch(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+              signal: abortSignal
+            });
+            if (!res.ok) {
+              const reason = await res.text();
+              const msg = `OpenAI error ${res.status || res.statusText}: ${reason}`;
+              const error = new ChatGPTError(msg, { cause: res });
+              error.statusCode = res.status;
+              error.statusText = res.statusText;
+              return reject(error);
+            }
+            const response = await res.json();
+            if (this._debug) {
+              console.log(response);
+            }
+            if (response == null ? void 0 : response.id) {
+              result.id = response.id;
+            }
+            if ((_a = response == null ? void 0 : response.choices) == null ? void 0 : _a.length) {
+              const message2 = response.choices[0].message;
+              result.text = message2.content;
+              if (message2.role) {
+                result.role = message2.role;
+              }
+            } else {
+              const res2 = response;
+              return reject(
+                new Error(
+                  `OpenAI error: ${((_b = res2 == null ? void 0 : res2.detail) == null ? void 0 : _b.message) || (res2 == null ? void 0 : res2.detail) || "unknown"}`
+                )
+              );
+            }
+            result.detail = response;
+            return resolve(result);
+          } catch (err) {
+            return reject(err);
+          }
+        }
+      }
+    ).then((message2) => {
+      return this._upsertMessage(message2).then(() => message2);
+    });
+    if (timeoutMs) {
+      if (abortController) {
+        ;
+        responseP.cancel = () => {
+          abortController.abort();
+        };
+      }
+      return pTimeout(responseP, {
+        milliseconds: timeoutMs,
+        message: "OpenAI timed out waiting for response"
+      });
+    } else {
+      return responseP;
+    }
+  }
+  get apiKey() {
+    return this._apiKey;
+  }
+  set apiKey(apiKey) {
+    this._apiKey = apiKey;
+  }
+  async _buildMessages(text, opts) {
+    const { systemMessage = this._systemMessage } = opts;
+    let { parentMessageId } = opts;
+    const userLabel = USER_LABEL_DEFAULT;
+    const assistantLabel = ASSISTANT_LABEL_DEFAULT;
+    const maxNumTokens = this._maxModelTokens - this._maxResponseTokens;
+    let messages = [];
+    if (systemMessage) {
+      messages.push({
+        role: "system",
+        content: systemMessage
+      });
+    }
+    const systemMessageOffset = messages.length;
+    let nextMessages = text ? messages.concat([
+      {
+        role: "user",
+        content: text,
+        name: opts.name
+      }
+    ]) : messages;
+    let numTokens = 0;
+    do {
+      const prompt = nextMessages.reduce((prompt2, message) => {
+        switch (message.role) {
+          case "system":
+            return prompt2.concat([`Instructions:
+${message.content}`]);
+          case "user":
+            return prompt2.concat([`${userLabel}:
+${message.content}`]);
+          default:
+            return prompt2.concat([`${assistantLabel}:
+${message.content}`]);
+        }
+      }, []).join("\n\n");
+      const nextNumTokensEstimate = await this._getTokenCount(prompt);
+      const isValidPrompt = nextNumTokensEstimate <= maxNumTokens;
+      if (prompt && !isValidPrompt) {
+        break;
+      }
+      messages = nextMessages;
+      numTokens = nextNumTokensEstimate;
+      if (!isValidPrompt) {
+        break;
+      }
+      if (!parentMessageId) {
+        break;
+      }
+      const parentMessage = await this._getMessageById(parentMessageId);
+      if (!parentMessage) {
+        break;
+      }
+      const parentMessageRole = parentMessage.role || "user";
+      nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
+        {
+          role: parentMessageRole,
+          content: parentMessage.text,
+          name: parentMessage.name
+        },
+        ...nextMessages.slice(systemMessageOffset)
+      ]);
+      parentMessageId = parentMessage.parentMessageId;
+    } while (true);
+    const maxTokens = Math.max(
+      1,
+      Math.min(this._maxModelTokens - numTokens, this._maxResponseTokens)
+    );
+    return { messages, maxTokens, numTokens };
+  }
+  async _getTokenCount(text) {
+    text = text.replace(/<\|endoftext\|>/g, "");
+    return encode(text).length;
+  }
+  async _defaultGetMessageById(id) {
+    const res = await this._messageStore.get(id);
+    return res;
+  }
+  async _defaultUpsertMessage(message) {
+    await this._messageStore.set(message.id, message);
+  }
+};
+
+// src/chatgpt-unofficial-proxy-api.ts
+
+
+
+// src/utils.ts
+var uuidv4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isValidUUIDv4(str) {
+  return str && uuidv4Re.test(str);
+}
+
+// src/chatgpt-unofficial-proxy-api.ts
+var ChatGPTUnofficialProxyAPI = class {
+  /**
+   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
+   */
+  constructor(opts) {
+    const {
+      accessToken,
+      apiReverseProxyUrl = "https://bypass.duti.tech/api/conversation",
+      model = "text-davinci-002-render-sha",
+      debug = false,
+      headers,
+      fetch: fetch2 = build_fetch
+    } = opts;
+    this._accessToken = accessToken;
+    this._apiReverseProxyUrl = apiReverseProxyUrl;
+    this._debug = !!debug;
+    this._model = model;
+    this._fetch = fetch2;
+    this._headers = headers;
+    if (!this._accessToken) {
+      throw new Error("ChatGPT invalid accessToken");
+    }
+    if (!this._fetch) {
+      throw new Error("Invalid environment; fetch is not defined");
+    }
+    if (typeof this._fetch !== "function") {
+      throw new Error('Invalid "fetch" is not a function');
+    }
+  }
+  get accessToken() {
+    return this._accessToken;
+  }
+  set accessToken(value) {
+    this._accessToken = value;
+  }
+  /**
+   * Sends a message to ChatGPT, waits for the response to resolve, and returns
+   * the response.
+   *
+   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
+   *
+   * If you want to receive a stream of partial responses, use `opts.onProgress`.
+   * If you want to receive the full response, including message and conversation IDs,
+   * you can use `opts.onConversationResponse` or use the `ChatGPTAPI.getConversation`
+   * helper.
+   *
+   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI completions API. You can override the `promptPrefix` and `promptSuffix` in `opts` to customize the prompt.
+   *
+   * @param message - The prompt message to send
+   * @param opts.conversationId - Optional ID of a conversation to continue (defaults to a random UUID)
+   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
+   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
+   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
+   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
+   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+   *
+   * @returns The response from ChatGPT
+   */
+  async sendMessage(text, opts = {}) {
+    if (!!opts.conversationId !== !!opts.parentMessageId) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId and parentMessageId must both be set or both be undefined"
+      );
+    }
+    if (opts.conversationId && !isValidUUIDv4(opts.conversationId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId is not a valid v4 UUID"
+      );
+    }
+    if (opts.parentMessageId && !isValidUUIDv4(opts.parentMessageId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: parentMessageId is not a valid v4 UUID"
+      );
+    }
+    if (opts.messageId && !isValidUUIDv4(opts.messageId)) {
+      throw new Error(
+        "ChatGPTUnofficialProxyAPI.sendMessage: messageId is not a valid v4 UUID"
+      );
+    }
+    const {
+      conversationId,
+      parentMessageId = uuidv42(),
+      messageId = uuidv42(),
+      action = "next",
+      timeoutMs,
+      onProgress
+    } = opts;
+    let { abortSignal } = opts;
+    let abortController = null;
+    if (timeoutMs && !abortSignal) {
+      abortController = new AbortController();
+      abortSignal = abortController.signal;
+    }
+    const body = {
+      action,
+      messages: [
+        {
+          id: messageId,
+          role: "user",
+          content: {
+            content_type: "text",
+            parts: [text]
+          }
+        }
+      ],
+      model: this._model,
+      parent_message_id: parentMessageId
+    };
+    if (conversationId) {
+      body.conversation_id = conversationId;
+    }
+    const result = {
+      role: "assistant",
+      id: uuidv42(),
+      parentMessageId: messageId,
+      conversationId,
+      text: ""
+    };
+    const responseP = new Promise((resolve, reject) => {
+      const url = this._apiReverseProxyUrl;
+      const headers = {
+        ...this._headers,
+        Authorization: `Bearer ${this._accessToken}`,
+        Accept: "text/event-stream",
+        "Content-Type": "application/json"
+      };
+      if (this._debug) {
+        console.log("POST", url, { body, headers });
+      }
+      fetchSSE(
+        url,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+          signal: abortSignal,
+          onMessage: (data) => {
+            var _a, _b, _c;
+            if (data === "[DONE]") {
+              return resolve(result);
+            }
+            try {
+              const convoResponseEvent = JSON.parse(data);
+              if (convoResponseEvent.conversation_id) {
+                result.conversationId = convoResponseEvent.conversation_id;
+              }
+              if ((_a = convoResponseEvent.message) == null ? void 0 : _a.id) {
+                result.id = convoResponseEvent.message.id;
+              }
+              const message = convoResponseEvent.message;
+              if (message) {
+                let text2 = (_c = (_b = message == null ? void 0 : message.content) == null ? void 0 : _b.parts) == null ? void 0 : _c[0];
+                if (text2) {
+                  result.text = text2;
+                  if (onProgress) {
+                    onProgress(result);
+                  }
+                }
+              }
+            } catch (err) {
+            }
+          }
+        },
+        this._fetch
+      ).catch((err) => {
+        const errMessageL = err.toString().toLowerCase();
+        if (result.text && (errMessageL === "error: typeerror: terminated" || errMessageL === "typeerror: terminated")) {
+          return resolve(result);
+        } else {
+          return reject(err);
+        }
+      });
+    });
+    if (timeoutMs) {
+      if (abortController) {
+        ;
+        responseP.cancel = () => {
+          abortController.abort();
+        };
+      }
+      return pTimeout2(responseP, {
+        milliseconds: timeoutMs,
+        message: "ChatGPT timed out waiting for response"
+      });
+    } else {
+      return responseP;
+    }
+  }
+};
+
+//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./lib/utils.js
 
 const retry = async (fn, args, times) => {
@@ -2202,7 +3379,7 @@ class Bot {
     constructor(options, openaiOptions) {
         this.options = options;
         if (process.env.OPENAI_API_KEY) {
-            this.api = new build/* ChatGPTAPI */.EN({
+            this.api = new ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
                 debug: options.debug,
@@ -2226,7 +3403,7 @@ class Bot {
             return res;
         }
         catch (e) {
-            if (e instanceof build/* ChatGPTError */.sK)
+            if (e instanceof ChatGPTError)
                 core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
             return res;
         }
@@ -2249,7 +3426,7 @@ class Bot {
                 response = await retry(this.api.sendMessage.bind(this.api), [message, opts], this.options.openai_retries);
             }
             catch (e) {
-                if (e instanceof build/* ChatGPTError */.sK)
+                if (e instanceof ChatGPTError)
                     core.info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`);
             }
             const end = Date.now();
@@ -2299,8 +3476,8 @@ class Bot {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(1231);
-/* harmony import */ var chatgpt__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2353);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
+/* harmony import */ var _octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(6298);
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 
@@ -2309,7 +3486,8 @@ class Bot {
 const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_3__/* .Octokit */ .v({ auth: `token ${token}` });
+const RetryOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__/* .retry */ .XD);
+const octokit = new RetryOctokit({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
@@ -2539,7 +3717,7 @@ ${COMMENT_REPLY_TAG}
                 comment.line === end_line) ||
                 comment.line === end_line));
     }
-    async get_conversation_chains_within_range(pull_number, path, start_line, end_line, tag = '') {
+    async get_comment_chains_within_range(pull_number, path, start_line, end_line, tag = '') {
         const existing_comments = await this.get_comments_within_range(pull_number, path, start_line, end_line);
         // find all top most comments
         const top_level_comments = [];
@@ -2552,7 +3730,7 @@ ${COMMENT_REPLY_TAG}
         let chain_num = 0;
         for (const top_level_comment of top_level_comments) {
             // get conversation chain
-            const chain = await this.compose_conversation_chain(existing_comments, top_level_comment);
+            const chain = await this.compose_comment_chain(existing_comments, top_level_comment);
             if (chain && chain.includes(tag)) {
                 chain_num += 1;
                 all_chains += `Conversation Chain ${chain_num}:
@@ -2563,18 +3741,18 @@ ${chain}
         }
         return all_chains;
     }
-    async compose_conversation_chain(reviewComments, topLevelComment) {
+    async compose_comment_chain(reviewComments, topLevelComment) {
         const conversationChain = reviewComments
             .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
             .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
         conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
         return conversationChain.join('\n---\n');
     }
-    async get_conversation_chain(pull_number, comment) {
+    async get_comment_chain(pull_number, comment) {
         try {
             const review_comments = await this.list_review_comments(pull_number);
             const top_level_comment = await this.get_top_level_comment(review_comments, comment);
-            const chain = await this.compose_conversation_chain(review_comments, top_level_comment);
+            const chain = await this.compose_comment_chain(review_comments, top_level_comment);
             return { chain, topLevelComment: top_level_comment };
         }
         catch (e) {
@@ -2739,9 +3917,7 @@ ${chain}
             return all_comments;
         }
         catch (e) {
-            if (e instanceof chatgpt__WEBPACK_IMPORTED_MODULE_2__/* .ChatGPTError */ .sK) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to list comments: ${e}`);
-            }
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to list comments: ${e}`);
             return all_comments;
         }
     }
@@ -2758,7 +3934,7 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(474);
+/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6877);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9698);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5947);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2612);
@@ -4568,6 +5744,7 @@ class PathFilter {
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1231);
+/* harmony import */ var _octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6298);
 /* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
 /* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9698);
 /* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
@@ -4577,10 +5754,12 @@ class PathFilter {
 
 
 
+
 const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit */ .v({ auth: `token ${token}` });
+const RetryOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_6__/* .retry */ .XD);
+const octokit = new RetryOctokit({ auth: `token ${token}` });
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
@@ -4620,7 +5799,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = comment.diff_hunk;
         inputs.filename = comment.path;
-        const { chain: comment_chain, topLevelComment } = await commenter.get_conversation_chain(pull_number, comment);
+        const { chain: comment_chain, topLevelComment } = await commenter.get_comment_chain(pull_number, comment);
         inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
@@ -4732,6 +5911,8 @@ var core = __nccwpck_require__(2186);
 var github = __nccwpck_require__(5438);
 // EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
 var dist_node = __nccwpck_require__(1231);
+// EXTERNAL MODULE: ./node_modules/@octokit/plugin-retry/dist-node/index.js
+var plugin_retry_dist_node = __nccwpck_require__(6298);
 ;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
 /*
 How it works:
@@ -4885,10 +6066,12 @@ var tokenizer = __nccwpck_require__(652);
 
 
 
+
 const token = core.getInput('token')
     ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
-const octokit = new dist_node/* Octokit */.v({ auth: `token ${token}` });
+const RetryOctokit = dist_node/* Octokit.plugin */.v.plugin(plugin_retry_dist_node/* retry */.XD);
+const octokit = new RetryOctokit({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
@@ -4976,11 +6159,10 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
                 continue;
             }
             const hunks_str = `
-\`\`\`new_hunk
+\`\`\`new_hunk_for_review
 ${hunks.new_hunk}
 \`\`\`
-
-\`\`\`old_hunk
+\`\`\`old_hunk_for_context
 ${hunks.old_hunk}
 \`\`\`
 `;
@@ -5088,6 +6270,10 @@ ${filename}: ${summary}
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
 
+### Code suggestions
+- The bot will sometimes make code suggestion. Sometimes the line number ranges may be misaligned. Please make sure to review the suggestion carefully before committing.
+- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
 ---
 
 ${filter_ignored_files.length > 0
@@ -5187,7 +6373,7 @@ ${summaries_failed.length > 0
             patches_packed += 1;
             let comment_chain = '';
             try {
-                const all_chains = await commenter.get_conversation_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
+                const all_chains = await commenter.get_comment_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                 if (all_chains.length > 0) {
                     comment_chain = all_chains;
                 }
@@ -5212,7 +6398,7 @@ ${patch}
 `;
             if (comment_chain !== '') {
                 ins.patches += `
-\`\`\`comment_chain
+\`\`\`comment_chains_for_review
 ${comment_chain}
 \`\`\`
 `;
@@ -15779,6 +16965,97 @@ exports.restEndpointMethods = restEndpointMethods;
 
 /***/ }),
 
+/***/ 6298:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+
+__webpack_unused_export__ = ({ value: true });
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var Bottleneck = _interopDefault(__nccwpck_require__(1174));
+var requestError = __nccwpck_require__(537);
+
+// @ts-ignore
+async function errorRequest(state, octokit, error, options) {
+  if (!error.request || !error.request.request) {
+    // address https://github.com/octokit/plugin-retry.js/issues/8
+    throw error;
+  }
+  // retry all >= 400 && not doNotRetry
+  if (error.status >= 400 && !state.doNotRetry.includes(error.status)) {
+    const retries = options.request.retries != null ? options.request.retries : state.retries;
+    const retryAfter = Math.pow((options.request.retryCount || 0) + 1, 2);
+    throw octokit.retry.retryRequest(error, retries, retryAfter);
+  }
+  // Maybe eventually there will be more cases here
+  throw error;
+}
+
+// @ts-nocheck
+async function wrapRequest(state, octokit, request, options) {
+  const limiter = new Bottleneck();
+  limiter.on("failed", function (error, info) {
+    const maxRetries = ~~error.request.request.retries;
+    const after = ~~error.request.request.retryAfter;
+    options.request.retryCount = info.retryCount + 1;
+    if (maxRetries > info.retryCount) {
+      // Returning a number instructs the limiter to retry
+      // the request after that number of milliseconds have passed
+      return after * state.retryAfterBaseValue;
+    }
+  });
+  return limiter.schedule(requestWithGraphqlErrorHandling.bind(null, state, octokit, request), options);
+}
+async function requestWithGraphqlErrorHandling(state, octokit, request, options) {
+  const response = await request(request, options);
+  if (response.data && response.data.errors && /Something went wrong while executing your query/.test(response.data.errors[0].message)) {
+    // simulate 500 request error for retry handling
+    const error = new requestError.RequestError(response.data.errors[0].message, 500, {
+      request: options,
+      response
+    });
+    return errorRequest(state, octokit, error, options);
+  }
+  return response;
+}
+
+const VERSION = "4.1.3";
+function retry(octokit, octokitOptions) {
+  const state = Object.assign({
+    enabled: true,
+    retryAfterBaseValue: 1000,
+    doNotRetry: [400, 401, 403, 404, 422],
+    retries: 3
+  }, octokitOptions.retry);
+  if (state.enabled) {
+    octokit.hook.error("request", errorRequest.bind(null, state, octokit));
+    octokit.hook.wrap("request", wrapRequest.bind(null, state, octokit));
+  }
+  return {
+    retry: {
+      retryRequest: (error, retries, retryAfter) => {
+        error.request.request = Object.assign({}, error.request.request, {
+          retries: retries,
+          retryAfter: retryAfter
+        });
+        return error;
+      }
+    }
+  };
+}
+retry.VERSION = VERSION;
+
+__webpack_unused_export__ = VERSION;
+exports.XD = retry;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
 /***/ 537:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -20485,6 +21762,1536 @@ function removeHook(state, name, method) {
 
   state.registry[name].splice(index, 1);
 }
+
+
+/***/ }),
+
+/***/ 1174:
+/***/ (function(module) {
+
+/**
+  * This file contains the Bottleneck library (MIT), compiled to ES2017, and without Clustering support.
+  * https://github.com/SGrondin/bottleneck
+  */
+(function (global, factory) {
+	 true ? module.exports = factory() :
+	0;
+}(this, (function () { 'use strict';
+
+	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+	function getCjsExportFromNamespace (n) {
+		return n && n['default'] || n;
+	}
+
+	var load = function(received, defaults, onto = {}) {
+	  var k, ref, v;
+	  for (k in defaults) {
+	    v = defaults[k];
+	    onto[k] = (ref = received[k]) != null ? ref : v;
+	  }
+	  return onto;
+	};
+
+	var overwrite = function(received, defaults, onto = {}) {
+	  var k, v;
+	  for (k in received) {
+	    v = received[k];
+	    if (defaults[k] !== void 0) {
+	      onto[k] = v;
+	    }
+	  }
+	  return onto;
+	};
+
+	var parser = {
+		load: load,
+		overwrite: overwrite
+	};
+
+	var DLList;
+
+	DLList = class DLList {
+	  constructor(incr, decr) {
+	    this.incr = incr;
+	    this.decr = decr;
+	    this._first = null;
+	    this._last = null;
+	    this.length = 0;
+	  }
+
+	  push(value) {
+	    var node;
+	    this.length++;
+	    if (typeof this.incr === "function") {
+	      this.incr();
+	    }
+	    node = {
+	      value,
+	      prev: this._last,
+	      next: null
+	    };
+	    if (this._last != null) {
+	      this._last.next = node;
+	      this._last = node;
+	    } else {
+	      this._first = this._last = node;
+	    }
+	    return void 0;
+	  }
+
+	  shift() {
+	    var value;
+	    if (this._first == null) {
+	      return;
+	    } else {
+	      this.length--;
+	      if (typeof this.decr === "function") {
+	        this.decr();
+	      }
+	    }
+	    value = this._first.value;
+	    if ((this._first = this._first.next) != null) {
+	      this._first.prev = null;
+	    } else {
+	      this._last = null;
+	    }
+	    return value;
+	  }
+
+	  first() {
+	    if (this._first != null) {
+	      return this._first.value;
+	    }
+	  }
+
+	  getArray() {
+	    var node, ref, results;
+	    node = this._first;
+	    results = [];
+	    while (node != null) {
+	      results.push((ref = node, node = node.next, ref.value));
+	    }
+	    return results;
+	  }
+
+	  forEachShift(cb) {
+	    var node;
+	    node = this.shift();
+	    while (node != null) {
+	      (cb(node), node = this.shift());
+	    }
+	    return void 0;
+	  }
+
+	  debug() {
+	    var node, ref, ref1, ref2, results;
+	    node = this._first;
+	    results = [];
+	    while (node != null) {
+	      results.push((ref = node, node = node.next, {
+	        value: ref.value,
+	        prev: (ref1 = ref.prev) != null ? ref1.value : void 0,
+	        next: (ref2 = ref.next) != null ? ref2.value : void 0
+	      }));
+	    }
+	    return results;
+	  }
+
+	};
+
+	var DLList_1 = DLList;
+
+	var Events;
+
+	Events = class Events {
+	  constructor(instance) {
+	    this.instance = instance;
+	    this._events = {};
+	    if ((this.instance.on != null) || (this.instance.once != null) || (this.instance.removeAllListeners != null)) {
+	      throw new Error("An Emitter already exists for this object");
+	    }
+	    this.instance.on = (name, cb) => {
+	      return this._addListener(name, "many", cb);
+	    };
+	    this.instance.once = (name, cb) => {
+	      return this._addListener(name, "once", cb);
+	    };
+	    this.instance.removeAllListeners = (name = null) => {
+	      if (name != null) {
+	        return delete this._events[name];
+	      } else {
+	        return this._events = {};
+	      }
+	    };
+	  }
+
+	  _addListener(name, status, cb) {
+	    var base;
+	    if ((base = this._events)[name] == null) {
+	      base[name] = [];
+	    }
+	    this._events[name].push({cb, status});
+	    return this.instance;
+	  }
+
+	  listenerCount(name) {
+	    if (this._events[name] != null) {
+	      return this._events[name].length;
+	    } else {
+	      return 0;
+	    }
+	  }
+
+	  async trigger(name, ...args) {
+	    var e, promises;
+	    try {
+	      if (name !== "debug") {
+	        this.trigger("debug", `Event triggered: ${name}`, args);
+	      }
+	      if (this._events[name] == null) {
+	        return;
+	      }
+	      this._events[name] = this._events[name].filter(function(listener) {
+	        return listener.status !== "none";
+	      });
+	      promises = this._events[name].map(async(listener) => {
+	        var e, returned;
+	        if (listener.status === "none") {
+	          return;
+	        }
+	        if (listener.status === "once") {
+	          listener.status = "none";
+	        }
+	        try {
+	          returned = typeof listener.cb === "function" ? listener.cb(...args) : void 0;
+	          if (typeof (returned != null ? returned.then : void 0) === "function") {
+	            return (await returned);
+	          } else {
+	            return returned;
+	          }
+	        } catch (error) {
+	          e = error;
+	          {
+	            this.trigger("error", e);
+	          }
+	          return null;
+	        }
+	      });
+	      return ((await Promise.all(promises))).find(function(x) {
+	        return x != null;
+	      });
+	    } catch (error) {
+	      e = error;
+	      {
+	        this.trigger("error", e);
+	      }
+	      return null;
+	    }
+	  }
+
+	};
+
+	var Events_1 = Events;
+
+	var DLList$1, Events$1, Queues;
+
+	DLList$1 = DLList_1;
+
+	Events$1 = Events_1;
+
+	Queues = class Queues {
+	  constructor(num_priorities) {
+	    var i;
+	    this.Events = new Events$1(this);
+	    this._length = 0;
+	    this._lists = (function() {
+	      var j, ref, results;
+	      results = [];
+	      for (i = j = 1, ref = num_priorities; (1 <= ref ? j <= ref : j >= ref); i = 1 <= ref ? ++j : --j) {
+	        results.push(new DLList$1((() => {
+	          return this.incr();
+	        }), (() => {
+	          return this.decr();
+	        })));
+	      }
+	      return results;
+	    }).call(this);
+	  }
+
+	  incr() {
+	    if (this._length++ === 0) {
+	      return this.Events.trigger("leftzero");
+	    }
+	  }
+
+	  decr() {
+	    if (--this._length === 0) {
+	      return this.Events.trigger("zero");
+	    }
+	  }
+
+	  push(job) {
+	    return this._lists[job.options.priority].push(job);
+	  }
+
+	  queued(priority) {
+	    if (priority != null) {
+	      return this._lists[priority].length;
+	    } else {
+	      return this._length;
+	    }
+	  }
+
+	  shiftAll(fn) {
+	    return this._lists.forEach(function(list) {
+	      return list.forEachShift(fn);
+	    });
+	  }
+
+	  getFirst(arr = this._lists) {
+	    var j, len, list;
+	    for (j = 0, len = arr.length; j < len; j++) {
+	      list = arr[j];
+	      if (list.length > 0) {
+	        return list;
+	      }
+	    }
+	    return [];
+	  }
+
+	  shiftLastFrom(priority) {
+	    return this.getFirst(this._lists.slice(priority).reverse()).shift();
+	  }
+
+	};
+
+	var Queues_1 = Queues;
+
+	var BottleneckError;
+
+	BottleneckError = class BottleneckError extends Error {};
+
+	var BottleneckError_1 = BottleneckError;
+
+	var BottleneckError$1, DEFAULT_PRIORITY, Job, NUM_PRIORITIES, parser$1;
+
+	NUM_PRIORITIES = 10;
+
+	DEFAULT_PRIORITY = 5;
+
+	parser$1 = parser;
+
+	BottleneckError$1 = BottleneckError_1;
+
+	Job = class Job {
+	  constructor(task, args, options, jobDefaults, rejectOnDrop, Events, _states, Promise) {
+	    this.task = task;
+	    this.args = args;
+	    this.rejectOnDrop = rejectOnDrop;
+	    this.Events = Events;
+	    this._states = _states;
+	    this.Promise = Promise;
+	    this.options = parser$1.load(options, jobDefaults);
+	    this.options.priority = this._sanitizePriority(this.options.priority);
+	    if (this.options.id === jobDefaults.id) {
+	      this.options.id = `${this.options.id}-${this._randomIndex()}`;
+	    }
+	    this.promise = new this.Promise((_resolve, _reject) => {
+	      this._resolve = _resolve;
+	      this._reject = _reject;
+	    });
+	    this.retryCount = 0;
+	  }
+
+	  _sanitizePriority(priority) {
+	    var sProperty;
+	    sProperty = ~~priority !== priority ? DEFAULT_PRIORITY : priority;
+	    if (sProperty < 0) {
+	      return 0;
+	    } else if (sProperty > NUM_PRIORITIES - 1) {
+	      return NUM_PRIORITIES - 1;
+	    } else {
+	      return sProperty;
+	    }
+	  }
+
+	  _randomIndex() {
+	    return Math.random().toString(36).slice(2);
+	  }
+
+	  doDrop({error, message = "This job has been dropped by Bottleneck"} = {}) {
+	    if (this._states.remove(this.options.id)) {
+	      if (this.rejectOnDrop) {
+	        this._reject(error != null ? error : new BottleneckError$1(message));
+	      }
+	      this.Events.trigger("dropped", {args: this.args, options: this.options, task: this.task, promise: this.promise});
+	      return true;
+	    } else {
+	      return false;
+	    }
+	  }
+
+	  _assertStatus(expected) {
+	    var status;
+	    status = this._states.jobStatus(this.options.id);
+	    if (!(status === expected || (expected === "DONE" && status === null))) {
+	      throw new BottleneckError$1(`Invalid job status ${status}, expected ${expected}. Please open an issue at https://github.com/SGrondin/bottleneck/issues`);
+	    }
+	  }
+
+	  doReceive() {
+	    this._states.start(this.options.id);
+	    return this.Events.trigger("received", {args: this.args, options: this.options});
+	  }
+
+	  doQueue(reachedHWM, blocked) {
+	    this._assertStatus("RECEIVED");
+	    this._states.next(this.options.id);
+	    return this.Events.trigger("queued", {args: this.args, options: this.options, reachedHWM, blocked});
+	  }
+
+	  doRun() {
+	    if (this.retryCount === 0) {
+	      this._assertStatus("QUEUED");
+	      this._states.next(this.options.id);
+	    } else {
+	      this._assertStatus("EXECUTING");
+	    }
+	    return this.Events.trigger("scheduled", {args: this.args, options: this.options});
+	  }
+
+	  async doExecute(chained, clearGlobalState, run, free) {
+	    var error, eventInfo, passed;
+	    if (this.retryCount === 0) {
+	      this._assertStatus("RUNNING");
+	      this._states.next(this.options.id);
+	    } else {
+	      this._assertStatus("EXECUTING");
+	    }
+	    eventInfo = {args: this.args, options: this.options, retryCount: this.retryCount};
+	    this.Events.trigger("executing", eventInfo);
+	    try {
+	      passed = (await (chained != null ? chained.schedule(this.options, this.task, ...this.args) : this.task(...this.args)));
+	      if (clearGlobalState()) {
+	        this.doDone(eventInfo);
+	        await free(this.options, eventInfo);
+	        this._assertStatus("DONE");
+	        return this._resolve(passed);
+	      }
+	    } catch (error1) {
+	      error = error1;
+	      return this._onFailure(error, eventInfo, clearGlobalState, run, free);
+	    }
+	  }
+
+	  doExpire(clearGlobalState, run, free) {
+	    var error, eventInfo;
+	    if (this._states.jobStatus(this.options.id === "RUNNING")) {
+	      this._states.next(this.options.id);
+	    }
+	    this._assertStatus("EXECUTING");
+	    eventInfo = {args: this.args, options: this.options, retryCount: this.retryCount};
+	    error = new BottleneckError$1(`This job timed out after ${this.options.expiration} ms.`);
+	    return this._onFailure(error, eventInfo, clearGlobalState, run, free);
+	  }
+
+	  async _onFailure(error, eventInfo, clearGlobalState, run, free) {
+	    var retry, retryAfter;
+	    if (clearGlobalState()) {
+	      retry = (await this.Events.trigger("failed", error, eventInfo));
+	      if (retry != null) {
+	        retryAfter = ~~retry;
+	        this.Events.trigger("retry", `Retrying ${this.options.id} after ${retryAfter} ms`, eventInfo);
+	        this.retryCount++;
+	        return run(retryAfter);
+	      } else {
+	        this.doDone(eventInfo);
+	        await free(this.options, eventInfo);
+	        this._assertStatus("DONE");
+	        return this._reject(error);
+	      }
+	    }
+	  }
+
+	  doDone(eventInfo) {
+	    this._assertStatus("EXECUTING");
+	    this._states.next(this.options.id);
+	    return this.Events.trigger("done", eventInfo);
+	  }
+
+	};
+
+	var Job_1 = Job;
+
+	var BottleneckError$2, LocalDatastore, parser$2;
+
+	parser$2 = parser;
+
+	BottleneckError$2 = BottleneckError_1;
+
+	LocalDatastore = class LocalDatastore {
+	  constructor(instance, storeOptions, storeInstanceOptions) {
+	    this.instance = instance;
+	    this.storeOptions = storeOptions;
+	    this.clientId = this.instance._randomIndex();
+	    parser$2.load(storeInstanceOptions, storeInstanceOptions, this);
+	    this._nextRequest = this._lastReservoirRefresh = this._lastReservoirIncrease = Date.now();
+	    this._running = 0;
+	    this._done = 0;
+	    this._unblockTime = 0;
+	    this.ready = this.Promise.resolve();
+	    this.clients = {};
+	    this._startHeartbeat();
+	  }
+
+	  _startHeartbeat() {
+	    var base;
+	    if ((this.heartbeat == null) && (((this.storeOptions.reservoirRefreshInterval != null) && (this.storeOptions.reservoirRefreshAmount != null)) || ((this.storeOptions.reservoirIncreaseInterval != null) && (this.storeOptions.reservoirIncreaseAmount != null)))) {
+	      return typeof (base = (this.heartbeat = setInterval(() => {
+	        var amount, incr, maximum, now, reservoir;
+	        now = Date.now();
+	        if ((this.storeOptions.reservoirRefreshInterval != null) && now >= this._lastReservoirRefresh + this.storeOptions.reservoirRefreshInterval) {
+	          this._lastReservoirRefresh = now;
+	          this.storeOptions.reservoir = this.storeOptions.reservoirRefreshAmount;
+	          this.instance._drainAll(this.computeCapacity());
+	        }
+	        if ((this.storeOptions.reservoirIncreaseInterval != null) && now >= this._lastReservoirIncrease + this.storeOptions.reservoirIncreaseInterval) {
+	          ({
+	            reservoirIncreaseAmount: amount,
+	            reservoirIncreaseMaximum: maximum,
+	            reservoir
+	          } = this.storeOptions);
+	          this._lastReservoirIncrease = now;
+	          incr = maximum != null ? Math.min(amount, maximum - reservoir) : amount;
+	          if (incr > 0) {
+	            this.storeOptions.reservoir += incr;
+	            return this.instance._drainAll(this.computeCapacity());
+	          }
+	        }
+	      }, this.heartbeatInterval))).unref === "function" ? base.unref() : void 0;
+	    } else {
+	      return clearInterval(this.heartbeat);
+	    }
+	  }
+
+	  async __publish__(message) {
+	    await this.yieldLoop();
+	    return this.instance.Events.trigger("message", message.toString());
+	  }
+
+	  async __disconnect__(flush) {
+	    await this.yieldLoop();
+	    clearInterval(this.heartbeat);
+	    return this.Promise.resolve();
+	  }
+
+	  yieldLoop(t = 0) {
+	    return new this.Promise(function(resolve, reject) {
+	      return setTimeout(resolve, t);
+	    });
+	  }
+
+	  computePenalty() {
+	    var ref;
+	    return (ref = this.storeOptions.penalty) != null ? ref : (15 * this.storeOptions.minTime) || 5000;
+	  }
+
+	  async __updateSettings__(options) {
+	    await this.yieldLoop();
+	    parser$2.overwrite(options, options, this.storeOptions);
+	    this._startHeartbeat();
+	    this.instance._drainAll(this.computeCapacity());
+	    return true;
+	  }
+
+	  async __running__() {
+	    await this.yieldLoop();
+	    return this._running;
+	  }
+
+	  async __queued__() {
+	    await this.yieldLoop();
+	    return this.instance.queued();
+	  }
+
+	  async __done__() {
+	    await this.yieldLoop();
+	    return this._done;
+	  }
+
+	  async __groupCheck__(time) {
+	    await this.yieldLoop();
+	    return (this._nextRequest + this.timeout) < time;
+	  }
+
+	  computeCapacity() {
+	    var maxConcurrent, reservoir;
+	    ({maxConcurrent, reservoir} = this.storeOptions);
+	    if ((maxConcurrent != null) && (reservoir != null)) {
+	      return Math.min(maxConcurrent - this._running, reservoir);
+	    } else if (maxConcurrent != null) {
+	      return maxConcurrent - this._running;
+	    } else if (reservoir != null) {
+	      return reservoir;
+	    } else {
+	      return null;
+	    }
+	  }
+
+	  conditionsCheck(weight) {
+	    var capacity;
+	    capacity = this.computeCapacity();
+	    return (capacity == null) || weight <= capacity;
+	  }
+
+	  async __incrementReservoir__(incr) {
+	    var reservoir;
+	    await this.yieldLoop();
+	    reservoir = this.storeOptions.reservoir += incr;
+	    this.instance._drainAll(this.computeCapacity());
+	    return reservoir;
+	  }
+
+	  async __currentReservoir__() {
+	    await this.yieldLoop();
+	    return this.storeOptions.reservoir;
+	  }
+
+	  isBlocked(now) {
+	    return this._unblockTime >= now;
+	  }
+
+	  check(weight, now) {
+	    return this.conditionsCheck(weight) && (this._nextRequest - now) <= 0;
+	  }
+
+	  async __check__(weight) {
+	    var now;
+	    await this.yieldLoop();
+	    now = Date.now();
+	    return this.check(weight, now);
+	  }
+
+	  async __register__(index, weight, expiration) {
+	    var now, wait;
+	    await this.yieldLoop();
+	    now = Date.now();
+	    if (this.conditionsCheck(weight)) {
+	      this._running += weight;
+	      if (this.storeOptions.reservoir != null) {
+	        this.storeOptions.reservoir -= weight;
+	      }
+	      wait = Math.max(this._nextRequest - now, 0);
+	      this._nextRequest = now + wait + this.storeOptions.minTime;
+	      return {
+	        success: true,
+	        wait,
+	        reservoir: this.storeOptions.reservoir
+	      };
+	    } else {
+	      return {
+	        success: false
+	      };
+	    }
+	  }
+
+	  strategyIsBlock() {
+	    return this.storeOptions.strategy === 3;
+	  }
+
+	  async __submit__(queueLength, weight) {
+	    var blocked, now, reachedHWM;
+	    await this.yieldLoop();
+	    if ((this.storeOptions.maxConcurrent != null) && weight > this.storeOptions.maxConcurrent) {
+	      throw new BottleneckError$2(`Impossible to add a job having a weight of ${weight} to a limiter having a maxConcurrent setting of ${this.storeOptions.maxConcurrent}`);
+	    }
+	    now = Date.now();
+	    reachedHWM = (this.storeOptions.highWater != null) && queueLength === this.storeOptions.highWater && !this.check(weight, now);
+	    blocked = this.strategyIsBlock() && (reachedHWM || this.isBlocked(now));
+	    if (blocked) {
+	      this._unblockTime = now + this.computePenalty();
+	      this._nextRequest = this._unblockTime + this.storeOptions.minTime;
+	      this.instance._dropAllQueued();
+	    }
+	    return {
+	      reachedHWM,
+	      blocked,
+	      strategy: this.storeOptions.strategy
+	    };
+	  }
+
+	  async __free__(index, weight) {
+	    await this.yieldLoop();
+	    this._running -= weight;
+	    this._done += weight;
+	    this.instance._drainAll(this.computeCapacity());
+	    return {
+	      running: this._running
+	    };
+	  }
+
+	};
+
+	var LocalDatastore_1 = LocalDatastore;
+
+	var BottleneckError$3, States;
+
+	BottleneckError$3 = BottleneckError_1;
+
+	States = class States {
+	  constructor(status1) {
+	    this.status = status1;
+	    this._jobs = {};
+	    this.counts = this.status.map(function() {
+	      return 0;
+	    });
+	  }
+
+	  next(id) {
+	    var current, next;
+	    current = this._jobs[id];
+	    next = current + 1;
+	    if ((current != null) && next < this.status.length) {
+	      this.counts[current]--;
+	      this.counts[next]++;
+	      return this._jobs[id]++;
+	    } else if (current != null) {
+	      this.counts[current]--;
+	      return delete this._jobs[id];
+	    }
+	  }
+
+	  start(id) {
+	    var initial;
+	    initial = 0;
+	    this._jobs[id] = initial;
+	    return this.counts[initial]++;
+	  }
+
+	  remove(id) {
+	    var current;
+	    current = this._jobs[id];
+	    if (current != null) {
+	      this.counts[current]--;
+	      delete this._jobs[id];
+	    }
+	    return current != null;
+	  }
+
+	  jobStatus(id) {
+	    var ref;
+	    return (ref = this.status[this._jobs[id]]) != null ? ref : null;
+	  }
+
+	  statusJobs(status) {
+	    var k, pos, ref, results, v;
+	    if (status != null) {
+	      pos = this.status.indexOf(status);
+	      if (pos < 0) {
+	        throw new BottleneckError$3(`status must be one of ${this.status.join(', ')}`);
+	      }
+	      ref = this._jobs;
+	      results = [];
+	      for (k in ref) {
+	        v = ref[k];
+	        if (v === pos) {
+	          results.push(k);
+	        }
+	      }
+	      return results;
+	    } else {
+	      return Object.keys(this._jobs);
+	    }
+	  }
+
+	  statusCounts() {
+	    return this.counts.reduce(((acc, v, i) => {
+	      acc[this.status[i]] = v;
+	      return acc;
+	    }), {});
+	  }
+
+	};
+
+	var States_1 = States;
+
+	var DLList$2, Sync;
+
+	DLList$2 = DLList_1;
+
+	Sync = class Sync {
+	  constructor(name, Promise) {
+	    this.schedule = this.schedule.bind(this);
+	    this.name = name;
+	    this.Promise = Promise;
+	    this._running = 0;
+	    this._queue = new DLList$2();
+	  }
+
+	  isEmpty() {
+	    return this._queue.length === 0;
+	  }
+
+	  async _tryToRun() {
+	    var args, cb, error, reject, resolve, returned, task;
+	    if ((this._running < 1) && this._queue.length > 0) {
+	      this._running++;
+	      ({task, args, resolve, reject} = this._queue.shift());
+	      cb = (await (async function() {
+	        try {
+	          returned = (await task(...args));
+	          return function() {
+	            return resolve(returned);
+	          };
+	        } catch (error1) {
+	          error = error1;
+	          return function() {
+	            return reject(error);
+	          };
+	        }
+	      })());
+	      this._running--;
+	      this._tryToRun();
+	      return cb();
+	    }
+	  }
+
+	  schedule(task, ...args) {
+	    var promise, reject, resolve;
+	    resolve = reject = null;
+	    promise = new this.Promise(function(_resolve, _reject) {
+	      resolve = _resolve;
+	      return reject = _reject;
+	    });
+	    this._queue.push({task, args, resolve, reject});
+	    this._tryToRun();
+	    return promise;
+	  }
+
+	};
+
+	var Sync_1 = Sync;
+
+	var version = "2.19.5";
+	var version$1 = {
+		version: version
+	};
+
+	var version$2 = /*#__PURE__*/Object.freeze({
+		version: version,
+		default: version$1
+	});
+
+	var require$$2 = () => console.log('You must import the full version of Bottleneck in order to use this feature.');
+
+	var require$$3 = () => console.log('You must import the full version of Bottleneck in order to use this feature.');
+
+	var require$$4 = () => console.log('You must import the full version of Bottleneck in order to use this feature.');
+
+	var Events$2, Group, IORedisConnection$1, RedisConnection$1, Scripts$1, parser$3;
+
+	parser$3 = parser;
+
+	Events$2 = Events_1;
+
+	RedisConnection$1 = require$$2;
+
+	IORedisConnection$1 = require$$3;
+
+	Scripts$1 = require$$4;
+
+	Group = (function() {
+	  class Group {
+	    constructor(limiterOptions = {}) {
+	      this.deleteKey = this.deleteKey.bind(this);
+	      this.limiterOptions = limiterOptions;
+	      parser$3.load(this.limiterOptions, this.defaults, this);
+	      this.Events = new Events$2(this);
+	      this.instances = {};
+	      this.Bottleneck = Bottleneck_1;
+	      this._startAutoCleanup();
+	      this.sharedConnection = this.connection != null;
+	      if (this.connection == null) {
+	        if (this.limiterOptions.datastore === "redis") {
+	          this.connection = new RedisConnection$1(Object.assign({}, this.limiterOptions, {Events: this.Events}));
+	        } else if (this.limiterOptions.datastore === "ioredis") {
+	          this.connection = new IORedisConnection$1(Object.assign({}, this.limiterOptions, {Events: this.Events}));
+	        }
+	      }
+	    }
+
+	    key(key = "") {
+	      var ref;
+	      return (ref = this.instances[key]) != null ? ref : (() => {
+	        var limiter;
+	        limiter = this.instances[key] = new this.Bottleneck(Object.assign(this.limiterOptions, {
+	          id: `${this.id}-${key}`,
+	          timeout: this.timeout,
+	          connection: this.connection
+	        }));
+	        this.Events.trigger("created", limiter, key);
+	        return limiter;
+	      })();
+	    }
+
+	    async deleteKey(key = "") {
+	      var deleted, instance;
+	      instance = this.instances[key];
+	      if (this.connection) {
+	        deleted = (await this.connection.__runCommand__(['del', ...Scripts$1.allKeys(`${this.id}-${key}`)]));
+	      }
+	      if (instance != null) {
+	        delete this.instances[key];
+	        await instance.disconnect();
+	      }
+	      return (instance != null) || deleted > 0;
+	    }
+
+	    limiters() {
+	      var k, ref, results, v;
+	      ref = this.instances;
+	      results = [];
+	      for (k in ref) {
+	        v = ref[k];
+	        results.push({
+	          key: k,
+	          limiter: v
+	        });
+	      }
+	      return results;
+	    }
+
+	    keys() {
+	      return Object.keys(this.instances);
+	    }
+
+	    async clusterKeys() {
+	      var cursor, end, found, i, k, keys, len, next, start;
+	      if (this.connection == null) {
+	        return this.Promise.resolve(this.keys());
+	      }
+	      keys = [];
+	      cursor = null;
+	      start = `b_${this.id}-`.length;
+	      end = "_settings".length;
+	      while (cursor !== 0) {
+	        [next, found] = (await this.connection.__runCommand__(["scan", cursor != null ? cursor : 0, "match", `b_${this.id}-*_settings`, "count", 10000]));
+	        cursor = ~~next;
+	        for (i = 0, len = found.length; i < len; i++) {
+	          k = found[i];
+	          keys.push(k.slice(start, -end));
+	        }
+	      }
+	      return keys;
+	    }
+
+	    _startAutoCleanup() {
+	      var base;
+	      clearInterval(this.interval);
+	      return typeof (base = (this.interval = setInterval(async() => {
+	        var e, k, ref, results, time, v;
+	        time = Date.now();
+	        ref = this.instances;
+	        results = [];
+	        for (k in ref) {
+	          v = ref[k];
+	          try {
+	            if ((await v._store.__groupCheck__(time))) {
+	              results.push(this.deleteKey(k));
+	            } else {
+	              results.push(void 0);
+	            }
+	          } catch (error) {
+	            e = error;
+	            results.push(v.Events.trigger("error", e));
+	          }
+	        }
+	        return results;
+	      }, this.timeout / 2))).unref === "function" ? base.unref() : void 0;
+	    }
+
+	    updateSettings(options = {}) {
+	      parser$3.overwrite(options, this.defaults, this);
+	      parser$3.overwrite(options, options, this.limiterOptions);
+	      if (options.timeout != null) {
+	        return this._startAutoCleanup();
+	      }
+	    }
+
+	    disconnect(flush = true) {
+	      var ref;
+	      if (!this.sharedConnection) {
+	        return (ref = this.connection) != null ? ref.disconnect(flush) : void 0;
+	      }
+	    }
+
+	  }
+	  Group.prototype.defaults = {
+	    timeout: 1000 * 60 * 5,
+	    connection: null,
+	    Promise: Promise,
+	    id: "group-key"
+	  };
+
+	  return Group;
+
+	}).call(commonjsGlobal);
+
+	var Group_1 = Group;
+
+	var Batcher, Events$3, parser$4;
+
+	parser$4 = parser;
+
+	Events$3 = Events_1;
+
+	Batcher = (function() {
+	  class Batcher {
+	    constructor(options = {}) {
+	      this.options = options;
+	      parser$4.load(this.options, this.defaults, this);
+	      this.Events = new Events$3(this);
+	      this._arr = [];
+	      this._resetPromise();
+	      this._lastFlush = Date.now();
+	    }
+
+	    _resetPromise() {
+	      return this._promise = new this.Promise((res, rej) => {
+	        return this._resolve = res;
+	      });
+	    }
+
+	    _flush() {
+	      clearTimeout(this._timeout);
+	      this._lastFlush = Date.now();
+	      this._resolve();
+	      this.Events.trigger("batch", this._arr);
+	      this._arr = [];
+	      return this._resetPromise();
+	    }
+
+	    add(data) {
+	      var ret;
+	      this._arr.push(data);
+	      ret = this._promise;
+	      if (this._arr.length === this.maxSize) {
+	        this._flush();
+	      } else if ((this.maxTime != null) && this._arr.length === 1) {
+	        this._timeout = setTimeout(() => {
+	          return this._flush();
+	        }, this.maxTime);
+	      }
+	      return ret;
+	    }
+
+	  }
+	  Batcher.prototype.defaults = {
+	    maxTime: null,
+	    maxSize: null,
+	    Promise: Promise
+	  };
+
+	  return Batcher;
+
+	}).call(commonjsGlobal);
+
+	var Batcher_1 = Batcher;
+
+	var require$$4$1 = () => console.log('You must import the full version of Bottleneck in order to use this feature.');
+
+	var require$$8 = getCjsExportFromNamespace(version$2);
+
+	var Bottleneck, DEFAULT_PRIORITY$1, Events$4, Job$1, LocalDatastore$1, NUM_PRIORITIES$1, Queues$1, RedisDatastore$1, States$1, Sync$1, parser$5,
+	  splice = [].splice;
+
+	NUM_PRIORITIES$1 = 10;
+
+	DEFAULT_PRIORITY$1 = 5;
+
+	parser$5 = parser;
+
+	Queues$1 = Queues_1;
+
+	Job$1 = Job_1;
+
+	LocalDatastore$1 = LocalDatastore_1;
+
+	RedisDatastore$1 = require$$4$1;
+
+	Events$4 = Events_1;
+
+	States$1 = States_1;
+
+	Sync$1 = Sync_1;
+
+	Bottleneck = (function() {
+	  class Bottleneck {
+	    constructor(options = {}, ...invalid) {
+	      var storeInstanceOptions, storeOptions;
+	      this._addToQueue = this._addToQueue.bind(this);
+	      this._validateOptions(options, invalid);
+	      parser$5.load(options, this.instanceDefaults, this);
+	      this._queues = new Queues$1(NUM_PRIORITIES$1);
+	      this._scheduled = {};
+	      this._states = new States$1(["RECEIVED", "QUEUED", "RUNNING", "EXECUTING"].concat(this.trackDoneStatus ? ["DONE"] : []));
+	      this._limiter = null;
+	      this.Events = new Events$4(this);
+	      this._submitLock = new Sync$1("submit", this.Promise);
+	      this._registerLock = new Sync$1("register", this.Promise);
+	      storeOptions = parser$5.load(options, this.storeDefaults, {});
+	      this._store = (function() {
+	        if (this.datastore === "redis" || this.datastore === "ioredis" || (this.connection != null)) {
+	          storeInstanceOptions = parser$5.load(options, this.redisStoreDefaults, {});
+	          return new RedisDatastore$1(this, storeOptions, storeInstanceOptions);
+	        } else if (this.datastore === "local") {
+	          storeInstanceOptions = parser$5.load(options, this.localStoreDefaults, {});
+	          return new LocalDatastore$1(this, storeOptions, storeInstanceOptions);
+	        } else {
+	          throw new Bottleneck.prototype.BottleneckError(`Invalid datastore type: ${this.datastore}`);
+	        }
+	      }).call(this);
+	      this._queues.on("leftzero", () => {
+	        var ref;
+	        return (ref = this._store.heartbeat) != null ? typeof ref.ref === "function" ? ref.ref() : void 0 : void 0;
+	      });
+	      this._queues.on("zero", () => {
+	        var ref;
+	        return (ref = this._store.heartbeat) != null ? typeof ref.unref === "function" ? ref.unref() : void 0 : void 0;
+	      });
+	    }
+
+	    _validateOptions(options, invalid) {
+	      if (!((options != null) && typeof options === "object" && invalid.length === 0)) {
+	        throw new Bottleneck.prototype.BottleneckError("Bottleneck v2 takes a single object argument. Refer to https://github.com/SGrondin/bottleneck#upgrading-to-v2 if you're upgrading from Bottleneck v1.");
+	      }
+	    }
+
+	    ready() {
+	      return this._store.ready;
+	    }
+
+	    clients() {
+	      return this._store.clients;
+	    }
+
+	    channel() {
+	      return `b_${this.id}`;
+	    }
+
+	    channel_client() {
+	      return `b_${this.id}_${this._store.clientId}`;
+	    }
+
+	    publish(message) {
+	      return this._store.__publish__(message);
+	    }
+
+	    disconnect(flush = true) {
+	      return this._store.__disconnect__(flush);
+	    }
+
+	    chain(_limiter) {
+	      this._limiter = _limiter;
+	      return this;
+	    }
+
+	    queued(priority) {
+	      return this._queues.queued(priority);
+	    }
+
+	    clusterQueued() {
+	      return this._store.__queued__();
+	    }
+
+	    empty() {
+	      return this.queued() === 0 && this._submitLock.isEmpty();
+	    }
+
+	    running() {
+	      return this._store.__running__();
+	    }
+
+	    done() {
+	      return this._store.__done__();
+	    }
+
+	    jobStatus(id) {
+	      return this._states.jobStatus(id);
+	    }
+
+	    jobs(status) {
+	      return this._states.statusJobs(status);
+	    }
+
+	    counts() {
+	      return this._states.statusCounts();
+	    }
+
+	    _randomIndex() {
+	      return Math.random().toString(36).slice(2);
+	    }
+
+	    check(weight = 1) {
+	      return this._store.__check__(weight);
+	    }
+
+	    _clearGlobalState(index) {
+	      if (this._scheduled[index] != null) {
+	        clearTimeout(this._scheduled[index].expiration);
+	        delete this._scheduled[index];
+	        return true;
+	      } else {
+	        return false;
+	      }
+	    }
+
+	    async _free(index, job, options, eventInfo) {
+	      var e, running;
+	      try {
+	        ({running} = (await this._store.__free__(index, options.weight)));
+	        this.Events.trigger("debug", `Freed ${options.id}`, eventInfo);
+	        if (running === 0 && this.empty()) {
+	          return this.Events.trigger("idle");
+	        }
+	      } catch (error1) {
+	        e = error1;
+	        return this.Events.trigger("error", e);
+	      }
+	    }
+
+	    _run(index, job, wait) {
+	      var clearGlobalState, free, run;
+	      job.doRun();
+	      clearGlobalState = this._clearGlobalState.bind(this, index);
+	      run = this._run.bind(this, index, job);
+	      free = this._free.bind(this, index, job);
+	      return this._scheduled[index] = {
+	        timeout: setTimeout(() => {
+	          return job.doExecute(this._limiter, clearGlobalState, run, free);
+	        }, wait),
+	        expiration: job.options.expiration != null ? setTimeout(function() {
+	          return job.doExpire(clearGlobalState, run, free);
+	        }, wait + job.options.expiration) : void 0,
+	        job: job
+	      };
+	    }
+
+	    _drainOne(capacity) {
+	      return this._registerLock.schedule(() => {
+	        var args, index, next, options, queue;
+	        if (this.queued() === 0) {
+	          return this.Promise.resolve(null);
+	        }
+	        queue = this._queues.getFirst();
+	        ({options, args} = next = queue.first());
+	        if ((capacity != null) && options.weight > capacity) {
+	          return this.Promise.resolve(null);
+	        }
+	        this.Events.trigger("debug", `Draining ${options.id}`, {args, options});
+	        index = this._randomIndex();
+	        return this._store.__register__(index, options.weight, options.expiration).then(({success, wait, reservoir}) => {
+	          var empty;
+	          this.Events.trigger("debug", `Drained ${options.id}`, {success, args, options});
+	          if (success) {
+	            queue.shift();
+	            empty = this.empty();
+	            if (empty) {
+	              this.Events.trigger("empty");
+	            }
+	            if (reservoir === 0) {
+	              this.Events.trigger("depleted", empty);
+	            }
+	            this._run(index, next, wait);
+	            return this.Promise.resolve(options.weight);
+	          } else {
+	            return this.Promise.resolve(null);
+	          }
+	        });
+	      });
+	    }
+
+	    _drainAll(capacity, total = 0) {
+	      return this._drainOne(capacity).then((drained) => {
+	        var newCapacity;
+	        if (drained != null) {
+	          newCapacity = capacity != null ? capacity - drained : capacity;
+	          return this._drainAll(newCapacity, total + drained);
+	        } else {
+	          return this.Promise.resolve(total);
+	        }
+	      }).catch((e) => {
+	        return this.Events.trigger("error", e);
+	      });
+	    }
+
+	    _dropAllQueued(message) {
+	      return this._queues.shiftAll(function(job) {
+	        return job.doDrop({message});
+	      });
+	    }
+
+	    stop(options = {}) {
+	      var done, waitForExecuting;
+	      options = parser$5.load(options, this.stopDefaults);
+	      waitForExecuting = (at) => {
+	        var finished;
+	        finished = () => {
+	          var counts;
+	          counts = this._states.counts;
+	          return (counts[0] + counts[1] + counts[2] + counts[3]) === at;
+	        };
+	        return new this.Promise((resolve, reject) => {
+	          if (finished()) {
+	            return resolve();
+	          } else {
+	            return this.on("done", () => {
+	              if (finished()) {
+	                this.removeAllListeners("done");
+	                return resolve();
+	              }
+	            });
+	          }
+	        });
+	      };
+	      done = options.dropWaitingJobs ? (this._run = function(index, next) {
+	        return next.doDrop({
+	          message: options.dropErrorMessage
+	        });
+	      }, this._drainOne = () => {
+	        return this.Promise.resolve(null);
+	      }, this._registerLock.schedule(() => {
+	        return this._submitLock.schedule(() => {
+	          var k, ref, v;
+	          ref = this._scheduled;
+	          for (k in ref) {
+	            v = ref[k];
+	            if (this.jobStatus(v.job.options.id) === "RUNNING") {
+	              clearTimeout(v.timeout);
+	              clearTimeout(v.expiration);
+	              v.job.doDrop({
+	                message: options.dropErrorMessage
+	              });
+	            }
+	          }
+	          this._dropAllQueued(options.dropErrorMessage);
+	          return waitForExecuting(0);
+	        });
+	      })) : this.schedule({
+	        priority: NUM_PRIORITIES$1 - 1,
+	        weight: 0
+	      }, () => {
+	        return waitForExecuting(1);
+	      });
+	      this._receive = function(job) {
+	        return job._reject(new Bottleneck.prototype.BottleneckError(options.enqueueErrorMessage));
+	      };
+	      this.stop = () => {
+	        return this.Promise.reject(new Bottleneck.prototype.BottleneckError("stop() has already been called"));
+	      };
+	      return done;
+	    }
+
+	    async _addToQueue(job) {
+	      var args, blocked, error, options, reachedHWM, shifted, strategy;
+	      ({args, options} = job);
+	      try {
+	        ({reachedHWM, blocked, strategy} = (await this._store.__submit__(this.queued(), options.weight)));
+	      } catch (error1) {
+	        error = error1;
+	        this.Events.trigger("debug", `Could not queue ${options.id}`, {args, options, error});
+	        job.doDrop({error});
+	        return false;
+	      }
+	      if (blocked) {
+	        job.doDrop();
+	        return true;
+	      } else if (reachedHWM) {
+	        shifted = strategy === Bottleneck.prototype.strategy.LEAK ? this._queues.shiftLastFrom(options.priority) : strategy === Bottleneck.prototype.strategy.OVERFLOW_PRIORITY ? this._queues.shiftLastFrom(options.priority + 1) : strategy === Bottleneck.prototype.strategy.OVERFLOW ? job : void 0;
+	        if (shifted != null) {
+	          shifted.doDrop();
+	        }
+	        if ((shifted == null) || strategy === Bottleneck.prototype.strategy.OVERFLOW) {
+	          if (shifted == null) {
+	            job.doDrop();
+	          }
+	          return reachedHWM;
+	        }
+	      }
+	      job.doQueue(reachedHWM, blocked);
+	      this._queues.push(job);
+	      await this._drainAll();
+	      return reachedHWM;
+	    }
+
+	    _receive(job) {
+	      if (this._states.jobStatus(job.options.id) != null) {
+	        job._reject(new Bottleneck.prototype.BottleneckError(`A job with the same id already exists (id=${job.options.id})`));
+	        return false;
+	      } else {
+	        job.doReceive();
+	        return this._submitLock.schedule(this._addToQueue, job);
+	      }
+	    }
+
+	    submit(...args) {
+	      var cb, fn, job, options, ref, ref1, task;
+	      if (typeof args[0] === "function") {
+	        ref = args, [fn, ...args] = ref, [cb] = splice.call(args, -1);
+	        options = parser$5.load({}, this.jobDefaults);
+	      } else {
+	        ref1 = args, [options, fn, ...args] = ref1, [cb] = splice.call(args, -1);
+	        options = parser$5.load(options, this.jobDefaults);
+	      }
+	      task = (...args) => {
+	        return new this.Promise(function(resolve, reject) {
+	          return fn(...args, function(...args) {
+	            return (args[0] != null ? reject : resolve)(args);
+	          });
+	        });
+	      };
+	      job = new Job$1(task, args, options, this.jobDefaults, this.rejectOnDrop, this.Events, this._states, this.Promise);
+	      job.promise.then(function(args) {
+	        return typeof cb === "function" ? cb(...args) : void 0;
+	      }).catch(function(args) {
+	        if (Array.isArray(args)) {
+	          return typeof cb === "function" ? cb(...args) : void 0;
+	        } else {
+	          return typeof cb === "function" ? cb(args) : void 0;
+	        }
+	      });
+	      return this._receive(job);
+	    }
+
+	    schedule(...args) {
+	      var job, options, task;
+	      if (typeof args[0] === "function") {
+	        [task, ...args] = args;
+	        options = {};
+	      } else {
+	        [options, task, ...args] = args;
+	      }
+	      job = new Job$1(task, args, options, this.jobDefaults, this.rejectOnDrop, this.Events, this._states, this.Promise);
+	      this._receive(job);
+	      return job.promise;
+	    }
+
+	    wrap(fn) {
+	      var schedule, wrapped;
+	      schedule = this.schedule.bind(this);
+	      wrapped = function(...args) {
+	        return schedule(fn.bind(this), ...args);
+	      };
+	      wrapped.withOptions = function(options, ...args) {
+	        return schedule(options, fn, ...args);
+	      };
+	      return wrapped;
+	    }
+
+	    async updateSettings(options = {}) {
+	      await this._store.__updateSettings__(parser$5.overwrite(options, this.storeDefaults));
+	      parser$5.overwrite(options, this.instanceDefaults, this);
+	      return this;
+	    }
+
+	    currentReservoir() {
+	      return this._store.__currentReservoir__();
+	    }
+
+	    incrementReservoir(incr = 0) {
+	      return this._store.__incrementReservoir__(incr);
+	    }
+
+	  }
+	  Bottleneck.default = Bottleneck;
+
+	  Bottleneck.Events = Events$4;
+
+	  Bottleneck.version = Bottleneck.prototype.version = require$$8.version;
+
+	  Bottleneck.strategy = Bottleneck.prototype.strategy = {
+	    LEAK: 1,
+	    OVERFLOW: 2,
+	    OVERFLOW_PRIORITY: 4,
+	    BLOCK: 3
+	  };
+
+	  Bottleneck.BottleneckError = Bottleneck.prototype.BottleneckError = BottleneckError_1;
+
+	  Bottleneck.Group = Bottleneck.prototype.Group = Group_1;
+
+	  Bottleneck.RedisConnection = Bottleneck.prototype.RedisConnection = require$$2;
+
+	  Bottleneck.IORedisConnection = Bottleneck.prototype.IORedisConnection = require$$3;
+
+	  Bottleneck.Batcher = Bottleneck.prototype.Batcher = Batcher_1;
+
+	  Bottleneck.prototype.jobDefaults = {
+	    priority: DEFAULT_PRIORITY$1,
+	    weight: 1,
+	    expiration: null,
+	    id: "<no-id>"
+	  };
+
+	  Bottleneck.prototype.storeDefaults = {
+	    maxConcurrent: null,
+	    minTime: 0,
+	    highWater: null,
+	    strategy: Bottleneck.prototype.strategy.LEAK,
+	    penalty: null,
+	    reservoir: null,
+	    reservoirRefreshInterval: null,
+	    reservoirRefreshAmount: null,
+	    reservoirIncreaseInterval: null,
+	    reservoirIncreaseAmount: null,
+	    reservoirIncreaseMaximum: null
+	  };
+
+	  Bottleneck.prototype.localStoreDefaults = {
+	    Promise: Promise,
+	    timeout: null,
+	    heartbeatInterval: 250
+	  };
+
+	  Bottleneck.prototype.redisStoreDefaults = {
+	    Promise: Promise,
+	    timeout: null,
+	    heartbeatInterval: 5000,
+	    clientTimeout: 10000,
+	    Redis: null,
+	    clientOptions: {},
+	    clusterNodes: null,
+	    clearDatastore: false,
+	    connection: null
+	  };
+
+	  Bottleneck.prototype.instanceDefaults = {
+	    datastore: "local",
+	    connection: null,
+	    id: "<no-id>",
+	    rejectOnDrop: true,
+	    trackDoneStatus: false,
+	    Promise: Promise
+	  };
+
+	  Bottleneck.prototype.stopDefaults = {
+	    enqueueErrorMessage: "This limiter has been stopped and cannot accept new jobs.",
+	    dropWaitingJobs: true,
+	    dropErrorMessage: "This limiter has been stopped."
+	  };
+
+	  return Bottleneck;
+
+	}).call(commonjsGlobal);
+
+	var Bottleneck_1 = Bottleneck;
+
+	var lib = Bottleneck_1;
+
+	return lib;
+
+})));
 
 
 /***/ }),
@@ -29186,1201 +31993,6 @@ try {
 } catch (error) {}
 /* c8 ignore end */
 
-
-/***/ }),
-
-/***/ 2353:
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
-
-"use strict";
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  "EN": () => (/* binding */ ChatGPTAPI),
-  "sK": () => (/* binding */ ChatGPTError)
-});
-
-// UNUSED EXPORTS: ChatGPTUnofficialProxyAPI, openai
-
-// EXTERNAL MODULE: ./node_modules/keyv/src/index.js
-var src = __nccwpck_require__(1531);
-;// CONCATENATED MODULE: ./node_modules/p-timeout/index.js
-class TimeoutError extends Error {
-	constructor(message) {
-		super(message);
-		this.name = 'TimeoutError';
-	}
-}
-
-/**
-An error to be thrown when the request is aborted by AbortController.
-DOMException is thrown instead of this Error when DOMException is available.
-*/
-class AbortError extends Error {
-	constructor(message) {
-		super();
-		this.name = 'AbortError';
-		this.message = message;
-	}
-}
-
-/**
-TODO: Remove AbortError and just throw DOMException when targeting Node 18.
-*/
-const getDOMException = errorMessage => globalThis.DOMException === undefined
-	? new AbortError(errorMessage)
-	: new DOMException(errorMessage);
-
-/**
-TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
-*/
-const getAbortedReason = signal => {
-	const reason = signal.reason === undefined
-		? getDOMException('This operation was aborted.')
-		: signal.reason;
-
-	return reason instanceof Error ? reason : getDOMException(reason);
-};
-
-function pTimeout(promise, options) {
-	const {
-		milliseconds,
-		fallback,
-		message,
-		customTimers = {setTimeout, clearTimeout},
-	} = options;
-
-	let timer;
-
-	const cancelablePromise = new Promise((resolve, reject) => {
-		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
-			throw new TypeError(`Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``);
-		}
-
-		if (milliseconds === Number.POSITIVE_INFINITY) {
-			resolve(promise);
-			return;
-		}
-
-		if (options.signal) {
-			const {signal} = options;
-			if (signal.aborted) {
-				reject(getAbortedReason(signal));
-			}
-
-			signal.addEventListener('abort', () => {
-				reject(getAbortedReason(signal));
-			});
-		}
-
-		// We create the error outside of `setTimeout` to preserve the stack trace.
-		const timeoutError = new TimeoutError();
-
-		timer = customTimers.setTimeout.call(undefined, () => {
-			if (fallback) {
-				try {
-					resolve(fallback());
-				} catch (error) {
-					reject(error);
-				}
-
-				return;
-			}
-
-			if (typeof promise.cancel === 'function') {
-				promise.cancel();
-			}
-
-			if (message === false) {
-				resolve();
-			} else if (message instanceof Error) {
-				reject(message);
-			} else {
-				timeoutError.message = message ?? `Promise timed out after ${milliseconds} milliseconds`;
-				reject(timeoutError);
-			}
-		}, milliseconds);
-
-		(async () => {
-			try {
-				resolve(await promise);
-			} catch (error) {
-				reject(error);
-			} finally {
-				customTimers.clearTimeout.call(undefined, timer);
-			}
-		})();
-	});
-
-	cancelablePromise.clear = () => {
-		customTimers.clearTimeout.call(undefined, timer);
-		timer = undefined;
-	};
-
-	return cancelablePromise;
-}
-
-;// CONCATENATED MODULE: ./node_modules/quick-lru/index.js
-class QuickLRU extends Map {
-	constructor(options = {}) {
-		super();
-
-		if (!(options.maxSize && options.maxSize > 0)) {
-			throw new TypeError('`maxSize` must be a number greater than 0');
-		}
-
-		if (typeof options.maxAge === 'number' && options.maxAge === 0) {
-			throw new TypeError('`maxAge` must be a number greater than 0');
-		}
-
-		// TODO: Use private class fields when ESLint supports them.
-		this.maxSize = options.maxSize;
-		this.maxAge = options.maxAge || Number.POSITIVE_INFINITY;
-		this.onEviction = options.onEviction;
-		this.cache = new Map();
-		this.oldCache = new Map();
-		this._size = 0;
-	}
-
-	// TODO: Use private class methods when targeting Node.js 16.
-	_emitEvictions(cache) {
-		if (typeof this.onEviction !== 'function') {
-			return;
-		}
-
-		for (const [key, item] of cache) {
-			this.onEviction(key, item.value);
-		}
-	}
-
-	_deleteIfExpired(key, item) {
-		if (typeof item.expiry === 'number' && item.expiry <= Date.now()) {
-			if (typeof this.onEviction === 'function') {
-				this.onEviction(key, item.value);
-			}
-
-			return this.delete(key);
-		}
-
-		return false;
-	}
-
-	_getOrDeleteIfExpired(key, item) {
-		const deleted = this._deleteIfExpired(key, item);
-		if (deleted === false) {
-			return item.value;
-		}
-	}
-
-	_getItemValue(key, item) {
-		return item.expiry ? this._getOrDeleteIfExpired(key, item) : item.value;
-	}
-
-	_peek(key, cache) {
-		const item = cache.get(key);
-
-		return this._getItemValue(key, item);
-	}
-
-	_set(key, value) {
-		this.cache.set(key, value);
-		this._size++;
-
-		if (this._size >= this.maxSize) {
-			this._size = 0;
-			this._emitEvictions(this.oldCache);
-			this.oldCache = this.cache;
-			this.cache = new Map();
-		}
-	}
-
-	_moveToRecent(key, item) {
-		this.oldCache.delete(key);
-		this._set(key, item);
-	}
-
-	* _entriesAscending() {
-		for (const item of this.oldCache) {
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield item;
-				}
-			}
-		}
-
-		for (const item of this.cache) {
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield item;
-			}
-		}
-	}
-
-	get(key) {
-		if (this.cache.has(key)) {
-			const item = this.cache.get(key);
-
-			return this._getItemValue(key, item);
-		}
-
-		if (this.oldCache.has(key)) {
-			const item = this.oldCache.get(key);
-			if (this._deleteIfExpired(key, item) === false) {
-				this._moveToRecent(key, item);
-				return item.value;
-			}
-		}
-	}
-
-	set(key, value, {maxAge = this.maxAge} = {}) {
-		const expiry =
-			typeof maxAge === 'number' && maxAge !== Number.POSITIVE_INFINITY ?
-				Date.now() + maxAge :
-				undefined;
-		if (this.cache.has(key)) {
-			this.cache.set(key, {
-				value,
-				expiry
-			});
-		} else {
-			this._set(key, {value, expiry});
-		}
-	}
-
-	has(key) {
-		if (this.cache.has(key)) {
-			return !this._deleteIfExpired(key, this.cache.get(key));
-		}
-
-		if (this.oldCache.has(key)) {
-			return !this._deleteIfExpired(key, this.oldCache.get(key));
-		}
-
-		return false;
-	}
-
-	peek(key) {
-		if (this.cache.has(key)) {
-			return this._peek(key, this.cache);
-		}
-
-		if (this.oldCache.has(key)) {
-			return this._peek(key, this.oldCache);
-		}
-	}
-
-	delete(key) {
-		const deleted = this.cache.delete(key);
-		if (deleted) {
-			this._size--;
-		}
-
-		return this.oldCache.delete(key) || deleted;
-	}
-
-	clear() {
-		this.cache.clear();
-		this.oldCache.clear();
-		this._size = 0;
-	}
-
-	resize(newSize) {
-		if (!(newSize && newSize > 0)) {
-			throw new TypeError('`maxSize` must be a number greater than 0');
-		}
-
-		const items = [...this._entriesAscending()];
-		const removeCount = items.length - newSize;
-		if (removeCount < 0) {
-			this.cache = new Map(items);
-			this.oldCache = new Map();
-			this._size = items.length;
-		} else {
-			if (removeCount > 0) {
-				this._emitEvictions(items.slice(0, removeCount));
-			}
-
-			this.oldCache = new Map(items.slice(removeCount));
-			this.cache = new Map();
-			this._size = 0;
-		}
-
-		this.maxSize = newSize;
-	}
-
-	* keys() {
-		for (const [key] of this) {
-			yield key;
-		}
-	}
-
-	* values() {
-		for (const [, value] of this) {
-			yield value;
-		}
-	}
-
-	* [Symbol.iterator]() {
-		for (const item of this.cache) {
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield [key, value.value];
-			}
-		}
-
-		for (const item of this.oldCache) {
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield [key, value.value];
-				}
-			}
-		}
-	}
-
-	* entriesDescending() {
-		let items = [...this.cache];
-		for (let i = items.length - 1; i >= 0; --i) {
-			const item = items[i];
-			const [key, value] = item;
-			const deleted = this._deleteIfExpired(key, value);
-			if (deleted === false) {
-				yield [key, value.value];
-			}
-		}
-
-		items = [...this.oldCache];
-		for (let i = items.length - 1; i >= 0; --i) {
-			const item = items[i];
-			const [key, value] = item;
-			if (!this.cache.has(key)) {
-				const deleted = this._deleteIfExpired(key, value);
-				if (deleted === false) {
-					yield [key, value.value];
-				}
-			}
-		}
-	}
-
-	* entriesAscending() {
-		for (const [key, value] of this._entriesAscending()) {
-			yield [key, value.value];
-		}
-	}
-
-	get size() {
-		if (!this._size) {
-			return this.oldCache.size;
-		}
-
-		let oldCacheSize = 0;
-		for (const key of this.oldCache.keys()) {
-			if (!this.cache.has(key)) {
-				oldCacheSize++;
-			}
-		}
-
-		return Math.min(this._size + oldCacheSize, this.maxSize);
-	}
-
-	entries() {
-		return this.entriesAscending();
-	}
-
-	forEach(callbackFunction, thisArgument = this) {
-		for (const [key, value] of this.entriesAscending()) {
-			callbackFunction.call(thisArgument, value, key, this);
-		}
-	}
-
-	get [Symbol.toStringTag]() {
-		return JSON.stringify([...this.entriesAscending()]);
-	}
-}
-
-// EXTERNAL MODULE: ./node_modules/chatgpt/node_modules/uuid/dist/index.js
-var dist = __nccwpck_require__(6201);
-;// CONCATENATED MODULE: ./node_modules/chatgpt/node_modules/uuid/wrapper.mjs
-
-const v1 = dist.v1;
-const v3 = dist.v3;
-const v4 = dist.v4;
-const v5 = dist.v5;
-const NIL = dist/* NIL */.zR;
-const version = dist/* version */.i8;
-const validate = dist/* validate */.Gu;
-const stringify = dist/* stringify */.Pz;
-const parse = dist/* parse */.Qc;
-
-// EXTERNAL MODULE: ./node_modules/@dqbd/tiktoken/tiktoken.cjs
-var tiktoken = __nccwpck_require__(3171);
-;// CONCATENATED MODULE: ./node_modules/eventsource-parser/dist/index.mjs
-function createParser(onParse) {
-  let isFirstChunk;
-  let buffer;
-  let startingPosition;
-  let startingFieldLength;
-  let eventId;
-  let eventName;
-  let data;
-  reset();
-  return {
-    feed,
-    reset
-  };
-
-  function reset() {
-    isFirstChunk = true;
-    buffer = "";
-    startingPosition = 0;
-    startingFieldLength = -1;
-    eventId = void 0;
-    eventName = void 0;
-    data = "";
-  }
-
-  function feed(chunk) {
-    buffer = buffer ? buffer + chunk : chunk;
-
-    if (isFirstChunk && hasBom(buffer)) {
-      buffer = buffer.slice(BOM.length);
-    }
-
-    isFirstChunk = false;
-    const length = buffer.length;
-    let position = 0;
-    let discardTrailingNewline = false;
-
-    while (position < length) {
-      if (discardTrailingNewline) {
-        if (buffer[position] === "\n") {
-          ++position;
-        }
-
-        discardTrailingNewline = false;
-      }
-
-      let lineLength = -1;
-      let fieldLength = startingFieldLength;
-      let character;
-
-      for (let index = startingPosition; lineLength < 0 && index < length; ++index) {
-        character = buffer[index];
-
-        if (character === ":" && fieldLength < 0) {
-          fieldLength = index - position;
-        } else if (character === "\r") {
-          discardTrailingNewline = true;
-          lineLength = index - position;
-        } else if (character === "\n") {
-          lineLength = index - position;
-        }
-      }
-
-      if (lineLength < 0) {
-        startingPosition = length - position;
-        startingFieldLength = fieldLength;
-        break;
-      } else {
-        startingPosition = 0;
-        startingFieldLength = -1;
-      }
-
-      parseEventStreamLine(buffer, position, fieldLength, lineLength);
-      position += lineLength + 1;
-    }
-
-    if (position === length) {
-      buffer = "";
-    } else if (position > 0) {
-      buffer = buffer.slice(position);
-    }
-  }
-
-  function parseEventStreamLine(lineBuffer, index, fieldLength, lineLength) {
-    if (lineLength === 0) {
-      if (data.length > 0) {
-        onParse({
-          type: "event",
-          id: eventId,
-          event: eventName || void 0,
-          data: data.slice(0, -1)
-        });
-        data = "";
-        eventId = void 0;
-      }
-
-      eventName = void 0;
-      return;
-    }
-
-    const noValue = fieldLength < 0;
-    const field = lineBuffer.slice(index, index + (noValue ? lineLength : fieldLength));
-    let step = 0;
-
-    if (noValue) {
-      step = lineLength;
-    } else if (lineBuffer[index + fieldLength + 1] === " ") {
-      step = fieldLength + 2;
-    } else {
-      step = fieldLength + 1;
-    }
-
-    const position = index + step;
-    const valueLength = lineLength - step;
-    const value = lineBuffer.slice(position, position + valueLength).toString();
-
-    if (field === "data") {
-      data += value ? "".concat(value, "\n") : "\n";
-    } else if (field === "event") {
-      eventName = value;
-    } else if (field === "id" && !value.includes("\0")) {
-      eventId = value;
-    } else if (field === "retry") {
-      const retry = parseInt(value, 10);
-
-      if (!Number.isNaN(retry)) {
-        onParse({
-          type: "reconnect-interval",
-          value: retry
-        });
-      }
-    }
-  }
-}
-
-const BOM = [239, 187, 191];
-
-function hasBom(buffer) {
-  return BOM.every((charCode, index) => buffer.charCodeAt(index) === charCode);
-}
-
-
-//# sourceMappingURL=index.mjs.map
-
-;// CONCATENATED MODULE: ./node_modules/chatgpt/build/index.js
-// src/chatgpt-api.ts
-
-
-
-
-
-// src/tokenizer.ts
-
-var tokenizer = (0,tiktoken/* get_encoding */.iw)("cl100k_base");
-function encode(input) {
-  return tokenizer.encode(input);
-}
-
-// src/types.ts
-var ChatGPTError = class extends Error {
-};
-var openai;
-((openai2) => {
-})(openai || (openai = {}));
-
-// src/fetch.ts
-var fetch = globalThis.fetch;
-
-// src/fetch-sse.ts
-
-
-// src/stream-async-iterable.ts
-async function* streamAsyncIterable(stream) {
-  const reader = stream.getReader();
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        return;
-      }
-      yield value;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
-// src/fetch-sse.ts
-async function fetchSSE(url, options, fetch2 = fetch) {
-  const { onMessage, ...fetchOptions } = options;
-  const res = await fetch2(url, fetchOptions);
-  if (!res.ok) {
-    let reason;
-    try {
-      reason = await res.text();
-    } catch (err) {
-      reason = res.statusText;
-    }
-    const msg = `ChatGPT error ${res.status}: ${reason}`;
-    const error = new ChatGPTError(msg, { cause: res });
-    error.statusCode = res.status;
-    error.statusText = res.statusText;
-    throw error;
-  }
-  const parser = createParser((event) => {
-    if (event.type === "event") {
-      onMessage(event.data);
-    }
-  });
-  if (!res.body.getReader) {
-    const body = res.body;
-    if (!body.on || !body.read) {
-      throw new ChatGPTError('unsupported "fetch" implementation');
-    }
-    body.on("readable", () => {
-      let chunk;
-      while (null !== (chunk = body.read())) {
-        parser.feed(chunk.toString());
-      }
-    });
-  } else {
-    for await (const chunk of streamAsyncIterable(res.body)) {
-      const str = new TextDecoder().decode(chunk);
-      parser.feed(str);
-    }
-  }
-}
-
-// src/chatgpt-api.ts
-var CHATGPT_MODEL = "gpt-3.5-turbo";
-var USER_LABEL_DEFAULT = "User";
-var ASSISTANT_LABEL_DEFAULT = "ChatGPT";
-var ChatGPTAPI = class {
-  /**
-   * Creates a new client wrapper around OpenAI's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
-   *
-   * @param apiKey - OpenAI API key (required).
-   * @param apiBaseUrl - Optional override for the OpenAI API base URL.
-   * @param debug - Optional enables logging debugging info to stdout.
-   * @param completionParams - Param overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
-   * @param maxModelTokens - Optional override for the maximum number of tokens allowed by the model's context. Defaults to 4096.
-   * @param maxResponseTokens - Optional override for the minimum number of tokens allowed for the model's response. Defaults to 1000.
-   * @param messageStore - Optional [Keyv](https://github.com/jaredwray/keyv) store to persist chat messages to. If not provided, messages will be lost when the process exits.
-   * @param getMessageById - Optional function to retrieve a message by its ID. If not provided, the default implementation will be used (using an in-memory `messageStore`).
-   * @param upsertMessage - Optional function to insert or update a message. If not provided, the default implementation will be used (using an in-memory `messageStore`).
-   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
-   */
-  constructor(opts) {
-    const {
-      apiKey,
-      apiBaseUrl = "https://api.openai.com/v1",
-      debug = false,
-      messageStore,
-      completionParams,
-      systemMessage,
-      maxModelTokens = 4e3,
-      maxResponseTokens = 1e3,
-      getMessageById,
-      upsertMessage,
-      fetch: fetch2 = fetch
-    } = opts;
-    this._apiKey = apiKey;
-    this._apiBaseUrl = apiBaseUrl;
-    this._debug = !!debug;
-    this._fetch = fetch2;
-    this._completionParams = {
-      model: CHATGPT_MODEL,
-      temperature: 0.8,
-      top_p: 1,
-      presence_penalty: 1,
-      ...completionParams
-    };
-    this._systemMessage = systemMessage;
-    if (this._systemMessage === void 0) {
-      const currentDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-      this._systemMessage = `You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible.
-Knowledge cutoff: 2021-09-01
-Current date: ${currentDate}`;
-    }
-    this._maxModelTokens = maxModelTokens;
-    this._maxResponseTokens = maxResponseTokens;
-    this._getMessageById = getMessageById ?? this._defaultGetMessageById;
-    this._upsertMessage = upsertMessage ?? this._defaultUpsertMessage;
-    if (messageStore) {
-      this._messageStore = messageStore;
-    } else {
-      this._messageStore = new src({
-        store: new QuickLRU({ maxSize: 1e4 })
-      });
-    }
-    if (!this._apiKey) {
-      throw new Error("OpenAI missing required apiKey");
-    }
-    if (!this._fetch) {
-      throw new Error("Invalid environment; fetch is not defined");
-    }
-    if (typeof this._fetch !== "function") {
-      throw new Error('Invalid "fetch" is not a function');
-    }
-  }
-  /**
-   * Sends a message to the OpenAI chat completions endpoint, waits for the response
-   * to resolve, and returns the response.
-   *
-   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
-   *
-   * If you want to receive a stream of partial responses, use `opts.onProgress`.
-   *
-   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI chat completions API. You can override the `systemMessage` in `opts` to customize the assistant's instructions.
-   *
-   * @param message - The prompt message to send
-   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
-   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
-   * @param opts.systemMessage - Optional override for the chat "system message" which acts as instructions to the model (defaults to the ChatGPT system message)
-   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
-   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
-   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   * @param completionParams - Optional overrides to send to the [OpenAI chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
-   *
-   * @returns The response from ChatGPT
-   */
-  async sendMessage(text, opts = {}) {
-    const {
-      parentMessageId,
-      messageId = v4(),
-      timeoutMs,
-      onProgress,
-      stream = onProgress ? true : false,
-      completionParams
-    } = opts;
-    let { abortSignal } = opts;
-    let abortController = null;
-    if (timeoutMs && !abortSignal) {
-      abortController = new AbortController();
-      abortSignal = abortController.signal;
-    }
-    const message = {
-      role: "user",
-      id: messageId,
-      parentMessageId,
-      text
-    };
-    await this._upsertMessage(message);
-    const { messages, maxTokens, numTokens } = await this._buildMessages(
-      text,
-      opts
-    );
-    const result = {
-      role: "assistant",
-      id: v4(),
-      parentMessageId: messageId,
-      text: ""
-    };
-    const responseP = new Promise(
-      async (resolve, reject) => {
-        var _a, _b;
-        const url = `${this._apiBaseUrl}/chat/completions`;
-        const headers = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this._apiKey}`
-        };
-        const body = {
-          max_tokens: maxTokens,
-          ...this._completionParams,
-          ...completionParams,
-          messages,
-          stream
-        };
-        if (this._debug) {
-          console.log(`sendMessage (${numTokens} tokens)`, body);
-        }
-        if (stream) {
-          fetchSSE(
-            url,
-            {
-              method: "POST",
-              headers,
-              body: JSON.stringify(body),
-              signal: abortSignal,
-              onMessage: (data) => {
-                var _a2;
-                if (data === "[DONE]") {
-                  result.text = result.text.trim();
-                  return resolve(result);
-                }
-                try {
-                  const response = JSON.parse(data);
-                  if (response.id) {
-                    result.id = response.id;
-                  }
-                  if ((_a2 = response == null ? void 0 : response.choices) == null ? void 0 : _a2.length) {
-                    const delta = response.choices[0].delta;
-                    result.delta = delta.content;
-                    if (delta == null ? void 0 : delta.content)
-                      result.text += delta.content;
-                    result.detail = response;
-                    if (delta.role) {
-                      result.role = delta.role;
-                    }
-                    onProgress == null ? void 0 : onProgress(result);
-                  }
-                } catch (err) {
-                  console.warn("OpenAI stream SEE event unexpected error", err);
-                  return reject(err);
-                }
-              }
-            },
-            this._fetch
-          ).catch(reject);
-        } else {
-          try {
-            const res = await this._fetch(url, {
-              method: "POST",
-              headers,
-              body: JSON.stringify(body),
-              signal: abortSignal
-            });
-            if (!res.ok) {
-              const reason = await res.text();
-              const msg = `OpenAI error ${res.status || res.statusText}: ${reason}`;
-              const error = new ChatGPTError(msg, { cause: res });
-              error.statusCode = res.status;
-              error.statusText = res.statusText;
-              return reject(error);
-            }
-            const response = await res.json();
-            if (this._debug) {
-              console.log(response);
-            }
-            if (response == null ? void 0 : response.id) {
-              result.id = response.id;
-            }
-            if ((_a = response == null ? void 0 : response.choices) == null ? void 0 : _a.length) {
-              const message2 = response.choices[0].message;
-              result.text = message2.content;
-              if (message2.role) {
-                result.role = message2.role;
-              }
-            } else {
-              const res2 = response;
-              return reject(
-                new Error(
-                  `OpenAI error: ${((_b = res2 == null ? void 0 : res2.detail) == null ? void 0 : _b.message) || (res2 == null ? void 0 : res2.detail) || "unknown"}`
-                )
-              );
-            }
-            result.detail = response;
-            return resolve(result);
-          } catch (err) {
-            return reject(err);
-          }
-        }
-      }
-    ).then((message2) => {
-      return this._upsertMessage(message2).then(() => message2);
-    });
-    if (timeoutMs) {
-      if (abortController) {
-        ;
-        responseP.cancel = () => {
-          abortController.abort();
-        };
-      }
-      return pTimeout(responseP, {
-        milliseconds: timeoutMs,
-        message: "OpenAI timed out waiting for response"
-      });
-    } else {
-      return responseP;
-    }
-  }
-  get apiKey() {
-    return this._apiKey;
-  }
-  set apiKey(apiKey) {
-    this._apiKey = apiKey;
-  }
-  async _buildMessages(text, opts) {
-    const { systemMessage = this._systemMessage } = opts;
-    let { parentMessageId } = opts;
-    const userLabel = USER_LABEL_DEFAULT;
-    const assistantLabel = ASSISTANT_LABEL_DEFAULT;
-    const maxNumTokens = this._maxModelTokens - this._maxResponseTokens;
-    let messages = [];
-    if (systemMessage) {
-      messages.push({
-        role: "system",
-        content: systemMessage
-      });
-    }
-    const systemMessageOffset = messages.length;
-    let nextMessages = text ? messages.concat([
-      {
-        role: "user",
-        content: text,
-        name: opts.name
-      }
-    ]) : messages;
-    let numTokens = 0;
-    do {
-      const prompt = nextMessages.reduce((prompt2, message) => {
-        switch (message.role) {
-          case "system":
-            return prompt2.concat([`Instructions:
-${message.content}`]);
-          case "user":
-            return prompt2.concat([`${userLabel}:
-${message.content}`]);
-          default:
-            return prompt2.concat([`${assistantLabel}:
-${message.content}`]);
-        }
-      }, []).join("\n\n");
-      const nextNumTokensEstimate = await this._getTokenCount(prompt);
-      const isValidPrompt = nextNumTokensEstimate <= maxNumTokens;
-      if (prompt && !isValidPrompt) {
-        break;
-      }
-      messages = nextMessages;
-      numTokens = nextNumTokensEstimate;
-      if (!isValidPrompt) {
-        break;
-      }
-      if (!parentMessageId) {
-        break;
-      }
-      const parentMessage = await this._getMessageById(parentMessageId);
-      if (!parentMessage) {
-        break;
-      }
-      const parentMessageRole = parentMessage.role || "user";
-      nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
-        {
-          role: parentMessageRole,
-          content: parentMessage.text,
-          name: parentMessage.name
-        },
-        ...nextMessages.slice(systemMessageOffset)
-      ]);
-      parentMessageId = parentMessage.parentMessageId;
-    } while (true);
-    const maxTokens = Math.max(
-      1,
-      Math.min(this._maxModelTokens - numTokens, this._maxResponseTokens)
-    );
-    return { messages, maxTokens, numTokens };
-  }
-  async _getTokenCount(text) {
-    text = text.replace(/<\|endoftext\|>/g, "");
-    return encode(text).length;
-  }
-  async _defaultGetMessageById(id) {
-    const res = await this._messageStore.get(id);
-    return res;
-  }
-  async _defaultUpsertMessage(message) {
-    await this._messageStore.set(message.id, message);
-  }
-};
-
-// src/chatgpt-unofficial-proxy-api.ts
-
-
-
-// src/utils.ts
-var uuidv4Re = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-function isValidUUIDv4(str) {
-  return str && uuidv4Re.test(str);
-}
-
-// src/chatgpt-unofficial-proxy-api.ts
-var ChatGPTUnofficialProxyAPI = class {
-  /**
-   * @param fetch - Optional override for the `fetch` implementation to use. Defaults to the global `fetch` function.
-   */
-  constructor(opts) {
-    const {
-      accessToken,
-      apiReverseProxyUrl = "https://bypass.duti.tech/api/conversation",
-      model = "text-davinci-002-render-sha",
-      debug = false,
-      headers,
-      fetch: fetch2 = fetch
-    } = opts;
-    this._accessToken = accessToken;
-    this._apiReverseProxyUrl = apiReverseProxyUrl;
-    this._debug = !!debug;
-    this._model = model;
-    this._fetch = fetch2;
-    this._headers = headers;
-    if (!this._accessToken) {
-      throw new Error("ChatGPT invalid accessToken");
-    }
-    if (!this._fetch) {
-      throw new Error("Invalid environment; fetch is not defined");
-    }
-    if (typeof this._fetch !== "function") {
-      throw new Error('Invalid "fetch" is not a function');
-    }
-  }
-  get accessToken() {
-    return this._accessToken;
-  }
-  set accessToken(value) {
-    this._accessToken = value;
-  }
-  /**
-   * Sends a message to ChatGPT, waits for the response to resolve, and returns
-   * the response.
-   *
-   * If you want your response to have historical context, you must provide a valid `parentMessageId`.
-   *
-   * If you want to receive a stream of partial responses, use `opts.onProgress`.
-   * If you want to receive the full response, including message and conversation IDs,
-   * you can use `opts.onConversationResponse` or use the `ChatGPTAPI.getConversation`
-   * helper.
-   *
-   * Set `debug: true` in the `ChatGPTAPI` constructor to log more info on the full prompt sent to the OpenAI completions API. You can override the `promptPrefix` and `promptSuffix` in `opts` to customize the prompt.
-   *
-   * @param message - The prompt message to send
-   * @param opts.conversationId - Optional ID of a conversation to continue (defaults to a random UUID)
-   * @param opts.parentMessageId - Optional ID of the previous message in the conversation (defaults to `undefined`)
-   * @param opts.messageId - Optional ID of the message to send (defaults to a random UUID)
-   * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
-   * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
-   * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-   *
-   * @returns The response from ChatGPT
-   */
-  async sendMessage(text, opts = {}) {
-    if (!!opts.conversationId !== !!opts.parentMessageId) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId and parentMessageId must both be set or both be undefined"
-      );
-    }
-    if (opts.conversationId && !isValidUUIDv4(opts.conversationId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: conversationId is not a valid v4 UUID"
-      );
-    }
-    if (opts.parentMessageId && !isValidUUIDv4(opts.parentMessageId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: parentMessageId is not a valid v4 UUID"
-      );
-    }
-    if (opts.messageId && !isValidUUIDv4(opts.messageId)) {
-      throw new Error(
-        "ChatGPTUnofficialProxyAPI.sendMessage: messageId is not a valid v4 UUID"
-      );
-    }
-    const {
-      conversationId,
-      parentMessageId = uuidv42(),
-      messageId = uuidv42(),
-      action = "next",
-      timeoutMs,
-      onProgress
-    } = opts;
-    let { abortSignal } = opts;
-    let abortController = null;
-    if (timeoutMs && !abortSignal) {
-      abortController = new AbortController();
-      abortSignal = abortController.signal;
-    }
-    const body = {
-      action,
-      messages: [
-        {
-          id: messageId,
-          role: "user",
-          content: {
-            content_type: "text",
-            parts: [text]
-          }
-        }
-      ],
-      model: this._model,
-      parent_message_id: parentMessageId
-    };
-    if (conversationId) {
-      body.conversation_id = conversationId;
-    }
-    const result = {
-      role: "assistant",
-      id: uuidv42(),
-      parentMessageId: messageId,
-      conversationId,
-      text: ""
-    };
-    const responseP = new Promise((resolve, reject) => {
-      const url = this._apiReverseProxyUrl;
-      const headers = {
-        ...this._headers,
-        Authorization: `Bearer ${this._accessToken}`,
-        Accept: "text/event-stream",
-        "Content-Type": "application/json"
-      };
-      if (this._debug) {
-        console.log("POST", url, { body, headers });
-      }
-      fetchSSE(
-        url,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: abortSignal,
-          onMessage: (data) => {
-            var _a, _b, _c;
-            if (data === "[DONE]") {
-              return resolve(result);
-            }
-            try {
-              const convoResponseEvent = JSON.parse(data);
-              if (convoResponseEvent.conversation_id) {
-                result.conversationId = convoResponseEvent.conversation_id;
-              }
-              if ((_a = convoResponseEvent.message) == null ? void 0 : _a.id) {
-                result.id = convoResponseEvent.message.id;
-              }
-              const message = convoResponseEvent.message;
-              if (message) {
-                let text2 = (_c = (_b = message == null ? void 0 : message.content) == null ? void 0 : _b.parts) == null ? void 0 : _c[0];
-                if (text2) {
-                  result.text = text2;
-                  if (onProgress) {
-                    onProgress(result);
-                  }
-                }
-              }
-            } catch (err) {
-            }
-          }
-        },
-        this._fetch
-      ).catch((err) => {
-        const errMessageL = err.toString().toLowerCase();
-        if (result.text && (errMessageL === "error: typeerror: terminated" || errMessageL === "typeerror: terminated")) {
-          return resolve(result);
-        } else {
-          return reject(err);
-        }
-      });
-    });
-    if (timeoutMs) {
-      if (abortController) {
-        ;
-        responseP.cancel = () => {
-          abortController.abort();
-        };
-      }
-      return pTimeout2(responseP, {
-        milliseconds: timeoutMs,
-        message: "ChatGPT timed out waiting for response"
-      });
-    } else {
-      return responseP;
-    }
-  }
-};
-
-//# sourceMappingURL=index.js.map
 
 /***/ }),
 
