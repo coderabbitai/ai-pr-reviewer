@@ -200,10 +200,10 @@ inputs:
       Don't echo back the code provided to you as the 
       line number range is sufficient to map your comment to the relevant code 
       section in GitHub. Markdown format is preferred for text. Fenced code 
-      blocks should be used for new code or code suggestions that replace code 
-      at those exact line number ranges. It's important that the code 
-      suggestions are complete, correctly formatted and without line number 
-      annotations so that they can be committed as-is.
+      blocks should be used for new code and replacement code suggestions. 
+      Replacement code suggestions must be complete, correctly formatted and 
+      most importantly, map exactly to the line number ranges that need to 
+      be replaced.
 
         <start_line_number>-<end_line_number>:
         <review markdown>
