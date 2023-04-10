@@ -74,10 +74,14 @@ export const handleReviewComment = async (
     inputs.diff = comment.diff_hunk
     inputs.filename = comment.path
 
-    core.info(`Comment: ${inputs.comment}`)
-
     const {chain: comment_chain, topLevelComment} =
       await commenter.get_comment_chain(pull_number, comment)
+
+    if (!topLevelComment) {
+      core.warning(`Failed to find the top-level comment to reply to`)
+      return
+    }
+
     inputs.comment_chain = comment_chain
 
     // check whether this chain contains replies from the bot
@@ -142,6 +146,16 @@ export const handleReviewComment = async (
       // get tokens so far
       let tokens = tokenizer.get_token_count(prompts.render_comment(inputs))
 
+      // if tokens already exceed request limit, comment that the diff being
+      // commented is too large and exceeds the token limit
+      if (tokens > options.heavy_token_limits.request_tokens) {
+        await commenter.review_comment_reply(
+          pull_number,
+          topLevelComment,
+          'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.'
+        )
+      }
+
       // pack file content and diff into the inputs if they are not too long
       if (file_content.length > 0) {
         // count occurrences of $file_content in prompt
@@ -177,19 +191,9 @@ export const handleReviewComment = async (
         }
       }
 
-      core.info(`rendering: ${prompts.render_comment(inputs)}`)
-
       const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {})
 
-      if (topLevelComment) {
-        await commenter.review_comment_reply(
-          pull_number,
-          topLevelComment,
-          reply
-        )
-      } else {
-        core.warning(`Failed to find the top-level comment to reply to`)
-      }
+      await commenter.review_comment_reply(pull_number, topLevelComment, reply)
     }
   } else {
     core.info(`Skipped: ${context.eventName} event is from the bot itself`)

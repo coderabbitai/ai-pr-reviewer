@@ -189,7 +189,6 @@ inputs:
 
       Changes for review -
       $patches
-
   comment:
     required: false
     description: 'Prompt for comment'

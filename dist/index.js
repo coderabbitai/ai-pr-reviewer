@@ -6119,8 +6119,11 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = comment.diff_hunk;
         inputs.filename = comment.path;
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment: ${inputs.comment}`);
         const { chain: comment_chain, topLevelComment } = await commenter.get_comment_chain(pull_number, comment);
+        if (!topLevelComment) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
+            return;
+        }
         inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
@@ -6174,6 +6177,11 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             }
             // get tokens so far
             let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(prompts.render_comment(inputs));
+            // if tokens already exceed request limit, comment that the diff being
+            // commented is too large and exceeds the token limit
+            if (tokens > options.heavy_token_limits.request_tokens) {
+                await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
+            }
             // pack file content and diff into the inputs if they are not too long
             if (file_content.length > 0) {
                 // count occurrences of $file_content in prompt
@@ -6201,14 +6209,8 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                     inputs.file_diff = file_diff;
                 }
             }
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`rendering: ${prompts.render_comment(inputs)}`);
             const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
-            if (topLevelComment) {
-                await commenter.review_comment_reply(pull_number, topLevelComment, reply);
-            }
-            else {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
-            }
+            await commenter.review_comment_reply(pull_number, topLevelComment, reply);
         }
     }
     else {
