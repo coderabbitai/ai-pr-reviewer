@@ -366,33 +366,50 @@ ${
 
     // Pack instructions
     ins.patches += `
-Format for changes and review comments (if any) -
+Format for changes -
   ---new_hunk_for_review---
   <new content annotated with line numbers>
   ---old_hunk_for_context---
   <old content>
   ---comment_chains_for_context---
   <comment chains>
-  ---end_review_section---
+  ---end_change_section---
   ...
+
+Instructions -
+- Only respond in the below response format and nothing else. Each review 
+  section must consist of a line number range and a comment for 
+  that line number range. There's a separator between review sections. 
+- It's important that line number ranges for each review section must 
+  be within the line number range of a specific new hunk. i.e. 
+  <start_line_number> must belong to the same hunk as the 
+  <end_line_number>. The line number range is sufficient to map your 
+  comment to the correct sections in GitHub pull request.
+- Markdown format is preferred for review comment text. 
+- Fenced code blocks must be used for new content and replacement 
+  code/text snippets. Replacement snippets must be complete, 
+  correctly formatted and most importantly, map exactly to the line 
+  number ranges that need to be replaced inside the hunks. The line 
+  number ranges must not belong to different hunks. Do not annotate 
+  suggested content with line numbers inside the code blocks.
+- If there are no issues or suggestions and the hunk is acceptable as-is, 
+  your comment on the line ranges must include the word 'LGTM!'.
 
 Response format expected -
   <start_line_number>-<end_line_number>:
   <review comment>
-  <explanation of suggestion>
-  \`\`\`suggestion
-  <content that replaces everything between start_line_number and end_line_number>
-  \`\`\`
   ---
   <start_line_number>-<end_line_number>:
   <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review_comment>
-  <explanation of suggestion>
-  \`\`\`<language>
-  <new content suggestion>
+  <replacement code/text, if applicable>
+  \`\`\`suggestion
+  <code/text that replaces everything between start_line_number and end_line_number>
   \`\`\`
+  <new code, if applicable>
+  \`\`\`<language>
+  <new code snippet>
+  \`\`\`
+  ---
   ...
 
 Example response -
@@ -408,28 +425,8 @@ Example response -
   \`\`\`
   ---
 
-Instructions -
-- Your response must be in the above format. Each review section must
-  consist of a line number range and a comment for that line number 
-  range. There's a separator between review sections. Any text not in 
-  this format will be ignored as it will not be read by the parser.
-- It's important that line number ranges for each review section must 
-  be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must be part of the same hunk as the 
-  <end_line_number>, otherwise comment can't be posted.
-- Don't repeat the provided content, the line number range is enough 
-  to map your comment to the correct sections in GitHub.
-- Markdown format is preferred for review comment text. 
-- Fenced code blocks must be used for new content and replacement 
-  content suggestions. Replacement suggestions must be complete, 
-  correctly formatted and most importantly, map exactly to the line 
-  number ranges that need to be replaced inside the hunks. 
-  fenced code blocks. Do not annotate line numbers inside the suggestion
-  code blocks as review section has line number range.
-- If there are no issues or suggestions and the hunk is acceptable as-is, 
-  your comment on the line ranges must include the word 'LGTM!'.
 
-Hunks for review -
+Hunks for review are below -
 `
 
     // calculate tokens based on inputs so far
@@ -447,7 +444,7 @@ Hunks for review -
 
     // try packing file_content into this request
     const file_content_count =
-      prompts.summarize_file_diff.split('$file_content').length - 1
+      prompts.review_file_diff.split('$file_content').length - 1
     const file_content_tokens = tokenizer.get_token_count(file_content)
     if (
       file_content_count > 0 &&
@@ -515,7 +512,7 @@ ${comment_chain}
       }
 
       ins.patches += `
----end_review_section---
+---end_change_section---
 `
     }
     // perform review

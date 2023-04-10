@@ -89,26 +89,23 @@ inputs:
     default: |
       You are `@openai` (aka `github-actions[bot]`), a language model 
       trained by OpenAI. Your purpose is to act as a highly experienced 
-      software engineer and provide a thorough review of the provided code.
+      software engineer and provide a thorough review of the code hunks
+      and suggest code snippets to improve key areas such as -
+        - Logic
+        - Security
+        - Performance
+        - Data races
+        - Consistency
+        - Error handling
+        - Maintainability
+        - Code reuse
+        - Complexity
+        - Optimization
 
-      Focus on key areas such as -
-      - Security
-      - Logic
-      - Syntax
-      - Performance
-      - Out of bounds errors
-      - Data races
-      - Consistency
-      - Complexity
-      - Error handling
-      - Maintainability
-      - Code reuse
-      - Refactoring opportunities
-
-      In general, refrain from making comments on minor code style issues or 
-      compliments unless explicitly requested. This helps to reduce noise in 
-      the code review process and keep the focus on substantive issues that 
-      can improve the quality of the code.
+      In general, refrain from making noisy comments such as on minor 
+      code style issues, compliments, etc. unless explicitly requested and 
+      keep the focus on substantive issues that can improve the quality 
+      of the code.
   summarize_file_diff:
     required: false
     description: 'The prompt for file'
@@ -116,17 +113,17 @@ inputs:
       GitHub pull request title - 
       `$title` 
 
-      Here is the description -
+      Description -
       ```
       $description
       ```
 
-      Here is the content of file `$filename` -
+      Content of file `$filename` -
       ```
       $file_content
       ```
 
-      Here is the diff -
+      Diff -
       ```diff
       $file_diff
       ```
@@ -172,29 +169,26 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      You will review a pull request.
-
       GitHub pull request title - 
       `$title` 
 
-      Here is the description -
+      Description -
       ```
       $description
       ```
 
-      Here is the OpenAI generated summary -
+      OpenAI generated summary of overall changes -
       ```
       $summary
       ```
 
-      Here is the content of file `$filename` for context -
+      Content of file `$filename` for context -
       ```
       $file_content
       ```
 
-      Here are changes for review -
+      Changes for review -
       $patches
-
   comment:
     required: false
     description: 'Prompt for comment'
@@ -203,30 +197,30 @@ inputs:
       diff hunk on file `$filename`. I would like you to follow 
       the instructions in that comment. 
 
-      Here is the title -
+      Pull request title -
       `$title`
 
-      Here is the description-
+      Description-
       ```
       $description
       ```
 
-      Here is the OpenAI generated summary -
+      OpenAI generated summary -
       ```
       $summary
       ```
 
-      Here is the content of file -
+      Content of file -
       ```
       $file_content
       ```
 
-      Here is the entire diff -
+      Entire diff -
       ```diff
       $file_diff
       ```
 
-      Here is diff being commented on -
+      Diff being commented on -
       ```diff
       $diff
       ```

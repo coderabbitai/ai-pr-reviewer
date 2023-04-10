@@ -76,6 +76,12 @@ export const handleReviewComment = async (
 
     const {chain: comment_chain, topLevelComment} =
       await commenter.get_comment_chain(pull_number, comment)
+
+    if (!topLevelComment) {
+      core.warning(`Failed to find the top-level comment to reply to`)
+      return
+    }
+
     inputs.comment_chain = comment_chain
 
     // check whether this chain contains replies from the bot
@@ -128,6 +134,21 @@ export const handleReviewComment = async (
         core.warning(`Failed to get file diff: ${error}, skipping.`)
       }
 
+      // use file diff if no diff was found in the comment
+      if (inputs.diff.length === 0) {
+        if (file_diff.length > 0) {
+          inputs.diff = file_diff
+          file_diff = ''
+        } else {
+          await commenter.review_comment_reply(
+            pull_number,
+            topLevelComment,
+            'Cannot reply to this comment as diff could not be found.'
+          )
+          return
+        }
+      }
+
       // get summary of the PR
       const summary = await commenter.find_comment_with_tag(
         SUMMARIZE_TAG,
@@ -140,11 +161,20 @@ export const handleReviewComment = async (
       // get tokens so far
       let tokens = tokenizer.get_token_count(prompts.render_comment(inputs))
 
+      if (tokens > options.heavy_token_limits.request_tokens) {
+        await commenter.review_comment_reply(
+          pull_number,
+          topLevelComment,
+          'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.'
+        )
+        return
+      }
+
       // pack file content and diff into the inputs if they are not too long
       if (file_content.length > 0) {
         // count occurrences of $file_content in prompt
         const file_content_count =
-          prompts.summarize_file_diff.split('$file_content').length - 1
+          prompts.comment.split('$file_content').length - 1
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
           file_content_count > 0 &&
@@ -157,13 +187,8 @@ export const handleReviewComment = async (
       }
 
       if (file_diff.length > 0) {
-        // use file diff if no diff was found in the comment
-        if (inputs.diff.length === 0) {
-          inputs.diff = file_diff
-        }
         // count occurrences of $file_diff in prompt
-        const file_diff_count =
-          prompts.summarize_file_diff.split('$file_diff').length - 1
+        const file_diff_count = prompts.comment.split('$file_diff').length - 1
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (
           file_diff_count > 0 &&
@@ -177,15 +202,7 @@ export const handleReviewComment = async (
 
       const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {})
 
-      if (topLevelComment) {
-        await commenter.review_comment_reply(
-          pull_number,
-          topLevelComment,
-          reply
-        )
-      } else {
-        core.warning(`Failed to find the top-level comment to reply to`)
-      }
+      await commenter.review_comment_reply(pull_number, topLevelComment, reply)
     }
   } else {
     core.info(`Skipped: ${context.eventName} event is from the bot itself`)

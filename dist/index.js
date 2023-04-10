@@ -6120,6 +6120,10 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         inputs.diff = comment.diff_hunk;
         inputs.filename = comment.path;
         const { chain: comment_chain, topLevelComment } = await commenter.get_comment_chain(pull_number, comment);
+        if (!topLevelComment) {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
+            return;
+        }
         inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot
         if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
@@ -6166,6 +6170,17 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             catch (error) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file diff: ${error}, skipping.`);
             }
+            // use file diff if no diff was found in the comment
+            if (inputs.diff.length === 0) {
+                if (file_diff.length > 0) {
+                    inputs.diff = file_diff;
+                    file_diff = '';
+                }
+                else {
+                    await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff could not be found.');
+                    return;
+                }
+            }
             // get summary of the PR
             const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
             if (summary) {
@@ -6173,10 +6188,14 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             }
             // get tokens so far
             let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(prompts.render_comment(inputs));
+            if (tokens > options.heavy_token_limits.request_tokens) {
+                await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
+                return;
+            }
             // pack file content and diff into the inputs if they are not too long
             if (file_content.length > 0) {
                 // count occurrences of $file_content in prompt
-                const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
+                const file_content_count = prompts.comment.split('$file_content').length - 1;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_count > 0 &&
                     tokens + file_content_tokens * file_content_count <=
@@ -6186,12 +6205,8 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 }
             }
             if (file_diff.length > 0) {
-                // use file diff if no diff was found in the comment
-                if (inputs.diff.length === 0) {
-                    inputs.diff = file_diff;
-                }
                 // count occurrences of $file_diff in prompt
-                const file_diff_count = prompts.summarize_file_diff.split('$file_diff').length - 1;
+                const file_diff_count = prompts.comment.split('$file_diff').length - 1;
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_count > 0 &&
                     tokens + file_diff_tokens * file_diff_count <=
@@ -6201,12 +6216,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 }
             }
             const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
-            if (topLevelComment) {
-                await commenter.review_comment_reply(pull_number, topLevelComment, reply);
-            }
-            else {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
-            }
+            await commenter.review_comment_reply(pull_number, topLevelComment, reply);
         }
     }
     else {
@@ -6662,33 +6672,50 @@ ${summaries_failed.length > 0
         ins.filename = filename;
         // Pack instructions
         ins.patches += `
-Format for changes and review comments (if any) -
+Format for changes -
   ---new_hunk_for_review---
   <new content annotated with line numbers>
   ---old_hunk_for_context---
   <old content>
   ---comment_chains_for_context---
   <comment chains>
-  ---end_review_section---
+  ---end_change_section---
   ...
+
+Instructions -
+- Only respond in the below response format and nothing else. Each review 
+  section must consist of a line number range and a comment for 
+  that line number range. There's a separator between review sections. 
+- It's important that line number ranges for each review section must 
+  be within the line number range of a specific new hunk. i.e. 
+  <start_line_number> must belong to the same hunk as the 
+  <end_line_number>. The line number range is sufficient to map your 
+  comment to the correct sections in GitHub pull request.
+- Markdown format is preferred for review comment text. 
+- Fenced code blocks must be used for new content and replacement 
+  code/text snippets. Replacement snippets must be complete, 
+  correctly formatted and most importantly, map exactly to the line 
+  number ranges that need to be replaced inside the hunks. The line 
+  number ranges must not belong to different hunks. Do not annotate 
+  suggested content with line numbers inside the code blocks.
+- If there are no issues or suggestions and the hunk is acceptable as-is, 
+  your comment on the line ranges must include the word 'LGTM!'.
 
 Response format expected -
   <start_line_number>-<end_line_number>:
   <review comment>
-  <explanation of suggestion>
-  \`\`\`suggestion
-  <content that replaces everything between start_line_number and end_line_number>
-  \`\`\`
   ---
   <start_line_number>-<end_line_number>:
   <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review_comment>
-  <explanation of suggestion>
-  \`\`\`<language>
-  <new content suggestion>
+  <replacement code/text, if applicable>
+  \`\`\`suggestion
+  <code/text that replaces everything between start_line_number and end_line_number>
   \`\`\`
+  <new code, if applicable>
+  \`\`\`<language>
+  <new code snippet>
+  \`\`\`
+  ---
   ...
 
 Example response -
@@ -6704,28 +6731,8 @@ Example response -
   \`\`\`
   ---
 
-Instructions -
-- Your response must be in the above format. Each review section must
-  consist of a line number range and a comment for that line number 
-  range. There's a separator between review sections. Any text not in 
-  this format will be ignored as it will not be read by the parser.
-- It's important that line number ranges for each review section must 
-  be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must be part of the same hunk as the 
-  <end_line_number>, otherwise comment can't be posted.
-- Don't repeat the provided content, the line number range is enough 
-  to map your comment to the correct sections in GitHub.
-- Markdown format is preferred for review comment text. 
-- Fenced code blocks must be used for new content and replacement 
-  content suggestions. Replacement suggestions must be complete, 
-  correctly formatted and most importantly, map exactly to the line 
-  number ranges that need to be replaced inside the hunks. 
-  fenced code blocks. Do not annotate line numbers inside the suggestion
-  code blocks as review section has line number range.
-- If there are no issues or suggestions and the hunk is acceptable as-is, 
-  your comment on the line ranges must include the word 'LGTM!'.
 
-Hunks for review -
+Hunks for review are below -
 `;
         // calculate tokens based on inputs so far
         let tokens = tokenizer/* get_token_count */.u(prompts.render_review_file_diff(ins));
@@ -6740,7 +6747,7 @@ Hunks for review -
             patches_to_pack += 1;
         }
         // try packing file_content into this request
-        const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
+        const file_content_count = prompts.review_file_diff.split('$file_content').length - 1;
         const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
         if (file_content_count > 0 &&
             tokens + file_content_tokens * file_content_count <=
@@ -6792,7 +6799,7 @@ ${comment_chain}
 `;
             }
             ins.patches += `
----end_review_section---
+---end_change_section---
 `;
         }
         // perform review
