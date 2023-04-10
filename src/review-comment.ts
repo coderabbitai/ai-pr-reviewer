@@ -174,7 +174,7 @@ export const handleReviewComment = async (
       if (file_content.length > 0) {
         // count occurrences of $file_content in prompt
         const file_content_count =
-          prompts.summarize_file_diff.split('$file_content').length - 1
+          prompts.comment.split('$file_content').length - 1
         const file_content_tokens = tokenizer.get_token_count(file_content)
         if (
           file_content_count > 0 &&
@@ -188,8 +188,7 @@ export const handleReviewComment = async (
 
       if (file_diff.length > 0) {
         // count occurrences of $file_diff in prompt
-        const file_diff_count =
-          prompts.summarize_file_diff.split('$file_diff').length - 1
+        const file_diff_count = prompts.comment.split('$file_diff').length - 1
         const file_diff_tokens = tokenizer.get_token_count(file_diff)
         if (
           file_diff_count > 0 &&

@@ -6195,7 +6195,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             // pack file content and diff into the inputs if they are not too long
             if (file_content.length > 0) {
                 // count occurrences of $file_content in prompt
-                const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
+                const file_content_count = prompts.comment.split('$file_content').length - 1;
                 const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_count > 0 &&
                     tokens + file_content_tokens * file_content_count <=
@@ -6206,7 +6206,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             }
             if (file_diff.length > 0) {
                 // count occurrences of $file_diff in prompt
-                const file_diff_count = prompts.summarize_file_diff.split('$file_diff').length - 1;
+                const file_diff_count = prompts.comment.split('$file_diff').length - 1;
                 const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_count > 0 &&
                     tokens + file_diff_tokens * file_diff_count <=
@@ -6682,7 +6682,26 @@ Format for changes -
   ---end_change_section---
   ...
 
-Response format -
+Instructions -
+- Only respond in the below response format and nothing else. Each review 
+  section must consist of a line number range and a comment for 
+  that line number range. There's a separator between review sections. 
+- It's important that line number ranges for each review section must 
+  be within the line number range of a specific new hunk. i.e. 
+  <start_line_number> must belong to the same hunk as the 
+  <end_line_number>. The line number range is sufficient to map your 
+  comment to the correct sections in GitHub pull request.
+- Markdown format is preferred for review comment text. 
+- Fenced code blocks must be used for new content and replacement 
+  code/text snippets. Replacement snippets must be complete, 
+  correctly formatted and most importantly, map exactly to the line 
+  number ranges that need to be replaced inside the hunks. The line 
+  number ranges must not belong to different hunks. Do not annotate 
+  suggested content with line numbers inside the code blocks.
+- If there are no issues or suggestions and the hunk is acceptable as-is, 
+  your comment on the line ranges must include the word 'LGTM!'.
+
+Response format expected -
   <start_line_number>-<end_line_number>:
   <review comment>
   ---
@@ -6712,24 +6731,6 @@ Example response -
   \`\`\`
   ---
 
-Instructions -
-- Only respond in the above format and nothing else. Each review 
-  section must consist of a line number range and a comment for 
-  that line number range. There's a separator between review sections. 
-- It's important that line number ranges for each review section must 
-  be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must belong to the same hunk as the 
-  <end_line_number>. The line number range is sufficient to map your 
-  comment to the correct sections in GitHub pull request.
-- Markdown format is preferred for review comment text. 
-- Fenced code blocks must be used for new content and replacement 
-  code/text snippets. Replacement snippets must be complete, 
-  correctly formatted and most importantly, map exactly to the line 
-  number ranges that need to be replaced inside the hunks. The line 
-  number ranges must not belong to different hunks. Do not annotate 
-  suggested content with line numbers inside the code blocks.
-- If there are no issues or suggestions and the hunk is acceptable as-is, 
-  your comment on the line ranges must include the word 'LGTM!'.
 
 Hunks for review are below -
 `;
@@ -6746,7 +6747,7 @@ Hunks for review are below -
             patches_to_pack += 1;
         }
         // try packing file_content into this request
-        const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
+        const file_content_count = prompts.review_file_diff.split('$file_content').length - 1;
         const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
         if (file_content_count > 0 &&
             tokens + file_content_tokens * file_content_count <=
