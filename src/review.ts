@@ -366,17 +366,17 @@ ${
 
     // Pack instructions
     ins.patches += `
-Format for changes and review comments (if any) -
+Format for changes -
   ---new_hunk_for_review---
   <new content annotated with line numbers>
   ---old_hunk_for_context---
   <old content>
   ---comment_chains_for_context---
   <comment chains>
-  ---end_review_section---
+  ---end_change_section---
   ...
 
-Response format expected -
+Response format -
   <start_line_number>-<end_line_number>:
   <review comment>
   <explanation of suggestion>
@@ -409,27 +409,25 @@ Example response -
   ---
 
 Instructions -
-- Your response must be in the above format. Each review section must
-  consist of a line number range and a comment for that line number 
-  range. There's a separator between review sections. Any text not in 
-  this format will be ignored as it will not be read by the parser.
+- Only respond in the above format and nothing else. Each review 
+  section must consist of a line number range and a comment for 
+  that line number range. There's a separator between review sections. 
 - It's important that line number ranges for each review section must 
   be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must be part of the same hunk as the 
-  <end_line_number>, otherwise comment can't be posted.
-- Don't repeat the provided content, the line number range is enough 
-  to map your comment to the correct sections in GitHub.
+  <start_line_number> must belong to the same hunk as the 
+  <end_line_number>. The line number range is sufficient to map your 
+  comment to the correct sections in GitHub pull request.
 - Markdown format is preferred for review comment text. 
 - Fenced code blocks must be used for new content and replacement 
-  content suggestions. Replacement suggestions must be complete, 
+  code/text snippets. Replacement snippets must be complete, 
   correctly formatted and most importantly, map exactly to the line 
-  number ranges that need to be replaced inside the hunks. 
-  fenced code blocks. Do not annotate line numbers inside the suggestion
-  code blocks as review section has line number range.
+  number ranges that need to be replaced inside the hunks. The line 
+  number ranges must not belong to different hunks. Do not annotate 
+  suggested content with line numbers inside the code blocks.
 - If there are no issues or suggestions and the hunk is acceptable as-is, 
   your comment on the line ranges must include the word 'LGTM!'.
 
-Hunks for review -
+Hunks for review are below -
 `
 
     // calculate tokens based on inputs so far
@@ -515,7 +513,7 @@ ${comment_chain}
       }
 
       ins.patches += `
----end_review_section---
+---end_change_section---
 `
     }
     // perform review
