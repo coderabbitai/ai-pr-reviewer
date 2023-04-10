@@ -6201,6 +6201,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                     inputs.file_diff = file_diff;
                 }
             }
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`rendering: ${prompts.render_comment(inputs)}`);
             const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
             if (topLevelComment) {
                 await commenter.review_comment_reply(pull_number, topLevelComment, reply);

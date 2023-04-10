@@ -177,6 +177,8 @@ export const handleReviewComment = async (
         }
       }
 
+      core.info(`rendering: ${prompts.render_comment(inputs)}`)
+
       const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {})
 
       if (topLevelComment) {
