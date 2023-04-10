@@ -6481,12 +6481,10 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
                 continue;
             }
             const hunks_str = `
-\`\`\`new_hunk_for_review
+---new_hunk_for_review---
 ${hunks.new_hunk}
-\`\`\`
-\`\`\`old_hunk_for_context
+---old_hunk_for_context---
 ${hunks.old_hunk}
-\`\`\`
 `;
             patches.push([
                 patch_lines.new_hunk.start_line,
@@ -6665,16 +6663,13 @@ ${summaries_failed.length > 0
         // Pack instructions
         ins.patches += `
 Format for changes and review comments (if any) -
-  \`\`\`new_hunk_for_review
+  ---new_hunk_for_review---
   <new content annotated with line numbers>
-  \`\`\`
-  \`\`\`old_hunk_for_context
+  ---old_hunk_for_context---
   <old content>
-  \`\`\`
-  \`\`\`comment_chains_for_context
+  ---comment_chains_for_context---
   <comment chains>
-  \`\`\`
-  ---
+  ---end_review_section---
   ...
 
 Response format expected -
@@ -6792,13 +6787,12 @@ ${patch}
 `;
             if (comment_chain !== '') {
                 ins.patches += `
-\`\`\`comment_chains_for_review
+---comment_chains_for_review---
 ${comment_chain}
-\`\`\`
 `;
             }
             ins.patches += `
----
+---end_review_section---
 `;
         }
         // perform review
