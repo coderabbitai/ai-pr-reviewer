@@ -401,7 +401,7 @@ Response format expected -
   ---
   <start_line_number>-<end_line_number>:
   <review comment>
-  <suggestion, if applicable>
+  <replacement code/text, if applicable>
   \`\`\`suggestion
   <code/text that replaces everything between start_line_number and end_line_number>
   \`\`\`
