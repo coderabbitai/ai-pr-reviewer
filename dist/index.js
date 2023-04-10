@@ -6119,6 +6119,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = comment.diff_hunk;
         inputs.filename = comment.path;
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment: ${inputs.comment}`);
         const { chain: comment_chain, topLevelComment } = await commenter.get_comment_chain(pull_number, comment);
         inputs.comment_chain = comment_chain;
         // check whether this chain contains replies from the bot

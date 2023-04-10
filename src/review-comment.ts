@@ -74,6 +74,8 @@ export const handleReviewComment = async (
     inputs.diff = comment.diff_hunk
     inputs.filename = comment.path
 
+    core.info(`Comment: ${inputs.comment}`)
+
     const {chain: comment_chain, topLevelComment} =
       await commenter.get_comment_chain(pull_number, comment)
     inputs.comment_chain = comment_chain
