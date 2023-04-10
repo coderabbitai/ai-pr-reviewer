@@ -6711,6 +6711,9 @@ Response format expected -
   \`\`\`suggestion
   <code/text that replaces everything between start_line_number and end_line_number>
   \`\`\`
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
   <new code, if applicable>
   \`\`\`<language>
   <new code snippet>
@@ -6725,9 +6728,6 @@ Example response -
   6-6:
   \`\`\`suggestion
   print("Hello!")
-  \`\`\`
-  \`\`\`go
-  log.Info().Msgf("Example")
   \`\`\`
   ---
 
