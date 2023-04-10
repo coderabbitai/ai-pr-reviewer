@@ -134,6 +134,21 @@ export const handleReviewComment = async (
         core.warning(`Failed to get file diff: ${error}, skipping.`)
       }
 
+      // use file diff if no diff was found in the comment
+      if (inputs.diff.length === 0) {
+        if (file_diff.length > 0) {
+          inputs.diff = file_diff
+          file_diff = ''
+        } else {
+          await commenter.review_comment_reply(
+            pull_number,
+            topLevelComment,
+            'Cannot reply to this comment as diff could not be found.'
+          )
+          return
+        }
+      }
+
       // get summary of the PR
       const summary = await commenter.find_comment_with_tag(
         SUMMARIZE_TAG,
@@ -172,10 +187,6 @@ export const handleReviewComment = async (
       }
 
       if (file_diff.length > 0) {
-        // use file diff if no diff was found in the comment
-        if (inputs.diff.length === 0) {
-          inputs.diff = file_diff
-        }
         // count occurrences of $file_diff in prompt
         const file_diff_count =
           prompts.summarize_file_diff.split('$file_diff').length - 1
