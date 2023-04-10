@@ -146,14 +146,13 @@ export const handleReviewComment = async (
       // get tokens so far
       let tokens = tokenizer.get_token_count(prompts.render_comment(inputs))
 
-      // if tokens already exceed request limit, comment that the diff being
-      // commented is too large and exceeds the token limit
       if (tokens > options.heavy_token_limits.request_tokens) {
         await commenter.review_comment_reply(
           pull_number,
           topLevelComment,
           'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.'
         )
+        return
       }
 
       // pack file content and diff into the inputs if they are not too long
