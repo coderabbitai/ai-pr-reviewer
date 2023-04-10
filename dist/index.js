@@ -6675,20 +6675,18 @@ Format for changes -
 Response format -
   <start_line_number>-<end_line_number>:
   <review comment>
-  <explanation of suggestion>
-  \`\`\`suggestion
-  <content that replaces everything between start_line_number and end_line_number>
-  \`\`\`
   ---
   <start_line_number>-<end_line_number>:
   <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review_comment>
-  <explanation of suggestion>
-  \`\`\`<language>
-  <new content suggestion>
+  <suggestion, if applicable>
+  \`\`\`suggestion
+  <code/text that replaces everything between start_line_number and end_line_number>
   \`\`\`
+  <new code, if applicable>
+  \`\`\`<language>
+  <new code snippet>
+  \`\`\`
+  ---
   ...
 
 Example response -
