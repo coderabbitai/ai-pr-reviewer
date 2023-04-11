@@ -374,12 +374,12 @@ ${
 Format for changes:
   ---new_hunk_for_review---
   \`\`\`
-  <new content annotated with line numbers>
+  <new hunk annotated with line numbers>
   \`\`\`
 
   ---old_hunk_for_context---
   \`\`\`
-  <old content>
+  <old hunk that was replaced by new hunk>
   \`\`\`
 
   ---comment_chains_for_context---
