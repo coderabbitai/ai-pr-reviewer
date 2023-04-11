@@ -4832,7 +4832,6 @@ const minimatch = (p, pattern, options = {}) => {
     }
     return new Minimatch(pattern, options).match(p);
 };
-/* harmony default export */ const mjs = ((/* unused pure expression or super */ null && (minimatch)));
 // Optimized checking for the most common glob patterns.
 const starDotExtRE = /^\*+([^+@!?\*\[\(]*)$/;
 const starDotExtTest = (ext) => (f) => !f.startsWith('.') && f.endsWith(ext);
@@ -6492,9 +6491,14 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             }
             const hunks_str = `
 ---new_hunk_for_review---
+\`\`\`
 ${hunks.new_hunk}
+\`\`\`
+
 ---old_hunk_for_context---
+\`\`\`
 ${hunks.old_hunk}
+\`\`\`
 `;
             patches.push([
                 patch_lines.new_hunk.start_line,
@@ -6674,11 +6678,20 @@ ${summaries_failed.length > 0
         ins.patches += `
 Format for changes -
   ---new_hunk_for_review---
+  \`\`\`
   <new content annotated with line numbers>
+  \`\`\`
+
   ---old_hunk_for_context---
+  \`\`\`
   <old content>
+  \`\`\`
+
   ---comment_chains_for_context---
+  \`\`\`
   <comment chains>
+  \`\`\`
+
   ---end_change_section---
   ...
 
@@ -6795,7 +6808,9 @@ ${patch}
             if (comment_chain !== '') {
                 ins.patches += `
 ---comment_chains_for_review---
+\`\`\`
 ${comment_chain}
+\`\`\`
 `;
             }
             ins.patches += `
