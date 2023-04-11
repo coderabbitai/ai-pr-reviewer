@@ -371,15 +371,15 @@ ${
 
     // Pack instructions
     ins.patches += `
-Format for changes -
+Format for changes:
   ---new_hunk_for_review---
   \`\`\`
-  <new content annotated with line numbers>
+  <new hunk annotated with line numbers>
   \`\`\`
 
   ---old_hunk_for_context---
   \`\`\`
-  <old content>
+  <old hunk that was replaced by new hunk>
   \`\`\`
 
   ---comment_chains_for_context---
@@ -390,22 +390,36 @@ Format for changes -
   ---end_change_section---
   ...
 
-Instructions -
+Instructions:
 - Only respond in the below response format and nothing else. Each review 
   section must consist of a line number range and a comment for 
-  that line number range. There's a separator between review sections. 
+  that line number range. Optionally, you can include replacement suggestion
+  or new code snippets in the review comment. There's a separator between 
+  review sections. 
 - It's important that line number ranges for each review section must 
   be within the line number range of a specific new hunk. i.e. 
   <start_line_number> must belong to the same hunk as the 
-  <end_line_number>. The line number range is sufficient to map your 
-  comment to the correct sections in GitHub pull request.
+  <end_line_number>. 
+- Do not repeat back the code being reviewed as the the line number range is 
+  sufficient to map your comment to the correct location in GitHub.
 - Markdown format is preferred for review comment text. 
 - Fenced code blocks must be used for new content and replacement 
-  code/text snippets. Replacement snippets must be complete, 
-  correctly formatted and most importantly, map exactly to the line 
-  number ranges that need to be replaced inside the hunks. The line 
-  number ranges must not belong to different hunks. Do not annotate 
-  suggested content with line numbers inside the code blocks.
+  code/text snippets. 
+- Replacement code/text snippets must be complete and correctly 
+  formatted. The line number range must map exactly to the line 
+  number range that need to be replaced within a new_hunk_for_review. 
+  E.g. if you are suggesting to replace 2 specific lines in a 
+  new_hunk_for_review with 10 lines of code, then the line number 
+  range must be exactly the 2 lines that need to be replaced.
+  The replacement code/text snippet must use \`suggestion\` as the 
+  language identifier in the fenced code block. Replacement code 
+  suggestions can be directly committed by the user from the GitHub 
+  UI, replacing the code within new_hunk_for_review, that is why
+  alignment of line number ranges is important.
+- New code/text snippets must use the correct language identifier
+  in the fenced code block. You can use such snippets to suggest
+  code that can be added in some other file, e.g. test cases.
+- Do not annotate snippets with line numbers inside the code blocks.
 - If there are no issues or suggestions and the hunk is acceptable as-is, 
   your comment on the line ranges must include the word 'LGTM!'.
 
@@ -415,32 +429,34 @@ Response format expected -
   ---
   <start_line_number>-<end_line_number>:
   <review comment>
-  <replacement code/text, if applicable>
   \`\`\`suggestion
   <code/text that replaces everything between start_line_number and end_line_number>
   \`\`\`
   ---
   <start_line_number>-<end_line_number>:
   <review comment>
-  <new code, if applicable>
   \`\`\`<language>
   <new code snippet>
   \`\`\`
   ---
   ...
 
-Example response -
+Example response:
   1-5:
   LGTM!
   ---
   6-6:
+  replace the code on line 6 with the following
   \`\`\`suggestion
-  print("Hello!")
+  for i in range(10):
+    print("Hello!")
+    print("World!")
+  exit(0)
   \`\`\`
   ---
 
 
-Hunks for review are below -
+Hunks for review are below:
 `
 
     // calculate tokens based on inputs so far
