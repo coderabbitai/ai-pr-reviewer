@@ -132,9 +132,14 @@ export const codeReview = async (
         }
         const hunks_str = `
 ---new_hunk_for_review---
+\`\`\`
 ${hunks.new_hunk}
+\`\`\`
+
 ---old_hunk_for_context---
+\`\`\`
 ${hunks.old_hunk}
+\`\`\`
 `
         patches.push([
           patch_lines.new_hunk.start_line,
@@ -368,11 +373,20 @@ ${
     ins.patches += `
 Format for changes -
   ---new_hunk_for_review---
+  \`\`\`
   <new content annotated with line numbers>
+  \`\`\`
+
   ---old_hunk_for_context---
+  \`\`\`
   <old content>
+  \`\`\`
+
   ---comment_chains_for_context---
+  \`\`\`
   <comment chains>
+  \`\`\`
+
   ---end_change_section---
   ...
 
@@ -507,7 +521,9 @@ ${patch}
       if (comment_chain !== '') {
         ins.patches += `
 ---comment_chains_for_review---
+\`\`\`
 ${comment_chain}
+\`\`\`
 `
       }
 

@@ -90,7 +90,7 @@ inputs:
       You are `@openai` (aka `github-actions[bot]`), a language model 
       trained by OpenAI. Your purpose is to act as a highly experienced 
       software engineer and provide a thorough review of the code hunks
-      and suggest code snippets to improve key areas such as -
+      and suggest code snippets to improve key areas such as:
         - Logic
         - Security
         - Performance
@@ -110,20 +110,20 @@ inputs:
     required: false
     description: 'The prompt for file'
     default: |
-      GitHub pull request title - 
+      GitHub pull request title: 
       `$title` 
 
-      Description -
+      Description:
       ```
       $description
       ```
 
-      Content of file `$filename` -
+      Content of file `$filename`:
       ```
       $file_content
       ```
 
-      Diff -
+      Diff:
       ```diff
       $file_diff
       ```
@@ -133,14 +133,13 @@ inputs:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      Here is the summary of changes you have generated for each file -
+      Here is the summary of changes you have generated for each file:
       ```
       $summary
       ```
 
       Provide your final response in the `markdown` format with 
-      the following content -
-        - Thank the user for letting you participate in the code review. 
+      the following content:
         - High-level summary (comment on the overall change instead of 
           specific files within 80 words)
         - Table of files and their summaries. You can group files with 
@@ -169,25 +168,25 @@ inputs:
     required: false
     description: 'The prompt for each file'
     default: |
-      GitHub pull request title - 
+      GitHub pull request title: 
       `$title` 
 
-      Description -
+      Description:
       ```
       $description
       ```
 
-      OpenAI generated summary of overall changes -
+      OpenAI generated summary of overall changes:
       ```
       $summary
       ```
 
-      Content of file `$filename` for context -
+      Content of file `$filename` for context:
       ```
       $file_content
       ```
 
-      Changes for review -
+      Changes for review:
       $patches
   comment:
     required: false
@@ -197,38 +196,38 @@ inputs:
       diff hunk on file `$filename`. I would like you to follow 
       the instructions in that comment. 
 
-      Pull request title -
+      Pull request title:
       `$title`
 
-      Description-
+      Description:
       ```
       $description
       ```
 
-      OpenAI generated summary -
+      OpenAI generated summary:
       ```
       $summary
       ```
 
-      Content of file -
+      Content of file:
       ```
       $file_content
       ```
 
-      Entire diff -
+      Entire diff:
       ```diff
       $file_diff
       ```
 
-      Diff being commented on -
+      Diff being commented on:
       ```diff
       $diff
       ```
 
-      The format of a comment in the chain is -
+      The format of a comment in the chain is:
       `user: comment`
 
-      Comment chain (including the new comment) -
+      Comment chain (including the new comment):
       ```
       $comment_chain
       ```
@@ -243,7 +242,7 @@ inputs:
       In your reply, please make sure to begin the reply by tagging the user 
       with "@user".
 
-      The comment/request that you need to directly reply to -
+      The comment/request that you need to directly reply to:
       ```
       $comment
       ```
