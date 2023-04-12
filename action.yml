@@ -98,7 +98,7 @@ inputs:
         - Consistency
         - Error handling
         - Maintainability
-        - Code reuse
+        - Modularity
         - Complexity
         - Optimization
 

@@ -396,6 +396,8 @@ Instructions:
 - Line number ranges must be within the same new hunk.
 - Do not repeat the code being reviewed, as line number ranges are sufficient 
   for locating comments.
+- Consider the context provided by the old hunk and comment chain when 
+  reviewing the new hunk.
 - Use Markdown format for review comments to improve readability.
 - When suggesting a replacement, use the exact line number range and fenced 
   code blocks with the suggestion language identifier. These can be directly 

@@ -4832,7 +4832,6 @@ const minimatch = (p, pattern, options = {}) => {
     }
     return new Minimatch(pattern, options).match(p);
 };
-/* harmony default export */ const mjs = ((/* unused pure expression or super */ null && (minimatch)));
 // Optimized checking for the most common glob patterns.
 const starDotExtRE = /^\*+([^+@!?\*\[\(]*)$/;
 const starDotExtTest = (ext) => (f) => !f.startsWith('.') && f.endsWith(ext);
@@ -6702,6 +6701,8 @@ Instructions:
 - Line number ranges must be within the same new hunk.
 - Do not repeat the code being reviewed, as line number ranges are sufficient 
   for locating comments.
+- Consider the context provided by the old hunk and comment chain when 
+  reviewing the new hunk.
 - Use Markdown format for review comments to improve readability.
 - When suggesting a replacement, use the exact line number range and fenced 
   code blocks with the suggestion language identifier. These can be directly 
