@@ -502,8 +502,8 @@ Instructions for you:
   code/text snippets. 
 - If needed, provide a replacement suggestion using fenced code blocks 
   with the \`suggestion\` as the language identifier. The line number range 
-  in the review section must map exactly to the line number range that need 
-  to be replaced within a new_hunk_for_review. These snippets will be 
+  in the review section must map exactly to the line number range (inclusive) 
+  that need to be replaced within a new_hunk_for_review. These snippets will be 
   directly committed by the user using the GitHub UI. For instance, 
   if 2 lines of code in a hunk need to be replaced with 15 lines of code, 
   the line number range must be those exact 2 lines. If an entire hunk need 
