@@ -522,7 +522,6 @@ Instructions for you:
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases.
 - Do not annotate code snippets with line numbers inside the code blocks.
-  and nothing else.
 - If there are no issues in a hunk, comment "LGTM!" for the respective line range.
 - Review your comments and line number ranges at least 3 times before sending 
   the final response to ensure accuracy of line number ranges and replacement
