@@ -6695,86 +6695,12 @@ Format for changes:
   ---end_change_section---
   ...
 
-The above format for changes consistes of multiple change sections. 
+The above format for changes consists of multiple change sections. 
 Each change section consists of a new hunk (annotated with line numbers), 
 an old hunk (that was replaced with new hunk) and optionally, comment 
 chains for context.
 
-Hunks for review are below:
-`;
-        // calculate tokens based on inputs so far
-        let tokens = tokenizer/* get_token_count */.u(prompts.render_review_file_diff(ins));
-        // loop to calculate total patch tokens
-        let patches_to_pack = 0;
-        for (const [, , patch] of patches) {
-            const patch_tokens = tokenizer/* get_token_count */.u(patch);
-            if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
-                break;
-            }
-            tokens += patch_tokens;
-            patches_to_pack += 1;
-        }
-        // try packing file_content into this request
-        const file_content_count = prompts.review_file_diff.split('$file_content').length - 1;
-        const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-        if (file_content_count > 0 &&
-            tokens + file_content_tokens * file_content_count <=
-                options.heavy_token_limits.request_tokens) {
-            ins.file_content = file_content;
-            tokens += file_content_tokens * file_content_count;
-        }
-        let patches_packed = 0;
-        for (const [start_line, end_line, patch] of patches) {
-            if (!context.payload.pull_request) {
-                core.warning('No pull request found, skipping.');
-                continue;
-            }
-            // see if we can pack more patches into this request
-            if (patches_packed >= patches_to_pack) {
-                core.info(`unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`);
-                break;
-            }
-            patches_packed += 1;
-            let comment_chain = '';
-            try {
-                const all_chains = await commenter.get_comment_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
-                if (all_chains.length > 0) {
-                    comment_chain = all_chains;
-                }
-                else {
-                    comment_chain = '';
-                }
-            }
-            catch (e) {
-                core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
-            }
-            // try packing comment_chain into this request
-            const comment_chain_tokens = tokenizer/* get_token_count */.u(comment_chain);
-            if (tokens + comment_chain_tokens >
-                options.heavy_token_limits.request_tokens) {
-                comment_chain = '';
-            }
-            else {
-                tokens += comment_chain_tokens;
-            }
-            ins.patches += `
-${patch}
-`;
-            if (comment_chain !== '') {
-                ins.patches += `
----comment_chains_for_review---
-\`\`\`
-${comment_chain}
-\`\`\`
-`;
-            }
-            ins.patches += `
----end_change_section---
-`;
-        }
-        // add instructions
-        ins.patches += `
-Instructions for you:
+Important instructions:
 - Your task is to do a line by line review of new hunks and point out 
   substantive issues in those line number ranges. When commenting, 
   you will need to provide the exact line number range (inclusive) 
@@ -6860,7 +6786,79 @@ Example response:
   5-6:
   LGTM!
   ---
+
+Changes for review are below:
 `;
+        // calculate tokens based on inputs so far
+        let tokens = tokenizer/* get_token_count */.u(prompts.render_review_file_diff(ins));
+        // loop to calculate total patch tokens
+        let patches_to_pack = 0;
+        for (const [, , patch] of patches) {
+            const patch_tokens = tokenizer/* get_token_count */.u(patch);
+            if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
+                break;
+            }
+            tokens += patch_tokens;
+            patches_to_pack += 1;
+        }
+        // try packing file_content into this request
+        const file_content_count = prompts.review_file_diff.split('$file_content').length - 1;
+        const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
+        if (file_content_count > 0 &&
+            tokens + file_content_tokens * file_content_count <=
+                options.heavy_token_limits.request_tokens) {
+            ins.file_content = file_content;
+            tokens += file_content_tokens * file_content_count;
+        }
+        let patches_packed = 0;
+        for (const [start_line, end_line, patch] of patches) {
+            if (!context.payload.pull_request) {
+                core.warning('No pull request found, skipping.');
+                continue;
+            }
+            // see if we can pack more patches into this request
+            if (patches_packed >= patches_to_pack) {
+                core.info(`unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`);
+                break;
+            }
+            patches_packed += 1;
+            let comment_chain = '';
+            try {
+                const all_chains = await commenter.get_comment_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
+                if (all_chains.length > 0) {
+                    comment_chain = all_chains;
+                }
+                else {
+                    comment_chain = '';
+                }
+            }
+            catch (e) {
+                core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
+            }
+            // try packing comment_chain into this request
+            const comment_chain_tokens = tokenizer/* get_token_count */.u(comment_chain);
+            if (tokens + comment_chain_tokens >
+                options.heavy_token_limits.request_tokens) {
+                comment_chain = '';
+            }
+            else {
+                tokens += comment_chain_tokens;
+            }
+            ins.patches += `
+${patch}
+`;
+            if (comment_chain !== '') {
+                ins.patches += `
+---comment_chains_for_review---
+\`\`\`
+${comment_chain}
+\`\`\`
+`;
+            }
+            ins.patches += `
+---end_change_section---
+`;
+        }
         // perform review
         try {
             const [response] = await heavyBot.chat(prompts.render_review_file_diff(ins), {});
