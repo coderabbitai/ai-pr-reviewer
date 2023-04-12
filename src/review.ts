@@ -379,7 +379,7 @@ Format for changes:
 
   ---old_hunk_for_context---
   \`\`\`
-  <old hunk that was replaced by new hunk>
+  <old hunk that was replaced by the new hunk above>
   \`\`\`
 
   ---comment_chains_for_context---
@@ -397,12 +397,12 @@ chains for context.
 
 Important instructions:
 - Your task is to do a line by line review of new hunks and point out 
-  substantive issues in those line number ranges. When commenting, 
-  you will need to provide the exact line number range (inclusive) 
-  for each issue that is detected.
+  substantive issues in those line number ranges. For each issue you 
+  identify, please provide the exact line number range (inclusive) where 
+  the issue occurs.
 - Only respond in the below response format (consisting of review
   sections) and nothing else. Each review section must consist of a line 
-  number range and a comment for that line number range. Optionally, 
+  number range and a review comment for that line number range. Optionally, 
   you can include a single replacement suggestion snippet and/or multiple 
   new code snippets in the review comment. There's a separator between review 
   sections.
@@ -416,11 +416,12 @@ Important instructions:
 - Use Markdown format for review comment text.
 - Fenced code blocks must be used for new content and replacement 
   code/text snippets. 
-- If needed, provide a replacement suggestion using fenced code blocks 
-  with the \`suggestion\` as the language identifier. The line number range 
+- If you have a suggestion for replacing the code between the specified 
+  line number range, please include it in a fenced code block with the 
+  \`suggestion\` as the language identifier. The line number range 
   in the review section must map exactly to the line number range (inclusive) 
-  that need to be replaced within a new_hunk_for_review.
-  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
+  that need to be replaced within a new_hunk_for_review. For instance, if 2 
+  lines of code in a hunk need to be replaced with 15 lines 
   of code, the line number range must be those exact 2 lines. If an entire hunk 
   need to be replaced with new code, then the line number range must be the 
   entire hunk. Replacement suggestions should be complete units that can be
