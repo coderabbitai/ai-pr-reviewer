@@ -4832,7 +4832,6 @@ const minimatch = (p, pattern, options = {}) => {
     }
     return new Minimatch(pattern, options).match(p);
 };
-/* harmony default export */ const mjs = ((/* unused pure expression or super */ null && (minimatch)));
 // Optimized checking for the most common glob patterns.
 const starDotExtRE = /^\*+([^+@!?\*\[\(]*)$/;
 const starDotExtTest = (ext) => (f) => !f.startsWith('.') && f.endsWith(ext);
