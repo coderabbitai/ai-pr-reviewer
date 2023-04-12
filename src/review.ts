@@ -497,8 +497,8 @@ Instructions for you:
 - Only respond in the below response format (consisting of review
   sections) and nothing else. Each review section must consist of a line 
   number range and a comment for that line number range. Optionally, 
-  you can include a single replacement suggestion snippet or new code 
-  snippets in the review comment. There's a separator between review 
+  you can include a single replacement suggestion snippet and/or multiple 
+  new code snippets in the review comment. There's a separator between review 
   sections.
 - It's important that line number ranges for each review section must 
   be within the line number range of a specific new hunk. i.e. 
@@ -517,15 +517,19 @@ Instructions for you:
   For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
   of code, the line number range must be those exact 2 lines. If an entire hunk 
   need to be replaced with new code, then the line number range must be the 
-  entire hunk. 
+  entire hunk. Replacement suggestions should be complete units that can be
+  directly committed by the user in the GitHub UI.
 - Replacement code/text snippets must be complete and correctly 
   formatted. Each replacement suggestion must be provided as a separate review 
   section with relevant line number ranges.  
 - If needed, suggest new code using the correct language identifier in the 
   fenced code blocks. These snippets may be added to a different file, such 
-  as test cases.
+  as test cases. Multiple new code snippets are allowed within a single 
+  review section.
 - Do not annotate code snippets with line numbers inside the code blocks.
-- If there are no issues in a hunk, comment "LGTM!" for the respective line range.
+- If there are no substantive issues detected at a line range, simply 
+  comment "LGTM!" for the respective line range in a review section and 
+  avoid additional commentary/compliments.
 - Review your comments and line number ranges at least 3 times before sending 
   the final response to ensure accuracy of line number ranges and replacement
   snippets.
