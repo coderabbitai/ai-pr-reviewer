@@ -6779,7 +6779,7 @@ Instructions for you:
   be within the line number range of a specific new hunk. i.e. 
   <start_line_number> must belong to the same hunk as the 
   <end_line_number>. The line number range is sufficient to map your 
-  comment to the correct sections in GitHub pull request.
+  comment to the code changes in GitHub pull request.
 - Consider the context provided by the old hunk and associated comment 
   chain when reviewing the new hunk.
 - Use Markdown format for review comment text.
