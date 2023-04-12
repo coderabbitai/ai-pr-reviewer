@@ -485,8 +485,8 @@ ${comment_chain}
     // add instructions
     ins.patches += `
 Instructions for you:
-- Only respond in the below response format consisting of multiple review
-  sections and nothing else. Each review section must consist of a line 
+- Only respond in the below response format (consisting of review
+  sections) and nothing else. Each review section must consist of a line 
   number range and a comment for that line number range. Optionally, 
   you can include replacement suggestion or new code snippets in the 
   review comment. There's a separator between review sections.
