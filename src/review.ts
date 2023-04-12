@@ -485,11 +485,11 @@ ${comment_chain}
     // add instructions
     ins.patches += `
 Instructions for you:
-- Only respond in the below response format and nothing else. Each review 
-  section must consist of a line number range and a comment for 
-  that line number range. Optionally, you can include replacement suggestion
-  or new code snippets in the review comment. There's a separator between 
-  review sections.
+- Only respond in the below response format consisting of multiple review
+  sections and nothing else. Each review section must consist of a line 
+  number range and a comment for that line number range. Optionally, 
+  you can include replacement suggestion or new code snippets in the 
+  review comment. There's a separator between review sections.
 - It's important that line number ranges for each review section must 
   be within the line number range of a specific new hunk. i.e. 
   <start_line_number> must belong to the same hunk as the 
@@ -500,13 +500,15 @@ Instructions for you:
 - Use Markdown format for review comment text.
 - Fenced code blocks must be used for new content and replacement 
   code/text snippets. 
-- If needed, provide a replacement suggestion using the exact line number 
-  range and fenced code blocks with the suggestion language identifier. 
-  These can be directly committed by the user in the GitHub UI. Replacement 
-  code/text snippets must be complete and correctly formatted. For instance, 
+- If needed, provide a replacement suggestion using fenced code blocks 
+  with the \`suggestion\` as the language identifier. The line number range 
+  in the review section must map exactly to the line number range that need 
+  to be replaced within a new_hunk_for_review. These snippets will be 
+  directly committed by the user using the GitHub UI. For instance, 
   if 2 lines of code in a hunk need to be replaced with 15 lines of code, 
-  the line number range must be those exact 2 lines. If an entire hunk need to
-  be replaced with new code, then the line number range must be the entire hunk.
+  the line number range must be those exact 2 lines. If an entire hunk need 
+  to be replaced with new code, then the line number range must be the entire 
+  hunk. Replacement code/text snippets must be complete and correctly formatted. 
 - If needed, suggest new code using the correct language identifier in the 
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases.
