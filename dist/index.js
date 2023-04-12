@@ -6770,13 +6770,13 @@ ${comment_chain}
         // add instructions
         ins.patches += `
 Instructions for you:
-- Respond using the below specified format, which includes a line number 
-  range and a review comment for each section.
+- Respond using the below specified format and nothing else. The format 
+  includes a line number range and a review comment for each section.
 - Line number ranges must be within the same new hunk and are sufficient 
   for mapping comments to code sections in GitHub.
 - Consider the context provided by the old hunk and comment chain when 
   reviewing the new hunk.
-- Use Markdown format for review comments to improve readability.
+- Use Markdown format for review comment text.
 - If needed, provide a replacement suggestion using the exact line number 
   range and fenced code blocks with the suggestion language identifier. 
   These can be directly committed by the user in the GitHub UI. Replacement 
@@ -6787,7 +6787,8 @@ Instructions for you:
 - If needed, suggest new code using the correct language identifier in fenced 
   code blocks. These snippets may be added to a different file, such as test cases.
 - Do not annotate code snippets with line numbers inside the code blocks.
-- If there are no issues with a hunk, comment "LGTM!" for the respective line range.
+- In your response, focus only on pointing out substantive issues in the hunks.
+- If there are no issues in a hunk, comment "LGTM!" for the respective line range.
 - Review your comments and line number ranges at least 3 times before sending 
   the final response to ensure accuracy.
 
