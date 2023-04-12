@@ -485,16 +485,21 @@ ${comment_chain}
     // add instructions
     ins.patches += `
 Instructions for you:
-- Respond using the below specified format and nothing else. The format 
-  includes a line number range and a review comment for each section.
+- Only respond in the below response format and nothing else. Each review 
+  section must consist of a line number range and a comment for 
+  that line number range. Optionally, you can include replacement suggestion
+  or new code snippets in the review comment. There's a separator between 
+  review sections.
 - It's important that line number ranges for each review section must 
   be within the line number range of a specific new hunk. i.e. 
   <start_line_number> must belong to the same hunk as the 
   <end_line_number>. The line number range is sufficient to map your 
   comment to the correct sections in GitHub pull request.
-- Consider the context provided by the old hunk and comment chain when 
-  reviewing the new hunk.
+- Consider the context provided by the old hunk and associated comment 
+  chain when reviewing the new hunk.
 - Use Markdown format for review comment text.
+- Fenced code blocks must be used for new content and replacement 
+  code/text snippets. 
 - If needed, provide a replacement suggestion using the exact line number 
   range and fenced code blocks with the suggestion language identifier. 
   These can be directly committed by the user in the GitHub UI. Replacement 
@@ -502,13 +507,16 @@ Instructions for you:
   if 2 lines of code in a hunk need to be replaced with 15 lines of code, 
   the line number range must be those exact 2 lines. If an entire hunk need to
   be replaced with new code, then the line number range must be the entire hunk.
-- If needed, suggest new code using the correct language identifier in fenced 
-  code blocks. These snippets may be added to a different file, such as test cases.
+- If needed, suggest new code using the correct language identifier in the 
+  fenced code blocks. These snippets may be added to a different file, such 
+  as test cases.
 - Do not annotate code snippets with line numbers inside the code blocks.
-- In your response, focus only on pointing out substantive issues in the hunks.
+- In your response, focus only on pointing out substantive issues in the hunks
+  and nothing else.
 - If there are no issues in a hunk, comment "LGTM!" for the respective line range.
 - Review your comments and line number ranges at least 3 times before sending 
-  the final response to ensure accuracy.
+  the final response to ensure accuracy of line number ranges and replacement
+  snippets.
 
 Response format expected:
   <start_line_number>-<end_line_number>:
