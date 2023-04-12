@@ -6695,68 +6695,6 @@ Format for changes:
   ---end_change_section---
   ...
 
-Instructions:
-- Respond using the specified format, which includes a line number range and 
-  a review comment for each section.
-- Line number ranges must be within the same new hunk.
-- Do not repeat the code being reviewed, as line number ranges are sufficient 
-  for locating comments.
-- Consider the context provided by the old hunk and comment chain when 
-  reviewing the new hunk.
-- Use Markdown format for review comments to improve readability.
-- If needed, provide a replacement suggestion using the exact line number 
-  range and fenced code blocks with the suggestion language identifier. 
-  These can be directly committed by the user in the GitHub UI. Replacement 
-  code/text snippets must be complete and correctly formatted. 
-- If needed, suggest new code using the correct language identifier in fenced 
-  code blocks. These snippets may be added to a different file, such as test cases.
-- Do not annotate code snippets with line numbers inside the code blocks.
-- If there are no issues with a hunk, comment "LGTM!" for the respective line range.
-- Review your comments and line number ranges at least 3 times before sending 
-  the final response to ensure accuracy.
-
-Response format expected:
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`suggestion
-  <code/text that replaces everything between start_line_number and end_line_number>
-  \`\`\`
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`<language>
-  <new code snippet>
-  \`\`\`
-  ---
-  ...
-
-Example request:
-  ---new_hunk_for_review---
-  1: def add(x, y):
-  2:     z = x+y
-  3:     retrn z
-  4:
-  5: def multiply(x, y):
-  6:     return x * y
-  
-  ---old_hunk_for_context---
-  def add(x, y):
-      return x + y
-
-Example response:
-  3-3:
-  There's a typo in the return statement.
-  \`\`\`suggestion
-      return z
-  \`\`\`
-  ---
-  5-6:
-  LGTM!
-  ---
-
 Hunks for review are below:
 `;
         // calculate tokens based on inputs so far
@@ -6829,6 +6767,72 @@ ${comment_chain}
 ---end_change_section---
 `;
         }
+        // add instructions
+        ins.patches += `
+Instructions for you:
+- Respond using the below specified format, which includes a line number 
+  range and a review comment for each section.
+- Line number ranges must be within the same new hunk and are sufficient 
+  for mapping comments to code sections in GitHub.
+- Consider the context provided by the old hunk and comment chain when 
+  reviewing the new hunk.
+- Use Markdown format for review comments to improve readability.
+- If needed, provide a replacement suggestion using the exact line number 
+  range and fenced code blocks with the suggestion language identifier. 
+  These can be directly committed by the user in the GitHub UI. Replacement 
+  code/text snippets must be complete and correctly formatted. For instance, 
+  if 2 lines of code in a hunk need to be replaced with 15 lines of code, 
+  the line number range must be those exact 2 lines. If an entire hunk need to
+  be replaced with new code, then the line number range must be the entire hunk.
+- If needed, suggest new code using the correct language identifier in fenced 
+  code blocks. These snippets may be added to a different file, such as test cases.
+- Do not annotate code snippets with line numbers inside the code blocks.
+- If there are no issues with a hunk, comment "LGTM!" for the respective line range.
+- Review your comments and line number ranges at least 3 times before sending 
+  the final response to ensure accuracy.
+
+Response format expected:
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  \`\`\`suggestion
+  <code/text that replaces everything between start_line_number and end_line_number>
+  \`\`\`
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  \`\`\`<language>
+  <new code snippet>
+  \`\`\`
+  ---
+  ...
+
+Example request:
+  ---new_hunk_for_review---
+  1: def add(x, y):
+  2:     z = x+y
+  3:     retrn z
+  4:
+  5: def multiply(x, y):
+  6:     return x * y
+  
+  ---old_hunk_for_context---
+  def add(x, y):
+      return x + y
+
+Example response:
+  3-3:
+  There's a typo in the return statement.
+  \`\`\`suggestion
+      return z
+  \`\`\`
+  ---
+  5-6:
+  LGTM!
+  ---
+`;
         // perform review
         try {
             const [response] = await heavyBot.chat(prompts.render_review_file_diff(ins), {});

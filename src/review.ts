@@ -481,6 +481,7 @@ ${comment_chain}
 ---end_change_section---
 `
     }
+
     // add instructions
     ins.patches += `
 Instructions for you:
