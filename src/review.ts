@@ -487,8 +487,11 @@ ${comment_chain}
 Instructions for you:
 - Respond using the below specified format and nothing else. The format 
   includes a line number range and a review comment for each section.
-- Line number ranges must be within the same new hunk and are sufficient 
-  for mapping comments to code sections in GitHub.
+- It's important that line number ranges for each review section must 
+  be within the line number range of a specific new hunk. i.e. 
+  <start_line_number> must belong to the same hunk as the 
+  <end_line_number>. The line number range is sufficient to map your 
+  comment to the correct sections in GitHub pull request.
 - Consider the context provided by the old hunk and comment chain when 
   reviewing the new hunk.
 - Use Markdown format for review comment text.
