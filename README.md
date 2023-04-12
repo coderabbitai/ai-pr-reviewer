@@ -93,6 +93,16 @@ request.
   [here](https://platform.openai.com/account/api-keys). Please add this key to
   your GitHub Action secrets.
 
+### Models: `gpt-4` and `gpt-3.5-turbo`
+
+At FluxNinja, we use `gpt-3.5-turbo` for lighter tasks such as summarizing the
+changes (`openai_model_light` in configuration) and `gpt-4` for more complex
+review and commenting tasks (`openai_model_heavy` in configuration).
+
+Costs: `gpt-3.5-turbo` is dirt cheap. `gpt-4` is orders of magnitude more
+expensive, but the results are vastly superior. We are typically spending $50 a
+day for a 20 developer team with `gpt-4` based review and commenting.
+
 ### Prompts & Configuration
 
 See: [action.yml](./action.yml)
