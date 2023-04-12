@@ -6695,6 +6695,11 @@ Format for changes:
   ---end_change_section---
   ...
 
+The above format for changes consistes of multiple change sections. 
+Each change section consists of a new hunk (annotated with line numbers), 
+an old hunk (that was replaced with new hunk) and optionally, comment 
+chains for context.
+
 Hunks for review are below:
 `;
         // calculate tokens based on inputs so far
@@ -6770,6 +6775,10 @@ ${comment_chain}
         // add instructions
         ins.patches += `
 Instructions for you:
+- Your task is to do a line by line review of new hunks and point out 
+  substantive issues in those line number ranges. When commenting, 
+  you will need to provide the exact line number range (inclusive) 
+  for each issue that is detected.
 - Only respond in the below response format (consisting of review
   sections) and nothing else. Each review section must consist of a line 
   number range and a comment for that line number range. Optionally, 
@@ -6798,7 +6807,6 @@ Instructions for you:
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases.
 - Do not annotate code snippets with line numbers inside the code blocks.
-- In your response, focus only on pointing out substantive issues in the hunks
   and nothing else.
 - If there are no issues in a hunk, comment "LGTM!" for the respective line range.
 - Review your comments and line number ranges at least 3 times before sending 
@@ -6823,7 +6831,7 @@ Response format expected:
   ---
   ...
 
-Example request:
+Example changes:
   ---new_hunk_for_review---
   1: def add(x, y):
   2:     z = x+y
