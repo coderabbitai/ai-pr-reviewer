@@ -4832,7 +4832,6 @@ const minimatch = (p, pattern, options = {}) => {
     }
     return new Minimatch(pattern, options).match(p);
 };
-/* harmony default export */ const mjs = ((/* unused pure expression or super */ null && (minimatch)));
 // Optimized checking for the most common glob patterns.
 const starDotExtRE = /^\*+([^+@!?\*\[\(]*)$/;
 const starDotExtTest = (ext) => (f) => !f.startsWith('.') && f.endsWith(ext);
@@ -6697,42 +6696,26 @@ Format for changes:
   ...
 
 Instructions:
-- Only respond in the below response format and nothing else. Each review 
-  section must consist of a line number range and a comment for 
-  that line number range. Optionally, you can include replacement suggestion
-  or new code snippets in the review comment. There's a separator between 
-  review sections. 
-- It's important that line number ranges for each review section must 
-  be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must belong to the same hunk as the 
-  <end_line_number>. 
-- Do not repeat back the code being reviewed as the the line number range is 
-  sufficient to map your comment to the correct location in GitHub.
-- Markdown format is preferred for review comment text. 
-- Fenced code blocks must be used for new content and replacement 
-  code/text snippets. 
-- Replacement code/text snippets must be complete and correctly 
-  formatted. The line number range must map exactly to the line 
-  number range that need to be replaced within a new_hunk_for_review. 
-  E.g. if you are suggesting to replace 2 specific lines in a 
-  new_hunk_for_review with 10 lines of code, then the line number 
-  range must be exactly the 2 lines that need to be replaced.
-  The replacement code/text snippet must use \`suggestion\` as the 
-  language identifier in the fenced code block. Replacement code 
-  suggestions can be directly committed by the user from the GitHub 
-  UI, replacing the code within new_hunk_for_review, that is why
-  alignment of line number ranges is important.
-- New code/text snippets must use the correct language identifier
-  in the fenced code block. You can use such snippets to suggest
-  code that can be added in some other file, e.g. test cases.
-- Do not annotate snippets with line numbers inside the code blocks.
-- If there are no issues or suggestions and the hunk is acceptable as-is, 
-  your comment on the line ranges must include the word 'LGTM!'.
-- Reflect on the provided code and your review comments at least 3 times 
-  before sending the final response. Double check the line number ranges
-  and the content of the review sections.
+- Respond using the specified format, which includes a line number range and 
+  a review comment for each section.
+- Line number ranges must be within the same new hunk.
+- Do not repeat the code being reviewed, as line number ranges are sufficient 
+  for locating comments.
+- Consider the context provided by the old hunk and comment chain when 
+  reviewing the new hunk.
+- Use Markdown format for review comments to improve readability.
+- If needed, provide a replacement suggestion using the exact line number 
+  range and fenced code blocks with the suggestion language identifier. 
+  These can be directly committed by the user in the GitHub UI. Replacement 
+  code/text snippets must be complete and correctly formatted. 
+- If needed, suggest new code using the correct language identifier in fenced 
+  code blocks. These snippets may be added to a different file, such as test cases.
+- Do not annotate code snippets with line numbers inside the code blocks.
+- If there are no issues with a hunk, comment "LGTM!" for the respective line range.
+- Review your comments and line number ranges at least 3 times before sending 
+  the final response to ensure accuracy.
 
-Response format expected -
+Response format expected:
   <start_line_number>-<end_line_number>:
   <review comment>
   ---
@@ -6750,20 +6733,29 @@ Response format expected -
   ---
   ...
 
+Example request:
+  ---new_hunk_for_review---
+  1: def add(x, y):
+  2:     z = x+y
+  3:     retrn z
+  4:
+  5: def multiply(x, y):
+  6:     return x * y
+  
+  ---old_hunk_for_context---
+  def add(x, y):
+      return x + y
+
 Example response:
-  1-5:
-  LGTM!
-  ---
-  6-6:
-  replace the code on line 6 with the following
+  3-3:
+  There's a typo in the return statement.
   \`\`\`suggestion
-  for i in range(10):
-    print("Hello!")
-    print("World!")
-  exit(0)
+      return z
   \`\`\`
   ---
-
+  5-6:
+  LGTM!
+  ---
 
 Hunks for review are below:
 `;
