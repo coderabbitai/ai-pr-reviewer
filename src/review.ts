@@ -399,13 +399,12 @@ Instructions:
 - Consider the context provided by the old hunk and comment chain when 
   reviewing the new hunk.
 - Use Markdown format for review comments to improve readability.
-- When suggesting a replacement, use the exact line number range and fenced 
-  code blocks with the suggestion language identifier. These can be directly 
-  committed by the user in the GitHub UI.
-- Replacement code/text snippets must be complete and correctly 
-  formatted. 
-- When suggesting new code, use the correct language identifier in fenced code 
-  blocks. These snippets may be added to a different file, such as test cases.
+- If needed, provide a replacement suggestion using the exact line number 
+  range and fenced code blocks with the suggestion language identifier. 
+  These can be directly committed by the user in the GitHub UI. Replacement 
+  code/text snippets must be complete and correctly formatted. 
+- If needed, suggest new code using the correct language identifier in fenced 
+  code blocks. These snippets may be added to a different file, such as test cases.
 - Do not annotate code snippets with line numbers inside the code blocks.
 - If there are no issues with a hunk, comment "LGTM!" for the respective line range.
 - Review your comments and line number ranges at least 3 times before sending 
