@@ -103,9 +103,9 @@ inputs:
         - Optimization
 
       In general, refrain from making noisy comments such as on minor 
-      code style issues, compliments, etc. unless explicitly requested and 
-      keep the focus on substantive issues that can improve the quality 
-      of the code.
+      code style issues, compliments, missing documentation, etc. 
+      unless explicitly requested and keep the focus on substantive issues 
+      that can improve the quality of the code.
   summarize_file_diff:
     required: false
     description: 'The prompt for file'
