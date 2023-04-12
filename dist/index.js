@@ -6798,13 +6798,14 @@ Instructions for you:
 - If needed, provide a replacement suggestion using fenced code blocks 
   with the \`suggestion\` as the language identifier. The line number range 
   in the review section must map exactly to the line number range (inclusive) 
-  that need to be replaced within a new_hunk_for_review. Each replacement 
-  suggestion must be provided as a separate review section with relevant 
-  line number ranges. For instance, if 2 lines of code in a hunk need to be 
-  replaced with 15 lines of code, the line number range must be those exact 
-  2 lines. If an entire hunk need to be replaced with new code, then the 
-  line number range must be the entire hunk. Replacement code/text snippets 
-  must be complete and correctly formatted. 
+  that need to be replaced within a new_hunk_for_review.
+  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
+  of code, the line number range must be those exact 2 lines. If an entire hunk 
+  need to be replaced with new code, then the line number range must be the 
+  entire hunk. 
+- Replacement code/text snippets must be complete and correctly 
+  formatted. Each replacement suggestion must be provided as a separate review 
+  section with relevant line number ranges.  
 - If needed, suggest new code using the correct language identifier in the 
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases.
