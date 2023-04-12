@@ -422,6 +422,9 @@ Instructions:
 - Do not annotate snippets with line numbers inside the code blocks.
 - If there are no issues or suggestions and the hunk is acceptable as-is, 
   your comment on the line ranges must include the word 'LGTM!'.
+- Reflect on the provided code and your review comment at least 3 times 
+  before sending the final response. Double check the line number ranges
+  and the content of the review sections.
 
 Response format expected -
   <start_line_number>-<end_line_number>:
