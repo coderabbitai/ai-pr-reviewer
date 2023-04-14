@@ -18,7 +18,7 @@ const octokit = new RetryOctokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 
-const ignore_keyword = '@opanai: ignore'
+const ignore_keyword = '@openai: ignore'
 
 export const codeReview = async (
   lightBot: Bot,

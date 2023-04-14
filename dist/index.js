@@ -6405,7 +6405,7 @@ const RetryOctokit = dist_node/* Octokit.plugin */.v.plugin(plugin_retry_dist_no
 const octokit = new RetryOctokit({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
-const ignore_keyword = '@opanai: ignore';
+const ignore_keyword = '@openai: ignore';
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
