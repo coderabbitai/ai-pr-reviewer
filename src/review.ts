@@ -52,6 +52,7 @@ export const codeReview = async (
     )
   }
 
+  core.info(`check description: ${inputs.description}`)
   // if the description contains ignore_keyword, skip
   if (inputs.description.includes(ignore_keyword)) {
     core.info(`Skipped: description contains ignore_keyword`)

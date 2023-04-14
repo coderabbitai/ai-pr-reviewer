@@ -6423,6 +6423,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
     }
+    core.info(`check description: ${inputs.description}`);
     // if the description contains ignore_keyword, skip
     if (inputs.description.includes(ignore_keyword)) {
         core.info(`Skipped: description contains ignore_keyword`);
