@@ -66,14 +66,22 @@ You can reply to a review comment made by this action and get a response based
 on the diff context. Additionally, you can invite the bot to a conversation by
 tagging it in the comment (`@openai`).
 
-Examples:
-
-> @openai Can you please review this block of code?
+Example:
 
 > @openai Please generate a test plan for this file.
 
 Note: A review comment is a comment made on a diff or a file in the pull
 request.
+
+### Ignoring PRs
+
+Sometimes it is useful to ignore a PR. For example, if you are using this action
+to review documentation, you can ignore PRs that only change the documentation.
+To ignore a PR, add the following keyword in the PR description:
+
+```text
+@openai: ignore
+```
 
 ### Screenshots
 
