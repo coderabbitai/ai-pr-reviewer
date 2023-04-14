@@ -6405,6 +6405,7 @@ const RetryOctokit = dist_node/* Octokit.plugin */.v.plugin(plugin_retry_dist_no
 const octokit = new RetryOctokit({ auth: `token ${token}` });
 const context = github.context;
 const repo = context.repo;
+const ignore_keyword = '@opanai: ignore';
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
@@ -6421,6 +6422,13 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
+    }
+    // if the description contains ignore_keyword, skip
+    if (inputs.description.includes(ignore_keyword)) {
+        core.info(`Skipped: description contains ignore_keyword`);
+        // post a comment to notify the user
+        await commenter.comment(`Skipped: ignored by the user`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+        return;
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
@@ -31959,8 +31967,38 @@ var __webpack_unused_export__;
 const wasm = __nccwpck_require__(300);
 let imports = {};
 imports["./tiktoken_bg.js"] = wasm;
-const path = (__nccwpck_require__(1017).join)(__dirname, "tiktoken_bg.wasm");
-const bytes = (__nccwpck_require__(7147).readFileSync)(path);
+const path = __nccwpck_require__(1017);
+const fs = __nccwpck_require__(7147);
+
+const candidates = __dirname
+  .split(path.sep)
+  .reduce((memo, _, index, array) => {
+    const prefix = array.slice(0, index + 1).join(path.sep) + path.sep;
+    if (!prefix.includes("node_modules" + path.sep)) {
+      memo.unshift(
+        path.join(
+          prefix,
+          "node_modules",
+          "@dqbd",
+          "tiktoken",
+          "",
+          "./tiktoken_bg.wasm"
+        )
+      );
+    }
+    return memo;
+  }, [])
+candidates.unshift(path.join(__dirname, "./tiktoken_bg.wasm"));
+
+let bytes = null;
+for (const candidate of candidates) {
+  try {
+    bytes = fs.readFileSync(candidate);
+    break;
+  } catch {}
+}
+
+if (bytes == null) throw new Error("Missing tiktoken_bg.wasm");
 const wasmModule = new WebAssembly.Module(bytes);
 const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
 wasm.__wbg_set_wasm(wasmInstance.exports);
