@@ -18,6 +18,8 @@ const octokit = new RetryOctokit({auth: `token ${token}`})
 const context = github.context
 const repo = context.repo
 
+const ignore_keyword = '@openai: ignore'
+
 export const codeReview = async (
   lightBot: Bot,
   heavyBot: Bot,
@@ -49,6 +51,19 @@ export const codeReview = async (
       context.payload.pull_request.body
     )
   }
+
+  // if the description contains ignore_keyword, skip
+  if (inputs.description.includes(ignore_keyword)) {
+    core.info(`Skipped: description contains ignore_keyword`)
+    // post a comment to notify the user
+    await commenter.comment(
+      `Skipped: ignored by the user`,
+      SUMMARIZE_TAG,
+      'replace'
+    )
+    return
+  }
+
   // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
   inputs.system_message = options.system_message
 
