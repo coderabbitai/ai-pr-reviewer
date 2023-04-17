@@ -52,12 +52,21 @@ export const codeReview = async (
     )
   }
 
+  // get SUMMARIZE_TAG message
+  const existing_summarize_comment = await commenter.find_comment_with_tag(
+    SUMMARIZE_TAG,
+    context.payload.pull_request.number
+  )
+  const existing_comment_ids_block = getReviewedCommitIdsBlock(
+    existing_summarize_comment
+  )
+
   // if the description contains ignore_keyword, skip
   if (inputs.description.includes(ignore_keyword)) {
     core.info(`Skipped: description contains ignore_keyword`)
     // post a comment to notify the user
     await commenter.comment(
-      `Skipped: ignored by the user`,
+      `Skipped: description contains ignore_keyword\n${existing_comment_ids_block}`,
       SUMMARIZE_TAG,
       'replace'
     )
@@ -67,18 +76,37 @@ export const codeReview = async (
   // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
   inputs.system_message = options.system_message
 
+  const allCommitIds = await getAllCommitIds()
+  // find highest reviewed commit id
+  let highest_reviewed_commit_id = ''
+  if (existing_comment_ids_block) {
+    highest_reviewed_commit_id = getHighestReviewedCommitId(
+      allCommitIds,
+      getReviewedCommitIds(existing_comment_ids_block)
+    )
+  }
+
+  if (highest_reviewed_commit_id === '') {
+    core.info(
+      `Will review from the base commit: ${context.payload.pull_request.base.sha}`
+    )
+    context.payload.pull_request.base.sha
+  } else {
+    core.info(`Will review from commit: ${highest_reviewed_commit_id}`)
+  }
+
   // collect diff chunks
   const diff = await octokit.repos.compareCommits({
     owner: repo.owner,
     repo: repo.repo,
-    base: context.payload.pull_request.base.sha,
+    base: highest_reviewed_commit_id,
     head: context.payload.pull_request.head.sha
   })
   const {files, commits} = diff.data
   if (!files) {
     core.warning(`Skipped: diff.data.files is null`)
     await commenter.comment(
-      `Skipped: no files to review`,
+      `Skipped: no files to review\n${existing_comment_ids_block}`,
       SUMMARIZE_TAG,
       'replace'
     )
@@ -349,7 +377,6 @@ ${
     : ''
 }
 `
-
     await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
 
     // final release notes
@@ -658,7 +685,7 @@ ${comment_chain}
   // comment about skipped files for review and summarize
   if (skipped_files_to_review.length > 0) {
     // make bullet points for skipped files
-    const comment = `
+    let comment = `
       ${
         skipped_files_to_review.length > 0
           ? `<details>
@@ -689,9 +716,13 @@ ${comment_chain}
           : ''
       }
       `
-    if (comment.length > 0) {
-      await commenter.comment(comment, SUMMARIZE_TAG, 'append')
-    }
+    // add existing_comment_ids_block with latest head sha
+    comment += `\n${addReviewedCommitId(
+      existing_comment_ids_block,
+      context.payload.pull_request.head.sha
+    )}`
+
+    await commenter.comment(comment, SUMMARIZE_TAG, 'append')
   }
 }
 
@@ -882,4 +913,82 @@ function parseReview(response: string, debug = false): Review[] {
   }
 
   return reviews
+}
+
+const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->'
+const commit_ids_marker_end = '<!-- commit_ids_reviewed_end -->'
+
+// function that takes a comment body and returns the list of commit ids that have been reviewed
+// commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
+// <!-- [commit_id] -->
+function getReviewedCommitIds(commentBody: string): string[] {
+  const start = commentBody.indexOf(commit_ids_marker_start)
+  const end = commentBody.indexOf(commit_ids_marker_end)
+  if (start === -1 || end === -1) {
+    return []
+  }
+  const ids = commentBody.substring(start + commit_ids_marker_start.length, end)
+  // remove the <!-- and --> markers from each id and extract the id
+  return ids.split('<!--').map(id => id.replace('-->', '').trim())
+}
+
+// get review commit ids comment block from the body as a string
+// including markers
+function getReviewedCommitIdsBlock(commentBody: string): string {
+  const start = commentBody.indexOf(commit_ids_marker_start)
+  const end = commentBody.indexOf(commit_ids_marker_end)
+  if (start === -1 || end === -1) {
+    return ''
+  }
+  return commentBody.substring(start, end + commit_ids_marker_end.length)
+}
+
+// add a commit id to the list of reviewed commit ids
+// if the marker doesn't exist, add it
+function addReviewedCommitId(commentBody: string, commitId: string): string {
+  const start = commentBody.indexOf(commit_ids_marker_start)
+  const end = commentBody.indexOf(commit_ids_marker_end)
+  if (start === -1 || end === -1) {
+    return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`
+  }
+  const ids = commentBody.substring(start + commit_ids_marker_start.length, end)
+  return `${commentBody.substring(
+    0,
+    start + commit_ids_marker_start.length
+  )}\n${ids}\n<!-- ${commitId} -->\n${commentBody.substring(end)}`
+}
+
+// given a list of commit ids provide the highest commit id that has been reviewed
+function getHighestReviewedCommitId(
+  commitIds: string[],
+  reviewedCommitIds: string[]
+): string {
+  for (const commitId of commitIds) {
+    if (reviewedCommitIds.includes(commitId)) {
+      return commitId
+    }
+  }
+  return ''
+}
+
+async function getAllCommitIds(): Promise<string[]> {
+  const allCommits = []
+  let page = 1
+  let commits
+  if (context && context.payload && context.payload.pull_request) {
+    do {
+      commits = await octokit.pulls.listCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: context.payload.pull_request.number,
+        per_page: 100,
+        page
+      })
+
+      allCommits.push(...commits.data.map(commit => commit.sha))
+      page++
+    } while (commits.data.length > 0)
+  }
+
+  return allCommits
 }
