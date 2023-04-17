@@ -683,12 +683,13 @@ ${
     : ''
 }
 
-      ${
-        skipped_files_to_review.length > 0
-          ? `<details>
+${
+  skipped_files_to_review.length > 0
+    ? `
+<details>
 <summary>Files not reviewed due to max files limit in this run (${
-              skipped_files_to_review.length
-            })</summary>
+        skipped_files_to_review.length
+      })</summary>
 
 ### Not reviewed
 
@@ -696,15 +697,15 @@ ${
 
 </details>
 `
-          : ''
-      }
+    : ''
+}
 
-      ${
-        reviews_failed.length > 0
-          ? `<details>
+${
+  reviews_failed.length > 0
+    ? `<details>
 <summary>Files not reviewed due to errors in this run (${
-              reviews_failed.length
-            })</summary>
+        reviews_failed.length
+      })</summary>
 
 ### Failed to review
 
@@ -712,9 +713,8 @@ ${
 
 </details>
 `
-          : ''
-      }
-
+    : ''
+}
 `
 
   if (options.summary_only !== true) {

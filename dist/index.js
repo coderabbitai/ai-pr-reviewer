@@ -6889,8 +6889,9 @@ ${summaries_failed.length > 0
 `
         : ''}
 
-      ${skipped_files_to_review.length > 0
-        ? `<details>
+${skipped_files_to_review.length > 0
+        ? `
+<details>
 <summary>Files not reviewed due to max files limit in this run (${skipped_files_to_review.length})</summary>
 
 ### Not reviewed
@@ -6901,7 +6902,7 @@ ${summaries_failed.length > 0
 `
         : ''}
 
-      ${reviews_failed.length > 0
+${reviews_failed.length > 0
         ? `<details>
 <summary>Files not reviewed due to errors in this run (${reviews_failed.length})</summary>
 
@@ -6912,7 +6913,6 @@ ${summaries_failed.length > 0
 </details>
 `
         : ''}
-
 `;
     if (options.summary_only !== true) {
         // add existing_comment_ids_block with latest head sha
