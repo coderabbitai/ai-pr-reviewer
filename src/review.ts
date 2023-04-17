@@ -52,12 +52,26 @@ export const codeReview = async (
     )
   }
 
+  // get SUMMARIZE_TAG message
+  const existing_summarize_cmt = await commenter.find_comment_with_tag(
+    SUMMARIZE_TAG,
+    context.payload.pull_request.number
+  )
+  let existing_summarize_comment = ''
+  if (existing_summarize_cmt) {
+    existing_summarize_comment = existing_summarize_cmt.body
+  }
+
+  const existing_comment_ids_block = getReviewedCommitIdsBlock(
+    existing_summarize_comment
+  )
+
   // if the description contains ignore_keyword, skip
   if (inputs.description.includes(ignore_keyword)) {
     core.info(`Skipped: description contains ignore_keyword`)
     // post a comment to notify the user
     await commenter.comment(
-      `Skipped: ignored by the user`,
+      `Skipped: description contains ignore_keyword\n${existing_comment_ids_block}`,
       SUMMARIZE_TAG,
       'replace'
     )
@@ -78,7 +92,7 @@ export const codeReview = async (
   if (!files) {
     core.warning(`Skipped: diff.data.files is null`)
     await commenter.comment(
-      `Skipped: no files to review`,
+      `Skipped: no files to review\n${existing_comment_ids_block}`,
       SUMMARIZE_TAG,
       'replace'
     )
@@ -98,7 +112,7 @@ export const codeReview = async (
   }
 
   // find hunks to review
-  const filtered_files_to_review: (
+  const filtered_files: (
     | [string, string, string, [number, number, string][]]
     | null
   )[] = await Promise.all(
@@ -171,11 +185,14 @@ ${hunks.old_hunk}
   )
 
   // Filter out any null results
-  const files_to_review = filtered_files_to_review.filter(
-    file => file !== null
-  ) as [string, string, string, [number, number, string][]][]
+  const files_and_changes = filtered_files.filter(file => file !== null) as [
+    string,
+    string,
+    string,
+    [number, number, string][]
+  ][]
 
-  if (files_to_review.length === 0) {
+  if (files_and_changes.length === 0) {
     core.error(`Skipped: no files to review`)
     return
   }
@@ -247,7 +264,7 @@ ${hunks.old_hunk}
 
   const summaryPromises = []
   const skipped_files_to_summarize = []
-  for (const [filename, file_content, file_diff] of files_to_review) {
+  for (const [filename, file_content, file_diff] of files_and_changes) {
     if (
       options.max_files_to_summarize <= 0 ||
       summaryPromises.length < options.max_files_to_summarize
@@ -286,72 +303,6 @@ ${filename}: ${summary}
   } else {
     inputs.summary = summarize_final_response
 
-    const summarize_comment = `${summarize_final_response}
-
----
-
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
-
-### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
-- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
-
----
-
-${
-  filter_ignored_files.length > 0
-    ? `
-<details>
-<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
-
-### Ignored files
-
-* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
-${
-  skipped_files_to_summarize.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to max files limit (${
-        skipped_files_to_summarize.length
-      })</summary>
-
-### Not summarized
-
-* ${skipped_files_to_summarize.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
-${
-  summaries_failed.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to errors (${
-        summaries_failed.length
-      })</summary>
-
-### Failed to summarize
-
-* ${summaries_failed.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-`
-
-    await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
-
     // final release notes
     next_summarize_ids = summarize_final_response_ids
     const [release_notes_response, release_notes_ids] = await heavyBot.chat(
@@ -366,11 +317,6 @@ ${
       message += release_notes_response
       commenter.update_description(context.payload.pull_request.number, message)
     }
-  }
-
-  if (options.summary_only === true) {
-    core.info('summary_only is true, exiting')
-    return
   }
 
   // failed reviews array
@@ -554,9 +500,8 @@ Changes for review are below:
         )
 
         if (all_chains.length > 0) {
+          core.info(`Found comment chains: ${all_chains} for ${filename}`)
           comment_chain = all_chains
-        } else {
-          comment_chain = ''
         }
       } catch (e: any) {
         core.warning(
@@ -638,33 +583,144 @@ ${comment_chain}
 
   const reviewPromises = []
   const skipped_files_to_review = []
-  for (const [filename, file_content, , patches] of files_to_review) {
-    if (
-      options.max_files_to_review <= 0 ||
-      reviewPromises.length < options.max_files_to_review
-    ) {
-      reviewPromises.push(
-        openai_concurrency_limit(async () =>
-          do_review(filename, file_content, patches)
-        )
+
+  if (options.summary_only !== true) {
+    const allCommitIds = await getAllCommitIds()
+    // find highest reviewed commit id
+    let highest_reviewed_commit_id = ''
+    if (existing_comment_ids_block) {
+      highest_reviewed_commit_id = getHighestReviewedCommitId(
+        allCommitIds,
+        getReviewedCommitIds(existing_comment_ids_block)
       )
-    } else {
-      skipped_files_to_review.push(filename)
     }
+
+    let files_and_changes_for_review = files_and_changes
+    if (highest_reviewed_commit_id === '') {
+      core.info(
+        `Will review from the base commit: ${context.payload.pull_request.base.sha}`
+      )
+      highest_reviewed_commit_id = context.payload.pull_request.base.sha
+    } else {
+      core.info(`Will review from commit: ${highest_reviewed_commit_id}`)
+      // get the list of files changed between the highest reviewed commit
+      // and the latest (head) commit
+      // use octokit.pulls.compareCommits to get the list of files changed
+      // between the highest reviewed commit and the latest (head) commit
+      const diff_since_last_review = await octokit.repos.compareCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        base: highest_reviewed_commit_id,
+        head: context.payload.pull_request.head.sha
+      })
+      if (
+        diff_since_last_review &&
+        diff_since_last_review.data &&
+        diff_since_last_review.data.files
+      ) {
+        const files_changed = diff_since_last_review.data.files.map(
+          (file: any) => file.filename
+        )
+        core.info(`Files changed since last review: ${files_changed}`)
+        files_and_changes_for_review = files_and_changes.filter(([filename]) =>
+          files_changed.includes(filename)
+        )
+      }
+    }
+
+    for (const [
+      filename,
+      file_content,
+      ,
+      patches
+    ] of files_and_changes_for_review) {
+      if (
+        options.max_files_to_review <= 0 ||
+        reviewPromises.length < options.max_files_to_review
+      ) {
+        reviewPromises.push(
+          openai_concurrency_limit(async () =>
+            do_review(filename, file_content, patches)
+          )
+        )
+      } else {
+        skipped_files_to_review.push(filename)
+      }
+    }
+
+    await Promise.all(reviewPromises)
   }
 
-  await Promise.all(reviewPromises)
+  let summarize_comment = `${summarize_final_response}
 
-  // comment about skipped files for review and summarize
-  if (skipped_files_to_review.length > 0) {
-    // make bullet points for skipped files
-    const comment = `
-      ${
-        skipped_files_to_review.length > 0
-          ? `<details>
-<summary>Files not reviewed due to max files limit (${
-              skipped_files_to_review.length
-            })</summary>
+---
+
+### Chat with 🤖 OpenAI Bot (\`@openai\`)
+- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+
+### Code suggestions
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
+---
+
+${
+  filter_ignored_files.length > 0
+    ? `
+<details>
+<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+
+### Ignored files
+
+* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
+
+</details>
+`
+    : ''
+}
+
+${
+  skipped_files_to_summarize.length > 0
+    ? `
+<details>
+<summary>Files not summarized due to max files limit (${
+        skipped_files_to_summarize.length
+      })</summary>
+
+### Not summarized
+
+* ${skipped_files_to_summarize.join('\n* ')}
+
+</details>
+`
+    : ''
+}
+
+${
+  summaries_failed.length > 0
+    ? `
+<details>
+<summary>Files not summarized due to errors (${
+        summaries_failed.length
+      })</summary>
+
+### Failed to summarize
+
+* ${summaries_failed.join('\n* ')}
+
+</details>
+`
+    : ''
+}
+
+${
+  skipped_files_to_review.length > 0
+    ? `
+<details>
+<summary>Files not reviewed due to max files limit in this run (${
+        skipped_files_to_review.length
+      })</summary>
 
 ### Not reviewed
 
@@ -672,27 +728,35 @@ ${comment_chain}
 
 </details>
 `
-          : ''
-      }
+    : ''
+}
 
-      ${
-        reviews_failed.length > 0
-          ? `<details>
-<summary>Files not reviewed due to errors (${reviews_failed.length})</summary>
+${
+  reviews_failed.length > 0
+    ? `<details>
+<summary>Files not reviewed due to errors in this run (${
+        reviews_failed.length
+      })</summary>
 
-### Not reviewed
+### Failed to review
 
 * ${reviews_failed.join('\n* ')}
 
 </details>
 `
-          : ''
-      }
-      `
-    if (comment.length > 0) {
-      await commenter.comment(comment, SUMMARIZE_TAG, 'append')
-    }
+    : ''
+}
+`
+
+  if (options.summary_only !== true) {
+    // add existing_comment_ids_block with latest head sha
+    summarize_comment += `\n${addReviewedCommitId(
+      existing_comment_ids_block,
+      context.payload.pull_request.head.sha
+    )}`
   }
+
+  await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
 }
 
 const split_patch = (patch: string | null | undefined): string[] => {
@@ -882,4 +946,85 @@ function parseReview(response: string, debug = false): Review[] {
   }
 
   return reviews
+}
+
+const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->'
+const commit_ids_marker_end = '<!-- commit_ids_reviewed_end -->'
+
+// function that takes a comment body and returns the list of commit ids that have been reviewed
+// commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
+// <!-- [commit_id] -->
+function getReviewedCommitIds(commentBody: string): string[] {
+  const start = commentBody.indexOf(commit_ids_marker_start)
+  const end = commentBody.indexOf(commit_ids_marker_end)
+  if (start === -1 || end === -1) {
+    return []
+  }
+  const ids = commentBody.substring(start + commit_ids_marker_start.length, end)
+  // remove the <!-- and --> markers from each id and extract the id and remove empty strings
+  return ids
+    .split('<!--')
+    .map(id => id.replace('-->', '').trim())
+    .filter(id => id !== '')
+}
+
+// get review commit ids comment block from the body as a string
+// including markers
+function getReviewedCommitIdsBlock(commentBody: string): string {
+  const start = commentBody.indexOf(commit_ids_marker_start)
+  const end = commentBody.indexOf(commit_ids_marker_end)
+  if (start === -1 || end === -1) {
+    return ''
+  }
+  return commentBody.substring(start, end + commit_ids_marker_end.length)
+}
+
+// add a commit id to the list of reviewed commit ids
+// if the marker doesn't exist, add it
+function addReviewedCommitId(commentBody: string, commitId: string): string {
+  const start = commentBody.indexOf(commit_ids_marker_start)
+  const end = commentBody.indexOf(commit_ids_marker_end)
+  if (start === -1 || end === -1) {
+    return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`
+  }
+  const ids = commentBody.substring(start + commit_ids_marker_start.length, end)
+  return `${commentBody.substring(
+    0,
+    start + commit_ids_marker_start.length
+  )}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`
+}
+
+// given a list of commit ids provide the highest commit id that has been reviewed
+function getHighestReviewedCommitId(
+  commitIds: string[],
+  reviewedCommitIds: string[]
+): string {
+  for (let i = commitIds.length - 1; i >= 0; i--) {
+    if (reviewedCommitIds.includes(commitIds[i])) {
+      return commitIds[i]
+    }
+  }
+  return ''
+}
+
+async function getAllCommitIds(): Promise<string[]> {
+  const allCommits = []
+  let page = 1
+  let commits
+  if (context && context.payload && context.payload.pull_request) {
+    do {
+      commits = await octokit.pulls.listCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: context.payload.pull_request.number,
+        per_page: 100,
+        page
+      })
+
+      allCommits.push(...commits.data.map(commit => commit.sha))
+      page++
+    } while (commits.data.length > 0)
+  }
+
+  return allCommits
 }
