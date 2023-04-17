@@ -6425,7 +6425,10 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     }
     // get SUMMARIZE_TAG message
     const existing_summarize_comment = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
-    const existing_comment_ids_block = getReviewedCommitIdsBlock(existing_summarize_comment);
+    let existing_comment_ids_block = '';
+    if (existing_summarize_comment) {
+        existing_comment_ids_block = getReviewedCommitIdsBlock(existing_summarize_comment);
+    }
     // if the description contains ignore_keyword, skip
     if (inputs.description.includes(ignore_keyword)) {
         core.info(`Skipped: description contains ignore_keyword`);
