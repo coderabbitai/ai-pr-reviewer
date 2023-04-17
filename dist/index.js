@@ -6427,11 +6427,12 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
     }
     // get SUMMARIZE_TAG message
-    const existing_summarize_comment = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
-    let existing_comment_ids_block = '';
-    if (existing_summarize_comment) {
-        existing_comment_ids_block = getReviewedCommitIdsBlock(existing_summarize_comment);
+    const existing_summarize_cmt = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
+    let existing_summarize_comment = '';
+    if (existing_summarize_cmt) {
+        existing_summarize_comment = existing_summarize_cmt.body;
     }
+    const existing_comment_ids_block = getReviewedCommitIdsBlock(existing_summarize_comment);
     // if the description contains ignore_keyword, skip
     if (inputs.description.includes(ignore_keyword)) {
         core.info(`Skipped: description contains ignore_keyword`);
@@ -6944,7 +6945,7 @@ ${comment_chain}
         summary_append += `
       ${skipped_files_to_review.length > 0
             ? `<details>
-<summary>Files not reviewed due to max files limit (${skipped_files_to_review.length})</summary>
+<summary>Files not reviewed due to max files limit in this run (${skipped_files_to_review.length})</summary>
 
 ### Not reviewed
 
@@ -6956,7 +6957,7 @@ ${comment_chain}
 
       ${reviews_failed.length > 0
             ? `<details>
-<summary>Files not reviewed due to errors (${reviews_failed.length})</summary>
+<summary>Files not reviewed due to errors in this run (${reviews_failed.length})</summary>
 
 ### Not reviewed
 
