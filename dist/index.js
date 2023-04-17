@@ -6396,24 +6396,11 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
-    const allCommitIds = await getAllCommitIds();
-    // find highest reviewed commit id
-    let highest_reviewed_commit_id = '';
-    if (existing_comment_ids_block) {
-        highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_comment_ids_block));
-    }
-    if (highest_reviewed_commit_id === '') {
-        core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
-        highest_reviewed_commit_id = context.payload.pull_request.base.sha;
-    }
-    else {
-        core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
-    }
     // collect diff chunks
     const diff = await octokit.repos.compareCommits({
         owner: repo.owner,
         repo: repo.repo,
-        base: highest_reviewed_commit_id,
+        base: context.payload.pull_request.base.sha,
         head: context.payload.pull_request.head.sha
     });
     const { files, commits } = diff.data;
@@ -6435,7 +6422,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         }
     }
     // find hunks to review
-    const filtered_files_to_review = await Promise.all(filter_selected_files.map(async (file) => {
+    const filtered_files = await Promise.all(filter_selected_files.map(async (file) => {
         // retrieve file contents
         let file_content = '';
         if (!context.payload.pull_request) {
@@ -6499,8 +6486,8 @@ ${hunks.old_hunk}
         }
     }));
     // Filter out any null results
-    const files_to_review = filtered_files_to_review.filter(file => file !== null);
-    if (files_to_review.length === 0) {
+    const files_and_changes = filtered_files.filter(file => file !== null);
+    if (files_and_changes.length === 0) {
         core.error(`Skipped: no files to review`);
         return;
     }
@@ -6555,7 +6542,7 @@ ${hunks.old_hunk}
     };
     const summaryPromises = [];
     const skipped_files_to_summarize = [];
-    for (const [filename, file_content, file_diff] of files_to_review) {
+    for (const [filename, file_content, file_diff] of files_and_changes) {
         if (options.max_files_to_summarize <= 0 ||
             summaryPromises.length < options.max_files_to_summarize) {
             summaryPromises.push(openai_concurrency_limit(async () => do_summary(filename, file_content, file_diff)));
@@ -6758,9 +6745,6 @@ Changes for review are below:
                     core.info(`Found comment chains: ${all_chains} for ${filename}`);
                     comment_chain = all_chains;
                 }
-                else {
-                    comment_chain = '';
-                }
             }
             catch (e) {
                 core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
@@ -6826,7 +6810,38 @@ ${comment_chain}
     const reviewPromises = [];
     const skipped_files_to_review = [];
     if (options.summary_only !== true) {
-        for (const [filename, file_content, , patches] of files_to_review) {
+        const allCommitIds = await getAllCommitIds();
+        // find highest reviewed commit id
+        let highest_reviewed_commit_id = '';
+        if (existing_comment_ids_block) {
+            highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_comment_ids_block));
+        }
+        let files_and_changes_for_review = files_and_changes;
+        if (highest_reviewed_commit_id === '') {
+            core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
+            highest_reviewed_commit_id = context.payload.pull_request.base.sha;
+        }
+        else {
+            core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
+            // get the list of files changed between the highest reviewed commit
+            // and the latest (head) commit
+            // use octokit.pulls.compareCommits to get the list of files changed
+            // between the highest reviewed commit and the latest (head) commit
+            const diff_since_last_review = await octokit.repos.compareCommits({
+                owner: repo.owner,
+                repo: repo.repo,
+                base: highest_reviewed_commit_id,
+                head: context.payload.pull_request.head.sha
+            });
+            if (diff_since_last_review &&
+                diff_since_last_review.data &&
+                diff_since_last_review.data.files) {
+                const files_changed = diff_since_last_review.data.files.map((file) => file.filename);
+                core.info(`Files changed since last review: ${files_changed}`);
+                files_and_changes_for_review = files_and_changes.filter(([filename]) => files_changed.includes(filename));
+            }
+        }
+        for (const [filename, file_content, , patches] of files_and_changes_for_review) {
             if (options.max_files_to_review <= 0 ||
                 reviewPromises.length < options.max_files_to_review) {
                 reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
