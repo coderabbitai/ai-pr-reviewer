@@ -960,7 +960,7 @@ function addReviewedCommitId(commentBody: string, commitId: string): string {
   return `${commentBody.substring(
     0,
     start + commit_ids_marker_start.length
-  )}${ids}\n<!-- ${commitId} -->\n${commentBody.substring(end)}`
+  )}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`
 }
 
 // given a list of commit ids provide the highest commit id that has been reviewed

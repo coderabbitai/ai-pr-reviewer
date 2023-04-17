@@ -7106,7 +7106,7 @@ function addReviewedCommitId(commentBody, commitId) {
         return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`;
     }
     const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
-    return `${commentBody.substring(0, start + commit_ids_marker_start.length)}${ids}\n<!-- ${commitId} -->\n${commentBody.substring(end)}`;
+    return `${commentBody.substring(0, start + commit_ids_marker_start.length)}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`;
 }
 // given a list of commit ids provide the highest commit id that has been reviewed
 function getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
