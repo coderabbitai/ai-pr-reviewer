@@ -6423,26 +6423,42 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
     }
+    // get SUMMARIZE_TAG message
+    const existing_summarize_comment = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
+    const existing_comment_ids_block = getReviewedCommitIdsBlock(existing_summarize_comment);
     // if the description contains ignore_keyword, skip
     if (inputs.description.includes(ignore_keyword)) {
         core.info(`Skipped: description contains ignore_keyword`);
         // post a comment to notify the user
-        await commenter.comment(`Skipped: ignored by the user`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+        await commenter.comment(`Skipped: description contains ignore_keyword\n${existing_comment_ids_block}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         return;
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
+    const allCommitIds = await getAllCommitIds();
+    // find highest reviewed commit id
+    let highest_reviewed_commit_id = '';
+    if (existing_comment_ids_block) {
+        highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_comment_ids_block));
+    }
+    if (highest_reviewed_commit_id === '') {
+        core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
+        context.payload.pull_request.base.sha;
+    }
+    else {
+        core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
+    }
     // collect diff chunks
     const diff = await octokit.repos.compareCommits({
         owner: repo.owner,
         repo: repo.repo,
-        base: context.payload.pull_request.base.sha,
+        base: highest_reviewed_commit_id,
         head: context.payload.pull_request.head.sha
     });
     const { files, commits } = diff.data;
     if (!files) {
         core.warning(`Skipped: diff.data.files is null`);
-        await commenter.comment(`Skipped: no files to review`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+        await commenter.comment(`Skipped: no files to review\n${existing_comment_ids_block}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         return;
     }
     // skip files if they are filtered out
@@ -6498,12 +6514,12 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
                 continue;
             }
             const hunks_str = `
----new_hunk_for_review---
+---new_hunk---
 \`\`\`
 ${hunks.new_hunk}
 \`\`\`
 
----old_hunk_for_context---
+---old_hunk---
 \`\`\`
 ${hunks.old_hunk}
 \`\`\`
@@ -6685,17 +6701,17 @@ ${summaries_failed.length > 0
         // Pack instructions
         ins.patches += `
 Format for changes:
-  ---new_hunk_for_review---
+  ---new_hunk---
   \`\`\`
   <new hunk annotated with line numbers>
   \`\`\`
 
-  ---old_hunk_for_context---
+  ---old_hunk---
   \`\`\`
   <old hunk that was replaced by the new hunk above>
   \`\`\`
 
-  ---comment_chains_for_context---
+  ---comment_chains---
   \`\`\`
   <comment chains>
   \`\`\`
@@ -6704,9 +6720,11 @@ Format for changes:
   ...
 
 The above format for changes consists of multiple change sections. 
-Each change section consists of a new hunk (annotated with line numbers), 
-an old hunk (that was replaced with new hunk) and optionally, comment 
-chains for context.
+Each change section consists of a new hunk (annotated with line numbers) 
+and an old hunk. Note that the code in old_hunk does not exist anymore
+as it was replaced by the new hunk. The old_hunk is only included for
+context. The new hunk is the code that you should review. Optionally, 
+existing review comment chains are included for additional context. 
 
 Important instructions:
 - Your task is to do a line by line review of new hunks and point out 
@@ -6732,7 +6750,7 @@ Important instructions:
 - If needed, provide a replacement suggestion using fenced code blocks 
   with the \`suggestion\` as the language identifier. The line number range 
   in the review section must map exactly to the line number range (inclusive) 
-  that need to be replaced within a new_hunk_for_review.
+  that need to be replaced within a new_hunk.
   For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
   of code, the line number range must be those exact 2 lines. If an entire hunk 
   need to be replaced with new code, then the line number range must be the 
@@ -6772,7 +6790,7 @@ Response format expected:
   ...
 
 Example changes:
-  ---new_hunk_for_review---
+  ---new_hunk---
   1: def add(x, y):
   2:     z = x+y
   3:     retrn z
@@ -6780,7 +6798,7 @@ Example changes:
   5: def multiply(x, y):
   6:     return x * y
   
-  ---old_hunk_for_context---
+  ---old_hunk---
   def add(x, y):
       return x + y
 
@@ -6857,7 +6875,7 @@ ${patch}
 `;
             if (comment_chain !== '') {
                 ins.patches += `
----comment_chains_for_review---
+---comment_chains---
 \`\`\`
 ${comment_chain}
 \`\`\`
@@ -6916,7 +6934,7 @@ ${comment_chain}
     // comment about skipped files for review and summarize
     if (skipped_files_to_review.length > 0) {
         // make bullet points for skipped files
-        const comment = `
+        let comment = `
       ${skipped_files_to_review.length > 0
             ? `<details>
 <summary>Files not reviewed due to max files limit (${skipped_files_to_review.length})</summary>
@@ -6941,9 +6959,9 @@ ${comment_chain}
 `
             : ''}
       `;
-        if (comment.length > 0) {
-            await commenter.comment(comment, lib_commenter/* SUMMARIZE_TAG */.Rp, 'append');
-        }
+        // add existing_comment_ids_block with latest head sha
+        comment += `\n${addReviewedCommitId(existing_comment_ids_block, context.payload.pull_request.head.sha)}`;
+        await commenter.comment(comment, lib_commenter/* SUMMARIZE_TAG */.Rp, 'append');
     }
 };
 const split_patch = (patch) => {
@@ -7094,6 +7112,70 @@ function parseReview(response, debug = false) {
             core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
     }
     return reviews;
+}
+const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->';
+const commit_ids_marker_end = '<!-- commit_ids_reviewed_end -->';
+// function that takes a comment body and returns the list of commit ids that have been reviewed
+// commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
+// <!-- [commit_id] -->
+function getReviewedCommitIds(commentBody) {
+    const start = commentBody.indexOf(commit_ids_marker_start);
+    const end = commentBody.indexOf(commit_ids_marker_end);
+    if (start === -1 || end === -1) {
+        return [];
+    }
+    const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
+    // remove the <!-- and --> markers from each id and extract the id
+    return ids.split('<!--').map(id => id.replace('-->', '').trim());
+}
+// get review commit ids comment block from the body as a string
+// including markers
+function getReviewedCommitIdsBlock(commentBody) {
+    const start = commentBody.indexOf(commit_ids_marker_start);
+    const end = commentBody.indexOf(commit_ids_marker_end);
+    if (start === -1 || end === -1) {
+        return '';
+    }
+    return commentBody.substring(start, end + commit_ids_marker_end.length);
+}
+// add a commit id to the list of reviewed commit ids
+// if the marker doesn't exist, add it
+function addReviewedCommitId(commentBody, commitId) {
+    const start = commentBody.indexOf(commit_ids_marker_start);
+    const end = commentBody.indexOf(commit_ids_marker_end);
+    if (start === -1 || end === -1) {
+        return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`;
+    }
+    const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
+    return `${commentBody.substring(0, start + commit_ids_marker_start.length)}\n${ids}\n<!-- ${commitId} -->\n${commentBody.substring(end)}`;
+}
+// given a list of commit ids provide the highest commit id that has been reviewed
+function getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
+    for (const commitId of commitIds) {
+        if (reviewedCommitIds.includes(commitId)) {
+            return commitId;
+        }
+    }
+    return '';
+}
+async function getAllCommitIds() {
+    const allCommits = [];
+    let page = 1;
+    let commits;
+    if (context && context.payload && context.payload.pull_request) {
+        do {
+            commits = await octokit.pulls.listCommits({
+                owner: repo.owner,
+                repo: repo.repo,
+                pull_number: context.payload.pull_request.number,
+                per_page: 100,
+                page
+            });
+            allCommits.push(...commits.data.map(commit => commit.sha));
+            page++;
+        } while (commits.data.length > 0);
+    }
+    return allCommits;
 }
 
 
