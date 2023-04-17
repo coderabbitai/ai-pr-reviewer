@@ -7,6 +7,7 @@ import {
   Commenter,
   COMMENT_REPLY_TAG,
   COMMENT_TAG,
+  EXTRA_CONTENT_TAG,
   SUMMARIZE_TAG
 } from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
@@ -155,7 +156,8 @@ export const handleReviewComment = async (
         pull_number
       )
       if (summary) {
-        inputs.summary = summary.body
+        // remove all content below EXTRA_CONTENT_TAG
+        inputs.summary = summary.body.split(EXTRA_CONTENT_TAG)[0]
       }
 
       // get tokens so far
