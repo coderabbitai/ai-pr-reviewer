@@ -7159,9 +7159,9 @@ function addReviewedCommitId(commentBody, commitId) {
 }
 // given a list of commit ids provide the highest commit id that has been reviewed
 function getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
-    for (const commitId of commitIds) {
-        if (reviewedCommitIds.includes(commitId)) {
-            return commitId;
+    for (let i = commitIds.length - 1; i >= 0; i--) {
+        if (reviewedCommitIds.includes(commitIds[i])) {
+            return commitIds[i];
         }
     }
     return '';
