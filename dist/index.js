@@ -6937,10 +6937,11 @@ ${comment_chain}
         }
     }
     await Promise.all(reviewPromises);
+    let summary_append = '';
     // comment about skipped files for review and summarize
     if (skipped_files_to_review.length > 0) {
         // make bullet points for skipped files
-        let comment = `
+        summary_append += `
       ${skipped_files_to_review.length > 0
             ? `<details>
 <summary>Files not reviewed due to max files limit (${skipped_files_to_review.length})</summary>
@@ -6965,10 +6966,10 @@ ${comment_chain}
 `
             : ''}
       `;
-        // add existing_comment_ids_block with latest head sha
-        comment += `\n${addReviewedCommitId(existing_comment_ids_block, context.payload.pull_request.head.sha)}`;
-        await commenter.comment(comment, lib_commenter/* SUMMARIZE_TAG */.Rp, 'append');
     }
+    // add existing_comment_ids_block with latest head sha
+    summary_append += `\n${addReviewedCommitId(existing_comment_ids_block, context.payload.pull_request.head.sha)}`;
+    await commenter.comment(summary_append, lib_commenter/* SUMMARIZE_TAG */.Rp, 'append');
 };
 const split_patch = (patch) => {
     if (!patch) {
