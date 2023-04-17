@@ -30,7 +30,7 @@ export const DESCRIPTION_TAG_END =
 
 export class Commenter {
   /**
-   * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
+   * @param mode Can be "create", "replace". Default is "replace".
    */
   async comment(message: string, tag: string, mode: string) {
     let target: number
@@ -49,24 +49,16 @@ export class Commenter {
       tag = COMMENT_TAG
     }
 
-    let body = `${message}`
-
-    if (mode === 'create' || mode === 'replace') {
-      body = `${COMMENT_GREETING}
+    const body = `${COMMENT_GREETING}
 
 ${message}
 
 ${tag}`
-    }
 
     if (mode === 'create') {
       await this.create(body, target)
     } else if (mode === 'replace') {
       await this.replace(body, tag, target)
-    } else if (mode === 'append') {
-      await this.append(body, tag, target)
-    } else if (mode === 'prepend') {
-      await this.prepend(body, tag, target)
     } else {
       core.warning(`Unknown mode: ${mode}, use "replace" instead`)
       await this.replace(body, tag, target)
@@ -428,6 +420,7 @@ ${chain}
 
   async create(body: string, target: number) {
     try {
+      // get commend ID from the response
       await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
@@ -454,42 +447,6 @@ ${chain}
       }
     } catch (e) {
       core.warning(`Failed to replace comment: ${e}`)
-    }
-  }
-
-  async append(body: string, tag: string, target: number) {
-    try {
-      const cmt = await this.find_comment_with_tag(tag, target)
-      if (cmt) {
-        await octokit.issues.updateComment({
-          owner: repo.owner,
-          repo: repo.repo,
-          comment_id: cmt.id,
-          body: `${cmt.body} ${body}`
-        })
-      } else {
-        await this.create(body, target)
-      }
-    } catch (e) {
-      core.warning(`Failed to append comment: ${e}`)
-    }
-  }
-
-  async prepend(body: string, tag: string, target: number) {
-    try {
-      const cmt = await this.find_comment_with_tag(tag, target)
-      if (cmt) {
-        await octokit.issues.updateComment({
-          owner: repo.owner,
-          repo: repo.repo,
-          comment_id: cmt.id,
-          body: `${body} ${cmt.body}`
-        })
-      } else {
-        await this.create(body, target)
-      }
-    } catch (e) {
-      core.warning(`Failed to prepend comment: ${e}`)
     }
   }
 

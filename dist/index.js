@@ -3533,7 +3533,7 @@ const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes b
 const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
 class Commenter {
     /**
-     * @param mode Can be "create", "replace", "append" and "prepend". Default is "replace".
+     * @param mode Can be "create", "replace". Default is "replace".
      */
     async comment(message, tag, mode) {
         let target;
@@ -3550,25 +3550,16 @@ class Commenter {
         if (!tag) {
             tag = COMMENT_TAG;
         }
-        let body = `${message}`;
-        if (mode === 'create' || mode === 'replace') {
-            body = `${COMMENT_GREETING}
+        const body = `${COMMENT_GREETING}
 
 ${message}
 
 ${tag}`;
-        }
         if (mode === 'create') {
             await this.create(body, target);
         }
         else if (mode === 'replace') {
             await this.replace(body, tag, target);
-        }
-        else if (mode === 'append') {
-            await this.append(body, tag, target);
-        }
-        else if (mode === 'prepend') {
-            await this.prepend(body, tag, target);
         }
         else {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
@@ -3846,6 +3837,7 @@ ${chain}
     }
     async create(body, target) {
         try {
+            // get commend ID from the response
             await octokit.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
@@ -3874,44 +3866,6 @@ ${chain}
         }
         catch (e) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to replace comment: ${e}`);
-        }
-    }
-    async append(body, tag, target) {
-        try {
-            const cmt = await this.find_comment_with_tag(tag, target);
-            if (cmt) {
-                await octokit.issues.updateComment({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    comment_id: cmt.id,
-                    body: `${cmt.body} ${body}`
-                });
-            }
-            else {
-                await this.create(body, target);
-            }
-        }
-        catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to append comment: ${e}`);
-        }
-    }
-    async prepend(body, tag, target) {
-        try {
-            const cmt = await this.find_comment_with_tag(tag, target);
-            if (cmt) {
-                await octokit.issues.updateComment({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    comment_id: cmt.id,
-                    body: `${body} ${cmt.body}`
-                });
-            }
-            else {
-                await this.create(body, target);
-            }
-        }
-        catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to prepend comment: ${e}`);
         }
     }
     async find_comment_with_tag(tag, target) {
@@ -6628,60 +6582,6 @@ ${filename}: ${summary}
     }
     else {
         inputs.summary = summarize_final_response;
-        const summarize_comment = `${summarize_final_response}
-
----
-
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
-
-### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
-- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
-
----
-
-${filter_ignored_files.length > 0
-            ? `
-<details>
-<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
-
-### Ignored files
-
-* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
-
-</details>
-`
-            : ''}
-
-${skipped_files_to_summarize.length > 0
-            ? `
-<details>
-<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length})</summary>
-
-### Not summarized
-
-* ${skipped_files_to_summarize.join('\n* ')}
-
-</details>
-`
-            : ''}
-
-${summaries_failed.length > 0
-            ? `
-<details>
-<summary>Files not summarized due to errors (${summaries_failed.length})</summary>
-
-### Failed to summarize
-
-* ${summaries_failed.join('\n* ')}
-
-</details>
-`
-            : ''}
-`;
-        await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
         // final release notes
         next_summarize_ids = summarize_final_response_ids;
         const [release_notes_response, release_notes_ids] = await heavyBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
@@ -6694,10 +6594,6 @@ ${summaries_failed.length > 0
             message += release_notes_response;
             commenter.update_description(context.payload.pull_request.number, message);
         }
-    }
-    if (options.summary_only === true) {
-        core.info('summary_only is true, exiting');
-        return;
     }
     // failed reviews array
     const reviews_failed = [];
@@ -6928,23 +6824,73 @@ ${comment_chain}
     };
     const reviewPromises = [];
     const skipped_files_to_review = [];
-    for (const [filename, file_content, , patches] of files_to_review) {
-        if (options.max_files_to_review <= 0 ||
-            reviewPromises.length < options.max_files_to_review) {
-            reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
+    if (options.summary_only !== true) {
+        for (const [filename, file_content, , patches] of files_to_review) {
+            if (options.max_files_to_review <= 0 ||
+                reviewPromises.length < options.max_files_to_review) {
+                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
+            }
+            else {
+                skipped_files_to_review.push(filename);
+            }
         }
-        else {
-            skipped_files_to_review.push(filename);
-        }
+        await Promise.all(reviewPromises);
     }
-    await Promise.all(reviewPromises);
-    let summary_append = '';
-    // comment about skipped files for review and summarize
-    if (skipped_files_to_review.length > 0) {
-        // make bullet points for skipped files
-        summary_append += `
+    let summarize_comment = `${summarize_final_response}
+
+---
+
+### Chat with 🤖 OpenAI Bot (\`@openai\`)
+- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+
+### Code suggestions
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
+---
+
+${filter_ignored_files.length > 0
+        ? `
+<details>
+<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+
+### Ignored files
+
+* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
+
+</details>
+`
+        : ''}
+
+${skipped_files_to_summarize.length > 0
+        ? `
+<details>
+<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length})</summary>
+
+### Not summarized
+
+* ${skipped_files_to_summarize.join('\n* ')}
+
+</details>
+`
+        : ''}
+
+${summaries_failed.length > 0
+        ? `
+<details>
+<summary>Files not summarized due to errors (${summaries_failed.length})</summary>
+
+### Failed to summarize
+
+* ${summaries_failed.join('\n* ')}
+
+</details>
+`
+        : ''}
+
       ${skipped_files_to_review.length > 0
-            ? `<details>
+        ? `<details>
 <summary>Files not reviewed due to max files limit in this run (${skipped_files_to_review.length})</summary>
 
 ### Not reviewed
@@ -6953,24 +6899,26 @@ ${comment_chain}
 
 </details>
 `
-            : ''}
+        : ''}
 
       ${reviews_failed.length > 0
-            ? `<details>
+        ? `<details>
 <summary>Files not reviewed due to errors in this run (${reviews_failed.length})</summary>
 
-### Not reviewed
+### Failed to review
 
 * ${reviews_failed.join('\n* ')}
 
 </details>
 `
-            : ''}
-      `;
+        : ''}
+
+`;
+    if (options.summary_only !== true) {
+        // add existing_comment_ids_block with latest head sha
+        summarize_comment += `\n${addReviewedCommitId(existing_comment_ids_block, context.payload.pull_request.head.sha)}`;
     }
-    // add existing_comment_ids_block with latest head sha
-    summary_append += `\n${addReviewedCommitId(existing_comment_ids_block, context.payload.pull_request.head.sha)}`;
-    await commenter.comment(summary_append, lib_commenter/* SUMMARIZE_TAG */.Rp, 'append');
+    await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
 };
 const split_patch = (patch) => {
     if (!patch) {
@@ -7133,8 +7081,11 @@ function getReviewedCommitIds(commentBody) {
         return [];
     }
     const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
-    // remove the <!-- and --> markers from each id and extract the id
-    return ids.split('<!--').map(id => id.replace('-->', '').trim());
+    // remove the <!-- and --> markers from each id and extract the id and remove empty strings
+    return ids
+        .split('<!--')
+        .map(id => id.replace('-->', '').trim())
+        .filter(id => id !== '');
 }
 // get review commit ids comment block from the body as a string
 // including markers
@@ -7155,7 +7106,7 @@ function addReviewedCommitId(commentBody, commitId) {
         return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`;
     }
     const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
-    return `${commentBody.substring(0, start + commit_ids_marker_start.length)}\n${ids}\n<!-- ${commitId} -->\n${commentBody.substring(end)}`;
+    return `${commentBody.substring(0, start + commit_ids_marker_start.length)}${ids}\n<!-- ${commitId} -->\n${commentBody.substring(end)}`;
 }
 // given a list of commit ids provide the highest commit id that has been reviewed
 function getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
