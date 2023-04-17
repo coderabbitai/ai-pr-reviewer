@@ -146,12 +146,12 @@ export const codeReview = async (
           continue
         }
         const hunks_str = `
----new_hunk_for_review---
+---new_hunk---
 \`\`\`
 ${hunks.new_hunk}
 \`\`\`
 
----old_hunk_for_context---
+---old_hunk---
 \`\`\`
 ${hunks.old_hunk}
 \`\`\`
@@ -387,17 +387,17 @@ ${
     // Pack instructions
     ins.patches += `
 Format for changes:
-  ---new_hunk_for_review---
+  ---new_hunk---
   \`\`\`
   <new hunk annotated with line numbers>
   \`\`\`
 
-  ---old_hunk_for_context---
+  ---old_hunk---
   \`\`\`
   <old hunk that was replaced by the new hunk above>
   \`\`\`
 
-  ---comment_chains_for_context---
+  ---comment_chains---
   \`\`\`
   <comment chains>
   \`\`\`
@@ -406,9 +406,11 @@ Format for changes:
   ...
 
 The above format for changes consists of multiple change sections. 
-Each change section consists of a new hunk (annotated with line numbers), 
-an old hunk (that was replaced with new hunk) and optionally, comment 
-chains for context.
+Each change section consists of a new hunk (annotated with line numbers) 
+and an old hunk. Note that the code in old_hunk does not exist anymore
+as it was replaced by the new hunk. The old_hunk is only included for
+context. The new hunk is the code that you should review. Optionally, 
+existing review comment chains are included for additional context. 
 
 Important instructions:
 - Your task is to do a line by line review of new hunks and point out 
@@ -434,7 +436,7 @@ Important instructions:
 - If needed, provide a replacement suggestion using fenced code blocks 
   with the \`suggestion\` as the language identifier. The line number range 
   in the review section must map exactly to the line number range (inclusive) 
-  that need to be replaced within a new_hunk_for_review.
+  that need to be replaced within a new_hunk.
   For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
   of code, the line number range must be those exact 2 lines. If an entire hunk 
   need to be replaced with new code, then the line number range must be the 
@@ -474,7 +476,7 @@ Response format expected:
   ...
 
 Example changes:
-  ---new_hunk_for_review---
+  ---new_hunk---
   1: def add(x, y):
   2:     z = x+y
   3:     retrn z
@@ -482,7 +484,7 @@ Example changes:
   5: def multiply(x, y):
   6:     return x * y
   
-  ---old_hunk_for_context---
+  ---old_hunk---
   def add(x, y):
       return x + y
 
@@ -577,7 +579,7 @@ ${patch}
 `
       if (comment_chain !== '') {
         ins.patches += `
----comment_chains_for_review---
+---comment_chains---
 \`\`\`
 ${comment_chain}
 \`\`\`

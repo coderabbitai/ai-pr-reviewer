@@ -118,7 +118,7 @@ inputs:
       $description
       ```
 
-      Content of file `$filename`:
+      Content of file `$filename` prior to changes:
       ```
       $file_content
       ```
@@ -181,7 +181,7 @@ inputs:
       $summary
       ```
 
-      Content of file `$filename` for context:
+      Content of `$filename` prior to changes for context:
       ```
       $file_content
       ```
@@ -209,7 +209,7 @@ inputs:
       $summary
       ```
 
-      Content of file:
+      Content of file prior to changes:
       ```
       $file_content
       ```
