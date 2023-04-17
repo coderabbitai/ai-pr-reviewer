@@ -516,6 +516,7 @@ Changes for review are below:
         )
 
         if (all_chains.length > 0) {
+          core.info(`Found comment chains: ${all_chains} for ${filename}`)
           comment_chain = all_chains
         } else {
           comment_chain = ''

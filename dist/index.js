@@ -6755,6 +6755,7 @@ Changes for review are below:
             try {
                 const all_chains = await commenter.get_comment_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
                 if (all_chains.length > 0) {
+                    core.info(`Found comment chains: ${all_chains} for ${filename}`);
                     comment_chain = all_chains;
                 }
                 else {
