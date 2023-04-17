@@ -6446,7 +6446,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     }
     if (highest_reviewed_commit_id === '') {
         core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
-        context.payload.pull_request.base.sha;
+        highest_reviewed_commit_id = context.payload.pull_request.base.sha;
     }
     else {
         core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
