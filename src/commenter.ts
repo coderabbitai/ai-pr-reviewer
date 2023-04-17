@@ -49,11 +49,15 @@ export class Commenter {
       tag = COMMENT_TAG
     }
 
-    const body = `${COMMENT_GREETING}
+    let body = `${message}`
+
+    if (mode === 'create' || mode === 'replace') {
+      body = `${COMMENT_GREETING}
 
 ${message}
 
 ${tag}`
+    }
 
     if (mode === 'create') {
       await this.create(body, target)
