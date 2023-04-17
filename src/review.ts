@@ -4,7 +4,12 @@ import {Octokit} from '@octokit/action'
 import {retry} from '@octokit/plugin-retry'
 import pLimit from 'p-limit'
 import {Bot} from './bot.js'
-import {Commenter, COMMENT_REPLY_TAG, SUMMARIZE_TAG} from './commenter.js'
+import {
+  Commenter,
+  COMMENT_REPLY_TAG,
+  EXTRA_CONTENT_TAG,
+  SUMMARIZE_TAG
+} from './commenter.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
 
@@ -52,29 +57,9 @@ export const codeReview = async (
     )
   }
 
-  // get SUMMARIZE_TAG message
-  const existing_summarize_cmt = await commenter.find_comment_with_tag(
-    SUMMARIZE_TAG,
-    context.payload.pull_request.number
-  )
-  let existing_summarize_comment = ''
-  if (existing_summarize_cmt) {
-    existing_summarize_comment = existing_summarize_cmt.body
-  }
-
-  const existing_comment_ids_block = getReviewedCommitIdsBlock(
-    existing_summarize_comment
-  )
-
   // if the description contains ignore_keyword, skip
   if (inputs.description.includes(ignore_keyword)) {
     core.info(`Skipped: description contains ignore_keyword`)
-    // post a comment to notify the user
-    await commenter.comment(
-      `Skipped: description contains ignore_keyword\n${existing_comment_ids_block}`,
-      SUMMARIZE_TAG,
-      'replace'
-    )
     return
   }
 
@@ -91,11 +76,6 @@ export const codeReview = async (
   const {files, commits} = diff.data
   if (!files) {
     core.warning(`Skipped: diff.data.files is null`)
-    await commenter.comment(
-      `Skipped: no files to review\n${existing_comment_ids_block}`,
-      SUMMARIZE_TAG,
-      'replace'
-    )
     return
   }
 
@@ -319,19 +299,84 @@ ${filename}: ${summary}
     }
   }
 
-  // failed reviews array
-  const reviews_failed: string[] = []
-  const do_review = async (
-    filename: string,
-    file_content: string,
-    patches: [number, number, string][]
-  ): Promise<void> => {
-    // make a copy of inputs
-    const ins: Inputs = inputs.clone()
-    ins.filename = filename
+  let summarize_comment = `${summarize_final_response}
+${EXTRA_CONTENT_TAG}
+---
 
-    // Pack instructions
-    ins.patches += `
+### Chat with 🤖 OpenAI Bot (\`@openai\`)
+- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+
+### Code suggestions
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
+---
+
+${
+  filter_ignored_files.length > 0
+    ? `
+<details>
+<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+
+### Ignored files
+
+* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
+
+</details>
+`
+    : ''
+}
+
+${
+  skipped_files_to_summarize.length > 0
+    ? `
+<details>
+<summary>Files not summarized due to max files limit (${
+        skipped_files_to_summarize.length
+      })</summary>
+
+### Not summarized
+
+* ${skipped_files_to_summarize.join('\n* ')}
+
+</details>
+`
+    : ''
+}
+
+${
+  summaries_failed.length > 0
+    ? `
+<details>
+<summary>Files not summarized due to errors (${
+        summaries_failed.length
+      })</summary>
+
+### Failed to summarize
+
+* ${summaries_failed.join('\n* ')}
+
+</details>
+`
+    : ''
+}
+`
+
+  if (options.summary_only !== true) {
+    // failed reviews array
+    const reviews_failed: string[] = []
+    const do_review = async (
+      filename: string,
+      file_content: string,
+      patches: [number, number, string][]
+    ): Promise<void> => {
+      // make a copy of inputs
+      const ins: Inputs = inputs.clone()
+      ins.filename = filename
+
+      // Pack instructions
+      ins.patches += `
 Format for changes:
   ---new_hunk---
   \`\`\`
@@ -448,150 +493,161 @@ Example response:
 Changes for review are below:
 `
 
-    // calculate tokens based on inputs so far
-    let tokens = tokenizer.get_token_count(prompts.render_review_file_diff(ins))
-    // loop to calculate total patch tokens
-    let patches_to_pack = 0
-    for (const [, , patch] of patches) {
-      const patch_tokens = tokenizer.get_token_count(patch)
-      if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
-        break
-      }
-      tokens += patch_tokens
-      patches_to_pack += 1
-    }
-
-    // try packing file_content into this request
-    const file_content_count =
-      prompts.review_file_diff.split('$file_content').length - 1
-    const file_content_tokens = tokenizer.get_token_count(file_content)
-    if (
-      file_content_count > 0 &&
-      tokens + file_content_tokens * file_content_count <=
-        options.heavy_token_limits.request_tokens
-    ) {
-      ins.file_content = file_content
-      tokens += file_content_tokens * file_content_count
-    }
-
-    let patches_packed = 0
-    for (const [start_line, end_line, patch] of patches) {
-      if (!context.payload.pull_request) {
-        core.warning('No pull request found, skipping.')
-        continue
-      }
-      // see if we can pack more patches into this request
-      if (patches_packed >= patches_to_pack) {
-        core.info(
-          `unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`
-        )
-        break
-      }
-      patches_packed += 1
-
-      let comment_chain = ''
-      try {
-        const all_chains = await commenter.get_comment_chains_within_range(
-          context.payload.pull_request.number,
-          filename,
-          start_line,
-          end_line,
-          COMMENT_REPLY_TAG
-        )
-
-        if (all_chains.length > 0) {
-          core.info(`Found comment chains: ${all_chains} for ${filename}`)
-          comment_chain = all_chains
+      // calculate tokens based on inputs so far
+      let tokens = tokenizer.get_token_count(
+        prompts.render_review_file_diff(ins)
+      )
+      // loop to calculate total patch tokens
+      let patches_to_pack = 0
+      for (const [, , patch] of patches) {
+        const patch_tokens = tokenizer.get_token_count(patch)
+        if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
+          break
         }
-      } catch (e: any) {
-        core.warning(
-          `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
-        )
-      }
-      // try packing comment_chain into this request
-      const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
-      if (
-        tokens + comment_chain_tokens >
-        options.heavy_token_limits.request_tokens
-      ) {
-        comment_chain = ''
-      } else {
-        tokens += comment_chain_tokens
+        tokens += patch_tokens
+        patches_to_pack += 1
       }
 
-      ins.patches += `
+      // try packing file_content into this request
+      const file_content_count =
+        prompts.review_file_diff.split('$file_content').length - 1
+      const file_content_tokens = tokenizer.get_token_count(file_content)
+      if (
+        file_content_count > 0 &&
+        tokens + file_content_tokens * file_content_count <=
+          options.heavy_token_limits.request_tokens
+      ) {
+        ins.file_content = file_content
+        tokens += file_content_tokens * file_content_count
+      }
+
+      let patches_packed = 0
+      for (const [start_line, end_line, patch] of patches) {
+        if (!context.payload.pull_request) {
+          core.warning('No pull request found, skipping.')
+          continue
+        }
+        // see if we can pack more patches into this request
+        if (patches_packed >= patches_to_pack) {
+          core.info(
+            `unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`
+          )
+          break
+        }
+        patches_packed += 1
+
+        let comment_chain = ''
+        try {
+          const all_chains = await commenter.get_comment_chains_within_range(
+            context.payload.pull_request.number,
+            filename,
+            start_line,
+            end_line,
+            COMMENT_REPLY_TAG
+          )
+
+          if (all_chains.length > 0) {
+            core.info(`Found comment chains: ${all_chains} for ${filename}`)
+            comment_chain = all_chains
+          }
+        } catch (e: any) {
+          core.warning(
+            `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+          )
+        }
+        // try packing comment_chain into this request
+        const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
+        if (
+          tokens + comment_chain_tokens >
+          options.heavy_token_limits.request_tokens
+        ) {
+          comment_chain = ''
+        } else {
+          tokens += comment_chain_tokens
+        }
+
+        ins.patches += `
 ${patch}
 `
-      if (comment_chain !== '') {
-        ins.patches += `
+        if (comment_chain !== '') {
+          ins.patches += `
 ---comment_chains---
 \`\`\`
 ${comment_chain}
 \`\`\`
 `
-      }
+        }
 
-      ins.patches += `
+        ins.patches += `
 ---end_change_section---
 `
+      }
+
+      // perform review
+      try {
+        const [response] = await heavyBot.chat(
+          prompts.render_review_file_diff(ins),
+          {}
+        )
+        if (!response) {
+          core.info('review: nothing obtained from openai')
+          reviews_failed.push(`${filename} (no response)`)
+          return
+        }
+        // parse review
+        const reviews = parseReview(response, options.debug)
+        for (const review of reviews) {
+          // check for LGTM
+          if (
+            !options.review_comment_lgtm &&
+            (review.comment.includes('LGTM') ||
+              review.comment.includes('looks good to me'))
+          ) {
+            continue
+          }
+          if (!context.payload.pull_request) {
+            core.warning('No pull request found, skipping.')
+            continue
+          }
+          try {
+            await commenter.review_comment(
+              context.payload.pull_request.number,
+              commits[commits.length - 1].sha,
+              filename,
+              review.start_line,
+              review.end_line,
+              `${review.comment}`
+            )
+          } catch (e: any) {
+            reviews_failed.push(`${filename} comment failed (${e})`)
+          }
+        }
+      } catch (e: any) {
+        core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`)
+        reviews_failed.push(`${filename} (${e})`)
+      }
     }
 
-    // perform review
-    try {
-      const [response] = await heavyBot.chat(
-        prompts.render_review_file_diff(ins),
-        {}
-      )
-      if (!response) {
-        core.info('review: nothing obtained from openai')
-        reviews_failed.push(`${filename} (no response)`)
-        return
-      }
-      // parse review
-      const reviews = parseReview(response, options.debug)
-      for (const review of reviews) {
-        // check for LGTM
-        if (
-          !options.review_comment_lgtm &&
-          (review.comment.includes('LGTM') ||
-            review.comment.includes('looks good to me'))
-        ) {
-          continue
-        }
-        if (!context.payload.pull_request) {
-          core.warning('No pull request found, skipping.')
-          continue
-        }
-        try {
-          await commenter.review_comment(
-            context.payload.pull_request.number,
-            commits[commits.length - 1].sha,
-            filename,
-            review.start_line,
-            review.end_line,
-            `${review.comment}`
-          )
-        } catch (e: any) {
-          reviews_failed.push(`${filename} comment failed (${e})`)
-        }
-      }
-    } catch (e: any) {
-      core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`)
-      reviews_failed.push(`${filename} (${e})`)
+    // get SUMMARIZE_TAG message
+    const existing_summarize_cmt = await commenter.find_comment_with_tag(
+      SUMMARIZE_TAG,
+      context.payload.pull_request.number
+    )
+    let existing_summarize_comment = ''
+    if (existing_summarize_cmt) {
+      existing_summarize_comment = existing_summarize_cmt.body
     }
-  }
+    const existing_commit_ids_block = getReviewedCommitIdsBlock(
+      existing_summarize_comment
+    )
 
-  const reviewPromises = []
-  const skipped_files_to_review = []
-
-  if (options.summary_only !== true) {
     const allCommitIds = await getAllCommitIds()
     // find highest reviewed commit id
     let highest_reviewed_commit_id = ''
-    if (existing_comment_ids_block) {
+    if (existing_commit_ids_block) {
       highest_reviewed_commit_id = getHighestReviewedCommitId(
         allCommitIds,
-        getReviewedCommitIds(existing_comment_ids_block)
+        getReviewedCommitIds(existing_commit_ids_block)
       )
     }
 
@@ -628,6 +684,9 @@ ${comment_chain}
       }
     }
 
+    const reviewPromises = []
+    const skipped_files_to_review = []
+
     for (const [
       filename,
       file_content,
@@ -649,71 +708,8 @@ ${comment_chain}
     }
 
     await Promise.all(reviewPromises)
-  }
 
-  let summarize_comment = `${summarize_final_response}
-
----
-
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
-
-### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
-- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
-
----
-
-${
-  filter_ignored_files.length > 0
-    ? `
-<details>
-<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
-
-### Ignored files
-
-* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
-${
-  skipped_files_to_summarize.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to max files limit (${
-        skipped_files_to_summarize.length
-      })</summary>
-
-### Not summarized
-
-* ${skipped_files_to_summarize.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
-${
-  summaries_failed.length > 0
-    ? `
-<details>
-<summary>Files not summarized due to errors (${
-        summaries_failed.length
-      })</summary>
-
-### Failed to summarize
-
-* ${summaries_failed.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
+    summarize_comment += `
 ${
   skipped_files_to_review.length > 0
     ? `
@@ -747,15 +743,14 @@ ${
     : ''
 }
 `
-
-  if (options.summary_only !== true) {
     // add existing_comment_ids_block with latest head sha
     summarize_comment += `\n${addReviewedCommitId(
-      existing_comment_ids_block,
+      existing_commit_ids_block,
       context.payload.pull_request.head.sha
     )}`
   }
 
+  // post the final summary comment
   await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
 }
 

@@ -23,6 +23,8 @@ export const COMMENT_REPLY_TAG =
 export const SUMMARIZE_TAG =
   '<!-- This is an auto-generated comment: summarize by openai -->'
 
+export const EXTRA_CONTENT_TAG = '<!-- Extra content -->'
+
 export const DESCRIPTION_TAG =
   '<!-- This is an auto-generated comment: release notes by openai -->'
 export const DESCRIPTION_TAG_END =
