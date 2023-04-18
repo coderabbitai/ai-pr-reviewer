@@ -3514,31 +3514,11 @@ class Bot {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1231);
-/* harmony import */ var _octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9968);
+/* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3258);
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 
 
-
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
-const ThrottlingOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_3__/* .throttling */ .O);
-const octokit = new ThrottlingOctokit({
-    auth: `token ${token}`,
-    throttle: {
-        onRateLimit: (retryAfter, options, o, retryCount) => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Request quota exhausted for request ${options.method} ${options.url}
-Retry after: ${retryAfter} seconds
-Retry count: ${retryCount}
-`);
-            return true;
-        },
-        onSecondaryRateLimit: (retryAfter, options, o) => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
-            return true;
-        }
-    }
-});
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
@@ -3598,7 +3578,7 @@ ${tag}`;
         // for the tag (marker)
         try {
             // get latest description from PR
-            const pr = await octokit.pulls.get({
+            const pr = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.get */ .K.pulls.get({
                 owner: repo.owner,
                 repo: repo.repo,
                 pull_number
@@ -3615,7 +3595,7 @@ ${tag}`;
             const comment = `${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
             if (tag_index === -1 || tag_end_index === -1) {
                 const new_description = `${description}\n${comment}`;
-                await octokit.pulls.update({
+                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
@@ -3626,7 +3606,7 @@ ${tag}`;
                 let new_description = description.substring(0, tag_index);
                 new_description += comment;
                 new_description += description.substring(tag_end_index + DESCRIPTION_TAG_END.length);
-                await octokit.pulls.update({
+                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
@@ -3655,31 +3635,33 @@ ${tag}`;
     async submit_review(pull_number, commit_id) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`);
         try {
-            let batchNumber = 1;
-            while (this.reviewCommentsBuffer.length > 0) {
-                const commentsBatch = this.reviewCommentsBuffer.splice(0, 30);
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting batch #${batchNumber} with ${commentsBatch.length} comments`);
-                await octokit.pulls.createReview({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    commit_id,
-                    event: 'COMMENT',
-                    comments: commentsBatch.map(comment => {
-                        const commentData = {
-                            path: comment.path,
-                            body: comment.message,
-                            line: comment.end_line,
-                            start_side: 'RIGHT'
-                        };
-                        if (comment.start_line !== comment.end_line) {
-                            commentData.start_line = comment.start_line;
-                        }
-                        return commentData;
-                    })
-                });
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Batch #${batchNumber} posted`);
-                batchNumber++;
+            for (const comment of this.reviewCommentsBuffer) {
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting comment: ${comment.message}`);
+                if (comment.start_line !== comment.end_line) {
+                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        pull_number,
+                        commit_id,
+                        body: comment.message,
+                        path: comment.path,
+                        line: comment.end_line,
+                        start_side: 'RIGHT',
+                        start_line: comment.start_line
+                    });
+                }
+                else {
+                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        pull_number,
+                        commit_id,
+                        body: comment.message,
+                        path: comment.path,
+                        line: comment.end_line
+                    });
+                }
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment posted`);
             }
         }
         catch (e) {
@@ -3696,7 +3678,7 @@ ${COMMENT_REPLY_TAG}
 `;
         try {
             // Post the reply to the user comment
-            await octokit.pulls.createReplyForReviewComment({
+            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
                 owner: repo.owner,
                 repo: repo.repo,
                 pull_number,
@@ -3707,7 +3689,7 @@ ${COMMENT_REPLY_TAG}
         catch (error) {
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment ${error}`);
             try {
-                await octokit.pulls.createReplyForReviewComment({
+                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
@@ -3723,7 +3705,7 @@ ${COMMENT_REPLY_TAG}
             if (top_level_comment.body.includes(COMMENT_TAG)) {
                 // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
                 const newBody = top_level_comment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG);
-                await octokit.pulls.updateReviewComment({
+                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
                     comment_id: top_level_comment.id,
@@ -3821,7 +3803,7 @@ ${chain}
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await octokit.pulls.listReviewComments({
+                const { data: comments } = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listReviewComments */ .K.pulls.listReviewComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number: target,
@@ -3845,7 +3827,7 @@ ${chain}
     async create(body, target) {
         try {
             // get commend ID from the response
-            await octokit.issues.createComment({
+            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.createComment */ .K.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
                 issue_number: target,
@@ -3860,7 +3842,7 @@ ${chain}
         try {
             const cmt = await this.find_comment_with_tag(tag, target);
             if (cmt) {
-                await octokit.issues.updateComment({
+                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.updateComment */ .K.issues.updateComment({
                     owner: repo.owner,
                     repo: repo.repo,
                     comment_id: cmt.id,
@@ -3899,7 +3881,7 @@ ${chain}
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await octokit.issues.listComments({
+                const { data: comments } = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.listComments */ .K.issues.listComments({
                     owner: repo.owner,
                     repo: repo.repo,
                     issue_number: target,
@@ -3997,6 +3979,42 @@ await run();
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
+
+/***/ }),
+
+/***/ 3258:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "K": () => (/* binding */ octokit)
+/* harmony export */ });
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1231);
+/* harmony import */ var _octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9968);
+
+
+
+const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
+const ThrottlingOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_1__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_2__/* .throttling */ .O);
+const octokit = new ThrottlingOctokit({
+    auth: `token ${token}`,
+    throttle: {
+        onRateLimit: (retryAfter, options, o, retryCount) => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Request quota exhausted for request ${options.method} ${options.url}
+Retry after: ${retryAfter} seconds
+Retry count: ${retryCount}
+`);
+            return true;
+        },
+        onSecondaryRateLimit: (retryAfter, options, o) => {
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
+            return true;
+        }
+    }
+});
+
 
 /***/ }),
 
@@ -6026,42 +6044,22 @@ class PathFilter {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(1231);
-/* harmony import */ var _octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(9968);
 /* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4529);
-/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
+/* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3258);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4529);
+/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(652);
 
 
 
 
 
 
-
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
-const ThrottlingOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_6__/* .throttling */ .O);
-const octokit = new ThrottlingOctokit({
-    auth: `token ${token}`,
-    throttle: {
-        onRateLimit: (retryAfter, options, o, retryCount) => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Request quota exhausted for request ${options.method} ${options.url}
-Retry after: ${retryAfter} seconds
-Retry count: ${retryCount}
-`);
-            return true;
-        },
-        onSecondaryRateLimit: (retryAfter, options, o) => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
-            return true;
-        }
-    }
-});
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
 const handleReviewComment = async (heavyBot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
-    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_3__/* .Inputs */ .kq();
+    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_4__/* .Inputs */ .kq();
     if (context.eventName !== 'pull_request_review_comment') {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
         return;
@@ -6107,7 +6105,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             comment.body.includes(ASK_BOT)) {
             let file_content = '';
             try {
-                const contents = await octokit.repos.getContent({
+                const contents = await _octokit_js__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.getContent */ .K.repos.getContent({
                     owner: repo.owner,
                     repo: repo.repo,
                     path: comment.path,
@@ -6127,7 +6125,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             let file_diff = '';
             try {
                 // get diff for this file by comparing the base and head commits
-                const diffAll = await octokit.repos.compareCommits({
+                const diffAll = await _octokit_js__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.compareCommits */ .K.repos.compareCommits({
                     owner: repo.owner,
                     repo: repo.repo,
                     base: context.payload.pull_request.base.sha,
@@ -6164,7 +6162,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 inputs.summary = summary.body.split(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .EXTRA_CONTENT_TAG */ .Nh)[0];
             }
             // get tokens so far
-            let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(prompts.render_comment(inputs));
+            let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(prompts.render_comment(inputs));
             if (tokens > options.heavy_token_limits.request_tokens) {
                 await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
                 return;
@@ -6173,7 +6171,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (file_content.length > 0) {
                 // count occurrences of $file_content in prompt
                 const file_content_count = prompts.comment.split('$file_content').length - 1;
-                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
+                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(file_content);
                 if (file_content_count > 0 &&
                     tokens + file_content_tokens * file_content_count <=
                         options.heavy_token_limits.request_tokens) {
@@ -6184,7 +6182,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (file_diff.length > 0) {
                 // count occurrences of $file_diff in prompt
                 const file_diff_count = prompts.comment.split('$file_diff').length - 1;
-                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
+                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(file_diff);
                 if (file_diff_count > 0 &&
                     tokens + file_diff_tokens * file_diff_count <=
                         options.heavy_token_limits.request_tokens) {
@@ -6218,10 +6216,6 @@ __nccwpck_require__.d(__webpack_exports__, {
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
-// EXTERNAL MODULE: ./node_modules/@octokit/action/dist-node/index.js
-var dist_node = __nccwpck_require__(1231);
-// EXTERNAL MODULE: ./node_modules/@octokit/plugin-throttling/dist-node/index.js
-var plugin_throttling_dist_node = __nccwpck_require__(9968);
 ;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
 /*
 How it works:
@@ -6363,6 +6357,8 @@ function pLimit(concurrency) {
 
 // EXTERNAL MODULE: ./lib/commenter.js
 var lib_commenter = __nccwpck_require__(3339);
+// EXTERNAL MODULE: ./lib/octokit.js
+var octokit = __nccwpck_require__(3258);
 // EXTERNAL MODULE: ./lib/options.js + 6 modules
 var lib_options = __nccwpck_require__(4529);
 // EXTERNAL MODULE: ./lib/tokenizer.js
@@ -6375,27 +6371,6 @@ var tokenizer = __nccwpck_require__(652);
 
 
 
-
-const token = core.getInput('token')
-    ? core.getInput('token')
-    : process.env.GITHUB_TOKEN;
-const ThrottlingOctokit = dist_node/* Octokit.plugin */.v.plugin(plugin_throttling_dist_node/* throttling */.O);
-const octokit = new ThrottlingOctokit({
-    auth: `token ${token}`,
-    throttle: {
-        onRateLimit: (retryAfter, options, o, retryCount) => {
-            core.warning(`Request quota exhausted for request ${options.method} ${options.url}
-Retry after: ${retryAfter} seconds
-Retry count: ${retryCount}
-`);
-            return true;
-        },
-        onSecondaryRateLimit: (retryAfter, options, o) => {
-            core.warning(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
-            return true;
-        }
-    }
-});
 const context = github.context;
 const repo = context.repo;
 const ignore_keyword = '@openai: ignore';
@@ -6424,7 +6399,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
     // collect diff chunks
-    const diff = await octokit.repos.compareCommits({
+    const diff = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
         owner: repo.owner,
         repo: repo.repo,
         base: context.payload.pull_request.base.sha,
@@ -6456,7 +6431,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             return null;
         }
         try {
-            const contents = await octokit.repos.getContent({
+            const contents = await octokit/* octokit.repos.getContent */.K.repos.getContent({
                 owner: repo.owner,
                 repo: repo.repo,
                 path: file.filename,
@@ -6939,7 +6914,7 @@ ${review.comment}`;
             // and the latest (head) commit
             // use octokit.pulls.compareCommits to get the list of files changed
             // between the highest reviewed commit and the latest (head) commit
-            const diff_since_last_review = await octokit.repos.compareCommits({
+            const diff_since_last_review = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
                 owner: repo.owner,
                 repo: repo.repo,
                 base: highest_reviewed_commit_id,
@@ -7202,7 +7177,7 @@ async function getAllCommitIds() {
     let commits;
     if (context && context.payload && context.payload.pull_request) {
         do {
-            commits = await octokit.pulls.listCommits({
+            commits = await octokit/* octokit.pulls.listCommits */.K.pulls.listCommits({
                 owner: repo.owner,
                 repo: repo.repo,
                 pull_number: context.payload.pull_request.number,
