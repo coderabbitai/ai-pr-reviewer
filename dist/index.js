@@ -3623,62 +3623,42 @@ ${tag}`;
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
-    async review_comment(pull_number, commit_id, path, start_line, end_line, message, tag = COMMENT_TAG) {
+    reviewCommentsBuffer = [];
+    async buffer_review_comment(path, start_line, end_line, message, tag = COMMENT_TAG) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
 ${tag}`;
-        // replace comment made by this action
+        this.reviewCommentsBuffer.push({
+            path,
+            start_line,
+            end_line,
+            message
+        });
+    }
+    async submit_review(pull_number, commit_id) {
         try {
-            let found = false;
-            const comments = await this.get_comments_at_range(pull_number, path, start_line, end_line);
-            for (const comment of comments) {
-                if (comment.body.includes(tag)) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${path}:${start_line}-${end_line}: ${message}`);
-                    await octokit.pulls.updateReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        comment_id: comment.id,
-                        body: message
-                    });
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${path}:${start_line}-${end_line}: ${message}`);
-                // if start_line is same as end_line, it's a single line comment
-                // otherwise it's a multi-line comment
-                if (start_line === end_line) {
-                    await octokit.pulls.createReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        body: message,
-                        commit_id,
-                        path,
-                        line: end_line
-                    });
-                }
-                else {
-                    await octokit.pulls.createReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        body: message,
-                        commit_id,
-                        path,
-                        line: end_line,
-                        start_line,
+            if (this.reviewCommentsBuffer.length > 0) {
+                await octokit.pulls.createReview({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    pull_number,
+                    commit_id,
+                    event: 'COMMENT',
+                    comments: this.reviewCommentsBuffer.map(comment => ({
+                        path: comment.path,
+                        body: comment.message,
+                        line: comment.end_line,
+                        start_line: comment.start_line,
                         start_side: 'RIGHT'
-                    });
-                }
+                    }))
+                });
+                this.reviewCommentsBuffer = [];
             }
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to post review comment, for ${path}:${start_line}-${end_line}: ${e}`);
-            // throw error
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to submit review: ${e}`);
             throw e;
         }
     }
@@ -6842,7 +6822,7 @@ ${comment_chain}
                         continue;
                     }
                     try {
-                        await commenter.review_comment(context.payload.pull_request.number, commits[commits.length - 1].sha, filename, review.start_line, review.end_line, `${review.comment}`);
+                        await commenter.buffer_review_comment(filename, review.start_line, review.end_line, `${review.comment}`);
                     }
                     catch (e) {
                         reviews_failed.push(`${filename} comment failed (${e})`);
@@ -6935,6 +6915,8 @@ ${reviews_failed.length > 0
     }
     // post the final summary comment
     await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+    // post the review
+    await commenter.submit_review(context.payload.pull_request.number, commits[commits.length - 1].sha);
 };
 const split_patch = (patch) => {
     if (!patch) {
