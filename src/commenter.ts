@@ -7,7 +7,13 @@ import {retry} from '@octokit/plugin-retry'
 const token = core.getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryOctokit = Octokit.plugin(retry)
-const octokit = new RetryOctokit({auth: `token ${token}`})
+const octokit = new RetryOctokit({
+  auth: `token ${token}`,
+  request: {
+    retries: 10,
+    retryAfter: 30
+  }
+})
 
 const context = github.context
 const repo = context.repo
@@ -157,15 +163,24 @@ ${tag}`
   }
 
   async submit_review(pull_number: number, commit_id: string) {
+    core.info(
+      `Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`
+    )
     try {
-      if (this.reviewCommentsBuffer.length > 0) {
+      let batchNumber = 1
+      while (this.reviewCommentsBuffer.length > 0) {
+        const commentsBatch = this.reviewCommentsBuffer.splice(0, 30)
+        core.info(
+          `Posting batch #${batchNumber} with ${commentsBatch.length} comments`
+        )
+
         await octokit.pulls.createReview({
           owner: repo.owner,
           repo: repo.repo,
           pull_number,
           commit_id,
           event: 'COMMENT',
-          comments: this.reviewCommentsBuffer.map(comment => {
+          comments: commentsBatch.map(comment => {
             const commentData: any = {
               path: comment.path,
               body: comment.message,
@@ -180,7 +195,12 @@ ${tag}`
             return commentData
           })
         })
-        this.reviewCommentsBuffer = []
+
+        if (this.reviewCommentsBuffer.length > 0) {
+          core.info(`Waiting 10 seconds before posting next batch`)
+          await new Promise(resolve => setTimeout(resolve, 10000))
+        }
+        batchNumber++
       }
     } catch (e) {
       core.warning(`Failed to submit review: ${e}`)

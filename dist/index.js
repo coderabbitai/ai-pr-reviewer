@@ -3523,7 +3523,13 @@ class Bot {
 
 const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
 const RetryOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_2__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__/* .retry */ .XD);
-const octokit = new RetryOctokit({ auth: `token ${token}` });
+const octokit = new RetryOctokit({
+    auth: `token ${token}`,
+    request: {
+        retries: 10,
+        retryAfter: 30
+    }
+});
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const COMMENT_GREETING = `:robot: OpenAI`;
@@ -3638,15 +3644,19 @@ ${tag}`;
         });
     }
     async submit_review(pull_number, commit_id) {
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`);
         try {
-            if (this.reviewCommentsBuffer.length > 0) {
+            let batchNumber = 1;
+            while (this.reviewCommentsBuffer.length > 0) {
+                const commentsBatch = this.reviewCommentsBuffer.splice(0, 30);
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting batch #${batchNumber} with ${commentsBatch.length} comments`);
                 await octokit.pulls.createReview({
                     owner: repo.owner,
                     repo: repo.repo,
                     pull_number,
                     commit_id,
                     event: 'COMMENT',
-                    comments: this.reviewCommentsBuffer.map(comment => {
+                    comments: commentsBatch.map(comment => {
                         const commentData = {
                             path: comment.path,
                             body: comment.message,
@@ -3659,7 +3669,11 @@ ${tag}`;
                         return commentData;
                     })
                 });
-                this.reviewCommentsBuffer = [];
+                if (this.reviewCommentsBuffer.length > 0) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Waiting 10 seconds before posting next batch`);
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
+                batchNumber++;
             }
         }
         catch (e) {
@@ -6022,7 +6036,13 @@ const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     ? _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token')
     : process.env.GITHUB_TOKEN;
 const RetryOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_5__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_6__/* .retry */ .XD);
-const octokit = new RetryOctokit({ auth: `token ${token}` });
+const octokit = new RetryOctokit({
+    auth: `token ${token}`,
+    request: {
+        retries: 10,
+        retryAfter: 30
+    }
+});
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
@@ -6347,7 +6367,13 @@ const token = core.getInput('token')
     ? core.getInput('token')
     : process.env.GITHUB_TOKEN;
 const RetryOctokit = dist_node/* Octokit.plugin */.v.plugin(plugin_retry_dist_node/* retry */.XD);
-const octokit = new RetryOctokit({ auth: `token ${token}` });
+const octokit = new RetryOctokit({
+    auth: `token ${token}`,
+    request: {
+        retries: 10,
+        retryAfter: 30
+    }
+});
 const context = github.context;
 const repo = context.repo;
 const ignore_keyword = '@openai: ignore';
