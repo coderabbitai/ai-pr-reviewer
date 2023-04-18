@@ -586,7 +586,7 @@ ${comment_chain}
           return
         }
         // parse review
-        const reviews = parseReview(response, options.debug)
+        const reviews = parseReview(response, patches, options.debug)
         for (const review of reviews) {
           // check for LGTM
           if (
@@ -599,37 +599,6 @@ ${comment_chain}
           if (!context.payload.pull_request) {
             core.warning('No pull request found, skipping.')
             continue
-          }
-
-          // sanitize review's start_line and end_line
-          // with patches' start_line and end_line
-          // if needed adjust start_line and end_line
-          // to make it fit within a closest patch
-          let within_patch = false
-          let closest_start_line = patches[0][0]
-          let closest_end_line = patches[0][1]
-          for (const [start_line, end_line] of patches) {
-            // see if review is within some patch
-            if (review.start_line >= start_line) {
-              closest_start_line = start_line
-              closest_end_line = end_line
-              if (
-                review.end_line <= end_line &&
-                review.end_line >= start_line
-              ) {
-                within_patch = true
-                break
-              }
-            }
-          }
-
-          if (!within_patch) {
-            // map the review to the closest patch
-            review.comment = `> Note: This review was outside of the patch, so it was mapped it to the closest patch. Original lines [${review.start_line}-${review.end_line}]
-
-${review.comment}`
-            review.start_line = closest_start_line
-            review.end_line = closest_end_line
           }
 
           try {
@@ -878,13 +847,17 @@ const parse_patch = (
   }
 }
 
-type Review = {
+interface Review {
   start_line: number
   end_line: number
   comment: string
 }
 
-function parseReview(response: string, debug = false): Review[] {
+function parseReview(
+  response: string,
+  patches: [number, number, string][],
+  debug = false
+): Review[] {
   const reviews: Review[] = []
 
   const lines = response.split('\n')
@@ -895,18 +868,53 @@ function parseReview(response: string, debug = false): Review[] {
   let currentEndLine: number | null = null
   let currentComment = ''
 
-  // Helper function to create and store a review object
   function storeReview(): void {
     if (currentStartLine !== null && currentEndLine !== null) {
-      reviews.push({
+      const review: Review = {
         start_line: currentStartLine,
         end_line: currentEndLine,
         comment: currentComment.trim()
-      })
-      debug &&
+      }
+
+      let within_patch = false
+      let best_patch_start_line = patches[0][0]
+      let best_patch_end_line = patches[0][1]
+      let max_intersection = 0
+
+      for (const [start_line, end_line] of patches) {
+        const intersection_start = Math.max(review.start_line, start_line)
+        const intersection_end = Math.min(review.end_line, end_line)
+        const intersection_length = Math.max(
+          0,
+          intersection_end - intersection_start + 1
+        )
+
+        if (intersection_length > max_intersection) {
+          max_intersection = intersection_length
+          best_patch_start_line = start_line
+          best_patch_end_line = end_line
+          within_patch =
+            intersection_length === review.end_line - review.start_line + 1
+        }
+
+        if (within_patch) break
+      }
+
+      if (!within_patch) {
+        review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.start_line}-${review.end_line}]
+
+${review.comment}`
+        review.start_line = best_patch_start_line
+        review.end_line = best_patch_end_line
+      }
+
+      reviews.push(review)
+
+      if (debug) {
         core.info(
           `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
         )
+      }
     }
   }
 
@@ -918,10 +926,11 @@ function parseReview(response: string, debug = false): Review[] {
       currentStartLine = parseInt(lineNumberRangeMatch[1], 10)
       currentEndLine = parseInt(lineNumberRangeMatch[2], 10)
       currentComment = ''
-      debug &&
+      if (debug) {
         core.info(
           `Found line number range: ${currentStartLine}-${currentEndLine}`
         )
+      }
       continue
     }
 
@@ -930,7 +939,9 @@ function parseReview(response: string, debug = false): Review[] {
       currentStartLine = null
       currentEndLine = null
       currentComment = ''
-      debug && core.info('Found comment separator')
+      if (debug) {
+        core.info('Found comment separator')
+      }
       continue
     }
 
@@ -939,7 +950,6 @@ function parseReview(response: string, debug = false): Review[] {
     }
   }
 
-  // Store the last comment, if any
   storeReview()
 
   return reviews
