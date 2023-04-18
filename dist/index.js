@@ -6821,6 +6821,31 @@ ${comment_chain}
                         core.warning('No pull request found, skipping.');
                         continue;
                     }
+                    // sanitize review's start_line and end_line
+                    // with patches' start_line and end_line
+                    // if needed adjust start_line and end_line
+                    // to make it fit within a closest patch
+                    let within_patch = false;
+                    let closest_start_line = patches[0][0];
+                    let closest_end_line = patches[0][1];
+                    for (const [start_line, end_line] of patches) {
+                        // see if review is within some patch
+                        if (review.start_line >= start_line) {
+                            closest_start_line = start_line;
+                            closest_end_line = end_line;
+                            if (review.end_line <= end_line) {
+                                within_patch = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!within_patch || review.start_line > review.end_line) {
+                        // map the review to the closest patch
+                        review.comment = `> Note: This review was outside of the patch, so it was mapped it to the closest patch. Original lines [${review.start_line}-${review.end_line}]
+${review.comment}`;
+                        review.start_line = closest_start_line;
+                        review.end_line = closest_end_line;
+                    }
                     try {
                         await commenter.buffer_review_comment(filename, review.start_line, review.end_line, `${review.comment}`);
                     }
