@@ -3657,7 +3657,7 @@ ${tag}`;
         try {
             let batchNumber = 1;
             while (this.reviewCommentsBuffer.length > 0) {
-                const commentsBatch = this.reviewCommentsBuffer.splice(0, 20);
+                const commentsBatch = this.reviewCommentsBuffer.splice(0, 30);
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting batch #${batchNumber} with ${commentsBatch.length} comments`);
                 await octokit.pulls.createReview({
                     owner: repo.owner,

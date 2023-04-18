@@ -187,7 +187,7 @@ ${tag}`
     try {
       let batchNumber = 1
       while (this.reviewCommentsBuffer.length > 0) {
-        const commentsBatch = this.reviewCommentsBuffer.splice(0, 20)
+        const commentsBatch = this.reviewCommentsBuffer.splice(0, 30)
         core.info(
           `Posting batch #${batchNumber} with ${commentsBatch.length} comments`
         )
