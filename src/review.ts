@@ -18,7 +18,13 @@ const token = core.getInput('token')
   : process.env.GITHUB_TOKEN
 
 const RetryOctokit = Octokit.plugin(retry)
-const octokit = new RetryOctokit({auth: `token ${token}`})
+const octokit = new RetryOctokit({
+  auth: `token ${token}`,
+  request: {
+    retries: 10,
+    retryAfter: 30
+  }
+})
 
 const context = github.context
 const repo = context.repo
