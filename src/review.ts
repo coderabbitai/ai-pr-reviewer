@@ -871,32 +871,36 @@ function parseReview(
   function removeLineNumbersFromSuggestion(comment: string): string {
     const suggestionStart = '```suggestion'
     const suggestionEnd = '```'
-    const suggestionStartIndex = comment.indexOf(suggestionStart)
+    let suggestionStartIndex = comment.indexOf(suggestionStart)
 
-    if (suggestionStartIndex === -1) {
-      return comment
+    while (suggestionStartIndex !== -1) {
+      const suggestionEndIndex = comment.indexOf(
+        suggestionEnd,
+        suggestionStartIndex
+      )
+      const suggestionBlock = comment.substring(
+        suggestionStartIndex + suggestionStart.length,
+        suggestionEndIndex
+      )
+      const lineNumberRegex = /^\s*\d+:\s+/
+
+      const sanitizedBlock = suggestionBlock
+        .split('\n')
+        .map(line => line.replace(lineNumberRegex, ''))
+        .join('\n')
+
+      comment =
+        comment.substring(0, suggestionStartIndex + suggestionStart.length) +
+        sanitizedBlock +
+        comment.substring(suggestionEndIndex)
+
+      suggestionStartIndex = comment.indexOf(
+        suggestionStart,
+        suggestionEndIndex + suggestionEnd.length
+      )
     }
 
-    const suggestionEndIndex = comment.indexOf(
-      suggestionEnd,
-      suggestionStartIndex
-    )
-    const suggestionBlock = comment.substring(
-      suggestionStartIndex + suggestionStart.length,
-      suggestionEndIndex
-    )
-    const lineNumberRegex = /^\s*\d+:\s+/
-
-    const sanitizedBlock = suggestionBlock
-      .split('\n')
-      .map(line => line.replace(lineNumberRegex, ''))
-      .join('\n')
-
-    return (
-      comment.substring(0, suggestionStartIndex + suggestionStart.length) +
-      sanitizedBlock +
-      comment.substring(suggestionEndIndex)
-    )
+    return comment
   }
 
   function storeReview(): void {
@@ -944,11 +948,9 @@ ${review.comment}`
 
       reviews.push(review)
 
-      if (debug) {
-        core.info(
-          `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
-        )
-      }
+      core.info(
+        `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
+      )
     }
   }
 

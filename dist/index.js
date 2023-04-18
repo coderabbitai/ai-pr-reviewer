@@ -7063,20 +7063,22 @@ function parseReview(response, patches, debug = false) {
     function removeLineNumbersFromSuggestion(comment) {
         const suggestionStart = '```suggestion';
         const suggestionEnd = '```';
-        const suggestionStartIndex = comment.indexOf(suggestionStart);
-        if (suggestionStartIndex === -1) {
-            return comment;
+        let suggestionStartIndex = comment.indexOf(suggestionStart);
+        while (suggestionStartIndex !== -1) {
+            const suggestionEndIndex = comment.indexOf(suggestionEnd, suggestionStartIndex);
+            const suggestionBlock = comment.substring(suggestionStartIndex + suggestionStart.length, suggestionEndIndex);
+            const lineNumberRegex = /^\s*\d+:\s+/;
+            const sanitizedBlock = suggestionBlock
+                .split('\n')
+                .map(line => line.replace(lineNumberRegex, ''))
+                .join('\n');
+            comment =
+                comment.substring(0, suggestionStartIndex + suggestionStart.length) +
+                    sanitizedBlock +
+                    comment.substring(suggestionEndIndex);
+            suggestionStartIndex = comment.indexOf(suggestionStart, suggestionEndIndex + suggestionEnd.length);
         }
-        const suggestionEndIndex = comment.indexOf(suggestionEnd, suggestionStartIndex);
-        const suggestionBlock = comment.substring(suggestionStartIndex + suggestionStart.length, suggestionEndIndex);
-        const lineNumberRegex = /^\s*\d+:\s+/;
-        const sanitizedBlock = suggestionBlock
-            .split('\n')
-            .map(line => line.replace(lineNumberRegex, ''))
-            .join('\n');
-        return (comment.substring(0, suggestionStartIndex + suggestionStart.length) +
-            sanitizedBlock +
-            comment.substring(suggestionEndIndex));
+        return comment;
     }
     function storeReview() {
         if (currentStartLine !== null && currentEndLine !== null) {
@@ -7112,9 +7114,7 @@ ${review.comment}`;
                 review.end_line = best_patch_end_line;
             }
             reviews.push(review);
-            if (debug) {
-                core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-            }
+            core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
         }
     }
     for (const line of lines) {
