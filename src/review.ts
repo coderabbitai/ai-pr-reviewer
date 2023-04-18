@@ -372,7 +372,7 @@ ${
 Format for changes:
   ---new_hunk---
   \`\`\`
-  <line number annotated new hunk>
+  <new hunk annotated with line numbers>
   \`\`\`
 
   ---old_hunk---
@@ -435,8 +435,8 @@ Important instructions:
 - If there are no substantive issues detected at a line range, simply 
   comment "LGTM!" for the respective line range in a review section and 
   avoid additional commentary/compliments.
-- Review your comments and line number ranges at least 3 times before sending 
-  the final response to ensure accuracy of line number ranges and replacement
+- Reflect on your comments and line number ranges before sending the final 
+  response to ensure accuracy of line number ranges and replacement
   snippets.
 
 Response format expected:

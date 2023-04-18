@@ -134,14 +134,13 @@ ${tag}`
     path: string,
     start_line: number,
     end_line: number,
-    message: string,
-    tag: string = COMMENT_TAG
+    message: string
   ) {
     message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`
+${COMMENT_TAG}`
     this.reviewCommentsBuffer.push({
       path,
       start_line,
@@ -158,29 +157,56 @@ ${tag}`
       let commentCounter = 0
       for (const comment of this.reviewCommentsBuffer) {
         core.info(`Posting comment: ${comment.message}`)
+        let found = false
+        const comments = await this.get_comments_at_range(
+          pull_number,
+          comment.path,
+          comment.start_line,
+          comment.end_line
+        )
+        for (const c of comments) {
+          if (c.body.includes(COMMENT_TAG)) {
+            core.info(
+              `Updating review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`
+            )
+            await octokit.pulls.updateReviewComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              comment_id: c.id,
+              body: comment.message
+            })
+            found = true
+            break
+          }
+        }
 
-        if (comment.start_line !== comment.end_line) {
-          await octokit.pulls.createReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number,
-            commit_id,
-            body: comment.message,
-            path: comment.path,
-            line: comment.end_line,
-            start_side: 'RIGHT',
-            start_line: comment.start_line
-          })
-        } else {
-          await octokit.pulls.createReviewComment({
-            owner: repo.owner,
-            repo: repo.repo,
-            pull_number,
-            commit_id,
-            body: comment.message,
-            path: comment.path,
-            line: comment.end_line
-          })
+        if (!found) {
+          core.info(
+            `Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`
+          )
+          if (comment.start_line !== comment.end_line) {
+            await octokit.pulls.createReviewComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              pull_number,
+              commit_id,
+              body: comment.message,
+              path: comment.path,
+              line: comment.end_line,
+              start_side: 'RIGHT',
+              start_line: comment.start_line
+            })
+          } else {
+            await octokit.pulls.createReviewComment({
+              owner: repo.owner,
+              repo: repo.repo,
+              pull_number,
+              commit_id,
+              body: comment.message,
+              path: comment.path,
+              line: comment.end_line
+            })
+          }
         }
 
         commentCounter++
@@ -261,7 +287,7 @@ ${COMMENT_REPLY_TAG}
         ((comment.start_line !== undefined &&
           comment.start_line >= start_line &&
           comment.line <= end_line) ||
-          comment.line === end_line)
+          (start_line === end_line && comment.line === end_line))
     )
   }
 
@@ -279,7 +305,7 @@ ${COMMENT_REPLY_TAG}
         ((comment.start_line !== undefined &&
           comment.start_line === start_line &&
           comment.line === end_line) ||
-          comment.line === end_line)
+          (start_line === end_line && comment.line === end_line))
     )
   }
 

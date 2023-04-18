@@ -3619,12 +3619,12 @@ ${tag}`;
         }
     }
     reviewCommentsBuffer = [];
-    async buffer_review_comment(path, start_line, end_line, message, tag = COMMENT_TAG) {
+    async buffer_review_comment(path, start_line, end_line, message) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`;
+${COMMENT_TAG}`;
         this.reviewCommentsBuffer.push({
             path,
             start_line,
@@ -3638,29 +3638,47 @@ ${tag}`;
             let commentCounter = 0;
             for (const comment of this.reviewCommentsBuffer) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting comment: ${comment.message}`);
-                if (comment.start_line !== comment.end_line) {
-                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        commit_id,
-                        body: comment.message,
-                        path: comment.path,
-                        line: comment.end_line,
-                        start_side: 'RIGHT',
-                        start_line: comment.start_line
-                    });
+                let found = false;
+                const comments = await this.get_comments_at_range(pull_number, comment.path, comment.start_line, comment.end_line);
+                for (const c of comments) {
+                    if (c.body.includes(COMMENT_TAG)) {
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
+                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            comment_id: c.id,
+                            body: comment.message
+                        });
+                        found = true;
+                        break;
+                    }
                 }
-                else {
-                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        commit_id,
-                        body: comment.message,
-                        path: comment.path,
-                        line: comment.end_line
-                    });
+                if (!found) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
+                    if (comment.start_line !== comment.end_line) {
+                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            pull_number,
+                            commit_id,
+                            body: comment.message,
+                            path: comment.path,
+                            line: comment.end_line,
+                            start_side: 'RIGHT',
+                            start_line: comment.start_line
+                        });
+                    }
+                    else {
+                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            pull_number,
+                            commit_id,
+                            body: comment.message,
+                            path: comment.path,
+                            line: comment.end_line
+                        });
+                    }
                 }
                 commentCounter++;
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
@@ -3726,7 +3744,7 @@ ${COMMENT_REPLY_TAG}
             ((comment.start_line !== undefined &&
                 comment.start_line >= start_line &&
                 comment.line <= end_line) ||
-                comment.line === end_line));
+                (start_line === end_line && comment.line === end_line)));
     }
     async get_comments_at_range(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
@@ -3735,7 +3753,7 @@ ${COMMENT_REPLY_TAG}
             ((comment.start_line !== undefined &&
                 comment.start_line === start_line &&
                 comment.line === end_line) ||
-                comment.line === end_line));
+                (start_line === end_line && comment.line === end_line)));
     }
     async get_comment_chains_within_range(pull_number, path, start_line, end_line, tag = '') {
         const existing_comments = await this.get_comments_within_range(pull_number, path, start_line, end_line);
@@ -6650,7 +6668,7 @@ ${summaries_failed.length > 0
 Format for changes:
   ---new_hunk---
   \`\`\`
-  <line number annotated new hunk>
+  <new hunk annotated with line numbers>
   \`\`\`
 
   ---old_hunk---
@@ -6713,8 +6731,8 @@ Important instructions:
 - If there are no substantive issues detected at a line range, simply 
   comment "LGTM!" for the respective line range in a review section and 
   avoid additional commentary/compliments.
-- Review your comments and line number ranges at least 3 times before sending 
-  the final response to ensure accuracy of line number ranges and replacement
+- Reflect on your comments and line number ranges before sending the final 
+  response to ensure accuracy of line number ranges and replacement
   snippets.
 
 Response format expected:
