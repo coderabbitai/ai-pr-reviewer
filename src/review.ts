@@ -878,6 +878,12 @@ function parseReview(
         suggestionEnd,
         suggestionStartIndex
       )
+
+      if (suggestionEndIndex === -1) {
+        // Break the loop if the closing delimiter is not found
+        break
+      }
+
       const suggestionBlock = comment.substring(
         suggestionStartIndex + suggestionStart.length,
         suggestionEndIndex
