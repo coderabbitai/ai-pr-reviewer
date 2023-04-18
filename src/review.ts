@@ -1,7 +1,5 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {Octokit} from '@octokit/action'
-import {retry} from '@octokit/plugin-retry'
 import pLimit from 'p-limit'
 import {Bot} from './bot.js'
 import {
@@ -10,21 +8,9 @@ import {
   EXTRA_CONTENT_TAG,
   SUMMARIZE_TAG
 } from './commenter.js'
+import {octokit} from './octokit.js'
 import {Inputs, Options, Prompts} from './options.js'
 import * as tokenizer from './tokenizer.js'
-
-const token = core.getInput('token')
-  ? core.getInput('token')
-  : process.env.GITHUB_TOKEN
-
-const RetryOctokit = Octokit.plugin(retry)
-const octokit = new RetryOctokit({
-  auth: `token ${token}`,
-  request: {
-    retries: 10,
-    retryAfter: 30
-  }
-})
 
 const context = github.context
 const repo = context.repo

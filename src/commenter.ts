@@ -1,19 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {Octokit} from '@octokit/action'
-import {retry} from '@octokit/plugin-retry'
-
-const token = core.getInput('token') || process.env.GITHUB_TOKEN
-
-const RetryOctokit = Octokit.plugin(retry)
-const octokit = new RetryOctokit({
-  auth: `token ${token}`,
-  request: {
-    retries: 10,
-    retryAfter: 30
-  }
-})
+import {octokit} from './octokit.js'
 
 const context = github.context
 const repo = context.repo
@@ -167,40 +155,38 @@ ${tag}`
       `Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`
     )
     try {
-      let batchNumber = 1
-      while (this.reviewCommentsBuffer.length > 0) {
-        const commentsBatch = this.reviewCommentsBuffer.splice(0, 30)
-        core.info(
-          `Posting batch #${batchNumber} with ${commentsBatch.length} comments`
-        )
+      let commentCounter = 0
+      for (const comment of this.reviewCommentsBuffer) {
+        core.info(`Posting comment: ${comment.message}`)
 
-        await octokit.pulls.createReview({
-          owner: repo.owner,
-          repo: repo.repo,
-          pull_number,
-          commit_id,
-          event: 'COMMENT',
-          comments: commentsBatch.map(comment => {
-            const commentData: any = {
-              path: comment.path,
-              body: comment.message,
-              line: comment.end_line,
-              start_side: 'RIGHT'
-            }
-
-            if (comment.start_line !== comment.end_line) {
-              commentData.start_line = comment.start_line
-            }
-
-            return commentData
+        if (comment.start_line !== comment.end_line) {
+          await octokit.pulls.createReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number,
+            commit_id,
+            body: comment.message,
+            path: comment.path,
+            line: comment.end_line,
+            start_side: 'RIGHT',
+            start_line: comment.start_line
           })
-        })
-
-        if (this.reviewCommentsBuffer.length > 0) {
-          core.info(`Waiting 10 seconds before posting next batch`)
-          await new Promise(resolve => setTimeout(resolve, 10000))
+        } else {
+          await octokit.pulls.createReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number,
+            commit_id,
+            body: comment.message,
+            path: comment.path,
+            line: comment.end_line
+          })
         }
-        batchNumber++
+
+        commentCounter++
+        core.info(
+          `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
+        )
       }
     } catch (e) {
       core.warning(`Failed to submit review: ${e}`)
