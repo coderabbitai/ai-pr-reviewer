@@ -610,7 +610,9 @@ ${comment_chain}
             continue
           }
           try {
-            await commenter.buffer_review_comment(
+            await commenter.review_comment(
+              context.payload.pull_request.number,
+              commits[commits.length - 1].sha,
               filename,
               review.start_line,
               review.end_line,
@@ -750,12 +752,6 @@ ${
 
   // post the final summary comment
   await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
-
-  // post the review
-  await commenter.submit_review(
-    context.payload.pull_request.number,
-    commits[commits.length - 1].sha
-  )
 }
 
 const split_patch = (patch: string | null | undefined): string[] => {

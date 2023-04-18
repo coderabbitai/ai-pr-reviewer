@@ -129,14 +129,9 @@ ${tag}`
     }
   }
 
-  private reviewCommentsBuffer: {
-    path: string
-    start_line: number
-    end_line: number
-    message: string
-  }[] = []
-
-  async buffer_review_comment(
+  async review_comment(
+    pull_number: number,
+    commit_id: string,
     path: string,
     start_line: number,
     end_line: number,
@@ -148,36 +143,66 @@ ${tag}`
 ${message}
 
 ${tag}`
-
-    this.reviewCommentsBuffer.push({
-      path,
-      start_line,
-      end_line,
-      message
-    })
-  }
-
-  async submit_review(pull_number: number, commit_id: string) {
+    // replace comment made by this action
     try {
-      if (this.reviewCommentsBuffer.length > 0) {
-        await octokit.pulls.createReview({
-          owner: repo.owner,
-          repo: repo.repo,
-          pull_number,
-          commit_id,
-          event: 'COMMENT',
-          comments: this.reviewCommentsBuffer.map(comment => ({
-            path: comment.path,
-            body: comment.message,
-            line: comment.end_line,
-            start_line: comment.start_line,
+      let found = false
+      const comments = await this.get_comments_at_range(
+        pull_number,
+        path,
+        start_line,
+        end_line
+      )
+      for (const comment of comments) {
+        if (comment.body.includes(tag)) {
+          core.info(
+            `Updating review comment for ${path}:${start_line}-${end_line}: ${message}`
+          )
+          await octokit.pulls.updateReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            comment_id: comment.id,
+            body: message
+          })
+          found = true
+          break
+        }
+      }
+
+      if (!found) {
+        core.info(
+          `Creating new review comment for ${path}:${start_line}-${end_line}: ${message}`
+        )
+        // if start_line is same as end_line, it's a single line comment
+        // otherwise it's a multi-line comment
+        if (start_line === end_line) {
+          await octokit.pulls.createReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number,
+            body: message,
+            commit_id,
+            path,
+            line: end_line
+          })
+        } else {
+          await octokit.pulls.createReviewComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number,
+            body: message,
+            commit_id,
+            path,
+            line: end_line,
+            start_line,
             start_side: 'RIGHT'
-          }))
-        })
-        this.reviewCommentsBuffer = []
+          })
+        }
       }
     } catch (e) {
-      core.warning(`Failed to submit review: ${e}`)
+      core.warning(
+        `Failed to post review comment, for ${path}:${start_line}-${end_line}: ${e}`
+      )
+      // throw error
       throw e
     }
   }
