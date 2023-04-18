@@ -622,13 +622,17 @@ ${comment_chain}
             if (review.start_line >= start_line) {
               closest_start_line = start_line
               closest_end_line = end_line
-              if (review.end_line <= end_line) {
+              if (
+                review.end_line <= end_line &&
+                review.end_line >= start_line
+              ) {
                 within_patch = true
                 break
               }
             }
           }
-          if (!within_patch || review.start_line > review.end_line) {
+
+          if (!within_patch) {
             // map the review to the closest patch
             review.comment = `> Note: This review was outside of the patch, so it was mapped it to the closest patch. Original lines [${review.start_line}-${review.end_line}]
 ${review.comment}`
