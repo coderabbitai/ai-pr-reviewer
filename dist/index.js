@@ -6650,7 +6650,7 @@ ${summaries_failed.length > 0
 Format for changes:
   ---new_hunk---
   \`\`\`
-  <new hunk annotated with line numbers>
+  <line number annotated new hunk>
   \`\`\`
 
   ---old_hunk---
@@ -6693,7 +6693,7 @@ Important instructions:
   chain when reviewing the new hunk.
 - Use Markdown format for review comment text.
 - Fenced code blocks must be used for new content and replacement 
-  code/text snippets.
+  code/text snippets and must not be annotated with line numbers.
 - If needed, provide a replacement suggestion using fenced code blocks 
   with the \`suggestion\` as the language identifier. The line number range 
   in the review section must map exactly to the line number range (inclusive) 
@@ -6710,7 +6710,6 @@ Important instructions:
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases. Multiple new code snippets are allowed within a single 
   review section.
-- Do not annotate code snippets with line numbers inside the code blocks.
 - If there are no substantive issues detected at a line range, simply 
   comment "LGTM!" for the respective line range in a review section and 
   avoid additional commentary/compliments.
@@ -7057,31 +7056,29 @@ const parse_patch = (patch) => {
     };
 };
 function parseReview(response, debug = false) {
-    // instantiate an array of reviews
     const reviews = [];
-    // Split the response into lines
     const lines = response.split('\n');
-    // Regular expression to match the line number range and comment format
     const lineNumberRangeRegex = /(?:^|\s)(\d+)-(\d+):\s*$/;
     const commentSeparator = '---';
     let currentStartLine = null;
     let currentEndLine = null;
     let currentComment = '';
+    // Helper function to create and store a review object
+    function storeReview() {
+        if (currentStartLine !== null && currentEndLine !== null) {
+            reviews.push({
+                start_line: currentStartLine,
+                end_line: currentEndLine,
+                comment: currentComment.trim()
+            });
+            debug &&
+                core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
+        }
+    }
     for (const line of lines) {
-        // Check if the line matches the line number range format
         const lineNumberRangeMatch = line.match(lineNumberRangeRegex);
         if (lineNumberRangeMatch) {
-            // If there is a previous comment, store it in the reviews
-            if (currentStartLine !== null && currentEndLine !== null) {
-                reviews.push({
-                    start_line: currentStartLine,
-                    end_line: currentEndLine,
-                    comment: currentComment.trim()
-                });
-                debug &&
-                    core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-            }
-            // Set the current line number range and reset the comment
+            storeReview();
             currentStartLine = parseInt(lineNumberRangeMatch[1], 10);
             currentEndLine = parseInt(lineNumberRangeMatch[2], 10);
             currentComment = '';
@@ -7089,40 +7086,20 @@ function parseReview(response, debug = false) {
                 core.info(`Found line number range: ${currentStartLine}-${currentEndLine}`);
             continue;
         }
-        // Check if the line is a comment separator
         if (line.trim() === commentSeparator) {
-            // If there is a previous comment, store it in the reviews
-            if (currentStartLine !== null && currentEndLine !== null) {
-                reviews.push({
-                    start_line: currentStartLine,
-                    end_line: currentEndLine,
-                    comment: currentComment.trim()
-                });
-                debug &&
-                    core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-            }
-            // Reset the current line number range and comment
+            storeReview();
             currentStartLine = null;
             currentEndLine = null;
             currentComment = '';
             debug && core.info('Found comment separator');
             continue;
         }
-        // If there is a current line number range, add the line to the current comment
         if (currentStartLine !== null && currentEndLine !== null) {
             currentComment += `${line}\n`;
         }
     }
-    // If there is a comment at the end of the response, store it in the reviews
-    if (currentStartLine !== null && currentEndLine !== null) {
-        reviews.push({
-            start_line: currentStartLine,
-            end_line: currentEndLine,
-            comment: currentComment.trim()
-        });
-        debug &&
-            core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-    }
+    // Store the last comment, if any
+    storeReview();
     return reviews;
 }
 const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->';
