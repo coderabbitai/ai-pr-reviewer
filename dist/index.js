@@ -7066,6 +7066,10 @@ function parseReview(response, patches, debug = false) {
         let suggestionStartIndex = comment.indexOf(suggestionStart);
         while (suggestionStartIndex !== -1) {
             const suggestionEndIndex = comment.indexOf(suggestionEnd, suggestionStartIndex);
+            if (suggestionEndIndex === -1) {
+                // Break the loop if the closing delimiter is not found
+                break;
+            }
             const suggestionBlock = comment.substring(suggestionStartIndex + suggestionStart.length, suggestionEndIndex);
             const lineNumberRegex = /^\s*\d+:\s+/;
             const sanitizedBlock = suggestionBlock
