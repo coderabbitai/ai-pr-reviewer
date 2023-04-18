@@ -155,6 +155,7 @@ ${tag}`
       `Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`
     )
     try {
+      let commentCounter = 0
       for (const comment of this.reviewCommentsBuffer) {
         core.info(`Posting comment: ${comment.message}`)
 
@@ -182,7 +183,10 @@ ${tag}`
           })
         }
 
-        core.info(`Comment posted`)
+        commentCounter++
+        core.info(
+          `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
+        )
       }
     } catch (e) {
       core.warning(`Failed to submit review: ${e}`)

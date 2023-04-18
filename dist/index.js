@@ -3635,6 +3635,7 @@ ${tag}`;
     async submit_review(pull_number, commit_id) {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`);
         try {
+            let commentCounter = 0;
             for (const comment of this.reviewCommentsBuffer) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting comment: ${comment.message}`);
                 if (comment.start_line !== comment.end_line) {
@@ -3661,7 +3662,8 @@ ${tag}`;
                         line: comment.end_line
                     });
                 }
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment posted`);
+                commentCounter++;
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
             }
         }
         catch (e) {
