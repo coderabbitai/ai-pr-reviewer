@@ -6880,7 +6880,8 @@ ${review.comment}`;
             highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_commit_ids_block));
         }
         let files_and_changes_for_review = files_and_changes;
-        if (highest_reviewed_commit_id === '') {
+        if (highest_reviewed_commit_id === '' ||
+            highest_reviewed_commit_id === context.payload.pull_request.head.sha) {
             core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
             highest_reviewed_commit_id = context.payload.pull_request.base.sha;
         }
