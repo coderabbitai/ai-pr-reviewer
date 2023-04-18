@@ -4012,13 +4012,15 @@ __webpack_async_result__();
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _octokit_action__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1231);
+/* harmony import */ var _octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(6298);
 /* harmony import */ var _octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9968);
 
 
 
+
 const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
-const ThrottlingOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_1__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_2__/* .throttling */ .O);
-const octokit = new ThrottlingOctokit({
+const RetryAndThrottlingOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_1__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_2__/* .throttling */ .O, _octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__/* .retry */ .XD);
+const octokit = new RetryAndThrottlingOctokit({
     auth: `token ${token}`,
     throttle: {
         onRateLimit: (retryAfter, options, o, retryCount) => {
@@ -4032,6 +4034,10 @@ Retry count: ${retryCount}
             _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
             return true;
         }
+    },
+    retry: {
+        doNotRetry: ['429'],
+        maxRetries: 10
     }
 });
 
@@ -17562,6 +17568,97 @@ legacyRestEndpointMethods.VERSION = VERSION;
 
 exports.legacyRestEndpointMethods = legacyRestEndpointMethods;
 exports.restEndpointMethods = restEndpointMethods;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
+
+/***/ 6298:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+
+__webpack_unused_export__ = ({ value: true });
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var Bottleneck = _interopDefault(__nccwpck_require__(1174));
+var requestError = __nccwpck_require__(537);
+
+// @ts-ignore
+async function errorRequest(state, octokit, error, options) {
+  if (!error.request || !error.request.request) {
+    // address https://github.com/octokit/plugin-retry.js/issues/8
+    throw error;
+  }
+  // retry all >= 400 && not doNotRetry
+  if (error.status >= 400 && !state.doNotRetry.includes(error.status)) {
+    const retries = options.request.retries != null ? options.request.retries : state.retries;
+    const retryAfter = Math.pow((options.request.retryCount || 0) + 1, 2);
+    throw octokit.retry.retryRequest(error, retries, retryAfter);
+  }
+  // Maybe eventually there will be more cases here
+  throw error;
+}
+
+// @ts-nocheck
+async function wrapRequest(state, octokit, request, options) {
+  const limiter = new Bottleneck();
+  limiter.on("failed", function (error, info) {
+    const maxRetries = ~~error.request.request.retries;
+    const after = ~~error.request.request.retryAfter;
+    options.request.retryCount = info.retryCount + 1;
+    if (maxRetries > info.retryCount) {
+      // Returning a number instructs the limiter to retry
+      // the request after that number of milliseconds have passed
+      return after * state.retryAfterBaseValue;
+    }
+  });
+  return limiter.schedule(requestWithGraphqlErrorHandling.bind(null, state, octokit, request), options);
+}
+async function requestWithGraphqlErrorHandling(state, octokit, request, options) {
+  const response = await request(request, options);
+  if (response.data && response.data.errors && /Something went wrong while executing your query/.test(response.data.errors[0].message)) {
+    // simulate 500 request error for retry handling
+    const error = new requestError.RequestError(response.data.errors[0].message, 500, {
+      request: options,
+      response
+    });
+    return errorRequest(state, octokit, error, options);
+  }
+  return response;
+}
+
+const VERSION = "4.1.3";
+function retry(octokit, octokitOptions) {
+  const state = Object.assign({
+    enabled: true,
+    retryAfterBaseValue: 1000,
+    doNotRetry: [400, 401, 403, 404, 422],
+    retries: 3
+  }, octokitOptions.retry);
+  if (state.enabled) {
+    octokit.hook.error("request", errorRequest.bind(null, state, octokit));
+    octokit.hook.wrap("request", wrapRequest.bind(null, state, octokit));
+  }
+  return {
+    retry: {
+      retryRequest: (error, retries, retryAfter) => {
+        error.request.request = Object.assign({}, error.request.request, {
+          retries: retries,
+          retryAfter: retryAfter
+        });
+        return error;
+      }
+    }
+  };
+}
+retry.VERSION = VERSION;
+
+__webpack_unused_export__ = VERSION;
+exports.XD = retry;
 //# sourceMappingURL=index.js.map
 
 
