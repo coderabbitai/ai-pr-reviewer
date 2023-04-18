@@ -1,11 +1,12 @@
 import * as core from '@actions/core'
 import {Octokit} from '@octokit/action'
+import {retry} from '@octokit/plugin-retry'
 import {throttling} from '@octokit/plugin-throttling'
 
 const token = core.getInput('token') || process.env.GITHUB_TOKEN
 
-const ThrottlingOctokit = Octokit.plugin(throttling)
-export const octokit = new ThrottlingOctokit({
+const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
+export const octokit = new RetryAndThrottlingOctokit({
   auth: `token ${token}`,
   throttle: {
     onRateLimit: (
@@ -28,5 +29,9 @@ Retry count: ${retryCount}
       )
       return true
     }
+  },
+  retry: {
+    doNotRetry: ['429'],
+    maxRetries: 10
   }
 })
