@@ -148,7 +148,6 @@ ${tag}`
 ${message}
 
 ${tag}`
-
     this.reviewCommentsBuffer.push({
       path,
       start_line,
@@ -166,13 +165,20 @@ ${tag}`
           pull_number,
           commit_id,
           event: 'COMMENT',
-          comments: this.reviewCommentsBuffer.map(comment => ({
-            path: comment.path,
-            body: comment.message,
-            line: comment.end_line,
-            start_line: comment.start_line,
-            start_side: 'RIGHT'
-          }))
+          comments: this.reviewCommentsBuffer.map(comment => {
+            const commentData: any = {
+              path: comment.path,
+              body: comment.message,
+              line: comment.end_line,
+              start_side: 'RIGHT'
+            }
+
+            if (comment.start_line !== comment.end_line) {
+              commentData.start_line = comment.start_line
+            }
+
+            return commentData
+          })
         })
         this.reviewCommentsBuffer = []
       }
