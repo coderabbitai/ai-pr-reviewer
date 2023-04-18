@@ -867,57 +867,12 @@ function parseReview(
   let currentStartLine: number | null = null
   let currentEndLine: number | null = null
   let currentComment = ''
-
-  function removeLineNumbersFromSuggestion(comment: string): string {
-    const suggestionStart = '```suggestion'
-    const suggestionEnd = '```'
-    let suggestionStartIndex = comment.indexOf(suggestionStart)
-
-    while (suggestionStartIndex !== -1) {
-      const suggestionEndIndex = comment.indexOf(
-        suggestionEnd,
-        suggestionStartIndex
-      )
-
-      if (suggestionEndIndex === -1) {
-        // Break the loop if the closing delimiter is not found
-        break
-      }
-
-      const suggestionBlock = comment.substring(
-        suggestionStartIndex + suggestionStart.length,
-        suggestionEndIndex
-      )
-      const lineNumberRegex = /^\s*\d+:\s+/
-
-      const sanitizedBlock = suggestionBlock
-        .split('\n')
-        .map(line => line.replace(lineNumberRegex, ''))
-        .join('\n')
-
-      comment =
-        comment.substring(0, suggestionStartIndex + suggestionStart.length) +
-        sanitizedBlock +
-        comment.substring(suggestionEndIndex)
-
-      suggestionStartIndex = comment.indexOf(
-        suggestionStart,
-        suggestionEndIndex + suggestionEnd.length
-      )
-    }
-
-    return comment
-  }
-
   function storeReview(): void {
     if (currentStartLine !== null && currentEndLine !== null) {
-      const sanitizedComment = removeLineNumbersFromSuggestion(
-        currentComment.trim()
-      )
       const review: Review = {
         start_line: currentStartLine,
         end_line: currentEndLine,
-        comment: sanitizedComment.trim()
+        comment: currentComment.trim()
       }
 
       let within_patch = false
