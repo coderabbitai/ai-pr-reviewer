@@ -7036,12 +7036,31 @@ function parseReview(response, patches, debug = false) {
     let currentStartLine = null;
     let currentEndLine = null;
     let currentComment = '';
+    function removeLineNumbersFromSuggestion(comment) {
+        const suggestionStart = '```suggestion';
+        const suggestionEnd = '```';
+        const suggestionStartIndex = comment.indexOf(suggestionStart);
+        if (suggestionStartIndex === -1) {
+            return comment;
+        }
+        const suggestionEndIndex = comment.indexOf(suggestionEnd, suggestionStartIndex);
+        const suggestionBlock = comment.substring(suggestionStartIndex + suggestionStart.length, suggestionEndIndex);
+        const lineNumberRegex = /^\s*\d+:\s+/;
+        const sanitizedBlock = suggestionBlock
+            .split('\n')
+            .map(line => line.replace(lineNumberRegex, ''))
+            .join('\n');
+        return (comment.substring(0, suggestionStartIndex + suggestionStart.length) +
+            sanitizedBlock +
+            comment.substring(suggestionEndIndex));
+    }
     function storeReview() {
         if (currentStartLine !== null && currentEndLine !== null) {
+            const sanitizedComment = removeLineNumbersFromSuggestion(currentComment.trim());
             const review = {
                 start_line: currentStartLine,
                 end_line: currentEndLine,
-                comment: currentComment.trim()
+                comment: sanitizedComment.trim()
             };
             let within_patch = false;
             let best_patch_start_line = patches[0][0];
