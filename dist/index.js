@@ -3619,12 +3619,12 @@ ${tag}`;
         }
     }
     reviewCommentsBuffer = [];
-    async buffer_review_comment(path, start_line, end_line, message, tag = COMMENT_TAG) {
+    async buffer_review_comment(path, start_line, end_line, message) {
         message = `${COMMENT_GREETING}
 
 ${message}
 
-${tag}`;
+${COMMENT_TAG}`;
         this.reviewCommentsBuffer.push({
             path,
             start_line,
@@ -3638,29 +3638,47 @@ ${tag}`;
             let commentCounter = 0;
             for (const comment of this.reviewCommentsBuffer) {
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting comment: ${comment.message}`);
-                if (comment.start_line !== comment.end_line) {
-                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        commit_id,
-                        body: comment.message,
-                        path: comment.path,
-                        line: comment.end_line,
-                        start_side: 'RIGHT',
-                        start_line: comment.start_line
-                    });
+                let found = false;
+                const comments = await this.get_comments_at_range(pull_number, comment.path, comment.start_line, comment.end_line);
+                for (const c of comments) {
+                    if (c.body.includes(COMMENT_TAG)) {
+                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
+                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            comment_id: c.id,
+                            body: comment.message
+                        });
+                        found = true;
+                        break;
+                    }
                 }
-                else {
-                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        pull_number,
-                        commit_id,
-                        body: comment.message,
-                        path: comment.path,
-                        line: comment.end_line
-                    });
+                if (!found) {
+                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
+                    if (comment.start_line !== comment.end_line) {
+                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            pull_number,
+                            commit_id,
+                            body: comment.message,
+                            path: comment.path,
+                            line: comment.end_line,
+                            start_side: 'RIGHT',
+                            start_line: comment.start_line
+                        });
+                    }
+                    else {
+                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
+                            owner: repo.owner,
+                            repo: repo.repo,
+                            pull_number,
+                            commit_id,
+                            body: comment.message,
+                            path: comment.path,
+                            line: comment.end_line
+                        });
+                    }
                 }
                 commentCounter++;
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
@@ -3726,7 +3744,7 @@ ${COMMENT_REPLY_TAG}
             ((comment.start_line !== undefined &&
                 comment.start_line >= start_line &&
                 comment.line <= end_line) ||
-                comment.line === end_line));
+                (start_line === end_line && comment.line === end_line)));
     }
     async get_comments_at_range(pull_number, path, start_line, end_line) {
         const comments = await this.list_review_comments(pull_number);
@@ -3735,7 +3753,7 @@ ${COMMENT_REPLY_TAG}
             ((comment.start_line !== undefined &&
                 comment.start_line === start_line &&
                 comment.line === end_line) ||
-                comment.line === end_line));
+                (start_line === end_line && comment.line === end_line)));
     }
     async get_comment_chains_within_range(pull_number, path, start_line, end_line, tag = '') {
         const existing_comments = await this.get_comments_within_range(pull_number, path, start_line, end_line);
@@ -6693,7 +6711,7 @@ Important instructions:
   chain when reviewing the new hunk.
 - Use Markdown format for review comment text.
 - Fenced code blocks must be used for new content and replacement 
-  code/text snippets.
+  code/text snippets and must not be annotated with line numbers.
 - If needed, provide a replacement suggestion using fenced code blocks 
   with the \`suggestion\` as the language identifier. The line number range 
   in the review section must map exactly to the line number range (inclusive) 
@@ -6710,12 +6728,11 @@ Important instructions:
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases. Multiple new code snippets are allowed within a single 
   review section.
-- Do not annotate code snippets with line numbers inside the code blocks.
 - If there are no substantive issues detected at a line range, simply 
   comment "LGTM!" for the respective line range in a review section and 
   avoid additional commentary/compliments.
-- Review your comments and line number ranges at least 3 times before sending 
-  the final response to ensure accuracy of line number ranges and replacement
+- Reflect on your comments and line number ranges before sending the final 
+  response to ensure accuracy of line number ranges and replacement
   snippets.
 
 Response format expected:
@@ -6839,7 +6856,7 @@ ${comment_chain}
                     return;
                 }
                 // parse review
-                const reviews = parseReview(response, options.debug);
+                const reviews = parseReview(response, patches, options.debug);
                 for (const review of reviews) {
                     // check for LGTM
                     if (!options.review_comment_lgtm &&
@@ -6850,33 +6867,6 @@ ${comment_chain}
                     if (!context.payload.pull_request) {
                         core.warning('No pull request found, skipping.');
                         continue;
-                    }
-                    // sanitize review's start_line and end_line
-                    // with patches' start_line and end_line
-                    // if needed adjust start_line and end_line
-                    // to make it fit within a closest patch
-                    let within_patch = false;
-                    let closest_start_line = patches[0][0];
-                    let closest_end_line = patches[0][1];
-                    for (const [start_line, end_line] of patches) {
-                        // see if review is within some patch
-                        if (review.start_line >= start_line) {
-                            closest_start_line = start_line;
-                            closest_end_line = end_line;
-                            if (review.end_line <= end_line &&
-                                review.end_line >= start_line) {
-                                within_patch = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!within_patch) {
-                        // map the review to the closest patch
-                        review.comment = `> Note: This review was outside of the patch, so it was mapped it to the closest patch. Original lines [${review.start_line}-${review.end_line}]
-
-${review.comment}`;
-                        review.start_line = closest_start_line;
-                        review.end_line = closest_end_line;
                     }
                     try {
                         await commenter.buffer_review_comment(filename, review.start_line, review.end_line, `${review.comment}`);
@@ -7056,73 +7046,98 @@ const parse_patch = (patch) => {
         new_hunk: new_hunk_lines.join('\n')
     };
 };
-function parseReview(response, debug = false) {
-    // instantiate an array of reviews
+function parseReview(response, patches, debug = false) {
     const reviews = [];
-    // Split the response into lines
     const lines = response.split('\n');
-    // Regular expression to match the line number range and comment format
     const lineNumberRangeRegex = /(?:^|\s)(\d+)-(\d+):\s*$/;
     const commentSeparator = '---';
     let currentStartLine = null;
     let currentEndLine = null;
     let currentComment = '';
+    function removeLineNumbersFromSuggestion(comment) {
+        const suggestionStart = '```suggestion';
+        const suggestionEnd = '```';
+        const suggestionStartIndex = comment.indexOf(suggestionStart);
+        if (suggestionStartIndex === -1) {
+            return comment;
+        }
+        const suggestionEndIndex = comment.indexOf(suggestionEnd, suggestionStartIndex);
+        const suggestionBlock = comment.substring(suggestionStartIndex + suggestionStart.length, suggestionEndIndex);
+        const lineNumberRegex = /^\s*\d+:\s+/;
+        const sanitizedBlock = suggestionBlock
+            .split('\n')
+            .map(line => line.replace(lineNumberRegex, ''))
+            .join('\n');
+        return (comment.substring(0, suggestionStartIndex + suggestionStart.length) +
+            sanitizedBlock +
+            comment.substring(suggestionEndIndex));
+    }
+    function storeReview() {
+        if (currentStartLine !== null && currentEndLine !== null) {
+            const sanitizedComment = removeLineNumbersFromSuggestion(currentComment.trim());
+            const review = {
+                start_line: currentStartLine,
+                end_line: currentEndLine,
+                comment: sanitizedComment.trim()
+            };
+            let within_patch = false;
+            let best_patch_start_line = patches[0][0];
+            let best_patch_end_line = patches[0][1];
+            let max_intersection = 0;
+            for (const [start_line, end_line] of patches) {
+                const intersection_start = Math.max(review.start_line, start_line);
+                const intersection_end = Math.min(review.end_line, end_line);
+                const intersection_length = Math.max(0, intersection_end - intersection_start + 1);
+                if (intersection_length > max_intersection) {
+                    max_intersection = intersection_length;
+                    best_patch_start_line = start_line;
+                    best_patch_end_line = end_line;
+                    within_patch =
+                        intersection_length === review.end_line - review.start_line + 1;
+                }
+                if (within_patch)
+                    break;
+            }
+            if (!within_patch) {
+                review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.start_line}-${review.end_line}]
+
+${review.comment}`;
+                review.start_line = best_patch_start_line;
+                review.end_line = best_patch_end_line;
+            }
+            reviews.push(review);
+            if (debug) {
+                core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
+            }
+        }
+    }
     for (const line of lines) {
-        // Check if the line matches the line number range format
         const lineNumberRangeMatch = line.match(lineNumberRangeRegex);
         if (lineNumberRangeMatch) {
-            // If there is a previous comment, store it in the reviews
-            if (currentStartLine !== null && currentEndLine !== null) {
-                reviews.push({
-                    start_line: currentStartLine,
-                    end_line: currentEndLine,
-                    comment: currentComment.trim()
-                });
-                debug &&
-                    core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-            }
-            // Set the current line number range and reset the comment
+            storeReview();
             currentStartLine = parseInt(lineNumberRangeMatch[1], 10);
             currentEndLine = parseInt(lineNumberRangeMatch[2], 10);
             currentComment = '';
-            debug &&
+            if (debug) {
                 core.info(`Found line number range: ${currentStartLine}-${currentEndLine}`);
+            }
             continue;
         }
-        // Check if the line is a comment separator
         if (line.trim() === commentSeparator) {
-            // If there is a previous comment, store it in the reviews
-            if (currentStartLine !== null && currentEndLine !== null) {
-                reviews.push({
-                    start_line: currentStartLine,
-                    end_line: currentEndLine,
-                    comment: currentComment.trim()
-                });
-                debug &&
-                    core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-            }
-            // Reset the current line number range and comment
+            storeReview();
             currentStartLine = null;
             currentEndLine = null;
             currentComment = '';
-            debug && core.info('Found comment separator');
+            if (debug) {
+                core.info('Found comment separator');
+            }
             continue;
         }
-        // If there is a current line number range, add the line to the current comment
         if (currentStartLine !== null && currentEndLine !== null) {
             currentComment += `${line}\n`;
         }
     }
-    // If there is a comment at the end of the response, store it in the reviews
-    if (currentStartLine !== null && currentEndLine !== null) {
-        reviews.push({
-            start_line: currentStartLine,
-            end_line: currentEndLine,
-            comment: currentComment.trim()
-        });
-        debug &&
-            core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
-    }
+    storeReview();
     return reviews;
 }
 const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->';
