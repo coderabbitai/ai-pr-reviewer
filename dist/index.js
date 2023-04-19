@@ -3655,30 +3655,20 @@ ${COMMENT_TAG}`;
                 }
                 if (!found) {
                     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
+                    const commentData = {
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        pull_number,
+                        commit_id,
+                        body: comment.message,
+                        path: comment.path,
+                        line: comment.end_line
+                    };
                     if (comment.start_line !== comment.end_line) {
-                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
-                            owner: repo.owner,
-                            repo: repo.repo,
-                            pull_number,
-                            commit_id,
-                            body: comment.message,
-                            path: comment.path,
-                            line: comment.end_line,
-                            start_side: 'RIGHT',
-                            start_line: comment.start_line
-                        });
+                        commentData.start_side = 'RIGHT';
+                        commentData.start_line = comment.start_line;
                     }
-                    else {
-                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment({
-                            owner: repo.owner,
-                            repo: repo.repo,
-                            pull_number,
-                            commit_id,
-                            body: comment.message,
-                            path: comment.path,
-                            line: comment.end_line
-                        });
-                    }
+                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment(commentData);
                 }
                 commentCounter++;
                 _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
