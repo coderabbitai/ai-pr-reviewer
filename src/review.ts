@@ -412,7 +412,8 @@ Important instructions:
   <end_line_number>. The line number range is sufficient to map your 
   comment to the code changes in GitHub pull request.
 - Consider the context provided by the old hunk and associated comment 
-  chain when reviewing the new hunk.
+  chain when reviewing the new hunk. Do not summarize the changes in the 
+  review comment and only focus on pointing out substantive issues.
 - Use Markdown format for review comment text.
 - Fenced code blocks must be used for new content and replacement 
   code/text snippets and must not be annotated with line numbers.
@@ -432,9 +433,9 @@ Important instructions:
   fenced code blocks. These snippets may be added to a different file, such 
   as test cases. Multiple new code snippets are allowed within a single 
   review section.
-- If there are no substantive issues detected at a line range, simply 
-  comment "LGTM!" for the respective line range in a review section and 
-  avoid additional commentary/compliments.
+- If there are no substantive issues detected at a line range and/or the 
+  implementation looks good, simply comment "LGTM!" for the respective line 
+  range in a review section and avoid additional commentary/compliments.
 - Reflect on your comments and line number ranges before sending the final 
   response to ensure accuracy of line number ranges and replacement
   snippets.
