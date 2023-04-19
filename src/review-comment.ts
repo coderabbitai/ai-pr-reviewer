@@ -47,7 +47,12 @@ export const handleReviewComment = async (
   }
   inputs.title = context.payload.pull_request.title
   if (context.payload.pull_request.body) {
-    inputs.description = context.payload.pull_request.body
+    inputs.description = commenter.get_description(
+      context.payload.pull_request.body
+    )
+    inputs.release_notes = commenter.get_release_notes(
+      context.payload.pull_request.body
+    )
   }
 
   // check if the comment was created and not edited or deleted

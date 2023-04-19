@@ -74,6 +74,21 @@ ${tag}`
     return description
   }
 
+  get_release_notes(description: string) {
+    // get our summary from description by looking for description_tag and description_tag_end
+    // and remove any content within that which is in markdown quote (>)
+    const start = description.indexOf(DESCRIPTION_TAG)
+    const end = description.indexOf(DESCRIPTION_TAG_END)
+    if (start >= 0 && end >= 0) {
+      const release_notes = description.slice(
+        start + DESCRIPTION_TAG.length,
+        end
+      )
+      return release_notes.replace(/(^|\n)> .*/g, '')
+    }
+    return ''
+  }
+
   async update_description(pull_number: number, message: string) {
     // add this response to the description field of the PR as release notes by looking
     // for the tag (marker)

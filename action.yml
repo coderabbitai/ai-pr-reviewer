@@ -177,17 +177,16 @@ inputs:
       $description
       ```
 
-      OpenAI generated summary of overall changes:
+      OpenAI generated notes:
       ```
-      $summary
+      $release_notes
       ```
 
-      Content of `$filename` prior to changes for context:
+      Content of `$filename` prior to changes:
       ```
       $file_content
       ```
 
-      Changes for review:
       $patches
   comment:
     required: false
@@ -205,9 +204,9 @@ inputs:
       $description
       ```
 
-      OpenAI generated summary:
+      OpenAI generated notes:
       ```
-      $summary
+      $release_notes
       ```
 
       Content of file prior to changes:

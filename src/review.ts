@@ -285,6 +285,7 @@ ${filename}: ${summary}
       core.info('release notes: nothing obtained from openai')
     } else {
       next_summarize_ids = release_notes_ids
+      inputs.release_notes = release_notes_response.replace(/(^|\n)> .*/g, '')
       let message = '### Summary by OpenAI\n\n'
       message += release_notes_response
       commenter.update_description(context.payload.pull_request.number, message)

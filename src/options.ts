@@ -48,6 +48,7 @@ export class Inputs {
   title: string
   description: string
   summary: string
+  release_notes: string
   filename: string
   file_content: string
   file_diff: string
@@ -61,6 +62,7 @@ export class Inputs {
     title = 'no title provided',
     description = 'no description provided',
     summary = 'no summary so far',
+    release_notes = 'no release notes so far',
     filename = 'unknown',
     file_content = 'file contents cannot be provided',
     file_diff = 'file diff cannot be provided',
@@ -73,6 +75,7 @@ export class Inputs {
     this.title = title
     this.description = description
     this.summary = summary
+    this.release_notes = release_notes
     this.filename = filename
     this.file_content = file_content
     this.file_diff = file_diff
@@ -88,6 +91,7 @@ export class Inputs {
       this.title,
       this.description,
       this.summary,
+      this.release_notes,
       this.filename,
       this.file_content,
       this.file_diff,
@@ -113,6 +117,9 @@ export class Inputs {
     }
     if (this.summary) {
       content = content.replace('$summary', this.summary)
+    }
+    if (this.release_notes) {
+      content = content.replace('$release_notes', this.release_notes)
     }
     if (this.filename) {
       content = content.replace('$filename', this.filename)
