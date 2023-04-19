@@ -6726,8 +6726,8 @@ Important instructions:
   as test cases. Multiple new code snippets are allowed within a single 
   review section.
 - If there are no substantive issues detected at a line range and/or the 
-  implementation looks good, simply comment "LGTM!" for the respective line 
-  range in a review section and avoid additional commentary/compliments.
+  implementation looks good, you must respond with the comment "LGTM!" and 
+  nothing else for the respective line range in a review section.
 - Reflect on your comments and line number ranges before sending the final 
   response to ensure accuracy of line number ranges and replacement
   snippets.
