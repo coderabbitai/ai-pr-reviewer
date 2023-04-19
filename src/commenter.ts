@@ -184,29 +184,22 @@ ${COMMENT_TAG}`
           core.info(
             `Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`
           )
-          if (comment.start_line !== comment.end_line) {
-            await octokit.pulls.createReviewComment({
-              owner: repo.owner,
-              repo: repo.repo,
-              pull_number,
-              commit_id,
-              body: comment.message,
-              path: comment.path,
-              line: comment.end_line,
-              start_side: 'RIGHT',
-              start_line: comment.start_line
-            })
-          } else {
-            await octokit.pulls.createReviewComment({
-              owner: repo.owner,
-              repo: repo.repo,
-              pull_number,
-              commit_id,
-              body: comment.message,
-              path: comment.path,
-              line: comment.end_line
-            })
+          const commentData: any = {
+            owner: repo.owner,
+            repo: repo.repo,
+            pull_number,
+            commit_id,
+            body: comment.message,
+            path: comment.path,
+            line: comment.end_line
           }
+
+          if (comment.start_line !== comment.end_line) {
+            commentData.start_side = 'RIGHT'
+            commentData.start_line = comment.start_line
+          }
+
+          await octokit.pulls.createReviewComment(commentData)
         }
 
         commentCounter++
