@@ -3573,6 +3573,17 @@ ${tag}`;
         }
         return description;
     }
+    get_release_notes(description) {
+        // get our summary from description by looking for description_tag and description_tag_end
+        // and remove any content within that which is in markdown quote (>)
+        const start = description.indexOf(DESCRIPTION_TAG);
+        const end = description.indexOf(DESCRIPTION_TAG_END);
+        if (start >= 0 && end >= 0) {
+            const release_notes = description.slice(start + DESCRIPTION_TAG.length, end);
+            return release_notes.replace(/(^|\n)> .*/g, '');
+        }
+        return '';
+    }
     async update_description(pull_number, message) {
         // add this response to the description field of the PR as release notes by looking
         // for the tag (marker)
@@ -5853,6 +5864,7 @@ class Inputs {
     title;
     description;
     summary;
+    release_notes;
     filename;
     file_content;
     file_diff;
@@ -5860,11 +5872,12 @@ class Inputs {
     diff;
     comment_chain;
     comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', release_notes = 'no release notes so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
         this.summary = summary;
+        this.release_notes = release_notes;
         this.filename = filename;
         this.file_content = file_content;
         this.file_diff = file_diff;
@@ -5874,7 +5887,7 @@ class Inputs {
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.summary, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.system_message, this.title, this.description, this.summary, this.release_notes, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -5891,6 +5904,9 @@ class Inputs {
         }
         if (this.summary) {
             content = content.replace('$summary', this.summary);
+        }
+        if (this.release_notes) {
+            content = content.replace('$release_notes', this.release_notes);
         }
         if (this.filename) {
             content = content.replace('$filename', this.filename);
@@ -6095,7 +6111,8 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
     }
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
-        inputs.description = context.payload.pull_request.body;
+        inputs.description = commenter.get_description(context.payload.pull_request.body);
+        inputs.release_notes = commenter.get_release_notes(context.payload.pull_request.body);
     }
     // check if the comment was created and not edited or deleted
     if (context.payload.action !== 'created') {
@@ -6594,6 +6611,7 @@ ${filename}: ${summary}
         }
         else {
             next_summarize_ids = release_notes_ids;
+            inputs.release_notes = release_notes_response.replace(/(^|\n)> .*/g, '');
             let message = '### Summary by OpenAI\n\n';
             message += release_notes_response;
             commenter.update_description(context.payload.pull_request.number, message);
