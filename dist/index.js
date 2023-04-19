@@ -7062,10 +7062,11 @@ function parseReview(response, patches, debug = false) {
     let currentComment = '';
     function storeReview() {
         if (currentStartLine !== null && currentEndLine !== null) {
+            const sanitizedComment = sanitizeComment(currentComment.trim());
             const review = {
                 start_line: currentStartLine,
                 end_line: currentEndLine,
-                comment: currentComment.trim()
+                comment: sanitizedComment.trim()
             };
             let within_patch = false;
             let best_patch_start_line = patches[0][0];
@@ -7095,6 +7096,28 @@ ${review.comment}`;
             reviews.push(review);
             core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
         }
+    }
+    function sanitizeComment(comment) {
+        const suggestionStart = '```suggestion';
+        const suggestionEnd = '```';
+        const lineNumberRegex = /^ *(\d+): /gm;
+        let suggestionStartIndex = comment.indexOf(suggestionStart);
+        while (suggestionStartIndex !== -1) {
+            const suggestionEndIndex = comment.indexOf(suggestionEnd, suggestionStartIndex + suggestionStart.length);
+            if (suggestionEndIndex === -1)
+                break;
+            const suggestionBlock = comment.substring(suggestionStartIndex + suggestionStart.length, suggestionEndIndex);
+            const sanitizedBlock = suggestionBlock.replace(lineNumberRegex, '');
+            comment =
+                comment.slice(0, suggestionStartIndex + suggestionStart.length) +
+                    sanitizedBlock +
+                    comment.slice(suggestionEndIndex);
+            suggestionStartIndex = comment.indexOf(suggestionStart, suggestionStartIndex +
+                suggestionStart.length +
+                sanitizedBlock.length +
+                suggestionEnd.length);
+        }
+        return comment;
     }
     for (const line of lines) {
         const lineNumberRangeMatch = line.match(lineNumberRangeRegex);
