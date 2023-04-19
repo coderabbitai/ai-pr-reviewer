@@ -388,14 +388,15 @@ Format for changes:
   ---end_change_section---
   ...
 
-The above format for changes consists of multiple change sections. 
-Each change section consists of a new hunk (annotated with line numbers) 
-and an old hunk. Note that the code in old_hunk does not exist anymore
-as it was replaced by the new hunk. The old_hunk is only included for
-context. The new hunk is the code that you should review. Optionally, 
-existing review comment chains are included for additional context. 
-
 Important instructions:
+- The above format for changes consists of multiple change sections. Each change 
+  section consists of a new hunk (annotated with line numbers), an old hunk and 
+  optionally, existing comment chains. The line number annotation on each line 
+  in the new hunk is of the format \`<line_number><colon><whitespace>\`.  
+- Note that the code in the old hunk does not exist anymore as it was replaced 
+  by the new hunk. The new hunk is the code that you need to review. Consider 
+  the context provided by the old hunk and associated comment chain when reviewing 
+  the new hunk.  
 - Your task is to do a line by line review of new hunks and point out 
   substantive issues in those line number ranges. For each issue you 
   identify, please provide the exact line number range (inclusive) where 
@@ -411,9 +412,8 @@ Important instructions:
   <start_line_number> must belong to the same hunk as the 
   <end_line_number>. The line number range is sufficient to map your 
   comment to the code changes in GitHub pull request.
-- Consider the context provided by the old hunk and associated comment 
-  chain when reviewing the new hunk. Do not summarize the changes in the 
-  review comment and only focus on pointing out substantive issues.
+- Do not summarize the changes or repeat back provided code in the review 
+  comments and only focus on pointing out substantive issues.
 - Use Markdown format for review comment text.
 - Fenced code blocks must be used for new content and replacement 
   code/text snippets and must not be annotated with line numbers.
