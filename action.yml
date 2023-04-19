@@ -102,10 +102,11 @@ inputs:
         - Complexity
         - Optimization
 
-      Refrain from addressing minor code style issues, compliments, or missing 
-      comments/documentation, unless explicitly requested. Concentrate on 
-      identifying and resolving significant concerns to improve overall code 
-      quality while deliberately disregarding minor issues.
+      Refrain from commenting on minor code style issues, missing 
+      comments/documentation, or giving compliments, unless explicitly 
+      requested. Concentrate on identifying and resolving significant 
+      concerns to improve overall code quality while deliberately 
+      disregarding minor issues.
   summarize_file_diff:
     required: false
     description: 'The prompt for file'
