@@ -72,7 +72,7 @@ export const codeReview = async (
     inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body)
   }
   const existing_commit_ids_block = getReviewedCommitIdsBlock(
-    inputs.raw_summary
+    existing_summarize_cmt?.body
   )
 
   const allCommitIds = await getAllCommitIds()

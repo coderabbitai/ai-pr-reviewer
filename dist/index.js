@@ -3588,6 +3588,9 @@ ${tag}`;
         const content = this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
         // remove the first and last line
         const lines = content.split('\n');
+        if (lines.length < 3) {
+            return '';
+        }
         lines.shift();
         lines.pop();
         return lines.join('\n');
@@ -6475,7 +6478,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     if (existing_summarize_cmt) {
         inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body);
     }
-    const existing_commit_ids_block = getReviewedCommitIdsBlock(inputs.raw_summary);
+    const existing_commit_ids_block = getReviewedCommitIdsBlock(existing_summarize_cmt?.body);
     const allCommitIds = await getAllCommitIds();
     // find highest reviewed commit id
     let highest_reviewed_commit_id = '';

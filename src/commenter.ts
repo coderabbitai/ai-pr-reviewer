@@ -92,6 +92,9 @@ ${tag}`
     )
     // remove the first and last line
     const lines = content.split('\n')
+    if (lines.length < 3) {
+      return ''
+    }
     lines.shift()
     lines.pop()
     return lines.join('\n')
