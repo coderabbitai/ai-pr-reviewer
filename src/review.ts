@@ -68,12 +68,13 @@ export const codeReview = async (
     SUMMARIZE_TAG,
     context.payload.pull_request.number
   )
+  let existing_commit_ids_block = ''
   if (existing_summarize_cmt) {
     inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body)
+    existing_commit_ids_block = getReviewedCommitIdsBlock(
+      existing_summarize_cmt.body
+    )
   }
-  const existing_commit_ids_block = getReviewedCommitIdsBlock(
-    existing_summarize_cmt?.body
-  )
 
   const allCommitIds = await getAllCommitIds()
   // find highest reviewed commit id
