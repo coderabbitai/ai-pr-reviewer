@@ -6632,8 +6632,8 @@ ${filename}: ${summary}
 Provided below are changesets in this pull request.
 The format consists of filename(s) and the summary of changes 
 for those files. There is a separator between each changeset.
-Your task is to de-deduplicate and consolidate files with
-related changes into distinct changesets. Respond with the 
+Your task is to de-deduplicate and group together files with
+related/similar changes into a single changeset. Respond with the 
 updated changesets using the same format as the input.
 
 ${inputs.raw_summary}
