@@ -30,14 +30,14 @@
     "@dqbd/tiktoken": "^1.0.6",
     "@octokit/action": "^5.0.2",
     "@octokit/plugin-retry": "^4.1.3",
-    "@octokit/plugin-throttling": "^5.0.1",
+    "@octokit/plugin-throttling": "^5.1.0",
     "minimatch": "^9.0.0",
     "node-fetch": "^3.3.1",
     "p-limit": "^4.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.5.0",
-    "@types/node": "^18.15.11",
+    "@types/node": "^18.15.12",
     "@typescript-eslint/parser": "^5.59.0",
     "@vercel/ncc": "^0.36.1",
     "chatgpt": "^5.2.2",
