@@ -24,6 +24,11 @@ export const DESCRIPTION_TAG =
 export const DESCRIPTION_TAG_END =
   '<!-- end of auto-generated comment: release notes by openai -->'
 
+export const RAW_SUMMARY_TAG =
+  '<!-- This is an auto-generated comment: raw summary by openai -->'
+export const RAW_SUMMARY_TAG_END =
+  '<!-- end of auto-generated comment: raw summary by openai -->'
+
 export class Commenter {
   /**
    * @param mode Can be "create", "replace". Default is "replace".
@@ -61,32 +66,52 @@ ${tag}`
     }
   }
 
-  get_description(description: string) {
-    // remove our summary from description by looking for description_tag and description_tag_end
-    const start = description.indexOf(DESCRIPTION_TAG)
-    const end = description.indexOf(DESCRIPTION_TAG_END)
+  getContentWithinTags(content: string, startTag: string, endTag: string) {
+    const start = content.indexOf(startTag)
+    const end = content.indexOf(endTag)
     if (start >= 0 && end >= 0) {
-      return (
-        description.slice(0, start) +
-        description.slice(end + DESCRIPTION_TAG_END.length)
-      )
+      return content.slice(start + startTag.length, end)
     }
-    return description
+    return ''
+  }
+
+  removeContentWithinTags(content: string, startTag: string, endTag: string) {
+    const start = content.indexOf(startTag)
+    const end = content.indexOf(endTag)
+    if (start >= 0 && end >= 0) {
+      return content.slice(0, start) + content.slice(end + endTag.length)
+    }
+    return content
+  }
+
+  get_raw_summary(summary: string) {
+    const content = this.getContentWithinTags(
+      summary,
+      RAW_SUMMARY_TAG,
+      RAW_SUMMARY_TAG_END
+    )
+    // remove the first and last line
+    const lines = content.split('\n')
+    lines.shift()
+    lines.pop()
+    return lines.join('\n')
+  }
+
+  get_description(description: string) {
+    return this.removeContentWithinTags(
+      description,
+      DESCRIPTION_TAG,
+      DESCRIPTION_TAG_END
+    )
   }
 
   get_release_notes(description: string) {
-    // get our summary from description by looking for description_tag and description_tag_end
-    // and remove any content within that which is in markdown quote (>)
-    const start = description.indexOf(DESCRIPTION_TAG)
-    const end = description.indexOf(DESCRIPTION_TAG_END)
-    if (start >= 0 && end >= 0) {
-      const release_notes = description.slice(
-        start + DESCRIPTION_TAG.length,
-        end
-      )
-      return release_notes.replace(/(^|\n)> .*/g, '')
-    }
-    return ''
+    const release_notes = this.getContentWithinTags(
+      description,
+      DESCRIPTION_TAG,
+      DESCRIPTION_TAG_END
+    )
+    return release_notes.replace(/(^|\n)> .*/g, '')
   }
 
   async update_description(pull_number: number, message: string) {

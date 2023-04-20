@@ -5,7 +5,6 @@ import {
   Commenter,
   COMMENT_REPLY_TAG,
   COMMENT_TAG,
-  EXTRA_CONTENT_TAG,
   SUMMARIZE_TAG
 } from './commenter.js'
 import {octokit} from './octokit.js'
@@ -147,16 +146,6 @@ export const handleReviewComment = async (
         }
       }
 
-      // get summary of the PR
-      const summary = await commenter.find_comment_with_tag(
-        SUMMARIZE_TAG,
-        pull_number
-      )
-      if (summary) {
-        // remove all content below EXTRA_CONTENT_TAG
-        inputs.summary = summary.body.split(EXTRA_CONTENT_TAG)[0]
-      }
-
       // get tokens so far
       let tokens = tokenizer.get_token_count(prompts.render_comment(inputs))
 
@@ -168,7 +157,6 @@ export const handleReviewComment = async (
         )
         return
       }
-
       // pack file content and diff into the inputs if they are not too long
       if (file_content.length > 0) {
         // count occurrences of $file_content in prompt
@@ -196,6 +184,24 @@ export const handleReviewComment = async (
         ) {
           tokens += file_diff_tokens * file_diff_count
           inputs.file_diff = file_diff
+        }
+      }
+
+      // get summary of the PR
+      const summary = await commenter.find_comment_with_tag(
+        SUMMARIZE_TAG,
+        pull_number
+      )
+      if (summary) {
+        // pack summary into the inputs if it is not too long
+        const raw_summary = commenter.get_raw_summary(summary.body)
+        const summary_tokens = tokenizer.get_token_count(raw_summary)
+        if (
+          tokens + summary_tokens <=
+          options.heavy_token_limits.request_tokens
+        ) {
+          tokens += summary_tokens
+          inputs.raw_summary = raw_summary
         }
       }
 

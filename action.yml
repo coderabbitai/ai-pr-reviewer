@@ -9,14 +9,11 @@ inputs:
     required: false
     description: 'Enable debug mode'
     default: 'false'
-  max_files_to_summarize:
+  max_files:
     required: false
     description:
-      'Max files to summarize. Less than or equal to 0 means no limit.'
-    default: '40'
-  max_files_to_review:
-    required: false
-    description: 'Max files to review. Less than or equal to 0 means no limit.'
+      'Max files to summarize and review. Less than or equal to 0 means no
+      limit.'
     default: '0'
   review_comment_lgtm:
     required: false
@@ -109,7 +106,7 @@ inputs:
       disregarding minor issues.
   summarize_file_diff:
     required: false
-    description: 'The prompt for file'
+    description: 'The prompt for summarizing a file'
     default: |
       GitHub pull request title: 
       `$title` 
@@ -124,7 +121,7 @@ inputs:
       $file_content
       ```
 
-      Diff:
+      Diff for `$filename`:
       ```diff
       $file_diff
       ```
@@ -134,9 +131,9 @@ inputs:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      Here is the summary of changes you have generated for each file:
+      Here is the summary of changes you have generated for files:
       ```
-      $summary
+      $raw_summary
       ```
 
       Provide your final response in the `markdown` format with 
@@ -144,7 +141,7 @@ inputs:
         - High-level summary (comment on the overall change instead of 
           specific files within 80 words)
         - Table of files and their summaries. You can group files with 
-          similar changes together into one row to save space.
+          similar changes together into a single row to save space.
 
       Avoid additional commentary as this summary will be added as a 
       comment on the GitHub pull request.

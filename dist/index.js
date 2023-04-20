@@ -3507,7 +3507,9 @@ class Bot {
 /* harmony export */   "Nh": () => (/* binding */ EXTRA_CONTENT_TAG),
 /* harmony export */   "Rp": () => (/* binding */ SUMMARIZE_TAG),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
-/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG)
+/* harmony export */   "SR": () => (/* binding */ RAW_SUMMARY_TAG_END),
+/* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
+/* harmony export */   "sr": () => (/* binding */ RAW_SUMMARY_TAG)
 /* harmony export */ });
 /* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
@@ -3528,6 +3530,8 @@ const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by open
 const EXTRA_CONTENT_TAG = '<!-- Extra content -->';
 const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
 const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
+const RAW_SUMMARY_TAG = '<!-- This is an auto-generated comment: raw summary by openai -->';
+const RAW_SUMMARY_TAG_END = '<!-- end of auto-generated comment: raw summary by openai -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace". Default is "replace".
@@ -3563,26 +3567,36 @@ ${tag}`;
             await this.replace(body, tag, target);
         }
     }
-    get_description(description) {
-        // remove our summary from description by looking for description_tag and description_tag_end
-        const start = description.indexOf(DESCRIPTION_TAG);
-        const end = description.indexOf(DESCRIPTION_TAG_END);
+    getContentWithinTags(content, startTag, endTag) {
+        const start = content.indexOf(startTag);
+        const end = content.indexOf(endTag);
         if (start >= 0 && end >= 0) {
-            return (description.slice(0, start) +
-                description.slice(end + DESCRIPTION_TAG_END.length));
-        }
-        return description;
-    }
-    get_release_notes(description) {
-        // get our summary from description by looking for description_tag and description_tag_end
-        // and remove any content within that which is in markdown quote (>)
-        const start = description.indexOf(DESCRIPTION_TAG);
-        const end = description.indexOf(DESCRIPTION_TAG_END);
-        if (start >= 0 && end >= 0) {
-            const release_notes = description.slice(start + DESCRIPTION_TAG.length, end);
-            return release_notes.replace(/(^|\n)> .*/g, '');
+            return content.slice(start + startTag.length, end);
         }
         return '';
+    }
+    removeContentWithinTags(content, startTag, endTag) {
+        const start = content.indexOf(startTag);
+        const end = content.indexOf(endTag);
+        if (start >= 0 && end >= 0) {
+            return content.slice(0, start) + content.slice(end + endTag.length);
+        }
+        return content;
+    }
+    get_raw_summary(summary) {
+        const content = this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
+        // remove the first and last line
+        const lines = content.split('\n');
+        lines.shift();
+        lines.pop();
+        return lines.join('\n');
+    }
+    get_description(description) {
+        return this.removeContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
+    }
+    get_release_notes(description) {
+        const release_notes = this.getContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
+        return release_notes.replace(/(^|\n)> .*/g, '');
     }
     async update_description(pull_number, message) {
         // add this response to the description field of the PR as release notes by looking
@@ -3946,7 +3960,7 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files_to_review'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
@@ -5863,7 +5877,7 @@ class Inputs {
     system_message;
     title;
     description;
-    summary;
+    raw_summary;
     release_notes;
     filename;
     file_content;
@@ -5876,7 +5890,7 @@ class Inputs {
         this.system_message = system_message;
         this.title = title;
         this.description = description;
-        this.summary = summary;
+        this.raw_summary = summary;
         this.release_notes = release_notes;
         this.filename = filename;
         this.file_content = file_content;
@@ -5887,7 +5901,7 @@ class Inputs {
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.summary, this.release_notes, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.system_message, this.title, this.description, this.raw_summary, this.release_notes, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -5902,8 +5916,8 @@ class Inputs {
         if (this.description) {
             content = content.replace('$description', this.description);
         }
-        if (this.summary) {
-            content = content.replace('$summary', this.summary);
+        if (this.raw_summary) {
+            content = content.replace('$raw_summary', this.raw_summary);
         }
         if (this.release_notes) {
             content = content.replace('$release_notes', this.release_notes);
@@ -5966,8 +5980,7 @@ class OpenAIOptions {
 class Options {
     debug;
     summary_only;
-    max_files_to_summarize;
-    max_files_to_review;
+    max_files;
     review_comment_lgtm;
     path_filters;
     system_message;
@@ -5979,11 +5992,10 @@ class Options {
     openai_concurrency_limit;
     light_token_limits;
     heavy_token_limits;
-    constructor(debug, summary_only, max_files_to_summarize = '40', max_files_to_review = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_light_model = 'gpt-3.5-turbo', openai_heavy_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    constructor(debug, summary_only, max_files = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_light_model = 'gpt-3.5-turbo', openai_heavy_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
         this.debug = debug;
         this.summary_only = summary_only;
-        this.max_files_to_summarize = parseInt(max_files_to_summarize);
-        this.max_files_to_review = parseInt(max_files_to_review);
+        this.max_files = parseInt(max_files);
         this.review_comment_lgtm = review_comment_lgtm;
         this.path_filters = new PathFilter(path_filters);
         this.system_message = system_message;
@@ -6000,8 +6012,7 @@ class Options {
     print() {
         core.info(`debug: ${this.debug}`);
         core.info(`summary_only: ${this.summary_only}`);
-        core.info(`max_files_to_summarize: ${this.max_files_to_summarize}`);
-        core.info(`max_files_to_review: ${this.max_files_to_review}`);
+        core.info(`max_files: ${this.max_files}`);
         core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
         core.info(`path_filters: ${this.path_filters}`);
         core.info(`system_message: ${this.system_message}`);
@@ -6188,12 +6199,6 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                     return;
                 }
             }
-            // get summary of the PR
-            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
-            if (summary) {
-                // remove all content below EXTRA_CONTENT_TAG
-                inputs.summary = summary.body.split(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .EXTRA_CONTENT_TAG */ .Nh)[0];
-            }
             // get tokens so far
             let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(prompts.render_comment(inputs));
             if (tokens > options.heavy_token_limits.request_tokens) {
@@ -6221,6 +6226,18 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                         options.heavy_token_limits.request_tokens) {
                     tokens += file_diff_tokens * file_diff_count;
                     inputs.file_diff = file_diff;
+                }
+            }
+            // get summary of the PR
+            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
+            if (summary) {
+                // pack summary into the inputs if it is not too long
+                const raw_summary = commenter.get_raw_summary(summary.body);
+                const summary_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(raw_summary);
+                if (tokens + summary_tokens <=
+                    options.heavy_token_limits.request_tokens) {
+                    tokens += summary_tokens;
+                    inputs.raw_summary = raw_summary;
                 }
             }
             const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
@@ -6423,6 +6440,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
+        inputs.release_notes = commenter.get_release_notes(context.payload.pull_request.body);
     }
     // if the description contains ignore_keyword, skip
     if (inputs.description.includes(ignore_keyword)) {
@@ -6431,11 +6449,32 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
     inputs.system_message = options.system_message;
-    // collect diff chunks
+    // get SUMMARIZE_TAG message
+    const existing_summarize_cmt = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
+    if (existing_summarize_cmt) {
+        inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body);
+    }
+    const existing_commit_ids_block = getReviewedCommitIdsBlock(inputs.raw_summary);
+    const allCommitIds = await getAllCommitIds();
+    // find highest reviewed commit id
+    let highest_reviewed_commit_id = '';
+    if (existing_commit_ids_block) {
+        highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_commit_ids_block));
+    }
+    if (highest_reviewed_commit_id === '' ||
+        highest_reviewed_commit_id === context.payload.pull_request.head.sha) {
+        core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
+        highest_reviewed_commit_id = context.payload.pull_request.base.sha;
+    }
+    core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
+    // get the list of files changed between the highest reviewed commit
+    // and the latest (head) commit
+    // use octokit.pulls.compareCommits to get the list of files changed
+    // between the highest reviewed commit and the latest (head) commit
     const diff = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
         owner: repo.owner,
         repo: repo.repo,
-        base: context.payload.pull_request.base.sha,
+        base: highest_reviewed_commit_id,
         head: context.payload.pull_request.head.sha
     });
     const { files, commits } = diff.data;
@@ -6575,24 +6614,44 @@ ${hunks.old_hunk}
         }
     };
     const summaryPromises = [];
-    const skipped_files_to_summarize = [];
+    const skipped_files = [];
     for (const [filename, file_content, file_diff] of files_and_changes) {
-        if (options.max_files_to_summarize <= 0 ||
-            summaryPromises.length < options.max_files_to_summarize) {
+        if (options.max_files <= 0 || summaryPromises.length < options.max_files) {
             summaryPromises.push(openai_concurrency_limit(async () => do_summary(filename, file_content, file_diff)));
         }
         else {
-            skipped_files_to_summarize.push(filename);
+            skipped_files.push(filename);
         }
     }
     const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
     if (summaries.length > 0) {
-        inputs.summary = '';
-        // join summaries into one
-        for (const [filename, summary] of summaries) {
-            inputs.summary += `---
+        // join summaries into one in the batches of 20
+        // and ask the bot to summarize the summaries
+        for (let i = 0; i < summaries.length; i += 20) {
+            const summaries_batch = summaries.slice(i, i + 20);
+            for (const [filename, summary] of summaries_batch) {
+                inputs.raw_summary += `---
 ${filename}: ${summary}
 `;
+            }
+            // ask chatgpt to summarize the summaries
+            const prompt = `
+Provided below are changesets in this pull request.
+The format consists of filename(s) and the summary of changes 
+for those files. There is a separator between each changeset.
+Your task is to de-deduplicate and group together files with
+related/similar changes into a single changeset. Respond with the 
+updated changesets using the same format as the input.
+
+${inputs.raw_summary}
+`;
+            const [summarize_resp] = await heavyBot.chat(prompt, {});
+            if (!summarize_resp) {
+                core.warning('summarize: nothing obtained from openai');
+            }
+            else {
+                inputs.raw_summary = summarize_resp;
+            }
         }
     }
     let next_summarize_ids = {};
@@ -6602,7 +6661,6 @@ ${filename}: ${summary}
         core.info('summarize: nothing obtained from openai');
     }
     else {
-        inputs.summary = summarize_final_response;
         // final release notes
         next_summarize_ids = summarize_final_response_ids;
         const [release_notes_response, release_notes_ids] = await heavyBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
@@ -6618,6 +6676,11 @@ ${filename}: ${summary}
         }
     }
     let summarize_comment = `${summarize_final_response}
+${lib_commenter/* RAW_SUMMARY_TAG */.sr}
+<!--
+${inputs.raw_summary}
+-->
+${lib_commenter/* RAW_SUMMARY_TAG_END */.SR}
 ${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
 ---
 
@@ -6644,14 +6707,14 @@ ${filter_ignored_files.length > 0
 `
         : ''}
 
-${skipped_files_to_summarize.length > 0
+${skipped_files.length > 0
         ? `
 <details>
-<summary>Files not summarized due to max files limit (${skipped_files_to_summarize.length})</summary>
+<summary>Files not processed due to max files limit (${skipped_files.length})</summary>
 
-### Not summarized
+### Not processed
 
-* ${skipped_files_to_summarize.join('\n* ')}
+* ${skipped_files.join('\n* ')}
 
 </details>
 `
@@ -6896,71 +6959,17 @@ ${comment_chain}
                 reviews_failed.push(`${filename} (${e})`);
             }
         };
-        // get SUMMARIZE_TAG message
-        const existing_summarize_cmt = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
-        let existing_summarize_comment = '';
-        if (existing_summarize_cmt) {
-            existing_summarize_comment = existing_summarize_cmt.body;
-        }
-        const existing_commit_ids_block = getReviewedCommitIdsBlock(existing_summarize_comment);
-        const allCommitIds = await getAllCommitIds();
-        // find highest reviewed commit id
-        let highest_reviewed_commit_id = '';
-        if (existing_commit_ids_block) {
-            highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_commit_ids_block));
-        }
-        let files_and_changes_for_review = files_and_changes;
-        if (highest_reviewed_commit_id === '' ||
-            highest_reviewed_commit_id === context.payload.pull_request.head.sha) {
-            core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
-            highest_reviewed_commit_id = context.payload.pull_request.base.sha;
-        }
-        else {
-            core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
-            // get the list of files changed between the highest reviewed commit
-            // and the latest (head) commit
-            // use octokit.pulls.compareCommits to get the list of files changed
-            // between the highest reviewed commit and the latest (head) commit
-            const diff_since_last_review = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
-                owner: repo.owner,
-                repo: repo.repo,
-                base: highest_reviewed_commit_id,
-                head: context.payload.pull_request.head.sha
-            });
-            if (diff_since_last_review &&
-                diff_since_last_review.data &&
-                diff_since_last_review.data.files) {
-                const files_changed = diff_since_last_review.data.files.map((file) => file.filename);
-                core.info(`Files changed since last review: ${files_changed}`);
-                files_and_changes_for_review = files_and_changes.filter(([filename]) => files_changed.includes(filename));
-            }
-        }
         const reviewPromises = [];
-        const skipped_files_to_review = [];
-        for (const [filename, file_content, , patches] of files_and_changes_for_review) {
-            if (options.max_files_to_review <= 0 ||
-                reviewPromises.length < options.max_files_to_review) {
+        for (const [filename, file_content, , patches] of files_and_changes) {
+            if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
                 reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
             }
             else {
-                skipped_files_to_review.push(filename);
+                skipped_files.push(filename);
             }
         }
         await Promise.all(reviewPromises);
         summarize_comment += `
-${skipped_files_to_review.length > 0
-            ? `
-<details>
-<summary>Files not reviewed due to max files limit in this run (${skipped_files_to_review.length})</summary>
-
-### Not reviewed
-
-* ${skipped_files_to_review.join('\n* ')}
-
-</details>
-`
-            : ''}
-
 ${reviews_failed.length > 0
             ? `<details>
 <summary>Files not reviewed due to errors in this run (${reviews_failed.length})</summary>

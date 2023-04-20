@@ -1,10 +1,10 @@
-# OpenAI ChatGPT based PR reviewer and summarizer
+# OpenAI ChatGPT-based PR reviewer and summarizer
 
 ![AI](./docs/images/ai.png)
 
 ## Overview
 
-This [OpenAI ChatGPT](https://platform.openai.com/docs/guides/chat) based GitHub
+This [OpenAI ChatGPT-based](https://platform.openai.com/docs/guides/chat) GitHub
 Action provides a summary, release notes and review of pull requests. The
 prompts have been tuned for a concise response. To prevent excessive
 notifications, this action can be configured to skip adding review comments when
@@ -22,6 +22,8 @@ NOTES:
   has a
   [more conservative data usage policy](https://openai.com/policies/api-data-usage-policies)
   compared to their ChatGPT offering.
+- This action is not affiliated with OpenAI.
+- This action is going through rapid iteration, so expect breaking changes.
 
 ## Usage
 
@@ -178,7 +180,7 @@ $ npm run build && npm run package
 
 ## FAQs
 
-### Review pull request from forks
+### Review pull requests from forks
 
 GitHub Actions limits the access of secrets from forked repositories. To enable
 this feature, you need to use the `pull_request_target` event instead of
