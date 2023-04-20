@@ -102,6 +102,7 @@ To ignore a PR, add the following keyword in the PR description:
 - `OPENAI_API_KEY`: use this to authenticate with OpenAI API. You can get one
   [here](https://platform.openai.com/account/api-keys). Please add this key to
   your GitHub Action secrets.
+- `OPENAI_API_ORG`: (optional) use this to use the specified organisation with OpenAI API if you have multiple. Please add this key to your GitHub Action secrets.
 
 ### Models: `gpt-4` and `gpt-3.5-turbo`
 
