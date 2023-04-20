@@ -6487,7 +6487,9 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
         highest_reviewed_commit_id = context.payload.pull_request.base.sha;
     }
-    core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
+    else {
+        core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
+    }
     // get the list of files changed between the highest reviewed commit
     // and the latest (head) commit
     // use octokit.pulls.compareCommits to get the list of files changed
