@@ -104,11 +104,11 @@ inputs:
       requested. Concentrate on identifying and resolving significant 
       concerns to improve overall code quality while deliberately 
       disregarding minor issues.
-  update_summary:
+  summarize_file_diff:
     required: false
-    description: 'The prompt to update overall summary with file diff'
+    description: 'The prompt for summarizing a file'
     default: |
-      A commit was just made to the GitHub pull request title: 
+      GitHub pull request title: 
       `$title` 
 
       Description:
@@ -116,9 +116,9 @@ inputs:
       $description
       ```
 
-      Existing summary of changes:
+      Content of file `$filename` prior to changes:
       ```
-      $raw_summary
+      $file_content
       ```
 
       Diff for `$filename`:
@@ -126,19 +126,24 @@ inputs:
       $file_diff
       ```
 
-      Instructions:
-      - Summarize the diff (within 30 words).
-      - Prepare overall summary by adding summary of
-        the diff to the existing summary.
-      - Track filenames in the overall summary of changes. 
-      - Group similar files together if they have related 
-        changes to save space.
-      - Respond back with the overall summary.
+      I would like you to summarize the diff within 50 words.
+  update_summary:
+    required: false
+    description: 'The prompt to update overall summary with file diff'
+    default: |
+      Summary of changes:
+      ```
+      $raw_summary
+      ```
+
+      Update the summary to group together files with related 
+      changes to save space and remove repetition by de-duplicating
+      entries.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      Here is the summary of changes:
+      Here is the summary of changes you have generated for files:
       ```
       $raw_summary
       ```

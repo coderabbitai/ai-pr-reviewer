@@ -213,27 +213,29 @@ ${hunks.old_hunk}
 
   const summaries_failed: string[] = []
 
-  const update_summary = async (
+  const do_summary = async (
     filename: string,
     file_content: string,
     file_diff: string
-  ): Promise<string> => {
+  ): Promise<[string, string] | null> => {
     const ins = inputs.clone()
     if (file_diff.length === 0) {
       core.warning(`summarize: file_diff is empty, skip ${filename}`)
       summaries_failed.push(`${filename} (empty diff)`)
-      return ''
+      return null
     }
 
     ins.filename = filename
     // render prompt based on inputs so far
-    let tokens = tokenizer.get_token_count(prompts.render_update_summary(ins))
+    let tokens = tokenizer.get_token_count(
+      prompts.render_summarize_file_diff(ins)
+    )
 
     const diff_tokens = tokenizer.get_token_count(file_diff)
     if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
       core.info(`summarize: diff tokens exceeds limit, skip ${filename}`)
       summaries_failed.push(`${filename} (diff tokens exceeds limit)`)
-      return ''
+      return null
     }
 
     ins.file_diff = file_diff
@@ -257,35 +259,62 @@ ${hunks.old_hunk}
     // summarize content
     try {
       const [summarize_resp] = await lightBot.chat(
-        prompts.render_update_summary(ins),
+        prompts.render_summarize_file_diff(ins),
         {}
       )
 
       if (!summarize_resp) {
         core.info('summarize: nothing obtained from openai')
         summaries_failed.push(`${filename} (nothing obtained from openai)`)
-        return ''
+        return null
       } else {
-        return summarize_resp
+        return [filename, summarize_resp]
       }
     } catch (error) {
       core.warning(`summarize: error from openai: ${error}`)
       summaries_failed.push(`${filename} (error from openai: ${error})`)
-      return ''
+      return null
     }
   }
 
-  let totalSummaries = 0
+  const summaryPromises = []
   const skipped_files = []
   for (const [filename, file_content, file_diff] of files_and_changes) {
-    if (options.max_files <= 0 || totalSummaries < options.max_files) {
-      const summary = await update_summary(filename, file_content, file_diff)
-      if (summary !== '') {
-        inputs.raw_summary = summary
-      }
-      totalSummaries++
+    if (options.max_files <= 0 || summaryPromises.length < options.max_files) {
+      summaryPromises.push(
+        openai_concurrency_limit(async () =>
+          do_summary(filename, file_content, file_diff)
+        )
+      )
     } else {
       skipped_files.push(filename)
+    }
+  }
+
+  const summaries = (await Promise.all(summaryPromises)).filter(
+    summary => summary !== null
+  ) as [string, string][]
+
+  if (summaries.length > 0) {
+    // join summaries into one in the batches of 20
+    // and ask the bot to summarize the summaries
+    for (let i = 0; i < summaries.length; i += 20) {
+      const summaries_batch = summaries.slice(i, i + 20)
+      for (const [filename, summary] of summaries_batch) {
+        inputs.raw_summary += `---
+${filename}: ${summary}
+`
+      }
+      // ask chatgpt to summarize the summaries
+      const [summarize_resp] = await heavyBot.chat(
+        prompts.render_update_summary(inputs),
+        {}
+      )
+      if (!summarize_resp) {
+        core.warning('summarize: nothing obtained from openai')
+      } else {
+        inputs.raw_summary = summarize_resp
+      }
     }
   }
 

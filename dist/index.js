@@ -3963,7 +3963,7 @@ async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('update_summary'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('update_summary'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
@@ -5846,12 +5846,14 @@ minimatch.unescape = unescape_unescape;
 
 class Prompts {
     review_file_diff;
+    summarize_file_diff;
     update_summary;
     summarize;
     summarize_release_notes;
     comment;
-    constructor(review_file_diff = '', update_summary = '', summarize = '', summarize_release_notes = '', comment = '') {
+    constructor(review_file_diff = '', summarize_file_diff = '', update_summary = '', summarize = '', summarize_release_notes = '', comment = '') {
         this.review_file_diff = review_file_diff;
+        this.summarize_file_diff = summarize_file_diff;
         this.update_summary = update_summary;
         this.summarize = summarize;
         this.summarize_release_notes = summarize_release_notes;
@@ -5859,6 +5861,9 @@ class Prompts {
     }
     render_review_file_diff(inputs) {
         return inputs.render(this.review_file_diff);
+    }
+    render_summarize_file_diff(inputs) {
+        return inputs.render(this.summarize_file_diff);
     }
     render_update_summary(inputs) {
         return inputs.render(this.update_summary);
@@ -6558,21 +6563,21 @@ ${hunks.old_hunk}
         return;
     }
     const summaries_failed = [];
-    const update_summary = async (filename, file_content, file_diff) => {
+    const do_summary = async (filename, file_content, file_diff) => {
         const ins = inputs.clone();
         if (file_diff.length === 0) {
             core.warning(`summarize: file_diff is empty, skip ${filename}`);
             summaries_failed.push(`${filename} (empty diff)`);
-            return '';
+            return null;
         }
         ins.filename = filename;
         // render prompt based on inputs so far
-        let tokens = tokenizer/* get_token_count */.u(prompts.render_update_summary(ins));
+        let tokens = tokenizer/* get_token_count */.u(prompts.render_summarize_file_diff(ins));
         const diff_tokens = tokenizer/* get_token_count */.u(file_diff);
         if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
             core.info(`summarize: diff tokens exceeds limit, skip ${filename}`);
             summaries_failed.push(`${filename} (diff tokens exceeds limit)`);
-            return '';
+            return null;
         }
         ins.file_diff = file_diff;
         tokens += file_diff.length;
@@ -6590,34 +6595,51 @@ ${hunks.old_hunk}
         }
         // summarize content
         try {
-            const [summarize_resp] = await lightBot.chat(prompts.render_update_summary(ins), {});
+            const [summarize_resp] = await lightBot.chat(prompts.render_summarize_file_diff(ins), {});
             if (!summarize_resp) {
                 core.info('summarize: nothing obtained from openai');
                 summaries_failed.push(`${filename} (nothing obtained from openai)`);
-                return '';
+                return null;
             }
             else {
-                return summarize_resp;
+                return [filename, summarize_resp];
             }
         }
         catch (error) {
             core.warning(`summarize: error from openai: ${error}`);
             summaries_failed.push(`${filename} (error from openai: ${error})`);
-            return '';
+            return null;
         }
     };
-    let totalSummaries = 0;
+    const summaryPromises = [];
     const skipped_files = [];
     for (const [filename, file_content, file_diff] of files_and_changes) {
-        if (options.max_files <= 0 || totalSummaries < options.max_files) {
-            const summary = await update_summary(filename, file_content, file_diff);
-            if (summary !== '') {
-                inputs.raw_summary = summary;
-            }
-            totalSummaries++;
+        if (options.max_files <= 0 || summaryPromises.length < options.max_files) {
+            summaryPromises.push(openai_concurrency_limit(async () => do_summary(filename, file_content, file_diff)));
         }
         else {
             skipped_files.push(filename);
+        }
+    }
+    const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
+    if (summaries.length > 0) {
+        // join summaries into one in the batches of 20
+        // and ask the bot to summarize the summaries
+        for (let i = 0; i < summaries.length; i += 20) {
+            const summaries_batch = summaries.slice(i, i + 20);
+            for (const [filename, summary] of summaries_batch) {
+                inputs.raw_summary += `---
+${filename}: ${summary}
+`;
+            }
+            // ask chatgpt to summarize the summaries
+            const [summarize_resp] = await heavyBot.chat(prompts.render_update_summary(inputs), {});
+            if (!summarize_resp) {
+                core.warning('summarize: nothing obtained from openai');
+            }
+            else {
+                inputs.raw_summary = summarize_resp;
+            }
         }
     }
     let next_summarize_ids = {};

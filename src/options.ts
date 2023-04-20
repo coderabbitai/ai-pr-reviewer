@@ -3,6 +3,7 @@ import {minimatch} from 'minimatch'
 
 export class Prompts {
   review_file_diff: string
+  summarize_file_diff: string
   update_summary: string
   summarize: string
   summarize_release_notes: string
@@ -10,12 +11,14 @@ export class Prompts {
 
   constructor(
     review_file_diff = '',
+    summarize_file_diff = '',
     update_summary = '',
     summarize = '',
     summarize_release_notes = '',
     comment = ''
   ) {
     this.review_file_diff = review_file_diff
+    this.summarize_file_diff = summarize_file_diff
     this.update_summary = update_summary
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
@@ -24,6 +27,10 @@ export class Prompts {
 
   render_review_file_diff(inputs: Inputs): string {
     return inputs.render(this.review_file_diff)
+  }
+
+  render_summarize_file_diff(inputs: Inputs): string {
+    return inputs.render(this.summarize_file_diff)
   }
 
   render_update_summary(inputs: Inputs): string {
