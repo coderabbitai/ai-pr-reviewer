@@ -5865,10 +5865,10 @@ class Prompts {
 
 Below the summary, I would also like you to classify the 
 complexity of the diff as \`COMPLEX\` or \`SIMPLE\` based 
-on whether the change is a simple chore such are renaming
-a variable or a complex change such as adding a new feature.
-Any change that does not change the logic of the code is
-considered a simple change.
+on whether the change is a simple chore or a complex change 
+that needs further review. If the diff does not substantively 
+change the logic/functionality of the code, then it is a 
+simple change.
 
 Use the following format to classify the complexity of the
 diff and add no additional text:
