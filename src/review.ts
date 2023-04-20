@@ -316,7 +316,9 @@ ${hunks.old_hunk}
 
   let summarize_comment = `${summarize_final_response}
 ${RAW_SUMMARY_TAG}
+<!--
 ${inputs.raw_summary}
+-->
 ${RAW_SUMMARY_TAG_END}
 ${EXTRA_CONTENT_TAG}
 ---

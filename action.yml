@@ -130,7 +130,8 @@ inputs:
       summary of changes for the `$filename` provided above. 
       You must track filenames in the summary of changes. 
       Please group similar files together if they have related 
-      changes to save space.
+      changes to save space. Return the updated summary and 
+      nothing else.
   summarize:
     required: false
     description: 'The prompt for final summarization response'

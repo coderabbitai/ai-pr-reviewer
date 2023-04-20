@@ -3584,7 +3584,12 @@ ${tag}`;
         return content;
     }
     get_raw_summary(summary) {
-        return this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
+        const content = this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
+        // remove the first and last line
+        const lines = content.split('\n');
+        lines.shift();
+        lines.pop();
+        return lines.join('\n');
     }
     get_description(description) {
         return this.removeContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
@@ -6638,7 +6643,9 @@ ${hunks.old_hunk}
     }
     let summarize_comment = `${summarize_final_response}
 ${lib_commenter/* RAW_SUMMARY_TAG */.sr}
+<!--
 ${inputs.raw_summary}
+-->
 ${lib_commenter/* RAW_SUMMARY_TAG_END */.SR}
 ${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
 ---

@@ -85,11 +85,16 @@ ${tag}`
   }
 
   get_raw_summary(summary: string) {
-    return this.getContentWithinTags(
+    const content = this.getContentWithinTags(
       summary,
       RAW_SUMMARY_TAG,
       RAW_SUMMARY_TAG_END
     )
+    // remove the first and last line
+    const lines = content.split('\n')
+    lines.shift()
+    lines.pop()
+    return lines.join('\n')
   }
 
   get_description(description: string) {
