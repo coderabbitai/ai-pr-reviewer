@@ -25,6 +25,7 @@ export class Bot {
       this.api = new openai.ChatGPTAPI({
         systemMessage: options.system_message,
         apiKey: process.env.OPENAI_API_KEY,
+        apiOrg: process.env.OPENAI_API_ORG ?? null,
         debug: options.debug,
         maxModelTokens: openaiOptions.token_limits.max_tokens,
         maxResponseTokens: openaiOptions.token_limits.response_tokens,
