@@ -31,10 +31,8 @@ export class Prompts {
 
 Below the summary, I would also like you to classify the 
 complexity of the diff as \`COMPLEX\` or \`SIMPLE\` based 
-on whether the change is a simple chore or a complex change 
-that needs further review. If the diff does not substantively 
-change the logic/functionality of the code, then it is a 
-simple change.
+on whether the diff is a simple change that looks good as it
+is or a complex change that needs thorough review.
 
 Use the following format to classify the complexity of the
 diff and add no additional text:
