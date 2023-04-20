@@ -3419,6 +3419,7 @@ class Bot {
             this.api = new ChatGPTAPI({
                 systemMessage: options.system_message,
                 apiKey: process.env.OPENAI_API_KEY,
+                apiOrg: process.env.OPENAI_API_ORG ?? undefined,
                 debug: options.debug,
                 maxModelTokens: openaiOptions.token_limits.max_tokens,
                 maxResponseTokens: openaiOptions.token_limits.response_tokens,
@@ -5863,22 +5864,19 @@ class Prompts {
     render_summarize_file_diff(inputs) {
         const prompt = `${this.summarize_file_diff}
 
-Below the summary, I would also like you to triage the diff 
-as \`NEEDS_REVIEW\` or \`APPROVED\` based on the following 
-criteria:
+Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
+\`APPROVED\` based on the following criteria:
 
-- If the diff introduces new functionality, modifies existing logic, 
-  or has potential for bugs, triage it as \`NEEDS_REVIEW\`.
-- If the diff only contains minor changes, such as fixing typos, 
-  formatting, renaming variables, triage it as \`APPROVED\`.
+- If the diff involves any modifications to the logic or functionality, even if they 
+  seem minor, triage it as \`NEEDS_REVIEW\`. This includes changes to control structures, 
+  function calls, or variable assignments that might impact the behavior of the code.
+- If the diff only contains very minor changes that don't affect the code logic, such as 
+  fixing typos, formatting, or renaming variables for clarity, triage it as \`APPROVED\`.
 
-Please evaluate the diff thoroughly and take into account factors 
-such as the number of lines changed, the potential impact on the 
-overall system, and the likelihood of introducing new bugs or 
-security vulnerabilities.
-
-Use the following format to triage the diff and add no additional text:
-[TRIAGE]: <NEEDS_REVIEW or APPROVED>
+Please evaluate the diff thoroughly and take into account factors such as the number of 
+lines changed, the potential impact on the overall system, and the likelihood of 
+introducing new bugs or security vulnerabilities. 
+When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
 `;
         return inputs.render(prompt);
     }
@@ -6537,7 +6535,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             }
         }
         catch (error) {
-            core.warning(`Failed to get file contents: ${error}, skipping.`);
+            core.warning(`Failed to get file contents: ${error}`);
         }
         let file_diff = '';
         if (file.patch) {
@@ -6670,13 +6668,15 @@ ${filename}: ${summary}
             }
             // ask chatgpt to summarize the summaries
             const prompt = `
-Provided below are changesets in this pull request.
-The format consists of filename(s) and the summary of changes 
-for those files. There is a separator between each changeset.
+Provided below are changesets in this pull request. Changesets 
+are in chronlogical order and new changesets are appended to the
+end of the list. The format consists of filename(s) and the summary 
+of changes for those files. There is a separator between each changeset.
 Your task is to de-deduplicate and group together files with
-related/similar changes into a single changeset. Respond with the 
-updated changesets using the same format as the input.
+related/similar changes into a single changeset. Respond with the updated 
+changesets using the same format as the input. 
 
+Changesets:
 ${inputs.raw_summary}
 `;
             const [summarize_resp] = await heavyBot.chat(prompt, {});

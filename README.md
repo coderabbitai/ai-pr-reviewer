@@ -111,7 +111,7 @@ changes (`openai_light_model` in configuration) and `gpt-4` for more complex
 review and commenting tasks (`openai_heavy_model` in configuration).
 
 Costs: `gpt-3.5-turbo` is dirt cheap. `gpt-4` is orders of magnitude more
-expensive, but the results are vastly superior. We are typically spending $50 a
+expensive, but the results are vastly superior. We are typically spending $20 a
 day for a 20 developer team with `gpt-4` based review and commenting.
 
 ### Prompts & Configuration
