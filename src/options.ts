@@ -29,13 +29,23 @@ export class Prompts {
   render_summarize_file_diff(inputs: Inputs): string {
     const prompt = `${this.summarize_file_diff}
 
-Below the summary, I would also like you to classify the 
-complexity of the diff as \`COMPLEX\` or \`SIMPLE\` based 
-on whether the diff is a simple change that looks good as it
-is or a complex change that needs thorough review.
+Below the summary, I would also like you to classify the complexity 
+of the diff as \`COMPLEX\` or \`SIMPLE\` based on the following 
+criteria:
 
-Use the following format to classify the complexity of the
-diff and add no additional text:
+- If the diff introduces new functionality, modifies existing logic 
+  significantly, or has potential security implications, 
+  classify it as \`COMPLEX\`.
+- If the diff only contains minor changes, such as fixing typos, 
+  formatting, or updating documentation, classify it as \`SIMPLE\`.
+
+Please evaluate the diff thoroughly and take into account factors 
+such as the number of lines changed, the potential impact on the 
+overall system, and the likelihood of introducing new bugs or 
+security vulnerabilities.
+
+Use the following format to classify the complexity of the diff 
+and add no additional text:
 [COMPLEXITY]: <COMPLEX or SIMPLE>
 `
 
