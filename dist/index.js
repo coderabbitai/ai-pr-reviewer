@@ -5861,7 +5861,18 @@ class Prompts {
         return inputs.render(this.review_file_diff);
     }
     render_summarize_file_diff(inputs) {
-        return inputs.render(this.summarize_file_diff);
+        const prompt = `${this.summarize_file_diff}
+
+Below the summary, I would also like you to classify the 
+complexity of the diff as \`COMPLEX\` or \`SIMPLE\` based 
+on whether the diff is a simple change that looks good as it
+is or a complex change that needs thorough review.
+
+Use the following format to classify the complexity of the
+diff and add no additional text:
+[COMPLEXITY]: <COMPLEX or SIMPLE>
+`;
+        return inputs.render(prompt);
     }
     render_summarize(inputs) {
         return inputs.render(this.summarize);
@@ -6604,7 +6615,23 @@ ${hunks.old_hunk}
                 return null;
             }
             else {
-                return [filename, summarize_resp];
+                // parse the comment to look for complexity classification
+                // Format is : [COMPLEXITY]: <COMPLEX or SIMPLE>
+                // if the change is complex return true, else false
+                const complexityRegex = /\[COMPLEXITY\]:\s*(COMPLEX|SIMPLE)/;
+                const complexityMatch = summarize_resp.match(complexityRegex);
+                if (complexityMatch) {
+                    const complexity = complexityMatch[1];
+                    const is_complex = complexity === 'COMPLEX' ? true : false;
+                    // remove this line from the comment
+                    const summary = summarize_resp.replace(complexityRegex, '').trim();
+                    core.info(`filename: ${filename}, complexity: ${complexity}`);
+                    return [filename, summary, is_complex];
+                }
+                else {
+                    // Handle the case when the [COMPLEXITY] tag is not found
+                    return [filename, summarize_resp, true];
+                }
             }
         }
         catch (error) {
@@ -6734,6 +6761,13 @@ ${summaries_failed.length > 0
         : ''}
 `;
     if (options.summary_only !== true) {
+        const files_and_changes_review = files_and_changes.filter(([filename]) => {
+            const is_complex = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
+            return is_complex;
+        });
+        const reviews_skipped = files_and_changes
+            .filter(([filename]) => !files_and_changes_review.some(([reviewFilename]) => reviewFilename === filename))
+            .map(([filename]) => filename);
         // failed reviews array
         const reviews_failed = [];
         const do_review = async (filename, file_content, patches) => {
@@ -6960,7 +6994,7 @@ ${comment_chain}
             }
         };
         const reviewPromises = [];
-        for (const [filename, file_content, , patches] of files_and_changes) {
+        for (const [filename, file_content, , patches] of files_and_changes_review) {
             if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
                 reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
             }
@@ -6977,6 +7011,18 @@ ${reviews_failed.length > 0
 ### Failed to review
 
 * ${reviews_failed.join('\n* ')}
+
+</details>
+`
+            : ''}
+
+${reviews_skipped.length > 0
+            ? `<details>
+<summary>Files not reviewed due to simple changes (${reviews_skipped.length})</summary>
+
+### Skipped review
+
+* ${reviews_skipped.join('\n* ')}
 
 </details>
 `

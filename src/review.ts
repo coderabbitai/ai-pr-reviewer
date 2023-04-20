@@ -217,7 +217,7 @@ ${hunks.old_hunk}
     filename: string,
     file_content: string,
     file_diff: string
-  ): Promise<[string, string] | null> => {
+  ): Promise<[string, string, boolean] | null> => {
     const ins = inputs.clone()
     if (file_diff.length === 0) {
       core.warning(`summarize: file_diff is empty, skip ${filename}`)
@@ -226,6 +226,7 @@ ${hunks.old_hunk}
     }
 
     ins.filename = filename
+
     // render prompt based on inputs so far
     let tokens = tokenizer.get_token_count(
       prompts.render_summarize_file_diff(ins)
@@ -268,7 +269,24 @@ ${hunks.old_hunk}
         summaries_failed.push(`${filename} (nothing obtained from openai)`)
         return null
       } else {
-        return [filename, summarize_resp]
+        // parse the comment to look for complexity classification
+        // Format is : [COMPLEXITY]: <COMPLEX or SIMPLE>
+        // if the change is complex return true, else false
+        const complexityRegex = /\[COMPLEXITY\]:\s*(COMPLEX|SIMPLE)/
+        const complexityMatch = summarize_resp.match(complexityRegex)
+
+        if (complexityMatch) {
+          const complexity = complexityMatch[1]
+          const is_complex = complexity === 'COMPLEX' ? true : false
+
+          // remove this line from the comment
+          const summary = summarize_resp.replace(complexityRegex, '').trim()
+          core.info(`filename: ${filename}, complexity: ${complexity}`)
+          return [filename, summary, is_complex]
+        } else {
+          // Handle the case when the [COMPLEXITY] tag is not found
+          return [filename, summarize_resp, true]
+        }
       }
     } catch (error) {
       core.warning(`summarize: error from openai: ${error}`)
@@ -293,7 +311,7 @@ ${hunks.old_hunk}
 
   const summaries = (await Promise.all(summaryPromises)).filter(
     summary => summary !== null
-  ) as [string, string][]
+  ) as [string, string, boolean][]
 
   if (summaries.length > 0) {
     // join summaries into one in the batches of 20
@@ -420,6 +438,23 @@ ${
 `
 
   if (options.summary_only !== true) {
+    const files_and_changes_review = files_and_changes.filter(([filename]) => {
+      const is_complex =
+        summaries.find(
+          ([summaryFilename]) => summaryFilename === filename
+        )?.[2] ?? true
+      return is_complex
+    })
+
+    const reviews_skipped = files_and_changes
+      .filter(
+        ([filename]) =>
+          !files_and_changes_review.some(
+            ([reviewFilename]) => reviewFilename === filename
+          )
+      )
+      .map(([filename]) => filename)
+
     // failed reviews array
     const reviews_failed: string[] = []
     const do_review = async (
@@ -684,7 +719,12 @@ ${comment_chain}
     }
 
     const reviewPromises = []
-    for (const [filename, file_content, , patches] of files_and_changes) {
+    for (const [
+      filename,
+      file_content,
+      ,
+      patches
+    ] of files_and_changes_review) {
       if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
@@ -709,6 +749,22 @@ ${
 ### Failed to review
 
 * ${reviews_failed.join('\n* ')}
+
+</details>
+`
+    : ''
+}
+
+${
+  reviews_skipped.length > 0
+    ? `<details>
+<summary>Files not reviewed due to simple changes (${
+        reviews_skipped.length
+      })</summary>
+
+### Skipped review
+
+* ${reviews_skipped.join('\n* ')}
 
 </details>
 `
