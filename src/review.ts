@@ -269,22 +269,21 @@ ${hunks.old_hunk}
         summaries_failed.push(`${filename} (nothing obtained from openai)`)
         return null
       } else {
-        // parse the comment to look for complexity classification
-        // Format is : [COMPLEXITY]: <COMPLEX or SIMPLE>
-        // if the change is complex return true, else false
-        const complexityRegex = /\[COMPLEXITY\]:\s*(COMPLEX|SIMPLE)/
-        const complexityMatch = summarize_resp.match(complexityRegex)
+        // parse the comment to look for triage classification
+        // Format is : [TRIAGE]: <NEEDS_REVIEW or APPROVED>
+        // if the change needs review return true, else false
+        const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/
+        const triageMatch = summarize_resp.match(triageRegex)
 
-        if (complexityMatch) {
-          const complexity = complexityMatch[1]
-          const is_complex = complexity === 'COMPLEX' ? true : false
+        if (triageMatch) {
+          const triage = triageMatch[1]
+          const needs_review = triage === 'NEEDS_REVIEW' ? true : false
 
           // remove this line from the comment
-          const summary = summarize_resp.replace(complexityRegex, '').trim()
-          core.info(`filename: ${filename}, complexity: ${complexity}`)
-          return [filename, summary, is_complex]
+          const summary = summarize_resp.replace(triageRegex, '').trim()
+          core.info(`filename: ${filename}, triage: ${triage}`)
+          return [filename, summary, needs_review]
         } else {
-          // Handle the case when the [COMPLEXITY] tag is not found
           return [filename, summarize_resp, true]
         }
       }
@@ -439,11 +438,11 @@ ${
 
   if (options.summary_only !== true) {
     const files_and_changes_review = files_and_changes.filter(([filename]) => {
-      const is_complex =
+      const needs_review =
         summaries.find(
           ([summaryFilename]) => summaryFilename === filename
         )?.[2] ?? true
-      return is_complex
+      return needs_review
     })
 
     const reviews_skipped = files_and_changes
