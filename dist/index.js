@@ -5861,7 +5861,20 @@ class Prompts {
         return inputs.render(this.review_file_diff);
     }
     render_summarize_file_diff(inputs) {
-        return inputs.render(this.summarize_file_diff);
+        const prompt = `${this.summarize_file_diff}
+
+Below the summary, I would also like you to classify the 
+complexity of the diff as \`COMPLEX\` or \`SIMPLE\` based 
+on whether the change is a simple chore such are renaming
+a variable or a complex change such as adding a new feature.
+Any change that does not change the logic of the code is
+considered a simple change.
+
+Use the following format to classify the complexity of the
+diff and add no additional text:
+[COMPLEXITY]: <COMPLEX or SIMPLE>
+`;
+        return inputs.render(prompt);
     }
     render_summarize(inputs) {
         return inputs.render(this.summarize);
@@ -6604,7 +6617,15 @@ ${hunks.old_hunk}
                 return null;
             }
             else {
-                return [filename, summarize_resp];
+                // parse the comment to look for complexity classification
+                // Format is : [COMPLEXITY]: <COMPLEX or SIMPLE>
+                // if the change is complex return true, else false
+                const complexity = summarize_resp
+                    .split('[COMPLEXITY]: ')[1]
+                    .split('\n')[0];
+                const is_complex = complexity === 'COMPLEX' ? true : false;
+                core.info(`filename: ${filename}, complexity: ${complexity}`);
+                return [filename, summarize_resp, is_complex];
             }
         }
         catch (error) {
@@ -6734,6 +6755,17 @@ ${summaries_failed.length > 0
         : ''}
 `;
     if (options.summary_only !== true) {
+        let files_and_changes_review = files_and_changes;
+        const reviews_skipped = [];
+        // filter out files that are less complex and remove them from the review
+        // loop through summaries and check the complexity flag
+        for (const [filename, , is_complex] of summaries) {
+            if (!is_complex) {
+                // remove the file from the review
+                files_and_changes_review = files_and_changes_review.filter(([file]) => file !== filename);
+                reviews_skipped.push(filename);
+            }
+        }
         // failed reviews array
         const reviews_failed = [];
         const do_review = async (filename, file_content, patches) => {
@@ -6960,7 +6992,7 @@ ${comment_chain}
             }
         };
         const reviewPromises = [];
-        for (const [filename, file_content, , patches] of files_and_changes) {
+        for (const [filename, file_content, , patches] of files_and_changes_review) {
             if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
                 reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
             }
@@ -6977,6 +7009,18 @@ ${reviews_failed.length > 0
 ### Failed to review
 
 * ${reviews_failed.join('\n* ')}
+
+</details>
+`
+            : ''}
+
+${reviews_skipped.length > 0
+            ? `<details>
+<summary>Files not reviewed due to simple changes (${reviews_skipped.length})</summary>
+
+### Skipped review
+
+* ${reviews_skipped.join('\n* ')}
 
 </details>
 `

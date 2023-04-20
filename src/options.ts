@@ -27,7 +27,21 @@ export class Prompts {
   }
 
   render_summarize_file_diff(inputs: Inputs): string {
-    return inputs.render(this.summarize_file_diff)
+    const prompt = `${this.summarize_file_diff}
+
+Below the summary, I would also like you to classify the 
+complexity of the diff as \`COMPLEX\` or \`SIMPLE\` based 
+on whether the change is a simple chore such are renaming
+a variable or a complex change such as adding a new feature.
+Any change that does not change the logic of the code is
+considered a simple change.
+
+Use the following format to classify the complexity of the
+diff and add no additional text:
+[COMPLEXITY]: <COMPLEX or SIMPLE>
+`
+
+    return inputs.render(prompt)
   }
 
   render_summarize(inputs: Inputs): string {
