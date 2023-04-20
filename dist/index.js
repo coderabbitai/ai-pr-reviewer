@@ -3963,7 +3963,7 @@ async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('update_summary'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
@@ -5847,14 +5847,12 @@ minimatch.unescape = unescape_unescape;
 class Prompts {
     review_file_diff;
     summarize_file_diff;
-    update_summary;
     summarize;
     summarize_release_notes;
     comment;
-    constructor(review_file_diff = '', summarize_file_diff = '', update_summary = '', summarize = '', summarize_release_notes = '', comment = '') {
+    constructor(review_file_diff = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment = '') {
         this.review_file_diff = review_file_diff;
         this.summarize_file_diff = summarize_file_diff;
-        this.update_summary = update_summary;
         this.summarize = summarize;
         this.summarize_release_notes = summarize_release_notes;
         this.comment = comment;
@@ -5864,9 +5862,6 @@ class Prompts {
     }
     render_summarize_file_diff(inputs) {
         return inputs.render(this.summarize_file_diff);
-    }
-    render_update_summary(inputs) {
-        return inputs.render(this.update_summary);
     }
     render_summarize(inputs) {
         return inputs.render(this.summarize);
@@ -6584,7 +6579,7 @@ ${hunks.old_hunk}
         // optionally pack file_content
         if (file_content.length > 0) {
             // count occurrences of $file_content in prompt
-            const file_content_count = prompts.update_summary.split('$file_content').length - 1;
+            const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
             const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
             if (file_content_count > 0 &&
                 tokens + file_content_tokens * file_content_count <=
@@ -6633,7 +6628,17 @@ ${filename}: ${summary}
 `;
             }
             // ask chatgpt to summarize the summaries
-            const [summarize_resp] = await heavyBot.chat(prompts.render_update_summary(inputs), {});
+            const prompt = `
+Provided below are changesets in this pull request.
+The format consists of filename(s) and the summary of changes 
+for those files. There is a separator between each changeset.
+Your task is to de-deduplicate and consolidate files with
+related changes into distinct changesets. Respond with the 
+updated changesets using the same format as the input.
+
+${inputs.raw_summary}
+`;
+            const [summarize_resp] = await heavyBot.chat(prompt, {});
             if (!summarize_resp) {
                 core.warning('summarize: nothing obtained from openai');
             }
@@ -6644,14 +6649,14 @@ ${filename}: ${summary}
     }
     let next_summarize_ids = {};
     // final summary
-    const [summarize_final_response, summarize_final_response_ids] = await lightBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
+    const [summarize_final_response, summarize_final_response_ids] = await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
     if (!summarize_final_response) {
         core.info('summarize: nothing obtained from openai');
     }
     else {
         // final release notes
         next_summarize_ids = summarize_final_response_ids;
-        const [release_notes_response, release_notes_ids] = await lightBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
+        const [release_notes_response, release_notes_ids] = await heavyBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
         if (!release_notes_response) {
             core.info('release notes: nothing obtained from openai');
         }

@@ -245,7 +245,7 @@ ${hunks.old_hunk}
     if (file_content.length > 0) {
       // count occurrences of $file_content in prompt
       const file_content_count =
-        prompts.update_summary.split('$file_content').length - 1
+        prompts.summarize_file_diff.split('$file_content').length - 1
       const file_content_tokens = tokenizer.get_token_count(file_content)
       if (
         file_content_count > 0 &&
@@ -306,10 +306,17 @@ ${filename}: ${summary}
 `
       }
       // ask chatgpt to summarize the summaries
-      const [summarize_resp] = await heavyBot.chat(
-        prompts.render_update_summary(inputs),
-        {}
-      )
+      const prompt = `
+Provided below are changesets in this pull request.
+The format consists of filename(s) and the summary of changes 
+for those files. There is a separator between each changeset.
+Your task is to de-deduplicate and consolidate files with
+related changes into distinct changesets. Respond with the 
+updated changesets using the same format as the input.
+
+${inputs.raw_summary}
+`
+      const [summarize_resp] = await heavyBot.chat(prompt, {})
       if (!summarize_resp) {
         core.warning('summarize: nothing obtained from openai')
       } else {
@@ -322,13 +329,13 @@ ${filename}: ${summary}
 
   // final summary
   const [summarize_final_response, summarize_final_response_ids] =
-    await lightBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
+    await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
   if (!summarize_final_response) {
     core.info('summarize: nothing obtained from openai')
   } else {
     // final release notes
     next_summarize_ids = summarize_final_response_ids
-    const [release_notes_response, release_notes_ids] = await lightBot.chat(
+    const [release_notes_response, release_notes_ids] = await heavyBot.chat(
       prompts.render_summarize_release_notes(inputs),
       next_summarize_ids
     )

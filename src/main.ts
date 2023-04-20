@@ -26,7 +26,6 @@ async function run(): Promise<void> {
   const prompts: Prompts = new Prompts(
     core.getInput('review_file_diff'),
     core.getInput('summarize_file_diff'),
-    core.getInput('update_summary'),
     core.getInput('summarize'),
     core.getInput('summarize_release_notes'),
     core.getInput('comment')

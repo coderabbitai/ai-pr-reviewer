@@ -127,18 +127,6 @@ inputs:
       ```
 
       I would like you to summarize the diff within 50 words.
-  update_summary:
-    required: false
-    description: 'The prompt to update overall summary with file diff'
-    default: |
-      Summary of changes:
-      ```
-      $raw_summary
-      ```
-
-      Update the summary to group together files with related 
-      changes to save space and remove repetition by de-duplicating
-      entries.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
