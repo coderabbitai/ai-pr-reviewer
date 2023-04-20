@@ -29,22 +29,19 @@ export class Prompts {
   render_summarize_file_diff(inputs: Inputs): string {
     const prompt = `${this.summarize_file_diff}
 
-Below the summary, I would also like you to triage the diff 
-as \`NEEDS_REVIEW\` or \`APPROVED\` based on the following 
-criteria:
+Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
+\`APPROVED\` based on the following criteria:
 
-- If the diff introduces new functionality, modifies existing logic, 
-  or has potential for bugs, triage it as \`NEEDS_REVIEW\`.
-- If the diff only contains minor changes, such as fixing typos, 
-  formatting, renaming variables, triage it as \`APPROVED\`.
+- If the diff involves any modifications to the logic or functionality, even if they 
+  seem minor, triage it as \`NEEDS_REVIEW\`. This includes changes to control structures, 
+  function calls, or variable assignments that might impact the behavior of the code.
+- If the diff only contains very minor changes that don't affect the code logic, such as 
+  fixing typos, formatting, or renaming variables for clarity, triage it as \`APPROVED\`.
 
-Please evaluate the diff thoroughly and take into account factors 
-such as the number of lines changed, the potential impact on the 
-overall system, and the likelihood of introducing new bugs or 
-security vulnerabilities.
-
-Use the following format to triage the diff and add no additional text:
-[TRIAGE]: <NEEDS_REVIEW or APPROVED>
+Please evaluate the diff thoroughly and take into account factors such as the number of 
+lines changed, the potential impact on the overall system, and the likelihood of 
+introducing new bugs or security vulnerabilities. 
+When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
 `
 
     return inputs.render(prompt)
