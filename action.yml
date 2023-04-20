@@ -14,7 +14,7 @@ inputs:
     description:
       'Max files to summarize and review. Less than or equal to 0 means no
       limit.'
-    default: '0'
+    default: '150'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
