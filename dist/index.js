@@ -6199,11 +6199,6 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                     return;
                 }
             }
-            // get summary of the PR
-            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
-            if (summary) {
-                inputs.raw_summary = commenter.get_raw_summary(summary.body);
-            }
             // get tokens so far
             let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(prompts.render_comment(inputs));
             if (tokens > options.heavy_token_limits.request_tokens) {
@@ -6231,6 +6226,18 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                         options.heavy_token_limits.request_tokens) {
                     tokens += file_diff_tokens * file_diff_count;
                     inputs.file_diff = file_diff;
+                }
+            }
+            // get summary of the PR
+            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
+            if (summary) {
+                // pack summary into the inputs if it is not too long
+                const raw_summary = commenter.get_raw_summary(summary.body);
+                const summary_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(raw_summary);
+                if (tokens + summary_tokens <=
+                    options.heavy_token_limits.request_tokens) {
+                    tokens += summary_tokens;
+                    inputs.raw_summary = raw_summary;
                 }
             }
             const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
