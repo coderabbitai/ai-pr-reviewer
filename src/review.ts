@@ -272,12 +272,21 @@ ${hunks.old_hunk}
         // parse the comment to look for complexity classification
         // Format is : [COMPLEXITY]: <COMPLEX or SIMPLE>
         // if the change is complex return true, else false
-        const complexity = summarize_resp
-          .split('[COMPLEXITY]: ')[1]
-          .split('\n')[0]
-        const is_complex = complexity === 'COMPLEX' ? true : false
-        core.info(`filename: ${filename}, complexity: ${complexity}`)
-        return [filename, summarize_resp, is_complex]
+        const complexityRegex = /\[COMPLEXITY\]:\s*(COMPLEX|SIMPLE)/
+        const complexityMatch = summarize_resp.match(complexityRegex)
+
+        if (complexityMatch) {
+          const complexity = complexityMatch[1]
+          const is_complex = complexity === 'COMPLEX' ? true : false
+
+          // remove this line from the comment
+          const summary = summarize_resp.replace(complexityRegex, '').trim()
+          core.info(`filename: ${filename}, complexity: ${complexity}`)
+          return [filename, summary, is_complex]
+        } else {
+          // Handle the case when the [COMPLEXITY] tag is not found
+          return [filename, summarize_resp, true]
+        }
       }
     } catch (error) {
       core.warning(`summarize: error from openai: ${error}`)
