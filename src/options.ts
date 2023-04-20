@@ -42,6 +42,10 @@ Please evaluate the diff thoroughly and take into account factors such as the nu
 lines changed, the potential impact on the overall system, and the likelihood of 
 introducing new bugs or security vulnerabilities. 
 When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
+
+You must follow the format below strictly for triaging the diff and 
+do not add any additional text in your response:
+[TRIAGE]: <NEEDS_REVIEW or APPROVED>
 `
 
     return inputs.render(prompt)
