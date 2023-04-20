@@ -6763,17 +6763,13 @@ ${summaries_failed.length > 0
         : ''}
 `;
     if (options.summary_only !== true) {
-        let files_and_changes_review = files_and_changes;
-        const reviews_skipped = [];
-        // filter out files that are less complex and remove them from the review
-        // loop through summaries and check the complexity flag
-        for (const [filename, , is_complex] of summaries) {
-            if (!is_complex) {
-                // remove the file from the review
-                files_and_changes_review = files_and_changes_review.filter(([file]) => file !== filename);
-                reviews_skipped.push(filename);
-            }
-        }
+        const files_and_changes_review = files_and_changes.filter(([filename]) => {
+            const is_complex = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
+            return is_complex;
+        });
+        const reviews_skipped = files_and_changes
+            .filter(([filename]) => !files_and_changes_review.some(([reviewFilename]) => reviewFilename === filename))
+            .map(([filename]) => filename);
         // failed reviews array
         const reviews_failed = [];
         const do_review = async (filename, file_content, patches) => {
