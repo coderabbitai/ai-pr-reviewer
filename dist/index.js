@@ -5863,24 +5863,22 @@ class Prompts {
     render_summarize_file_diff(inputs) {
         const prompt = `${this.summarize_file_diff}
 
-Below the summary, I would also like you to classify the complexity 
-of the diff as \`COMPLEX\` or \`SIMPLE\` based on the following 
+Below the summary, I would also like you to triage the diff 
+as \`NEEDS_REVIEW\` or \`APPROVED\` based on the following 
 criteria:
 
-- If the diff introduces new functionality, modifies existing logic 
-  significantly, or has potential security implications, 
-  classify it as \`COMPLEX\`.
+- If the diff introduces new functionality, modifies existing logic, 
+  or has potential for bugs, triage it as \`NEEDS_REVIEW\`.
 - If the diff only contains minor changes, such as fixing typos, 
-  formatting, or updating documentation, classify it as \`SIMPLE\`.
+  formatting, renaming variables, triage it as \`APPROVED\`.
 
 Please evaluate the diff thoroughly and take into account factors 
 such as the number of lines changed, the potential impact on the 
 overall system, and the likelihood of introducing new bugs or 
 security vulnerabilities.
 
-Use the following format to classify the complexity of the diff 
-and add no additional text:
-[COMPLEXITY]: <COMPLEX or SIMPLE>
+Use the following format to triage the diff and add no additional text:
+[TRIAGE]: <NEEDS_REVIEW or APPROVED>
 `;
         return inputs.render(prompt);
     }
@@ -6625,21 +6623,20 @@ ${hunks.old_hunk}
                 return null;
             }
             else {
-                // parse the comment to look for complexity classification
-                // Format is : [COMPLEXITY]: <COMPLEX or SIMPLE>
-                // if the change is complex return true, else false
-                const complexityRegex = /\[COMPLEXITY\]:\s*(COMPLEX|SIMPLE)/;
-                const complexityMatch = summarize_resp.match(complexityRegex);
-                if (complexityMatch) {
-                    const complexity = complexityMatch[1];
-                    const is_complex = complexity === 'COMPLEX' ? true : false;
+                // parse the comment to look for triage classification
+                // Format is : [TRIAGE]: <NEEDS_REVIEW or APPROVED>
+                // if the change needs review return true, else false
+                const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/;
+                const triageMatch = summarize_resp.match(triageRegex);
+                if (triageMatch) {
+                    const triage = triageMatch[1];
+                    const needs_review = triage === 'NEEDS_REVIEW' ? true : false;
                     // remove this line from the comment
-                    const summary = summarize_resp.replace(complexityRegex, '').trim();
-                    core.info(`filename: ${filename}, complexity: ${complexity}`);
-                    return [filename, summary, is_complex];
+                    const summary = summarize_resp.replace(triageRegex, '').trim();
+                    core.info(`filename: ${filename}, triage: ${triage}`);
+                    return [filename, summary, needs_review];
                 }
                 else {
-                    // Handle the case when the [COMPLEXITY] tag is not found
                     return [filename, summarize_resp, true];
                 }
             }
@@ -6772,8 +6769,8 @@ ${summaries_failed.length > 0
 `;
     if (options.summary_only !== true) {
         const files_and_changes_review = files_and_changes.filter(([filename]) => {
-            const is_complex = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
-            return is_complex;
+            const needs_review = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
+            return needs_review;
         });
         const reviews_skipped = files_and_changes
             .filter(([filename]) => !files_and_changes_review.some(([reviewFilename]) => reviewFilename === filename))
