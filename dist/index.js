@@ -6475,10 +6475,11 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     inputs.system_message = options.system_message;
     // get SUMMARIZE_TAG message
     const existing_summarize_cmt = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
+    let existing_commit_ids_block = '';
     if (existing_summarize_cmt) {
         inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body);
+        existing_commit_ids_block = getReviewedCommitIdsBlock(existing_summarize_cmt.body);
     }
-    const existing_commit_ids_block = getReviewedCommitIdsBlock(existing_summarize_cmt?.body);
     const allCommitIds = await getAllCommitIds();
     // find highest reviewed commit id
     let highest_reviewed_commit_id = '';
