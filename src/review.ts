@@ -6,6 +6,8 @@ import {
   Commenter,
   COMMENT_REPLY_TAG,
   EXTRA_CONTENT_TAG,
+  RAW_SUMMARY_TAG,
+  RAW_SUMMARY_TAG_END,
   SUMMARIZE_TAG
 } from './commenter.js'
 import {octokit} from './octokit.js'
@@ -47,6 +49,9 @@ export const codeReview = async (
     inputs.description = commenter.get_description(
       context.payload.pull_request.body
     )
+    inputs.release_notes = commenter.get_release_notes(
+      context.payload.pull_request.body
+    )
   }
 
   // if the description contains ignore_keyword, skip
@@ -58,13 +63,50 @@ export const codeReview = async (
   // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
   inputs.system_message = options.system_message
 
-  // collect diff chunks
+  // get SUMMARIZE_TAG message
+  const existing_summarize_cmt = await commenter.find_comment_with_tag(
+    SUMMARIZE_TAG,
+    context.payload.pull_request.number
+  )
+  if (existing_summarize_cmt) {
+    inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body)
+  }
+  const existing_commit_ids_block = getReviewedCommitIdsBlock(
+    inputs.raw_summary
+  )
+
+  const allCommitIds = await getAllCommitIds()
+  // find highest reviewed commit id
+  let highest_reviewed_commit_id = ''
+  if (existing_commit_ids_block) {
+    highest_reviewed_commit_id = getHighestReviewedCommitId(
+      allCommitIds,
+      getReviewedCommitIds(existing_commit_ids_block)
+    )
+  }
+
+  if (
+    highest_reviewed_commit_id === '' ||
+    highest_reviewed_commit_id === context.payload.pull_request.head.sha
+  ) {
+    core.info(
+      `Will review from the base commit: ${context.payload.pull_request.base.sha}`
+    )
+    highest_reviewed_commit_id = context.payload.pull_request.base.sha
+  }
+
+  core.info(`Will review from commit: ${highest_reviewed_commit_id}`)
+  // get the list of files changed between the highest reviewed commit
+  // and the latest (head) commit
+  // use octokit.pulls.compareCommits to get the list of files changed
+  // between the highest reviewed commit and the latest (head) commit
   const diff = await octokit.repos.compareCommits({
     owner: repo.owner,
     repo: repo.repo,
-    base: context.payload.pull_request.base.sha,
+    base: highest_reviewed_commit_id,
     head: context.payload.pull_request.head.sha
   })
+
   const {files, commits} = diff.data
   if (!files) {
     core.warning(`Skipped: diff.data.files is null`)
@@ -170,29 +212,28 @@ ${hunks.old_hunk}
   }
 
   const summaries_failed: string[] = []
-  const do_summary = async (
+
+  const update_summary = async (
     filename: string,
     file_content: string,
     file_diff: string
-  ): Promise<[string, string] | null> => {
+  ): Promise<string> => {
     const ins = inputs.clone()
     if (file_diff.length === 0) {
       core.warning(`summarize: file_diff is empty, skip ${filename}`)
       summaries_failed.push(`${filename} (empty diff)`)
-      return null
+      return ''
     }
 
     ins.filename = filename
     // render prompt based on inputs so far
-    let tokens = tokenizer.get_token_count(
-      prompts.render_summarize_file_diff(ins)
-    )
+    let tokens = tokenizer.get_token_count(prompts.render_update_summary(ins))
 
     const diff_tokens = tokenizer.get_token_count(file_diff)
     if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
       core.info(`summarize: diff tokens exceeds limit, skip ${filename}`)
       summaries_failed.push(`${filename} (diff tokens exceeds limit)`)
-      return null
+      return ''
     }
 
     ins.file_diff = file_diff
@@ -202,7 +243,7 @@ ${hunks.old_hunk}
     if (file_content.length > 0) {
       // count occurrences of $file_content in prompt
       const file_content_count =
-        prompts.summarize_file_diff.split('$file_content').length - 1
+        prompts.update_summary.split('$file_content').length - 1
       const file_content_tokens = tokenizer.get_token_count(file_content)
       if (
         file_content_count > 0 &&
@@ -216,52 +257,35 @@ ${hunks.old_hunk}
     // summarize content
     try {
       const [summarize_resp] = await lightBot.chat(
-        prompts.render_summarize_file_diff(ins),
+        prompts.render_update_summary(ins),
         {}
       )
 
       if (!summarize_resp) {
         core.info('summarize: nothing obtained from openai')
         summaries_failed.push(`${filename} (nothing obtained from openai)`)
-        return null
+        return ''
       } else {
-        return [filename, summarize_resp]
+        return summarize_resp
       }
     } catch (error) {
       core.warning(`summarize: error from openai: ${error}`)
       summaries_failed.push(`${filename} (error from openai: ${error})`)
-      return null
+      return ''
     }
   }
 
-  const summaryPromises = []
-  const skipped_files_to_summarize = []
+  let totalSummaries = 0
+  const skipped_files = []
   for (const [filename, file_content, file_diff] of files_and_changes) {
-    if (
-      options.max_files_to_summarize <= 0 ||
-      summaryPromises.length < options.max_files_to_summarize
-    ) {
-      summaryPromises.push(
-        openai_concurrency_limit(async () =>
-          do_summary(filename, file_content, file_diff)
-        )
-      )
+    if (options.max_files <= 0 || totalSummaries < options.max_files) {
+      const summary = await update_summary(filename, file_content, file_diff)
+      if (summary !== '') {
+        inputs.raw_summary = summary
+      }
+      totalSummaries++
     } else {
-      skipped_files_to_summarize.push(filename)
-    }
-  }
-
-  const summaries = (await Promise.all(summaryPromises)).filter(
-    summary => summary !== null
-  ) as [string, string][]
-
-  if (summaries.length > 0) {
-    inputs.summary = ''
-    // join summaries into one
-    for (const [filename, summary] of summaries) {
-      inputs.summary += `---
-${filename}: ${summary}
-`
+      skipped_files.push(filename)
     }
   }
 
@@ -269,15 +293,13 @@ ${filename}: ${summary}
 
   // final summary
   const [summarize_final_response, summarize_final_response_ids] =
-    await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
+    await lightBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
   if (!summarize_final_response) {
     core.info('summarize: nothing obtained from openai')
   } else {
-    inputs.summary = summarize_final_response
-
     // final release notes
     next_summarize_ids = summarize_final_response_ids
-    const [release_notes_response, release_notes_ids] = await heavyBot.chat(
+    const [release_notes_response, release_notes_ids] = await lightBot.chat(
       prompts.render_summarize_release_notes(inputs),
       next_summarize_ids
     )
@@ -293,6 +315,9 @@ ${filename}: ${summary}
   }
 
   let summarize_comment = `${summarize_final_response}
+${RAW_SUMMARY_TAG}
+${inputs.raw_summary}
+${RAW_SUMMARY_TAG_END}
 ${EXTRA_CONTENT_TAG}
 ---
 
@@ -322,16 +347,16 @@ ${
 }
 
 ${
-  skipped_files_to_summarize.length > 0
+  skipped_files.length > 0
     ? `
 <details>
-<summary>Files not summarized due to max files limit (${
-        skipped_files_to_summarize.length
+<summary>Files not processed due to max files limit (${
+        skipped_files.length
       })</summary>
 
-### Not summarized
+### Not processed
 
-* ${skipped_files_to_summarize.join('\n* ')}
+* ${skipped_files.join('\n* ')}
 
 </details>
 `
@@ -620,108 +645,22 @@ ${comment_chain}
       }
     }
 
-    // get SUMMARIZE_TAG message
-    const existing_summarize_cmt = await commenter.find_comment_with_tag(
-      SUMMARIZE_TAG,
-      context.payload.pull_request.number
-    )
-    let existing_summarize_comment = ''
-    if (existing_summarize_cmt) {
-      existing_summarize_comment = existing_summarize_cmt.body
-    }
-    const existing_commit_ids_block = getReviewedCommitIdsBlock(
-      existing_summarize_comment
-    )
-
-    const allCommitIds = await getAllCommitIds()
-    // find highest reviewed commit id
-    let highest_reviewed_commit_id = ''
-    if (existing_commit_ids_block) {
-      highest_reviewed_commit_id = getHighestReviewedCommitId(
-        allCommitIds,
-        getReviewedCommitIds(existing_commit_ids_block)
-      )
-    }
-
-    let files_and_changes_for_review = files_and_changes
-    if (
-      highest_reviewed_commit_id === '' ||
-      highest_reviewed_commit_id === context.payload.pull_request.head.sha
-    ) {
-      core.info(
-        `Will review from the base commit: ${context.payload.pull_request.base.sha}`
-      )
-      highest_reviewed_commit_id = context.payload.pull_request.base.sha
-    } else {
-      core.info(`Will review from commit: ${highest_reviewed_commit_id}`)
-      // get the list of files changed between the highest reviewed commit
-      // and the latest (head) commit
-      // use octokit.pulls.compareCommits to get the list of files changed
-      // between the highest reviewed commit and the latest (head) commit
-      const diff_since_last_review = await octokit.repos.compareCommits({
-        owner: repo.owner,
-        repo: repo.repo,
-        base: highest_reviewed_commit_id,
-        head: context.payload.pull_request.head.sha
-      })
-      if (
-        diff_since_last_review &&
-        diff_since_last_review.data &&
-        diff_since_last_review.data.files
-      ) {
-        const files_changed = diff_since_last_review.data.files.map(
-          (file: any) => file.filename
-        )
-        core.info(`Files changed since last review: ${files_changed}`)
-        files_and_changes_for_review = files_and_changes.filter(([filename]) =>
-          files_changed.includes(filename)
-        )
-      }
-    }
-
     const reviewPromises = []
-    const skipped_files_to_review = []
-
-    for (const [
-      filename,
-      file_content,
-      ,
-      patches
-    ] of files_and_changes_for_review) {
-      if (
-        options.max_files_to_review <= 0 ||
-        reviewPromises.length < options.max_files_to_review
-      ) {
+    for (const [filename, file_content, , patches] of files_and_changes) {
+      if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
         reviewPromises.push(
           openai_concurrency_limit(async () =>
             do_review(filename, file_content, patches)
           )
         )
       } else {
-        skipped_files_to_review.push(filename)
+        skipped_files.push(filename)
       }
     }
 
     await Promise.all(reviewPromises)
 
     summarize_comment += `
-${
-  skipped_files_to_review.length > 0
-    ? `
-<details>
-<summary>Files not reviewed due to max files limit in this run (${
-        skipped_files_to_review.length
-      })</summary>
-
-### Not reviewed
-
-* ${skipped_files_to_review.join('\n* ')}
-
-</details>
-`
-    : ''
-}
-
 ${
   reviews_failed.length > 0
     ? `<details>

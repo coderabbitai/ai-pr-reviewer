@@ -9,14 +9,11 @@ inputs:
     required: false
     description: 'Enable debug mode'
     default: 'false'
-  max_files_to_summarize:
+  max_files:
     required: false
     description:
-      'Max files to summarize. Less than or equal to 0 means no limit.'
-    default: '40'
-  max_files_to_review:
-    required: false
-    description: 'Max files to review. Less than or equal to 0 means no limit.'
+      'Max files to summarize and review. Less than or equal to 0 means no
+      limit.'
     default: '0'
   review_comment_lgtm:
     required: false
@@ -107,11 +104,11 @@ inputs:
       requested. Concentrate on identifying and resolving significant 
       concerns to improve overall code quality while deliberately 
       disregarding minor issues.
-  summarize_file_diff:
+  update_summary:
     required: false
-    description: 'The prompt for file'
+    description: 'The prompt to update overall summary with file diff'
     default: |
-      GitHub pull request title: 
+      A commit was just made to the GitHub pull request title: 
       `$title` 
 
       Description:
@@ -119,24 +116,28 @@ inputs:
       $description
       ```
 
-      Content of file `$filename` prior to changes:
+      Existing summary of changes:
       ```
-      $file_content
+      $raw_summary
       ```
 
-      Diff:
+      Diff for `$filename`:
       ```diff
       $file_diff
       ```
 
-      I would like you to summarize the diff within 50 words.
+      Your task is to update the existing summary with the 
+      summary of changes for the `$filename` provided above. 
+      You must track filenames in the summary of changes. 
+      Please group similar files together if they have related 
+      changes to save space.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      Here is the summary of changes you have generated for each file:
+      Here is the summary of changes:
       ```
-      $summary
+      $raw_summary
       ```
 
       Provide your final response in the `markdown` format with 
@@ -144,7 +145,7 @@ inputs:
         - High-level summary (comment on the overall change instead of 
           specific files within 80 words)
         - Table of files and their summaries. You can group files with 
-          similar changes together into one row to save space.
+          similar changes together into a single row to save space.
 
       Avoid additional commentary as this summary will be added as a 
       comment on the GitHub pull request.

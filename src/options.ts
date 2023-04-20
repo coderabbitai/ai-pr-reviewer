@@ -3,20 +3,20 @@ import {minimatch} from 'minimatch'
 
 export class Prompts {
   review_file_diff: string
-  summarize_file_diff: string
+  update_summary: string
   summarize: string
   summarize_release_notes: string
   comment: string
 
   constructor(
     review_file_diff = '',
-    summarize_file_diff = '',
+    update_summary = '',
     summarize = '',
     summarize_release_notes = '',
     comment = ''
   ) {
     this.review_file_diff = review_file_diff
-    this.summarize_file_diff = summarize_file_diff
+    this.update_summary = update_summary
     this.summarize = summarize
     this.summarize_release_notes = summarize_release_notes
     this.comment = comment
@@ -26,8 +26,8 @@ export class Prompts {
     return inputs.render(this.review_file_diff)
   }
 
-  render_summarize_file_diff(inputs: Inputs): string {
-    return inputs.render(this.summarize_file_diff)
+  render_update_summary(inputs: Inputs): string {
+    return inputs.render(this.update_summary)
   }
 
   render_summarize(inputs: Inputs): string {
@@ -47,7 +47,7 @@ export class Inputs {
   system_message: string
   title: string
   description: string
-  summary: string
+  raw_summary: string
   release_notes: string
   filename: string
   file_content: string
@@ -74,7 +74,7 @@ export class Inputs {
     this.system_message = system_message
     this.title = title
     this.description = description
-    this.summary = summary
+    this.raw_summary = summary
     this.release_notes = release_notes
     this.filename = filename
     this.file_content = file_content
@@ -90,7 +90,7 @@ export class Inputs {
       this.system_message,
       this.title,
       this.description,
-      this.summary,
+      this.raw_summary,
       this.release_notes,
       this.filename,
       this.file_content,
@@ -115,8 +115,8 @@ export class Inputs {
     if (this.description) {
       content = content.replace('$description', this.description)
     }
-    if (this.summary) {
-      content = content.replace('$summary', this.summary)
+    if (this.raw_summary) {
+      content = content.replace('$raw_summary', this.raw_summary)
     }
     if (this.release_notes) {
       content = content.replace('$release_notes', this.release_notes)
@@ -186,8 +186,7 @@ export class OpenAIOptions {
 export class Options {
   debug: boolean
   summary_only: boolean
-  max_files_to_summarize: number
-  max_files_to_review: number
+  max_files: number
   review_comment_lgtm: boolean
   path_filters: PathFilter
   system_message: string
@@ -203,8 +202,7 @@ export class Options {
   constructor(
     debug: boolean,
     summary_only: boolean,
-    max_files_to_summarize = '40',
-    max_files_to_review = '0',
+    max_files = '0',
     review_comment_lgtm = false,
     path_filters: string[] | null = null,
     system_message = '',
@@ -217,8 +215,7 @@ export class Options {
   ) {
     this.debug = debug
     this.summary_only = summary_only
-    this.max_files_to_summarize = parseInt(max_files_to_summarize)
-    this.max_files_to_review = parseInt(max_files_to_review)
+    this.max_files = parseInt(max_files)
     this.review_comment_lgtm = review_comment_lgtm
     this.path_filters = new PathFilter(path_filters)
     this.system_message = system_message
@@ -236,8 +233,7 @@ export class Options {
   print(): void {
     core.info(`debug: ${this.debug}`)
     core.info(`summary_only: ${this.summary_only}`)
-    core.info(`max_files_to_summarize: ${this.max_files_to_summarize}`)
-    core.info(`max_files_to_review: ${this.max_files_to_review}`)
+    core.info(`max_files: ${this.max_files}`)
     core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
     core.info(`path_filters: ${this.path_filters}`)
     core.info(`system_message: ${this.system_message}`)

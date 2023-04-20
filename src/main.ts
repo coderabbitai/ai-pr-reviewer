@@ -8,8 +8,7 @@ async function run(): Promise<void> {
   const options: Options = new Options(
     core.getBooleanInput('debug'),
     core.getBooleanInput('summary_only'),
-    core.getInput('max_files_to_summarize'),
-    core.getInput('max_files_to_review'),
+    core.getInput('max_files'),
     core.getBooleanInput('review_comment_lgtm'),
     core.getMultilineInput('path_filters'),
     core.getInput('system_message'),
@@ -26,7 +25,7 @@ async function run(): Promise<void> {
 
   const prompts: Prompts = new Prompts(
     core.getInput('review_file_diff'),
-    core.getInput('summarize_file_diff'),
+    core.getInput('update_summary'),
     core.getInput('summarize'),
     core.getInput('summarize_release_notes'),
     core.getInput('comment')

@@ -5,7 +5,6 @@ import {
   Commenter,
   COMMENT_REPLY_TAG,
   COMMENT_TAG,
-  EXTRA_CONTENT_TAG,
   SUMMARIZE_TAG
 } from './commenter.js'
 import {octokit} from './octokit.js'
@@ -153,8 +152,7 @@ export const handleReviewComment = async (
         pull_number
       )
       if (summary) {
-        // remove all content below EXTRA_CONTENT_TAG
-        inputs.summary = summary.body.split(EXTRA_CONTENT_TAG)[0]
+        inputs.raw_summary = commenter.get_raw_summary(summary.body)
       }
 
       // get tokens so far
