@@ -126,12 +126,14 @@ inputs:
       $file_diff
       ```
 
-      Your task is to update the existing summary with the 
-      summary of changes for the `$filename` provided above. 
-      You must track filenames in the summary of changes. 
-      Please group similar files together if they have related 
-      changes to save space. Return the updated summary and 
-      nothing else.
+      Instructions:
+      - Summarize the diff (within 30 words).
+      - Prepare overall summary by adding summary of
+        the diff to the existing summary.
+      - Track filenames in the overall summary of changes. 
+      - Group similar files together if they have related 
+        changes to save space.
+      - Respond back with the overall summary.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
