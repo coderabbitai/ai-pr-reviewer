@@ -121,11 +121,11 @@ export const codeReview = async (
     core.warning(`Skipped: files data is missing`)
     return
   }
-  // Filter out any file that is not changed compared to the target branch
-  const files = incrementalFiles.filter(incrementalChange =>
-    targetBranchFiles.some(
-      changeRelativeToTargetBranch =>
-        changeRelativeToTargetBranch.filename === incrementalChange.filename
+
+  // Filter out any file that is changed compared to the incremental changes
+  const files = targetBranchFiles.filter(targetBranchFile =>
+    incrementalFiles.some(
+      incrementalFile => incrementalFile.filename === targetBranchFile.filename
     )
   )
 
