@@ -3946,6 +3946,90 @@ ${chain}
 
 /***/ }),
 
+/***/ 6180:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "k": () => (/* binding */ Inputs)
+/* harmony export */ });
+class Inputs {
+    system_message;
+    title;
+    description;
+    raw_summary;
+    release_notes;
+    filename;
+    file_content;
+    file_diff;
+    patches;
+    diff;
+    comment_chain;
+    comment;
+    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', release_notes = 'no release notes so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
+        this.system_message = system_message;
+        this.title = title;
+        this.description = description;
+        this.raw_summary = summary;
+        this.release_notes = release_notes;
+        this.filename = filename;
+        this.file_content = file_content;
+        this.file_diff = file_diff;
+        this.patches = patches;
+        this.diff = diff;
+        this.comment_chain = comment_chain;
+        this.comment = comment;
+    }
+    clone() {
+        return new Inputs(this.system_message, this.title, this.description, this.raw_summary, this.release_notes, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
+    }
+    render(content) {
+        if (!content) {
+            return '';
+        }
+        if (this.system_message) {
+            content = content.replace('$system_message', this.system_message);
+        }
+        if (this.title) {
+            content = content.replace('$title', this.title);
+        }
+        if (this.description) {
+            content = content.replace('$description', this.description);
+        }
+        if (this.raw_summary) {
+            content = content.replace('$raw_summary', this.raw_summary);
+        }
+        if (this.release_notes) {
+            content = content.replace('$release_notes', this.release_notes);
+        }
+        if (this.filename) {
+            content = content.replace('$filename', this.filename);
+        }
+        if (this.file_content) {
+            content = content.replace('$file_content', this.file_content);
+        }
+        if (this.file_diff) {
+            content = content.replace('$file_diff', this.file_diff);
+        }
+        if (this.patches) {
+            content = content.replace('$patches', this.patches);
+        }
+        if (this.diff) {
+            content = content.replace('$diff', this.diff);
+        }
+        if (this.comment_chain) {
+            content = content.replace('$comment_chain', this.comment_chain);
+        }
+        if (this.comment) {
+            content = content.replace('$comment', this.comment);
+        }
+        return content;
+    }
+}
+
+
+/***/ }),
+
 /***/ 3109:
 /***/ ((module, __webpack_exports__, __nccwpck_require__) => {
 
@@ -3955,9 +4039,11 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4909);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4529);
+/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8870);
+/* harmony import */ var _prompts_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4272);
 /* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5947);
 /* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2612);
+
 
 
 
@@ -3967,7 +4053,7 @@ async function run() {
     const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Prompts */ .jc(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('review_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_file_diff'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('comment'));
+    const prompts = new _prompts_js__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
@@ -4063,20 +4149,18 @@ Retry count: ${retryCount}
 
 /***/ }),
 
-/***/ 4529:
+/***/ 8870:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "kq": () => (/* binding */ Inputs),
   "i0": () => (/* binding */ OpenAIOptions),
-  "Ei": () => (/* binding */ Options),
-  "jc": () => (/* binding */ Prompts)
+  "Ei": () => (/* binding */ Options)
 });
 
-// UNUSED EXPORTS: PathFilter, TokenLimits
+// UNUSED EXPORTS: PathFilter
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
@@ -5845,131 +5929,7 @@ minimatch.Minimatch = Minimatch;
 minimatch.escape = escape_escape;
 minimatch.unescape = unescape_unescape;
 //# sourceMappingURL=index.js.map
-;// CONCATENATED MODULE: ./lib/options.js
-
-
-class Prompts {
-    review_file_diff;
-    summarize_file_diff;
-    summarize;
-    summarize_release_notes;
-    comment;
-    constructor(review_file_diff = '', summarize_file_diff = '', summarize = '', summarize_release_notes = '', comment = '') {
-        this.review_file_diff = review_file_diff;
-        this.summarize_file_diff = summarize_file_diff;
-        this.summarize = summarize;
-        this.summarize_release_notes = summarize_release_notes;
-        this.comment = comment;
-    }
-    render_review_file_diff(inputs) {
-        return inputs.render(this.review_file_diff);
-    }
-    render_summarize_file_diff(inputs) {
-        const prompt = `${this.summarize_file_diff}
-
-Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
-\`APPROVED\` based on the following criteria:
-
-- If the diff involves any modifications to the logic or functionality, even if they 
-  seem minor, triage it as \`NEEDS_REVIEW\`. This includes changes to control structures, 
-  function calls, or variable assignments that might impact the behavior of the code.
-- If the diff only contains very minor changes that don't affect the code logic, such as 
-  fixing typos, formatting, or renaming variables for clarity, triage it as \`APPROVED\`.
-
-Please evaluate the diff thoroughly and take into account factors such as the number of 
-lines changed, the potential impact on the overall system, and the likelihood of 
-introducing new bugs or security vulnerabilities. 
-When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
-
-You must follow the format below strictly for triaging the diff and 
-do not add any additional text in your response:
-[TRIAGE]: <NEEDS_REVIEW or APPROVED>
-`;
-        return inputs.render(prompt);
-    }
-    render_summarize(inputs) {
-        return inputs.render(this.summarize);
-    }
-    render_summarize_release_notes(inputs) {
-        return inputs.render(this.summarize_release_notes);
-    }
-    render_comment(inputs) {
-        return inputs.render(this.comment);
-    }
-}
-class Inputs {
-    system_message;
-    title;
-    description;
-    raw_summary;
-    release_notes;
-    filename;
-    file_content;
-    file_diff;
-    patches;
-    diff;
-    comment_chain;
-    comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', release_notes = 'no release notes so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
-        this.system_message = system_message;
-        this.title = title;
-        this.description = description;
-        this.raw_summary = summary;
-        this.release_notes = release_notes;
-        this.filename = filename;
-        this.file_content = file_content;
-        this.file_diff = file_diff;
-        this.patches = patches;
-        this.diff = diff;
-        this.comment_chain = comment_chain;
-        this.comment = comment;
-    }
-    clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.raw_summary, this.release_notes, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
-    }
-    render(content) {
-        if (!content) {
-            return '';
-        }
-        if (this.system_message) {
-            content = content.replace('$system_message', this.system_message);
-        }
-        if (this.title) {
-            content = content.replace('$title', this.title);
-        }
-        if (this.description) {
-            content = content.replace('$description', this.description);
-        }
-        if (this.raw_summary) {
-            content = content.replace('$raw_summary', this.raw_summary);
-        }
-        if (this.release_notes) {
-            content = content.replace('$release_notes', this.release_notes);
-        }
-        if (this.filename) {
-            content = content.replace('$filename', this.filename);
-        }
-        if (this.file_content) {
-            content = content.replace('$file_content', this.file_content);
-        }
-        if (this.file_diff) {
-            content = content.replace('$file_diff', this.file_diff);
-        }
-        if (this.patches) {
-            content = content.replace('$patches', this.patches);
-        }
-        if (this.diff) {
-            content = content.replace('$diff', this.diff);
-        }
-        if (this.comment_chain) {
-            content = content.replace('$comment_chain', this.comment_chain);
-        }
-        if (this.comment) {
-            content = content.replace('$comment', this.comment);
-        }
-        return content;
-    }
-}
+;// CONCATENATED MODULE: ./lib/limits.js
 class TokenLimits {
     max_tokens;
     request_tokens;
@@ -5993,14 +5953,11 @@ class TokenLimits {
         return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}`;
     }
 }
-class OpenAIOptions {
-    model;
-    token_limits;
-    constructor(model = 'gpt-3.5-turbo', token_limits = null) {
-        this.model = model;
-        this.token_limits = token_limits || new TokenLimits(model);
-    }
-}
+
+;// CONCATENATED MODULE: ./lib/options.js
+
+
+
 class Options {
     debug;
     summary_only;
@@ -6096,6 +6053,289 @@ class PathFilter {
         return (!inclusionRuleExists || included) && !excluded;
     }
 }
+class OpenAIOptions {
+    model;
+    token_limits;
+    constructor(model = 'gpt-3.5-turbo', token_limits = null) {
+        this.model = model;
+        this.token_limits = token_limits || new TokenLimits(model);
+    }
+}
+
+
+/***/ }),
+
+/***/ 4272:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "j": () => (/* binding */ Prompts)
+/* harmony export */ });
+class Prompts {
+    summarize;
+    summarize_release_notes;
+    summarize_file_diff = `GitHub pull request title: 
+\`$title\` 
+
+Description:
+\`\`\`
+$description
+\`\`\`
+
+Content of file \`$filename\` prior to changes:
+\`\`\`
+$file_content
+\`\`\`
+
+Diff:
+\`\`\`diff
+$file_diff
+\`\`\`
+
+I would like you to summarize the diff within 50 words.
+
+Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
+\`APPROVED\` based on the following criteria:
+
+- If the diff involves any modifications to the logic or functionality, even if they 
+  seem minor, triage it as \`NEEDS_REVIEW\`. This includes changes to control structures, 
+  function calls, or variable assignments that might impact the behavior of the code.
+- If the diff only contains very minor changes that don't affect the code logic, such as 
+  fixing typos, formatting, or renaming variables for clarity, triage it as \`APPROVED\`.
+
+Please evaluate the diff thoroughly and take into account factors such as the number of 
+lines changed, the potential impact on the overall system, and the likelihood of 
+introducing new bugs or security vulnerabilities. 
+When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
+
+You must follow the format below strictly for triaging the diff and 
+do not add any additional text in your response:
+[TRIAGE]: <NEEDS_REVIEW or APPROVED>
+`;
+    summarize_changesets = `Provided below are changesets in this pull request. Changesets 
+are in chronlogical order and new changesets are appended to the
+end of the list. The format consists of filename(s) and the summary 
+of changes for those files. There is a separator between each changeset.
+Your task is to de-deduplicate and group together files with
+related/similar changes into a single changeset. Respond with the updated 
+changesets using the same format as the input. 
+
+Changesets:
+$raw_summary
+`;
+    comment = `A comment was made on a GitHub pull request review for a 
+diff hunk on file \`$filename\`. I would like you to follow 
+the instructions in that comment. 
+
+Pull request title:
+\`$title\`
+
+Description:
+\`\`\`
+$description
+\`\`\`
+
+OpenAI generated notes:
+\`\`\`
+$release_notes
+\`\`\`
+
+Content of file prior to changes:
+\`\`\`
+$file_content
+\`\`\`
+
+Entire diff:
+\`\`\`diff
+$file_diff
+\`\`\`
+
+Diff being commented on:
+\`\`\`diff
+$diff
+\`\`\`
+
+The format of a comment in the chain is:
+\`user: comment\`
+
+Comment chain (including the new comment):
+\`\`\`
+$comment_chain
+\`\`\`
+
+Please reply directly to the new comment (instead of suggesting 
+a reply) and your reply will be posted as-is.
+
+If the comment contains instructions/requests for you, please comply. 
+For example, if the comment is asking you to generate documentation 
+comments on the code, in your reply please generate the required code.
+
+In your reply, please make sure to begin the reply by tagging the user 
+with "@user".
+
+The comment/request that you need to directly reply to:
+\`\`\`
+$comment
+\`\`\`
+`;
+    review_file_diff = `GitHub pull request title: 
+\`$title\` 
+
+Description:
+\`\`\`
+$description
+\`\`\`
+
+OpenAI generated notes:
+\`\`\`
+$release_notes
+\`\`\`
+
+Content of \`$filename\` prior to changes:
+\`\`\`
+$file_content
+\`\`\`
+
+Format for changes:
+  ---new_hunk---
+  \`\`\`
+  <new hunk annotated with line numbers>
+  \`\`\`
+
+  ---old_hunk---
+  \`\`\`
+  <old hunk that was replaced by the new hunk above>
+  \`\`\`
+
+  ---comment_chains---
+  \`\`\`
+  <comment chains>
+  \`\`\`
+
+  ---end_change_section---
+  ...
+
+Instructions:
+- The above format for changes consists of multiple change sections. Each change 
+  section consists of a new hunk (annotated with line numbers), an old hunk and 
+  optionally, existing comment chains. The line number annotation on each line 
+  in the new hunk is of the format \`<line_number><colon><whitespace>\`.  
+- Note that the code in the old hunk does not exist anymore as it was replaced 
+  by the new hunk. The new hunk is the code that you need to review. Consider 
+  the context provided by the old hunk and associated comment chain when reviewing 
+  the new hunk.  
+- Your task is to do a line by line review of new hunks and point out 
+  substantive issues in those line number ranges. For each issue you 
+  identify, please provide the exact line number range (inclusive) where 
+  the issue occurs.
+- Only respond in the below response format (consisting of review
+  sections) and nothing else. Each review section must consist of a line 
+  number range and a review comment for that line number range. Optionally, 
+  you can include a single replacement suggestion snippet and/or multiple 
+  new code snippets in the review comment. There's a separator between review 
+  sections.
+- It's important that line number ranges for each review section must 
+  be within the line number range of a specific new hunk. i.e. 
+  <start_line_number> must belong to the same hunk as the 
+  <end_line_number>. The line number range is sufficient to map your 
+  comment to the code changes in GitHub pull request.
+- Do not summarize the changes or repeat back provided code in the review 
+  comments and only focus on pointing out substantive issues.
+- Use Markdown format for review comment text.
+- Fenced code blocks must be used for new content and replacement 
+  code/text snippets and must not be annotated with line numbers.
+- If needed, provide a replacement suggestion using fenced code blocks 
+  with the \`suggestion\` as the language identifier. The line number range 
+  in the review section must map exactly to the line number range (inclusive) 
+  that need to be replaced within a new_hunk.
+  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
+  of code, the line number range must be those exact 2 lines. If an entire hunk 
+  need to be replaced with new code, then the line number range must be the 
+  entire hunk. Replacement suggestions should be complete units that can be
+  directly committed by the user in the GitHub UI.
+- Replacement code/text snippets must be complete and correctly 
+  formatted. Each replacement suggestion must be provided as a separate review 
+  section with relevant line number ranges.  
+- If needed, suggest new code using the correct language identifier in the 
+  fenced code blocks. These snippets may be added to a different file, such 
+  as test cases. Multiple new code snippets are allowed within a single 
+  review section.
+- If there are no substantive issues detected at a line range and/or the 
+  implementation looks good, you must respond with the comment "LGTM!" and 
+  nothing else for the respective line range in a review section.
+- Reflect on your comments and line number ranges before sending the final 
+  response to ensure accuracy of line number ranges and replacement
+  snippets.
+
+Response format expected:
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  \`\`\`suggestion
+  <code/text that replaces everything between start_line_number and end_line_number>
+  \`\`\`
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  \`\`\`<language>
+  <new code snippet>
+  \`\`\`
+  ---
+  ...
+
+Example changes:
+  ---new_hunk---
+  1: def add(x, y):
+  2:     z = x+y
+  3:     retrn z
+  4:
+  5: def multiply(x, y):
+  6:     return x * y
+  
+  ---old_hunk---
+  def add(x, y):
+      return x + y
+
+Example response:
+  3-3:
+  There's a typo in the return statement.
+  \`\`\`suggestion
+      return z
+  \`\`\`
+  ---
+  5-6:
+  LGTM!
+  ---
+
+Changes for review are below:
+$patches
+`;
+    constructor(summarize = '', summarize_release_notes = '') {
+        this.summarize = summarize;
+        this.summarize_release_notes = summarize_release_notes;
+    }
+    render_summarize_file_diff(inputs) {
+        return inputs.render(this.summarize_file_diff);
+    }
+    render_summarize_changesets(inputs) {
+        return inputs.render(this.summarize_changesets);
+    }
+    render_summarize(inputs) {
+        return inputs.render(this.summarize);
+    }
+    render_summarize_release_notes(inputs) {
+        return inputs.render(this.summarize_release_notes);
+    }
+    render_comment(inputs) {
+        return inputs.render(this.comment);
+    }
+    render_review_file_diff(inputs) {
+        return inputs.render(this.review_file_diff);
+    }
+}
 
 
 /***/ }),
@@ -6112,9 +6352,9 @@ class PathFilter {
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
+/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6180);
 /* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3258);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4529);
-/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(652);
+/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
 
 
 
@@ -6126,7 +6366,7 @@ const repo = context.repo;
 const ASK_BOT = '@openai';
 const handleReviewComment = async (heavyBot, options, prompts) => {
     const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
-    const inputs = new _options_js__WEBPACK_IMPORTED_MODULE_4__/* .Inputs */ .kq();
+    const inputs = new _inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .Inputs */ .k();
     if (context.eventName !== 'pull_request_review_comment') {
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
         return;
@@ -6224,7 +6464,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 }
             }
             // get tokens so far
-            let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(prompts.render_comment(inputs));
+            let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(prompts.render_comment(inputs));
             if (tokens > options.heavy_token_limits.request_tokens) {
                 await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
                 return;
@@ -6233,7 +6473,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (file_content.length > 0) {
                 // count occurrences of $file_content in prompt
                 const file_content_count = prompts.comment.split('$file_content').length - 1;
-                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(file_content);
+                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
                 if (file_content_count > 0 &&
                     tokens + file_content_tokens * file_content_count <=
                         options.heavy_token_limits.request_tokens) {
@@ -6244,7 +6484,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (file_diff.length > 0) {
                 // count occurrences of $file_diff in prompt
                 const file_diff_count = prompts.comment.split('$file_diff').length - 1;
-                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(file_diff);
+                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
                 if (file_diff_count > 0 &&
                     tokens + file_diff_tokens * file_diff_count <=
                         options.heavy_token_limits.request_tokens) {
@@ -6257,7 +6497,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (summary) {
                 // pack summary into the inputs if it is not too long
                 const raw_summary = commenter.get_raw_summary(summary.body);
-                const summary_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_5__/* .get_token_count */ .u(raw_summary);
+                const summary_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(raw_summary);
                 if (tokens + summary_tokens <=
                     options.heavy_token_limits.request_tokens) {
                     tokens += summary_tokens;
@@ -6431,10 +6671,10 @@ function pLimit(concurrency) {
 
 // EXTERNAL MODULE: ./lib/commenter.js
 var lib_commenter = __nccwpck_require__(3339);
+// EXTERNAL MODULE: ./lib/inputs.js
+var lib_inputs = __nccwpck_require__(6180);
 // EXTERNAL MODULE: ./lib/octokit.js
 var octokit = __nccwpck_require__(3258);
-// EXTERNAL MODULE: ./lib/options.js + 6 modules
-var lib_options = __nccwpck_require__(4529);
 // EXTERNAL MODULE: ./lib/tokenizer.js
 var tokenizer = __nccwpck_require__(652);
 ;// CONCATENATED MODULE: ./lib/review.js
@@ -6460,7 +6700,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         core.warning(`Skipped: context.payload.pull_request is null`);
         return;
     }
-    const inputs = new lib_options/* Inputs */.kq();
+    const inputs = new lib_inputs/* Inputs */.k();
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = commenter.get_description(context.payload.pull_request.body);
@@ -6693,19 +6933,7 @@ ${filename}: ${summary}
 `;
             }
             // ask chatgpt to summarize the summaries
-            const prompt = `
-Provided below are changesets in this pull request. Changesets 
-are in chronlogical order and new changesets are appended to the
-end of the list. The format consists of filename(s) and the summary 
-of changes for those files. There is a separator between each changeset.
-Your task is to de-deduplicate and group together files with
-related/similar changes into a single changeset. Respond with the updated 
-changesets using the same format as the input. 
-
-Changesets:
-${inputs.raw_summary}
-`;
-            const [summarize_resp] = await heavyBot.chat(prompt, {});
+            const [summarize_resp] = await heavyBot.chat(prompts.render_summarize_changesets(inputs), {});
             if (!summarize_resp) {
                 core.warning('summarize: nothing obtained from openai');
             }
@@ -6810,123 +7038,6 @@ ${summaries_failed.length > 0
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
-            // Pack instructions
-            ins.patches += `
-Format for changes:
-  ---new_hunk---
-  \`\`\`
-  <new hunk annotated with line numbers>
-  \`\`\`
-
-  ---old_hunk---
-  \`\`\`
-  <old hunk that was replaced by the new hunk above>
-  \`\`\`
-
-  ---comment_chains---
-  \`\`\`
-  <comment chains>
-  \`\`\`
-
-  ---end_change_section---
-  ...
-
-Important instructions:
-- The above format for changes consists of multiple change sections. Each change 
-  section consists of a new hunk (annotated with line numbers), an old hunk and 
-  optionally, existing comment chains. The line number annotation on each line 
-  in the new hunk is of the format \`<line_number><colon><whitespace>\`.  
-- Note that the code in the old hunk does not exist anymore as it was replaced 
-  by the new hunk. The new hunk is the code that you need to review. Consider 
-  the context provided by the old hunk and associated comment chain when reviewing 
-  the new hunk.  
-- Your task is to do a line by line review of new hunks and point out 
-  substantive issues in those line number ranges. For each issue you 
-  identify, please provide the exact line number range (inclusive) where 
-  the issue occurs.
-- Only respond in the below response format (consisting of review
-  sections) and nothing else. Each review section must consist of a line 
-  number range and a review comment for that line number range. Optionally, 
-  you can include a single replacement suggestion snippet and/or multiple 
-  new code snippets in the review comment. There's a separator between review 
-  sections.
-- It's important that line number ranges for each review section must 
-  be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must belong to the same hunk as the 
-  <end_line_number>. The line number range is sufficient to map your 
-  comment to the code changes in GitHub pull request.
-- Do not summarize the changes or repeat back provided code in the review 
-  comments and only focus on pointing out substantive issues.
-- Use Markdown format for review comment text.
-- Fenced code blocks must be used for new content and replacement 
-  code/text snippets and must not be annotated with line numbers.
-- If needed, provide a replacement suggestion using fenced code blocks 
-  with the \`suggestion\` as the language identifier. The line number range 
-  in the review section must map exactly to the line number range (inclusive) 
-  that need to be replaced within a new_hunk.
-  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
-  of code, the line number range must be those exact 2 lines. If an entire hunk 
-  need to be replaced with new code, then the line number range must be the 
-  entire hunk. Replacement suggestions should be complete units that can be
-  directly committed by the user in the GitHub UI.
-- Replacement code/text snippets must be complete and correctly 
-  formatted. Each replacement suggestion must be provided as a separate review 
-  section with relevant line number ranges.  
-- If needed, suggest new code using the correct language identifier in the 
-  fenced code blocks. These snippets may be added to a different file, such 
-  as test cases. Multiple new code snippets are allowed within a single 
-  review section.
-- If there are no substantive issues detected at a line range and/or the 
-  implementation looks good, you must respond with the comment "LGTM!" and 
-  nothing else for the respective line range in a review section.
-- Reflect on your comments and line number ranges before sending the final 
-  response to ensure accuracy of line number ranges and replacement
-  snippets.
-
-Response format expected:
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`suggestion
-  <code/text that replaces everything between start_line_number and end_line_number>
-  \`\`\`
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`<language>
-  <new code snippet>
-  \`\`\`
-  ---
-  ...
-
-Example changes:
-  ---new_hunk---
-  1: def add(x, y):
-  2:     z = x+y
-  3:     retrn z
-  4:
-  5: def multiply(x, y):
-  6:     return x * y
-  
-  ---old_hunk---
-  def add(x, y):
-      return x + y
-
-Example response:
-  3-3:
-  There's a typo in the return statement.
-  \`\`\`suggestion
-      return z
-  \`\`\`
-  ---
-  5-6:
-  LGTM!
-  ---
-
-Changes for review are below:
-`;
             // calculate tokens based on inputs so far
             let tokens = tokenizer/* get_token_count */.u(prompts.render_review_file_diff(ins));
             // loop to calculate total patch tokens

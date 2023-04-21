@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {Bot} from './bot.js'
-import {OpenAIOptions, Options, Prompts} from './options.js'
+import {OpenAIOptions, Options} from './options.js'
+import {Prompts} from './prompts.js'
 import {handleReviewComment} from './review-comment.js'
 import {codeReview} from './review.js'
 
@@ -24,11 +25,8 @@ async function run(): Promise<void> {
   options.print()
 
   const prompts: Prompts = new Prompts(
-    core.getInput('review_file_diff'),
-    core.getInput('summarize_file_diff'),
     core.getInput('summarize'),
-    core.getInput('summarize_release_notes'),
-    core.getInput('comment')
+    core.getInput('summarize_release_notes')
   )
 
   // Create two bots, one for summary and one for review

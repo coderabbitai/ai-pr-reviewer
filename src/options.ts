@@ -1,208 +1,6 @@
 import * as core from '@actions/core'
 import {minimatch} from 'minimatch'
-
-export class Prompts {
-  review_file_diff: string
-  summarize_file_diff: string
-  summarize: string
-  summarize_release_notes: string
-  comment: string
-
-  constructor(
-    review_file_diff = '',
-    summarize_file_diff = '',
-    summarize = '',
-    summarize_release_notes = '',
-    comment = ''
-  ) {
-    this.review_file_diff = review_file_diff
-    this.summarize_file_diff = summarize_file_diff
-    this.summarize = summarize
-    this.summarize_release_notes = summarize_release_notes
-    this.comment = comment
-  }
-
-  render_review_file_diff(inputs: Inputs): string {
-    return inputs.render(this.review_file_diff)
-  }
-
-  render_summarize_file_diff(inputs: Inputs): string {
-    const prompt = `${this.summarize_file_diff}
-
-Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
-\`APPROVED\` based on the following criteria:
-
-- If the diff involves any modifications to the logic or functionality, even if they 
-  seem minor, triage it as \`NEEDS_REVIEW\`. This includes changes to control structures, 
-  function calls, or variable assignments that might impact the behavior of the code.
-- If the diff only contains very minor changes that don't affect the code logic, such as 
-  fixing typos, formatting, or renaming variables for clarity, triage it as \`APPROVED\`.
-
-Please evaluate the diff thoroughly and take into account factors such as the number of 
-lines changed, the potential impact on the overall system, and the likelihood of 
-introducing new bugs or security vulnerabilities. 
-When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
-
-You must follow the format below strictly for triaging the diff and 
-do not add any additional text in your response:
-[TRIAGE]: <NEEDS_REVIEW or APPROVED>
-`
-
-    return inputs.render(prompt)
-  }
-
-  render_summarize(inputs: Inputs): string {
-    return inputs.render(this.summarize)
-  }
-
-  render_summarize_release_notes(inputs: Inputs): string {
-    return inputs.render(this.summarize_release_notes)
-  }
-
-  render_comment(inputs: Inputs): string {
-    return inputs.render(this.comment)
-  }
-}
-
-export class Inputs {
-  system_message: string
-  title: string
-  description: string
-  raw_summary: string
-  release_notes: string
-  filename: string
-  file_content: string
-  file_diff: string
-  patches: string
-  diff: string
-  comment_chain: string
-  comment: string
-
-  constructor(
-    system_message = '',
-    title = 'no title provided',
-    description = 'no description provided',
-    summary = 'no summary so far',
-    release_notes = 'no release notes so far',
-    filename = 'unknown',
-    file_content = 'file contents cannot be provided',
-    file_diff = 'file diff cannot be provided',
-    patches = '',
-    diff = 'no diff',
-    comment_chain = 'no other comments on this patch',
-    comment = 'no comment provided'
-  ) {
-    this.system_message = system_message
-    this.title = title
-    this.description = description
-    this.raw_summary = summary
-    this.release_notes = release_notes
-    this.filename = filename
-    this.file_content = file_content
-    this.file_diff = file_diff
-    this.patches = patches
-    this.diff = diff
-    this.comment_chain = comment_chain
-    this.comment = comment
-  }
-
-  clone(): Inputs {
-    return new Inputs(
-      this.system_message,
-      this.title,
-      this.description,
-      this.raw_summary,
-      this.release_notes,
-      this.filename,
-      this.file_content,
-      this.file_diff,
-      this.patches,
-      this.diff,
-      this.comment_chain,
-      this.comment
-    )
-  }
-
-  render(content: string): string {
-    if (!content) {
-      return ''
-    }
-    if (this.system_message) {
-      content = content.replace('$system_message', this.system_message)
-    }
-    if (this.title) {
-      content = content.replace('$title', this.title)
-    }
-    if (this.description) {
-      content = content.replace('$description', this.description)
-    }
-    if (this.raw_summary) {
-      content = content.replace('$raw_summary', this.raw_summary)
-    }
-    if (this.release_notes) {
-      content = content.replace('$release_notes', this.release_notes)
-    }
-    if (this.filename) {
-      content = content.replace('$filename', this.filename)
-    }
-    if (this.file_content) {
-      content = content.replace('$file_content', this.file_content)
-    }
-    if (this.file_diff) {
-      content = content.replace('$file_diff', this.file_diff)
-    }
-    if (this.patches) {
-      content = content.replace('$patches', this.patches)
-    }
-    if (this.diff) {
-      content = content.replace('$diff', this.diff)
-    }
-    if (this.comment_chain) {
-      content = content.replace('$comment_chain', this.comment_chain)
-    }
-    if (this.comment) {
-      content = content.replace('$comment', this.comment)
-    }
-    return content
-  }
-}
-
-export class TokenLimits {
-  max_tokens: number
-  request_tokens: number
-  response_tokens: number
-
-  constructor(model = 'gpt-3.5-turbo') {
-    if (model === 'gpt-4-32k') {
-      this.max_tokens = 32600
-      this.response_tokens = 4000
-    } else if (model === 'gpt-4') {
-      this.max_tokens = 8000
-      this.response_tokens = 2000
-    } else {
-      this.max_tokens = 3900
-      this.response_tokens = 1000
-    }
-    this.request_tokens = this.max_tokens - this.response_tokens
-  }
-
-  string(): string {
-    return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}`
-  }
-}
-
-export class OpenAIOptions {
-  model: string
-  token_limits: TokenLimits
-
-  constructor(
-    model = 'gpt-3.5-turbo',
-    token_limits: TokenLimits | null = null
-  ) {
-    this.model = model
-    this.token_limits = token_limits || new TokenLimits(model)
-  }
-}
+import {TokenLimits} from './limits.js'
 
 export class Options {
   debug: boolean
@@ -317,5 +115,18 @@ export class PathFilter {
     }
 
     return (!inclusionRuleExists || included) && !excluded
+  }
+}
+
+export class OpenAIOptions {
+  model: string
+  token_limits: TokenLimits
+
+  constructor(
+    model = 'gpt-3.5-turbo',
+    token_limits: TokenLimits | null = null
+  ) {
+    this.model = model
+    this.token_limits = token_limits || new TokenLimits(model)
   }
 }
