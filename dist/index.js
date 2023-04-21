@@ -6494,19 +6494,35 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     else {
         core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
     }
-    // get the list of files changed between the highest reviewed commit
-    // and the latest (head) commit
-    // use octokit.pulls.compareCommits to get the list of files changed
-    // between the highest reviewed commit and the latest (head) commit
-    const diff = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
+    // Fetch the diff between the highest reviewed commit and the latest commit of the PR branch
+    const incrementalDiff = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
         owner: repo.owner,
         repo: repo.repo,
         base: highest_reviewed_commit_id,
         head: context.payload.pull_request.head.sha
     });
-    const { files, commits } = diff.data;
+    // Fetch the diff between the target branch's base commit and the latest commit of the PR branch
+    const targetBranchDiff = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        base: context.payload.pull_request.base.sha,
+        head: context.payload.pull_request.head.sha
+    });
+    const incrementalFiles = incrementalDiff.data.files;
+    const targetBranchFiles = targetBranchDiff.data.files;
+    if (!incrementalFiles || !targetBranchFiles) {
+        core.warning(`Skipped: files data is missing`);
+        return;
+    }
+    // Filter out any file that is not changed compared to the target branch
+    const files = incrementalFiles.filter(incrementalChange => targetBranchFiles.some(changeRelativeToTargetBranch => changeRelativeToTargetBranch.filename === incrementalChange.filename));
     if (!files) {
-        core.warning(`Skipped: diff.data.files is null`);
+        core.warning(`Skipped: files is null`);
+        return;
+    }
+    const commits = incrementalDiff.data.commits;
+    if (!commits) {
+        core.warning(`Skipped: commits is null`);
         return;
     }
     // skip files if they are filtered out
