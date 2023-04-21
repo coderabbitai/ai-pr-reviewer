@@ -7,8 +7,10 @@ import {
   COMMENT_TAG,
   SUMMARIZE_TAG
 } from './commenter.js'
+import {Inputs} from './inputs.js'
 import {octokit} from './octokit.js'
-import {Inputs, Options, Prompts} from './options.js'
+import {Options} from './options.js'
+import {Prompts} from './prompts.js'
 import * as tokenizer from './tokenizer.js'
 
 const context = github.context
