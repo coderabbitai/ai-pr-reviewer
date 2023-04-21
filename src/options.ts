@@ -1,6 +1,6 @@
-import * as core from '@actions/core'
+import {info} from '@actions/core'
 import {minimatch} from 'minimatch'
-import {TokenLimits} from './limits.js'
+import {TokenLimits} from './limits'
 
 export class Options {
   debug: boolean
@@ -50,25 +50,25 @@ export class Options {
 
   // print all options using core.info
   print(): void {
-    core.info(`debug: ${this.debug}`)
-    core.info(`summary_only: ${this.summaryOnly}`)
-    core.info(`max_files: ${this.maxFiles}`)
-    core.info(`review_comment_lgtm: ${this.reviewCommentLGTM}`)
-    core.info(`path_filters: ${this.pathFilters}`)
-    core.info(`system_message: ${this.systemMessage}`)
-    core.info(`openai_light_model: ${this.openaiLightModel}`)
-    core.info(`openai_heavy_model: ${this.openaiHeavyModel}`)
-    core.info(`openai_model_temperature: ${this.openaiModelTemperature}`)
-    core.info(`openai_retries: ${this.openaiRetries}`)
-    core.info(`openai_timeout_ms: ${this.openaiTimeoutMS}`)
-    core.info(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`)
-    core.info(`summary_token_limits: ${this.lightTokenLimits.string()}`)
-    core.info(`review_token_limits: ${this.heavyTokenLimits.string()}`)
+    info(`debug: ${this.debug}`)
+    info(`summary_only: ${this.summaryOnly}`)
+    info(`max_files: ${this.maxFiles}`)
+    info(`review_comment_lgtm: ${this.reviewCommentLGTM}`)
+    info(`path_filters: ${this.pathFilters}`)
+    info(`system_message: ${this.systemMessage}`)
+    info(`openai_light_model: ${this.openaiLightModel}`)
+    info(`openai_heavy_model: ${this.openaiHeavyModel}`)
+    info(`openai_model_temperature: ${this.openaiModelTemperature}`)
+    info(`openai_retries: ${this.openaiRetries}`)
+    info(`openai_timeout_ms: ${this.openaiTimeoutMS}`)
+    info(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`)
+    info(`summary_token_limits: ${this.lightTokenLimits.string()}`)
+    info(`review_token_limits: ${this.heavyTokenLimits.string()}`)
   }
 
   checkPath(path: string): boolean {
     const ok = this.pathFilters.check(path)
-    core.info(`checking path: ${path} => ${ok}`)
+    info(`checking path: ${path} => ${ok}`)
     return ok
   }
 }

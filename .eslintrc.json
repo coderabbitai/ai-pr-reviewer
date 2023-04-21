@@ -3,13 +3,20 @@
   "extends": [
     "plugin:github/recommended",
     "eslint:recommended",
-    "plugin:prettier/recommended"
+    "plugin:prettier/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript",
+    "plugin:import/node"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
     "project": "./tsconfig.json"
+  },
+  "globals": {
+    "globalThis": false
   },
   "rules": {
     "i18n-text/no-en": "off"

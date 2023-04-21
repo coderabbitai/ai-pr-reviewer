@@ -3421,8 +3421,8 @@ class Bot {
                 apiKey: process.env.OPENAI_API_KEY,
                 apiOrg: process.env.OPENAI_API_ORG ?? undefined,
                 debug: options.debug,
-                maxModelTokens: openaiOptions.tokenLimits.max_tokens,
-                maxResponseTokens: openaiOptions.tokenLimits.response_tokens,
+                maxModelTokens: openaiOptions.tokenLimits.maxTokens,
+                maxResponseTokens: openaiOptions.tokenLimits.responseTokens,
                 completionParams: {
                     temperature: options.openaiModelTemperature,
                     model: openaiOptions.model
@@ -3519,10 +3519,12 @@ class Bot {
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3258);
+/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3258);
+
+// eslint-disable-next-line camelcase
 
 
-
+// eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const COMMENT_GREETING = ':robot: OpenAI';
@@ -3610,9 +3612,10 @@ ${tag}`;
         // for the tag (marker)
         try {
             // get latest description from PR
-            const pr = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.get */ .K.pulls.get({
+            const pr = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.get */ .K.pulls.get({
                 owner: repo.owner,
                 repo: repo.repo,
+                // eslint-disable-next-line camelcase
                 pull_number: pullNumber
             });
             let body = '';
@@ -3622,9 +3625,10 @@ ${tag}`;
             const description = this.getDescription(body);
             const messageClean = this.removeContentWithinTags(message, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
             const newDescription = `${description}\n${DESCRIPTION_TAG}\n${messageClean}\n${DESCRIPTION_TAG_END}`;
-            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
+            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
+                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
                 body: newDescription
             });
@@ -3658,9 +3662,10 @@ ${COMMENT_TAG}`;
                 for (const c of comments) {
                     if (c.body.includes(COMMENT_TAG)) {
                         (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
-                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
+                        await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
                             owner: repo.owner,
                             repo: repo.repo,
+                            // eslint-disable-next-line camelcase
                             comment_id: c.id,
                             body: comment.message
                         });
@@ -3673,17 +3678,21 @@ ${COMMENT_TAG}`;
                     const commentData = {
                         owner: repo.owner,
                         repo: repo.repo,
+                        // eslint-disable-next-line camelcase
                         pull_number: pullNumber,
+                        // eslint-disable-next-line camelcase
                         commit_id: commitId,
                         body: comment.message,
                         path: comment.path,
                         line: comment.endLine
                     };
                     if (comment.startLine !== comment.endLine) {
+                        // eslint-disable-next-line camelcase
                         commentData.start_side = 'RIGHT';
+                        // eslint-disable-next-line camelcase
                         commentData.start_line = comment.startLine;
                     }
-                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment(commentData);
+                    await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment(commentData);
                 }
                 commentCounter++;
                 (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
@@ -3703,22 +3712,26 @@ ${COMMENT_REPLY_TAG}
 `;
         try {
             // Post the reply to the user comment
-            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
+            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
                 owner: repo.owner,
                 repo: repo.repo,
+                // eslint-disable-next-line camelcase
                 pull_number: pullNumber,
                 body: reply,
+                // eslint-disable-next-line camelcase
                 comment_id: topLevelComment.id
             });
         }
         catch (error) {
             (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to reply to the top-level comment ${error}`);
             try {
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     pull_number: pullNumber,
                     body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
+                    // eslint-disable-next-line camelcase
                     comment_id: topLevelComment.id
                 });
             }
@@ -3730,9 +3743,10 @@ ${COMMENT_REPLY_TAG}
             if (topLevelComment.body.includes(COMMENT_TAG)) {
                 // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
                 const newBody = topLevelComment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG);
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     comment_id: topLevelComment.id,
                     body: newBody
                 });
@@ -3828,11 +3842,13 @@ ${chain}
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listReviewComments */ .K.pulls.listReviewComments({
+                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listReviewComments */ .K.pulls.listReviewComments({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     pull_number: target,
                     page,
+                    // eslint-disable-next-line camelcase
                     per_page: 100
                 });
                 allComments.push(...comments);
@@ -3852,9 +3868,10 @@ ${chain}
     async create(body, target) {
         try {
             // get commend ID from the response
-            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.createComment */ .K.issues.createComment({
+            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.createComment */ .K.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
+                // eslint-disable-next-line camelcase
                 issue_number: target,
                 body
             });
@@ -3867,9 +3884,10 @@ ${chain}
         try {
             const cmt = await this.findCommentWithTag(tag, target);
             if (cmt) {
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.updateComment */ .K.issues.updateComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.updateComment */ .K.issues.updateComment({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     comment_id: cmt.id,
                     body
                 });
@@ -3906,11 +3924,13 @@ ${chain}
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.listComments */ .K.issues.listComments({
+                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.listComments */ .K.issues.listComments({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     issue_number: target,
                     page,
+                    // eslint-disable-next-line camelcase
                     per_page: 100
                 });
                 allComments.push(...comments);
@@ -3979,10 +3999,12 @@ ${chain}
         let commits;
         if (context && context.payload && context.payload.pull_request != null) {
             do {
-                commits = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listCommits */ .K.pulls.listCommits({
+                commits = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listCommits */ .K.pulls.listCommits({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     pull_number: context.payload.pull_request.number,
+                    // eslint-disable-next-line camelcase
                     per_page: 100,
                     page
                 });
@@ -4089,11 +4111,11 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4909);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8870);
-/* harmony import */ var _prompts_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4272);
-/* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5947);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2612);
+/* harmony import */ var _bot__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4909);
+/* harmony import */ var _options__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8870);
+/* harmony import */ var _prompts__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4272);
+/* harmony import */ var _review__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2612);
+/* harmony import */ var _review_comment__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5947);
 
 
 
@@ -4101,55 +4123,55 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('debug'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('summary_only'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_files'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_comment_lgtm'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput)('path_filters'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('system_message'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_light_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_heavy_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_model_temperature'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_retries'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_timeout_ms'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _prompts_js__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
+    const prompts = new _prompts__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize_release_notes'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
-        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openaiLightModel, options.lightTokenLimits));
+        lightBot = new _bot__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openaiLightModel, options.lightTokenLimits));
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     let heavyBot = null;
     try {
-        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openaiHeavyModel, options.heavyTokenLimits));
+        heavyBot = new _bot__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openaiHeavyModel, options.heavyTokenLimits));
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     try {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(lightBot, heavyBot, options, prompts);
+            await (0,_review__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(lightBot, heavyBot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(heavyBot, options, prompts);
+            await (0,_review_comment__WEBPACK_IMPORTED_MODULE_4__/* .handleReviewComment */ .V)(heavyBot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_request');
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)('Skipped: this action only works on push events or pull_request');
         }
     }
     catch (e) {
         if (e instanceof Error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Failed to run: ${e.message}, backtrace: ${e.stack}`);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Failed to run: ${e}, backtrace: ${e.stack}`);
         }
     }
 }
 process
     .on('unhandledRejection', (reason, p) => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
 })
     .on('uncaughtException', (e) => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
 });
 await run();
 
@@ -4186,7 +4208,7 @@ Retry count: ${retryCount}
 `);
             return true;
         },
-        onSecondaryRateLimit: (_retryAfter, options, _o) => {
+        onSecondaryRateLimit: (_retryAfter, options) => {
             (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
             return true;
         }
@@ -5982,26 +6004,26 @@ minimatch.unescape = unescape_unescape;
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./lib/limits.js
 class TokenLimits {
-    max_tokens;
-    request_tokens;
-    response_tokens;
+    maxTokens;
+    requestTokens;
+    responseTokens;
     constructor(model = 'gpt-3.5-turbo') {
         if (model === 'gpt-4-32k') {
-            this.max_tokens = 32600;
-            this.response_tokens = 4000;
+            this.maxTokens = 32600;
+            this.responseTokens = 4000;
         }
         else if (model === 'gpt-4') {
-            this.max_tokens = 8000;
-            this.response_tokens = 2000;
+            this.maxTokens = 8000;
+            this.responseTokens = 2000;
         }
         else {
-            this.max_tokens = 3900;
-            this.response_tokens = 1000;
+            this.maxTokens = 3900;
+            this.responseTokens = 1000;
         }
-        this.request_tokens = this.max_tokens - this.response_tokens;
+        this.requestTokens = this.maxTokens - this.responseTokens;
     }
     string() {
-        return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}`;
+        return `max_tokens=${this.maxTokens}, request_tokens=${this.requestTokens}, response_tokens=${this.responseTokens}`;
     }
 }
 
@@ -6042,24 +6064,24 @@ class Options {
     }
     // print all options using core.info
     print() {
-        core.info(`debug: ${this.debug}`);
-        core.info(`summary_only: ${this.summaryOnly}`);
-        core.info(`max_files: ${this.maxFiles}`);
-        core.info(`review_comment_lgtm: ${this.reviewCommentLGTM}`);
-        core.info(`path_filters: ${this.pathFilters}`);
-        core.info(`system_message: ${this.systemMessage}`);
-        core.info(`openai_light_model: ${this.openaiLightModel}`);
-        core.info(`openai_heavy_model: ${this.openaiHeavyModel}`);
-        core.info(`openai_model_temperature: ${this.openaiModelTemperature}`);
-        core.info(`openai_retries: ${this.openaiRetries}`);
-        core.info(`openai_timeout_ms: ${this.openaiTimeoutMS}`);
-        core.info(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`);
-        core.info(`summary_token_limits: ${this.lightTokenLimits.string()}`);
-        core.info(`review_token_limits: ${this.heavyTokenLimits.string()}`);
+        (0,core.info)(`debug: ${this.debug}`);
+        (0,core.info)(`summary_only: ${this.summaryOnly}`);
+        (0,core.info)(`max_files: ${this.maxFiles}`);
+        (0,core.info)(`review_comment_lgtm: ${this.reviewCommentLGTM}`);
+        (0,core.info)(`path_filters: ${this.pathFilters}`);
+        (0,core.info)(`system_message: ${this.systemMessage}`);
+        (0,core.info)(`openai_light_model: ${this.openaiLightModel}`);
+        (0,core.info)(`openai_heavy_model: ${this.openaiHeavyModel}`);
+        (0,core.info)(`openai_model_temperature: ${this.openaiModelTemperature}`);
+        (0,core.info)(`openai_retries: ${this.openaiRetries}`);
+        (0,core.info)(`openai_timeout_ms: ${this.openaiTimeoutMS}`);
+        (0,core.info)(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`);
+        (0,core.info)(`summary_token_limits: ${this.lightTokenLimits.string()}`);
+        (0,core.info)(`review_token_limits: ${this.heavyTokenLimits.string()}`);
     }
     checkPath(path) {
         const ok = this.pathFilters.check(path);
-        core.info(`checking path: ${path} => ${ok}`);
+        (0,core.info)(`checking path: ${path} => ${ok}`);
         return ok;
     }
 }
@@ -6407,22 +6429,24 @@ $patches
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6180);
-/* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3258);
-/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
+/* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
+/* harmony import */ var _inputs__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6180);
+/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3258);
+/* harmony import */ var _tokenizer__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
+
+// eslint-disable-next-line camelcase
 
 
 
 
 
-
+// eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
 const handleReviewComment = async (heavyBot, options, prompts) => {
-    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
-    const inputs = new _inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .Inputs */ .k();
+    const commenter = new _commenter__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
+    const inputs = new _inputs__WEBPACK_IMPORTED_MODULE_5__/* .Inputs */ .k();
     if (context.eventName !== 'pull_request_review_comment') {
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
         return;
@@ -6452,8 +6476,8 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         return;
     }
     // Check if the comment is not from the bot itself
-    if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
-        !comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
+    if (!comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
+        !comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
         const pullNumber = context.payload.pull_request.number;
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = comment.diff_hunk;
@@ -6465,12 +6489,12 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
         }
         inputs.commentChain = commentChain;
         // check whether this chain contains replies from the bot
-        if (commentChain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
-            commentChain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
+        if (commentChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
+            commentChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
             comment.body.includes(ASK_BOT)) {
             let fileContent = '';
             try {
-                const contents = await _octokit_js__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.getContent */ .K.repos.getContent({
+                const contents = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.getContent */ .K.repos.getContent({
                     owner: repo.owner,
                     repo: repo.repo,
                     path: comment.path,
@@ -6490,7 +6514,7 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             let fileDiff = '';
             try {
                 // get diff for this file by comparing the base and head commits
-                const diffAll = await _octokit_js__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.compareCommits */ .K.repos.compareCommits({
+                const diffAll = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.compareCommits */ .K.repos.compareCommits({
                     owner: repo.owner,
                     repo: repo.repo,
                     base: context.payload.pull_request.base.sha,
@@ -6521,8 +6545,8 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 }
             }
             // get tokens so far
-            let tokens = (0,_tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(prompts.renderComment(inputs));
-            if (tokens > options.heavyTokenLimits.request_tokens) {
+            let tokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(prompts.renderComment(inputs));
+            if (tokens > options.heavyTokenLimits.requestTokens) {
                 await commenter.reviewCommentReply(pullNumber, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
                 return;
             }
@@ -6530,10 +6554,10 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (fileContent.length > 0) {
                 // count occurrences of $file_content in prompt
                 const fileContentCount = prompts.comment.split('$file_content').length - 1;
-                const fileContentTokens = (0,_tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(fileContent);
+                const fileContentTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(fileContent);
                 if (fileContentCount > 0 &&
                     tokens + fileContentTokens * fileContentCount <=
-                        options.heavyTokenLimits.request_tokens) {
+                        options.heavyTokenLimits.requestTokens) {
                     tokens += fileContentTokens * fileContentCount;
                     inputs.fileContent = fileContent;
                 }
@@ -6541,21 +6565,21 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
             if (fileDiff.length > 0) {
                 // count occurrences of $file_diff in prompt
                 const fileDiffCount = prompts.comment.split('$file_diff').length - 1;
-                const fileDiffTokens = (0,_tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(fileDiff);
+                const fileDiffTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(fileDiff);
                 if (fileDiffCount > 0 &&
                     tokens + fileDiffTokens * fileDiffCount <=
-                        options.heavyTokenLimits.request_tokens) {
+                        options.heavyTokenLimits.requestTokens) {
                     tokens += fileDiffTokens * fileDiffCount;
                     inputs.fileDiff = fileDiff;
                 }
             }
             // get summary of the PR
-            const summary = await commenter.findCommentWithTag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pullNumber);
+            const summary = await commenter.findCommentWithTag(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pullNumber);
             if (summary) {
                 // pack summary into the inputs if it is not too long
                 const rawSummary = commenter.getRawSummary(summary.body);
-                const summaryTokens = (0,_tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(rawSummary);
-                if (tokens + summaryTokens <= options.heavyTokenLimits.request_tokens) {
+                const summaryTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(rawSummary);
+                if (tokens + summaryTokens <= options.heavyTokenLimits.requestTokens) {
                     tokens += summaryTokens;
                     inputs.rawSummary = rawSummary;
                 }
@@ -6735,12 +6759,14 @@ var octokit = __nccwpck_require__(3258);
 var tokenizer = __nccwpck_require__(652);
 ;// CONCATENATED MODULE: ./lib/review.js
 
+// eslint-disable-next-line camelcase
 
 
 
 
 
 
+// eslint-disable-next-line camelcase
 const context = github.context;
 const repo = context.repo;
 const ignoreKeyword = '@openai: ignore';
@@ -6916,7 +6942,7 @@ ${hunks.oldHunk}
         // render prompt based on inputs so far
         let tokens = (0,tokenizer/* getTokenCount */.V)(prompts.renderSummarizeFileDiff(ins));
         const diffTokens = (0,tokenizer/* getTokenCount */.V)(fileDiff);
-        if (tokens + diffTokens > options.lightTokenLimits.request_tokens) {
+        if (tokens + diffTokens > options.lightTokenLimits.requestTokens) {
             (0,core.info)(`summarize: diff tokens exceeds limit, skip ${filename}`);
             summariesFailed.push(`${filename} (diff tokens exceeds limit)`);
             return null;
@@ -6930,7 +6956,7 @@ ${hunks.oldHunk}
             const fileContentTokens = (0,tokenizer/* getTokenCount */.V)(fileContent);
             if (fileContentCount > 0 &&
                 tokens + fileContentTokens * fileContentCount <=
-                    options.lightTokenLimits.request_tokens) {
+                    options.lightTokenLimits.requestTokens) {
                 tokens += fileContentTokens * fileContentCount;
                 ins.fileContent = fileContent;
             }
@@ -7106,7 +7132,7 @@ ${summariesFailed.length > 0
             let patchesToPack = 0;
             for (const [, , patch] of patches) {
                 const patchTokens = (0,tokenizer/* getTokenCount */.V)(patch);
-                if (tokens + patchTokens > options.heavyTokenLimits.request_tokens) {
+                if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
                     break;
                 }
                 tokens += patchTokens;
@@ -7117,7 +7143,7 @@ ${summariesFailed.length > 0
             const fileContentTokens = (0,tokenizer/* getTokenCount */.V)(fileContent);
             if (fileContentCount > 0 &&
                 tokens + fileContentTokens * fileContentCount <=
-                    options.heavyTokenLimits.request_tokens) {
+                    options.heavyTokenLimits.requestTokens) {
                 ins.fileContent = fileContent;
                 tokens += fileContentTokens * fileContentCount;
             }
@@ -7147,7 +7173,7 @@ ${summariesFailed.length > 0
                 // try packing comment_chain into this request
                 const commentChainTokens = (0,tokenizer/* getTokenCount */.V)(commentChain);
                 if (tokens + commentChainTokens >
-                    options.heavyTokenLimits.request_tokens) {
+                    options.heavyTokenLimits.requestTokens) {
                     commentChain = '';
                 }
                 else {
@@ -7436,6 +7462,7 @@ ${review.comment}`;
 /* harmony export */ });
 /* unused harmony export encode */
 /* harmony import */ var _dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3171);
+// eslint-disable-next-line camelcase
 
 const tokenizer = (0,_dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__/* .get_encoding */ .iw)('cl100k_base');
 function encode(input) {

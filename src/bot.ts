@@ -1,4 +1,4 @@
-import './fetch-polyfill.js'
+import './fetch-polyfill'
 
 import {info, setFailed, warning} from '@actions/core'
 import {
@@ -7,8 +7,8 @@ import {
   ChatMessage,
   SendMessageOptions
 } from 'chatgpt'
-import {OpenAIOptions, Options} from './options.js'
-import {retry} from './utils.js'
+import {OpenAIOptions, Options} from './options'
+import {retry} from './utils'
 
 // define type to save parentMessageId and conversationId
 export interface Ids {
@@ -29,8 +29,8 @@ export class Bot {
         apiKey: process.env.OPENAI_API_KEY,
         apiOrg: process.env.OPENAI_API_ORG ?? undefined,
         debug: options.debug,
-        maxModelTokens: openaiOptions.tokenLimits.max_tokens,
-        maxResponseTokens: openaiOptions.tokenLimits.response_tokens,
+        maxModelTokens: openaiOptions.tokenLimits.maxTokens,
+        maxResponseTokens: openaiOptions.tokenLimits.responseTokens,
         completionParams: {
           temperature: options.openaiModelTemperature,
           model: openaiOptions.model

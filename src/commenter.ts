@@ -1,7 +1,9 @@
 import {info, warning} from '@actions/core'
+// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
-import {octokit} from './octokit.js'
+import {octokit} from './octokit'
 
+// eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
@@ -127,6 +129,7 @@ ${tag}`
       const pr = await octokit.pulls.get({
         owner: repo.owner,
         repo: repo.repo,
+        // eslint-disable-next-line camelcase
         pull_number: pullNumber
       })
       let body = ''
@@ -144,6 +147,7 @@ ${tag}`
       await octokit.pulls.update({
         owner: repo.owner,
         repo: repo.repo,
+        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
         body: newDescription
       })
@@ -203,6 +207,7 @@ ${COMMENT_TAG}`
             await octokit.pulls.updateReviewComment({
               owner: repo.owner,
               repo: repo.repo,
+              // eslint-disable-next-line camelcase
               comment_id: c.id,
               body: comment.message
             })
@@ -218,7 +223,9 @@ ${COMMENT_TAG}`
           const commentData: any = {
             owner: repo.owner,
             repo: repo.repo,
+            // eslint-disable-next-line camelcase
             pull_number: pullNumber,
+            // eslint-disable-next-line camelcase
             commit_id: commitId,
             body: comment.message,
             path: comment.path,
@@ -226,7 +233,9 @@ ${COMMENT_TAG}`
           }
 
           if (comment.startLine !== comment.endLine) {
+            // eslint-disable-next-line camelcase
             commentData.start_side = 'RIGHT'
+            // eslint-disable-next-line camelcase
             commentData.start_line = comment.startLine
           }
 
@@ -260,8 +269,10 @@ ${COMMENT_REPLY_TAG}
       await octokit.pulls.createReplyForReviewComment({
         owner: repo.owner,
         repo: repo.repo,
+        // eslint-disable-next-line camelcase
         pull_number: pullNumber,
         body: reply,
+        // eslint-disable-next-line camelcase
         comment_id: topLevelComment.id
       })
     } catch (error) {
@@ -270,8 +281,10 @@ ${COMMENT_REPLY_TAG}
         await octokit.pulls.createReplyForReviewComment({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           pull_number: pullNumber,
           body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
+          // eslint-disable-next-line camelcase
           comment_id: topLevelComment.id
         })
       } catch (e) {
@@ -288,6 +301,7 @@ ${COMMENT_REPLY_TAG}
         await octokit.pulls.updateReviewComment({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           comment_id: topLevelComment.id,
           body: newBody
         })
@@ -438,8 +452,10 @@ ${chain}
         const {data: comments} = await octokit.pulls.listReviewComments({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           pull_number: target,
           page,
+          // eslint-disable-next-line camelcase
           per_page: 100
         })
         allComments.push(...comments)
@@ -463,6 +479,7 @@ ${chain}
       await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
+        // eslint-disable-next-line camelcase
         issue_number: target,
         body
       })
@@ -478,6 +495,7 @@ ${chain}
         await octokit.issues.updateComment({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           comment_id: cmt.id,
           body
         })
@@ -519,8 +537,10 @@ ${chain}
         const {data: comments} = await octokit.issues.listComments({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           issue_number: target,
           page,
+          // eslint-disable-next-line camelcase
           per_page: 100
         })
         allComments.push(...comments)
@@ -603,7 +623,9 @@ ${chain}
         commits = await octokit.pulls.listCommits({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           pull_number: context.payload.pull_request.number,
+          // eslint-disable-next-line camelcase
           per_page: 100,
           page
         })

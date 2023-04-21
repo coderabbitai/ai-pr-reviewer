@@ -23,7 +23,7 @@ Retry count: ${retryCount}
       )
       return true
     },
-    onSecondaryRateLimit: (_retryAfter: number, options: any, _o: Octokit) => {
+    onSecondaryRateLimit: (_retryAfter: number, options: any) => {
       warning(
         `SecondaryRateLimit detected for request ${options.method} ${options.url}`
       )

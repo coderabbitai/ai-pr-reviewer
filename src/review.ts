@@ -1,7 +1,8 @@
 import {error, info, warning} from '@actions/core'
+// eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
-import {type Bot} from './bot.js'
+import {type Bot} from './bot'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
@@ -9,13 +10,14 @@ import {
   RAW_SUMMARY_TAG,
   RAW_SUMMARY_TAG_END,
   SUMMARIZE_TAG
-} from './commenter.js'
-import {Inputs} from './inputs.js'
-import {octokit} from './octokit.js'
-import {type Options} from './options.js'
-import {type Prompts} from './prompts.js'
-import {getTokenCount} from './tokenizer.js'
+} from './commenter'
+import {Inputs} from './inputs'
+import {octokit} from './octokit'
+import {type Options} from './options'
+import {type Prompts} from './prompts'
+import {getTokenCount} from './tokenizer'
 
+// eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
 
@@ -262,7 +264,7 @@ ${hunks.oldHunk}
     let tokens = getTokenCount(prompts.renderSummarizeFileDiff(ins))
 
     const diffTokens = getTokenCount(fileDiff)
-    if (tokens + diffTokens > options.lightTokenLimits.request_tokens) {
+    if (tokens + diffTokens > options.lightTokenLimits.requestTokens) {
       info(`summarize: diff tokens exceeds limit, skip ${filename}`)
       summariesFailed.push(`${filename} (diff tokens exceeds limit)`)
       return null
@@ -280,7 +282,7 @@ ${hunks.oldHunk}
       if (
         fileContentCount > 0 &&
         tokens + fileContentTokens * fileContentCount <=
-          options.lightTokenLimits.request_tokens
+          options.lightTokenLimits.requestTokens
       ) {
         tokens += fileContentTokens * fileContentCount
         ins.fileContent = fileContent
@@ -503,7 +505,7 @@ ${
       let patchesToPack = 0
       for (const [, , patch] of patches) {
         const patchTokens = getTokenCount(patch)
-        if (tokens + patchTokens > options.heavyTokenLimits.request_tokens) {
+        if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
           break
         }
         tokens += patchTokens
@@ -517,7 +519,7 @@ ${
       if (
         fileContentCount > 0 &&
         tokens + fileContentTokens * fileContentCount <=
-          options.heavyTokenLimits.request_tokens
+          options.heavyTokenLimits.requestTokens
       ) {
         ins.fileContent = fileContent
         tokens += fileContentTokens * fileContentCount
@@ -563,7 +565,7 @@ ${
         const commentChainTokens = getTokenCount(commentChain)
         if (
           tokens + commentChainTokens >
-          options.heavyTokenLimits.request_tokens
+          options.heavyTokenLimits.requestTokens
         ) {
           commentChain = ''
         } else {
