@@ -1,4 +1,4 @@
-import * as core from '@actions/core'
+import {warning} from '@actions/core'
 
 export const retry = async <T = unknown>(
   fn: Function,
@@ -12,7 +12,7 @@ export const retry = async <T = unknown>(
       if (i === times - 1) {
         throw error
       }
-      core.warning(`Function failed on try ${i + 1}, retrying...`)
+      warning(`Function failed on try ${i + 1}, retrying...`)
       continue
     }
   }

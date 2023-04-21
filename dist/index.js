@@ -3399,7 +3399,7 @@ const retry = async (fn, args, times) => {
             if (i === times - 1) {
                 throw error;
             }
-            core.warning(`Function failed on try ${i + 1}, retrying...`);
+            (0,core.warning)(`Function failed on try ${i + 1}, retrying...`);
             continue;
         }
     }
