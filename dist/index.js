@@ -6514,8 +6514,8 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
         core.warning(`Skipped: files data is missing`);
         return;
     }
-    // Filter out any file that is not changed compared to the target branch
-    const files = incrementalFiles.filter(incrementalChange => targetBranchFiles.some(changeRelativeToTargetBranch => changeRelativeToTargetBranch.filename === incrementalChange.filename));
+    // Filter out any file that is changed compared to the incremental changes
+    const files = targetBranchFiles.filter(targetBranchFile => incrementalFiles.some(incrementalFile => incrementalFile.filename === targetBranchFile.filename));
     if (!files) {
         core.warning(`Skipped: files is null`);
         return;
@@ -6751,6 +6751,9 @@ ${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
 ### Code suggestions
 - The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
+### Ignoring further reviews
+- Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
 ---
 

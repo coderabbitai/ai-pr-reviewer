@@ -414,6 +414,9 @@ ${EXTRA_CONTENT_TAG}
 - The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
+### Ignoring further reviews
+- Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
+
 ---
 
 ${
