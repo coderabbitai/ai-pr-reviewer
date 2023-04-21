@@ -3,7 +3,7 @@ export class TokenLimits {
   request_tokens: number
   response_tokens: number
 
-  constructor(model = 'gpt-3.5-turbo') {
+  constructor (model = 'gpt-3.5-turbo') {
     if (model === 'gpt-4-32k') {
       this.max_tokens = 32600
       this.response_tokens = 4000
@@ -17,7 +17,7 @@ export class TokenLimits {
     this.request_tokens = this.max_tokens - this.response_tokens
   }
 
-  string(): string {
+  string (): string {
     return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}`
   }
 }

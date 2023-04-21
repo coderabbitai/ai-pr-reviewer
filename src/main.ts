@@ -35,7 +35,7 @@ async function run(): Promise<void> {
   try {
     lightBot = new Bot(
       options,
-      new OpenAIOptions(options.openai_light_model, options.light_token_limits)
+      new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
     )
   } catch (e: any) {
     core.warning(
@@ -48,7 +48,7 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(
       options,
-      new OpenAIOptions(options.openai_heavy_model, options.heavy_token_limits)
+      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
     )
   } catch (e: any) {
     core.warning(

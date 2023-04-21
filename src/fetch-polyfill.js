@@ -9,7 +9,7 @@ import fetch, {
   FormData,
   Headers,
   Request,
-  Response,
+  Response
 } from 'node-fetch'
 
 if (!globalThis.fetch) {

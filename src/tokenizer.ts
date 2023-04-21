@@ -6,7 +6,7 @@ export function encode(input: string): Uint32Array {
   return tokenizer.encode(input)
 }
 
-export function get_token_count(input: string): number {
+export function getTokenCount(input: string): number {
   input = input.replace(/<\|endoftext\|>/g, '')
   return encode(input).length
 }

@@ -1,7 +1,7 @@
-import * as core from '@actions/core'
-import * as github from '@actions/github'
+import {error, info, warning} from '@actions/core'
+import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
-import {Bot} from './bot.js'
+import {type Bot} from './bot.js'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
@@ -12,14 +12,14 @@ import {
 } from './commenter.js'
 import {Inputs} from './inputs.js'
 import {octokit} from './octokit.js'
-import {Options} from './options.js'
-import {Prompts} from './prompts.js'
-import * as tokenizer from './tokenizer.js'
+import {type Options} from './options.js'
+import {type Prompts} from './prompts.js'
+import {getTokenCount} from './tokenizer.js'
 
-const context = github.context
+const context = github_context
 const repo = context.repo
 
-const ignore_keyword = '@openai: ignore'
+const ignoreKeyword = '@openai: ignore'
 
 export const codeReview = async (
   lightBot: Bot,
@@ -29,82 +29,84 @@ export const codeReview = async (
 ): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
-  const openai_concurrency_limit = pLimit(options.openai_concurrency_limit)
+  const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
 
   if (
     context.eventName !== 'pull_request' &&
     context.eventName !== 'pull_request_target'
   ) {
-    core.warning(
+    warning(
       `Skipped: current event is ${context.eventName}, only support pull_request event`
     )
     return
   }
-  if (!context.payload.pull_request) {
-    core.warning(`Skipped: context.payload.pull_request is null`)
+  if (context.payload.pull_request == null) {
+    warning('Skipped: context.payload.pull_request is null')
     return
   }
 
   const inputs: Inputs = new Inputs()
   inputs.title = context.payload.pull_request.title
-  if (context.payload.pull_request.body) {
-    inputs.description = commenter.get_description(
+  if (context.payload.pull_request.body != null) {
+    inputs.description = commenter.getDescription(
       context.payload.pull_request.body
     )
-    inputs.release_notes = commenter.get_release_notes(
+    inputs.releaseNotes = commenter.getReleaseNotes(
       context.payload.pull_request.body
     )
   }
 
   // if the description contains ignore_keyword, skip
-  if (inputs.description.includes(ignore_keyword)) {
-    core.info(`Skipped: description contains ignore_keyword`)
+  if (inputs.description.includes(ignoreKeyword)) {
+    info('Skipped: description contains ignore_keyword')
     return
   }
 
   // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
-  inputs.system_message = options.system_message
+  inputs.systemMessage = options.systemMessage
 
   // get SUMMARIZE_TAG message
-  const existing_summarize_cmt = await commenter.find_comment_with_tag(
+  const existingSummarizeCmt = await commenter.findCommentWithTag(
     SUMMARIZE_TAG,
     context.payload.pull_request.number
   )
-  let existing_commit_ids_block = ''
-  if (existing_summarize_cmt) {
-    inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body)
-    existing_commit_ids_block = getReviewedCommitIdsBlock(
-      existing_summarize_cmt.body
+  let existingCommitIdsBlock = ''
+  if (existingSummarizeCmt != null) {
+    inputs.rawSummary = commenter.getRawSummary(existingSummarizeCmt.body)
+    existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
+      existingSummarizeCmt.body
     )
   }
 
-  const allCommitIds = await getAllCommitIds()
+  const allCommitIds = await commenter.getAllCommitIds()
   // find highest reviewed commit id
-  let highest_reviewed_commit_id = ''
-  if (existing_commit_ids_block) {
-    highest_reviewed_commit_id = getHighestReviewedCommitId(
+  let highestReviewedCommitId = ''
+  if (existingCommitIdsBlock !== '') {
+    highestReviewedCommitId = commenter.getHighestReviewedCommitId(
       allCommitIds,
-      getReviewedCommitIds(existing_commit_ids_block)
+      commenter.getReviewedCommitIds(existingCommitIdsBlock)
     )
   }
 
   if (
-    highest_reviewed_commit_id === '' ||
-    highest_reviewed_commit_id === context.payload.pull_request.head.sha
+    highestReviewedCommitId === '' ||
+    highestReviewedCommitId === context.payload.pull_request.head.sha
   ) {
-    core.info(
-      `Will review from the base commit: ${context.payload.pull_request.base.sha}`
+    info(
+      `Will review from the base commit: ${
+        context.payload.pull_request.base.sha as string
+      }`
     )
-    highest_reviewed_commit_id = context.payload.pull_request.base.sha
+    highestReviewedCommitId = context.payload.pull_request.base.sha
   } else {
-    core.info(`Will review from commit: ${highest_reviewed_commit_id}`)
+    info(`Will review from commit: ${highestReviewedCommitId}`)
   }
 
   // Fetch the diff between the highest reviewed commit and the latest commit of the PR branch
   const incrementalDiff = await octokit.repos.compareCommits({
     owner: repo.owner,
     repo: repo.repo,
-    base: highest_reviewed_commit_id,
+    base: highestReviewedCommitId,
     head: context.payload.pull_request.head.sha
   })
 
@@ -119,8 +121,8 @@ export const codeReview = async (
   const incrementalFiles = incrementalDiff.data.files
   const targetBranchFiles = targetBranchDiff.data.files
 
-  if (!incrementalFiles || !targetBranchFiles) {
-    core.warning(`Skipped: files data is missing`)
+  if (incrementalFiles == null || targetBranchFiles == null) {
+    warning('Skipped: files data is missing')
     return
   }
 
@@ -131,40 +133,39 @@ export const codeReview = async (
     )
   )
 
-  if (!files) {
-    core.warning(`Skipped: files is null`)
+  if (files.length === 0) {
+    warning('Skipped: files is null')
     return
   }
 
   const commits = incrementalDiff.data.commits
 
-  if (!commits) {
-    core.warning(`Skipped: commits is null`)
+  if (commits.length === 0) {
+    warning('Skipped: ommits is null')
     return
   }
 
   // skip files if they are filtered out
-  const filter_selected_files = []
-  const filter_ignored_files = []
+  const filterSelectedFiles = []
+  const filterIgnoredFiles = []
   for (const file of files) {
-    if (!options.check_path(file.filename)) {
-      core.info(`skip for excluded path: ${file.filename}`)
-      filter_ignored_files.push(file)
+    if (!options.checkPath(file.filename)) {
+      info(`skip for excluded path: ${file.filename}`)
+      filterIgnoredFiles.push(file)
     } else {
-      filter_selected_files.push(file)
+      filterSelectedFiles.push(file)
     }
   }
 
   // find hunks to review
-  const filtered_files: (
-    | [string, string, string, [number, number, string][]]
-    | null
-  )[] = await Promise.all(
-    filter_selected_files.map(async file => {
+  const filteredFiles: Array<
+    [string, string, string, Array<[number, number, string]>] | null
+  > = await Promise.all(
+    filterSelectedFiles.map(async file => {
       // retrieve file contents
-      let file_content = ''
-      if (!context.payload.pull_request) {
-        core.warning(`Skipped: context.payload.pull_request is null`)
+      let fileContent = ''
+      if (context.payload.pull_request == null) {
+        warning('Skipped: context.payload.pull_request is null')
         return null
       }
       try {
@@ -174,54 +175,57 @@ export const codeReview = async (
           path: file.filename,
           ref: context.payload.pull_request.base.sha
         })
-        if (contents.data) {
+        if (contents.data != null) {
           if (!Array.isArray(contents.data)) {
-            if (contents.data.type === 'file' && contents.data.content) {
-              file_content = Buffer.from(
+            if (
+              contents.data.type === 'file' &&
+              contents.data.content != null
+            ) {
+              fileContent = Buffer.from(
                 contents.data.content,
                 'base64'
               ).toString()
             }
           }
         }
-      } catch (error) {
-        core.warning(`Failed to get file contents: ${error}`)
+      } catch (e: any) {
+        warning(`Failed to get file contents: ${e as string}`)
       }
 
-      let file_diff = ''
-      if (file.patch) {
-        file_diff = file.patch
+      let fileDiff = ''
+      if (file.patch != null) {
+        fileDiff = file.patch
       }
 
-      const patches: [number, number, string][] = []
-      for (const patch of split_patch(file.patch)) {
-        const patch_lines = patch_start_end_line(patch)
-        if (!patch_lines) {
+      const patches: Array<[number, number, string]> = []
+      for (const patch of splitPatch(file.patch)) {
+        const patchLines = patchStartEndLine(patch)
+        if (patchLines == null) {
           continue
         }
-        const hunks = parse_patch(patch)
-        if (!hunks) {
+        const hunks = parsePatch(patch)
+        if (hunks == null) {
           continue
         }
-        const hunks_str = `
+        const hunksStr = `
 ---new_hunk---
 \`\`\`
-${hunks.new_hunk}
+${hunks.newHunk}
 \`\`\`
 
 ---old_hunk---
 \`\`\`
-${hunks.old_hunk}
+${hunks.oldHunk}
 \`\`\`
 `
         patches.push([
-          patch_lines.new_hunk.start_line,
-          patch_lines.new_hunk.end_line,
-          hunks_str
+          patchLines.newHunk.startLine,
+          patchLines.newHunk.endLine,
+          hunksStr
         ])
       }
       if (patches.length > 0) {
-        return [file.filename, file_content, file_diff, patches]
+        return [file.filename, fileContent, fileDiff, patches]
       } else {
         return null
       }
@@ -229,171 +233,173 @@ ${hunks.old_hunk}
   )
 
   // Filter out any null results
-  const files_and_changes = filtered_files.filter(file => file !== null) as [
-    string,
-    string,
-    string,
-    [number, number, string][]
-  ][]
+  const filesAndChanges = filteredFiles.filter(file => file !== null) as Array<
+    [string, string, string, Array<[number, number, string]>]
+  >
 
-  if (files_and_changes.length === 0) {
-    core.error(`Skipped: no files to review`)
+  if (filesAndChanges.length === 0) {
+    error('Skipped: no files to review')
     return
   }
 
-  const summaries_failed: string[] = []
+  const summariesFailed: string[] = []
 
-  const do_summary = async (
+  const doSummary = async (
     filename: string,
-    file_content: string,
-    file_diff: string
+    fileContent: string,
+    fileDiff: string
   ): Promise<[string, string, boolean] | null> => {
     const ins = inputs.clone()
-    if (file_diff.length === 0) {
-      core.warning(`summarize: file_diff is empty, skip ${filename}`)
-      summaries_failed.push(`${filename} (empty diff)`)
+    if (fileDiff.length === 0) {
+      warning(`summarize: file_diff is empty, skip ${filename}`)
+      summariesFailed.push(`${filename} (empty diff)`)
       return null
     }
 
     ins.filename = filename
 
     // render prompt based on inputs so far
-    let tokens = tokenizer.get_token_count(
-      prompts.render_summarize_file_diff(ins)
-    )
+    let tokens = getTokenCount(prompts.renderSummarizeFileDiff(ins))
 
-    const diff_tokens = tokenizer.get_token_count(file_diff)
-    if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
-      core.info(`summarize: diff tokens exceeds limit, skip ${filename}`)
-      summaries_failed.push(`${filename} (diff tokens exceeds limit)`)
+    const diffTokens = getTokenCount(fileDiff)
+    if (tokens + diffTokens > options.lightTokenLimits.request_tokens) {
+      info(`summarize: diff tokens exceeds limit, skip ${filename}`)
+      summariesFailed.push(`${filename} (diff tokens exceeds limit)`)
       return null
     }
 
-    ins.file_diff = file_diff
-    tokens += file_diff.length
+    ins.fileDiff = fileDiff
+    tokens += fileDiff.length
 
     // optionally pack file_content
-    if (file_content.length > 0) {
+    if (fileContent.length > 0) {
       // count occurrences of $file_content in prompt
-      const file_content_count =
-        prompts.summarize_file_diff.split('$file_content').length - 1
-      const file_content_tokens = tokenizer.get_token_count(file_content)
+      const fileContentCount =
+        prompts.summarizeFileDiff.split('$file_content').length - 1
+      const fileContentTokens = getTokenCount(fileContent)
       if (
-        file_content_count > 0 &&
-        tokens + file_content_tokens * file_content_count <=
-          options.light_token_limits.request_tokens
+        fileContentCount > 0 &&
+        tokens + fileContentTokens * fileContentCount <=
+          options.lightTokenLimits.request_tokens
       ) {
-        tokens += file_content_tokens * file_content_count
-        ins.file_content = file_content
+        tokens += fileContentTokens * fileContentCount
+        ins.fileContent = fileContent
       }
     }
     // summarize content
     try {
-      const [summarize_resp] = await lightBot.chat(
-        prompts.render_summarize_file_diff(ins),
+      const [summarizeResp] = await lightBot.chat(
+        prompts.renderSummarizeFileDiff(ins),
         {}
       )
 
-      if (!summarize_resp) {
-        core.info('summarize: nothing obtained from openai')
-        summaries_failed.push(`${filename} (nothing obtained from openai)`)
+      if (summarizeResp === '') {
+        info('summarize: nothing obtained from openai')
+        summariesFailed.push(`${filename} (nothing obtained from openai)`)
         return null
       } else {
         // parse the comment to look for triage classification
         // Format is : [TRIAGE]: <NEEDS_REVIEW or APPROVED>
         // if the change needs review return true, else false
         const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/
-        const triageMatch = summarize_resp.match(triageRegex)
+        const triageMatch = summarizeResp.match(triageRegex)
 
-        if (triageMatch) {
+        if (triageMatch != null) {
           const triage = triageMatch[1]
-          const needs_review = triage === 'NEEDS_REVIEW' ? true : false
+          const needsReview = triage === 'NEEDS_REVIEW'
 
           // remove this line from the comment
-          const summary = summarize_resp.replace(triageRegex, '').trim()
-          core.info(`filename: ${filename}, triage: ${triage}`)
-          return [filename, summary, needs_review]
+          const summary = summarizeResp.replace(triageRegex, '').trim()
+          info(`filename: ${filename}, triage: ${triage}`)
+          return [filename, summary, needsReview]
         } else {
-          return [filename, summarize_resp, true]
+          return [filename, summarizeResp, true]
         }
       }
-    } catch (error) {
-      core.warning(`summarize: error from openai: ${error}`)
-      summaries_failed.push(`${filename} (error from openai: ${error})`)
+    } catch (e: any) {
+      warning(`summarize: error from openai: ${e as string}`)
+      summariesFailed.push(`${filename} (error from openai: ${e as string})})`)
       return null
     }
   }
 
   const summaryPromises = []
-  const skipped_files = []
-  for (const [filename, file_content, file_diff] of files_and_changes) {
-    if (options.max_files <= 0 || summaryPromises.length < options.max_files) {
+  const skippedFiles = []
+  for (const [filename, fileContent, fileDiff] of filesAndChanges) {
+    if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
       summaryPromises.push(
-        openai_concurrency_limit(async () =>
-          do_summary(filename, file_content, file_diff)
+        openaiConcurrencyLimit(
+          async () => await doSummary(filename, fileContent, fileDiff)
         )
       )
     } else {
-      skipped_files.push(filename)
+      skippedFiles.push(filename)
     }
   }
 
   const summaries = (await Promise.all(summaryPromises)).filter(
     summary => summary !== null
-  ) as [string, string, boolean][]
+  ) as Array<[string, string, boolean]>
 
   if (summaries.length > 0) {
     // join summaries into one in the batches of 20
     // and ask the bot to summarize the summaries
     for (let i = 0; i < summaries.length; i += 20) {
-      const summaries_batch = summaries.slice(i, i + 20)
-      for (const [filename, summary] of summaries_batch) {
-        inputs.raw_summary += `---
+      const summariesBatch = summaries.slice(i, i + 20)
+      for (const [filename, summary] of summariesBatch) {
+        inputs.rawSummary += `---
 ${filename}: ${summary}
 `
       }
       // ask chatgpt to summarize the summaries
-      const [summarize_resp] = await heavyBot.chat(
-        prompts.render_summarize_changesets(inputs),
+      const [summarizeResp] = await heavyBot.chat(
+        prompts.renderSummarizeChangesets(inputs),
         {}
       )
-      if (!summarize_resp) {
-        core.warning('summarize: nothing obtained from openai')
+      if (summarizeResp === '') {
+        warning('summarize: nothing obtained from openai')
       } else {
-        inputs.raw_summary = summarize_resp
+        inputs.rawSummary = summarizeResp
       }
     }
   }
 
-  let next_summarize_ids = {}
+  let nextSummarizeIds = {}
 
   // final summary
-  const [summarize_final_response, summarize_final_response_ids] =
-    await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids)
-  if (!summarize_final_response) {
-    core.info('summarize: nothing obtained from openai')
+  const [summarizeFinalResponse, summarizeFinalResponseIds] =
+    await heavyBot.chat(prompts.renderSummarize(inputs), nextSummarizeIds)
+  if (summarizeFinalResponse === '') {
+    info('summarize: nothing obtained from openai')
   } else {
     // final release notes
-    next_summarize_ids = summarize_final_response_ids
-    const [release_notes_response, release_notes_ids] = await heavyBot.chat(
-      prompts.render_summarize_release_notes(inputs),
-      next_summarize_ids
+    nextSummarizeIds = summarizeFinalResponseIds
+    const [releaseNotesResponse, releaseNotesIds] = await heavyBot.chat(
+      prompts.renderSummarizeReleaseNotes(inputs),
+      nextSummarizeIds
     )
-    if (!release_notes_response) {
-      core.info('release notes: nothing obtained from openai')
+    if (releaseNotesResponse === '') {
+      info('release notes: nothing obtained from openai')
     } else {
-      next_summarize_ids = release_notes_ids
-      inputs.release_notes = release_notes_response.replace(/(^|\n)> .*/g, '')
+      nextSummarizeIds = releaseNotesIds
+      inputs.releaseNotes = releaseNotesResponse.replace(/(^|\n)> .*/g, '')
       let message = '### Summary by OpenAI\n\n'
-      message += release_notes_response
-      commenter.update_description(context.payload.pull_request.number, message)
+      message += releaseNotesResponse
+      try {
+        await commenter.updateDescription(
+          context.payload.pull_request.number,
+          message
+        )
+      } catch (e: any) {
+        warning(`release notes: error from github: ${e.message as string}`)
+      }
     }
   }
 
-  let summarize_comment = `${summarize_final_response}
+  let summarizeComment = `${summarizeFinalResponse}
 ${RAW_SUMMARY_TAG}
 <!--
-${inputs.raw_summary}
+${inputs.rawSummary}
 -->
 ${RAW_SUMMARY_TAG_END}
 ${EXTRA_CONTENT_TAG}
@@ -413,14 +419,14 @@ ${EXTRA_CONTENT_TAG}
 ---
 
 ${
-  filter_ignored_files.length > 0
+  filterIgnoredFiles.length > 0
     ? `
 <details>
-<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
 
 ### Ignored files
 
-* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
+* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
 
 </details>
 `
@@ -428,16 +434,16 @@ ${
 }
 
 ${
-  skipped_files.length > 0
+  skippedFiles.length > 0
     ? `
 <details>
 <summary>Files not processed due to max files limit (${
-        skipped_files.length
+        skippedFiles.length
       })</summary>
 
 ### Not processed
 
-* ${skipped_files.join('\n* ')}
+* ${skippedFiles.join('\n* ')}
 
 </details>
 `
@@ -445,16 +451,16 @@ ${
 }
 
 ${
-  summaries_failed.length > 0
+  summariesFailed.length > 0
     ? `
 <details>
 <summary>Files not summarized due to errors (${
-        summaries_failed.length
+        summariesFailed.length
       })</summary>
 
 ### Failed to summarize
 
-* ${summaries_failed.join('\n* ')}
+* ${summariesFailed.join('\n* ')}
 
 </details>
 `
@@ -462,116 +468,116 @@ ${
 }
 `
 
-  if (options.summary_only !== true) {
-    const files_and_changes_review = files_and_changes.filter(([filename]) => {
-      const needs_review =
+  if (!options.summaryOnly) {
+    const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
+      const needsReview =
         summaries.find(
           ([summaryFilename]) => summaryFilename === filename
         )?.[2] ?? true
-      return needs_review
+      return needsReview
     })
 
-    const reviews_skipped = files_and_changes
+    const reviewsSkipped = filesAndChanges
       .filter(
         ([filename]) =>
-          !files_and_changes_review.some(
+          !filesAndChangesReview.some(
             ([reviewFilename]) => reviewFilename === filename
           )
       )
       .map(([filename]) => filename)
 
     // failed reviews array
-    const reviews_failed: string[] = []
-    const do_review = async (
+    const reviewsFailed: string[] = []
+    const doReview = async (
       filename: string,
-      file_content: string,
-      patches: [number, number, string][]
+      fileContent: string,
+      patches: Array<[number, number, string]>
     ): Promise<void> => {
       // make a copy of inputs
       const ins: Inputs = inputs.clone()
       ins.filename = filename
 
       // calculate tokens based on inputs so far
-      let tokens = tokenizer.get_token_count(
-        prompts.render_review_file_diff(ins)
-      )
+      let tokens = getTokenCount(prompts.renderReviewFileDiff(ins))
       // loop to calculate total patch tokens
-      let patches_to_pack = 0
+      let patchesToPack = 0
       for (const [, , patch] of patches) {
-        const patch_tokens = tokenizer.get_token_count(patch)
-        if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
+        const patchTokens = getTokenCount(patch)
+        if (tokens + patchTokens > options.heavyTokenLimits.request_tokens) {
           break
         }
-        tokens += patch_tokens
-        patches_to_pack += 1
+        tokens += patchTokens
+        patchesToPack += 1
       }
 
       // try packing file_content into this request
-      const file_content_count =
-        prompts.review_file_diff.split('$file_content').length - 1
-      const file_content_tokens = tokenizer.get_token_count(file_content)
+      const fileContentCount =
+        prompts.reviewFileDiff.split('$file_content').length - 1
+      const fileContentTokens = getTokenCount(fileContent)
       if (
-        file_content_count > 0 &&
-        tokens + file_content_tokens * file_content_count <=
-          options.heavy_token_limits.request_tokens
+        fileContentCount > 0 &&
+        tokens + fileContentTokens * fileContentCount <=
+          options.heavyTokenLimits.request_tokens
       ) {
-        ins.file_content = file_content
-        tokens += file_content_tokens * file_content_count
+        ins.fileContent = fileContent
+        tokens += fileContentTokens * fileContentCount
       }
 
-      let patches_packed = 0
-      for (const [start_line, end_line, patch] of patches) {
-        if (!context.payload.pull_request) {
-          core.warning('No pull request found, skipping.')
+      let patchesPacked = 0
+      for (const [startLine, endLine, patch] of patches) {
+        if (context.payload.pull_request == null) {
+          warning('No pull request found, skipping.')
           continue
         }
         // see if we can pack more patches into this request
-        if (patches_packed >= patches_to_pack) {
-          core.info(
-            `unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`
+        if (patchesPacked >= patchesToPack) {
+          info(
+            `unable to pack more patches into this request, packed: ${patchesPacked}, to pack: ${patchesToPack}`
           )
           break
         }
-        patches_packed += 1
+        patchesPacked += 1
 
-        let comment_chain = ''
+        let commentChain = ''
         try {
-          const all_chains = await commenter.get_comment_chains_within_range(
+          const allChains = await commenter.getCommentChainsWithinRange(
             context.payload.pull_request.number,
             filename,
-            start_line,
-            end_line,
+            startLine,
+            endLine,
             COMMENT_REPLY_TAG
           )
 
-          if (all_chains.length > 0) {
-            core.info(`Found comment chains: ${all_chains} for ${filename}`)
-            comment_chain = all_chains
+          if (allChains.length > 0) {
+            info(`Found comment chains: ${allChains} for ${filename}`)
+            commentChain = allChains
           }
         } catch (e: any) {
-          core.warning(
-            `Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`
+          warning(
+            `Failed to get comments: ${e as string}, skipping. backtrace: ${
+              e.stack as string
+            }`
           )
         }
         // try packing comment_chain into this request
-        const comment_chain_tokens = tokenizer.get_token_count(comment_chain)
+        const commentChainTokens = getTokenCount(commentChain)
         if (
-          tokens + comment_chain_tokens >
-          options.heavy_token_limits.request_tokens
+          tokens + commentChainTokens >
+          options.heavyTokenLimits.request_tokens
         ) {
-          comment_chain = ''
+          commentChain = ''
         } else {
-          tokens += comment_chain_tokens
+          tokens += commentChainTokens
         }
 
         ins.patches += `
 ${patch}
 `
-        if (comment_chain !== '') {
+        if (commentChain !== '') {
           ins.patches += `
 ---comment_chains---
 \`\`\`
-${comment_chain}
+${commentChain}
 \`\`\`
 `
         }
@@ -584,12 +590,12 @@ ${comment_chain}
       // perform review
       try {
         const [response] = await heavyBot.chat(
-          prompts.render_review_file_diff(ins),
+          prompts.renderReviewFileDiff(ins),
           {}
         )
-        if (!response) {
-          core.info('review: nothing obtained from openai')
-          reviews_failed.push(`${filename} (no response)`)
+        if (response === '') {
+          info('review: nothing obtained from openai')
+          reviewsFailed.push(`${filename} (no response)`)
           return
         }
         // parse review
@@ -597,65 +603,64 @@ ${comment_chain}
         for (const review of reviews) {
           // check for LGTM
           if (
-            !options.review_comment_lgtm &&
+            !options.reviewCommentLGTM &&
             (review.comment.includes('LGTM') ||
               review.comment.includes('looks good to me'))
           ) {
             continue
           }
-          if (!context.payload.pull_request) {
-            core.warning('No pull request found, skipping.')
+          if (context.payload.pull_request == null) {
+            warning('No pull request found, skipping.')
             continue
           }
 
           try {
-            await commenter.buffer_review_comment(
+            await commenter.bufferReviewComment(
               filename,
-              review.start_line,
-              review.end_line,
+              review.startLine,
+              review.endLine,
               `${review.comment}`
             )
           } catch (e: any) {
-            reviews_failed.push(`${filename} comment failed (${e})`)
+            reviewsFailed.push(`${filename} comment failed (${e as string})`)
           }
         }
       } catch (e: any) {
-        core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`)
-        reviews_failed.push(`${filename} (${e})`)
+        warning(
+          `Failed to review: ${e as string}, skipping. backtrace: ${
+            e.stack as string
+          }`
+        )
+        reviewsFailed.push(`${filename} (${e as string})`)
       }
     }
 
     const reviewPromises = []
-    for (const [
-      filename,
-      file_content,
-      ,
-      patches
-    ] of files_and_changes_review) {
-      if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
+    for (const [filename, fileContent, , patches] of filesAndChangesReview) {
+      if (options.maxFiles <= 0 || reviewPromises.length < options.maxFiles) {
         reviewPromises.push(
-          openai_concurrency_limit(async () =>
-            do_review(filename, file_content, patches)
-          )
+          openaiConcurrencyLimit(async () => {
+            await doReview(filename, fileContent, patches)
+          })
         )
       } else {
-        skipped_files.push(filename)
+        skippedFiles.push(filename)
       }
     }
 
     await Promise.all(reviewPromises)
 
-    summarize_comment += `
+    summarizeComment += `
 ${
-  reviews_failed.length > 0
+  reviewsFailed.length > 0
     ? `<details>
 <summary>Files not reviewed due to errors in this run (${
-        reviews_failed.length
+        reviewsFailed.length
       })</summary>
 
 ### Failed to review
 
-* ${reviews_failed.join('\n* ')}
+* ${reviewsFailed.join('\n* ')}
 
 </details>
 `
@@ -663,15 +668,15 @@ ${
 }
 
 ${
-  reviews_skipped.length > 0
+  reviewsSkipped.length > 0
     ? `<details>
 <summary>Files not reviewed due to simple changes (${
-        reviews_skipped.length
+        reviewsSkipped.length
       })</summary>
 
 ### Skipped review
 
-* ${reviews_skipped.join('\n* ')}
+* ${reviewsSkipped.join('\n* ')}
 
 </details>
 `
@@ -679,24 +684,24 @@ ${
 }
 `
     // add existing_comment_ids_block with latest head sha
-    summarize_comment += `\n${addReviewedCommitId(
-      existing_commit_ids_block,
+    summarizeComment += `\n${commenter.addReviewedCommitId(
+      existingCommitIdsBlock,
       context.payload.pull_request.head.sha
     )}`
   }
 
   // post the final summary comment
-  await commenter.comment(`${summarize_comment}`, SUMMARIZE_TAG, 'replace')
+  await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
 
   // post the review
-  await commenter.submit_review(
+  await commenter.submitReview(
     context.payload.pull_request.number,
     commits[commits.length - 1].sha
   )
 }
 
-const split_patch = (patch: string | null | undefined): string[] => {
-  if (!patch) {
+const splitPatch = (patch: string | null | undefined): string[] => {
+  if (patch == null) {
     return []
   }
 
@@ -719,27 +724,27 @@ const split_patch = (patch: string | null | undefined): string[] => {
   return result
 }
 
-const patch_start_end_line = (
+const patchStartEndLine = (
   patch: string
 ): {
-  old_hunk: {start_line: number; end_line: number}
-  new_hunk: {start_line: number; end_line: number}
+  oldHunk: {startLine: number; endLine: number}
+  newHunk: {startLine: number; endLine: number}
 } | null => {
   const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm
   const match = pattern.exec(patch)
-  if (match) {
-    const old_begin = parseInt(match[2])
-    const old_diff = parseInt(match[3])
-    const new_begin = parseInt(match[4])
-    const new_diff = parseInt(match[5])
+  if (match != null) {
+    const oldBegin = parseInt(match[2])
+    const oldDiff = parseInt(match[3])
+    const newBegin = parseInt(match[4])
+    const newDiff = parseInt(match[5])
     return {
-      old_hunk: {
-        start_line: old_begin,
-        end_line: old_begin + old_diff - 1
+      oldHunk: {
+        startLine: oldBegin,
+        endLine: oldBegin + oldDiff - 1
       },
-      new_hunk: {
-        start_line: new_begin,
-        end_line: new_begin + new_diff - 1
+      newHunk: {
+        startLine: newBegin,
+        endLine: newBegin + newDiff - 1
       }
     }
   } else {
@@ -747,19 +752,19 @@ const patch_start_end_line = (
   }
 }
 
-const parse_patch = (
+const parsePatch = (
   patch: string
-): {old_hunk: string; new_hunk: string} | null => {
-  const hunkInfo = patch_start_end_line(patch)
-  if (!hunkInfo) {
+): {oldHunk: string; newHunk: string} | null => {
+  const hunkInfo = patchStartEndLine(patch)
+  if (hunkInfo == null) {
     return null
   }
 
-  const old_hunk_lines: string[] = []
-  const new_hunk_lines: string[] = []
+  const oldHunkLines: string[] = []
+  const newHunkLines: string[] = []
 
-  //let old_line = hunkInfo.old_hunk.start_line
-  let new_line = hunkInfo.new_hunk.start_line
+  // let old_line = hunkInfo.old_hunk.start_line
+  let newLine = hunkInfo.newHunk.startLine
 
   const lines = patch.split('\n').slice(1) // Skip the @@ line
 
@@ -770,34 +775,34 @@ const parse_patch = (
 
   for (const line of lines) {
     if (line.startsWith('-')) {
-      old_hunk_lines.push(`${line.substring(1)}`)
-      //old_line++
+      oldHunkLines.push(`${line.substring(1)}`)
+      // old_line++
     } else if (line.startsWith('+')) {
-      new_hunk_lines.push(`${new_line}: ${line.substring(1)}`)
-      new_line++
+      newHunkLines.push(`${newLine}: ${line.substring(1)}`)
+      newLine++
     } else {
-      old_hunk_lines.push(`${line}`)
-      new_hunk_lines.push(`${new_line}: ${line}`)
-      //old_line++
-      new_line++
+      oldHunkLines.push(`${line}`)
+      newHunkLines.push(`${newLine}: ${line}`)
+      // old_line++
+      newLine++
     }
   }
 
   return {
-    old_hunk: old_hunk_lines.join('\n'),
-    new_hunk: new_hunk_lines.join('\n')
+    oldHunk: oldHunkLines.join('\n'),
+    newHunk: newHunkLines.join('\n')
   }
 }
 
 interface Review {
-  start_line: number
-  end_line: number
+  startLine: number
+  endLine: number
   comment: string
 }
 
 function parseReview(
   response: string,
-  patches: [number, number, string][],
+  patches: Array<[number, number, string]>,
   debug = false
 ): Review[] {
   const reviews: Review[] = []
@@ -813,46 +818,46 @@ function parseReview(
     if (currentStartLine !== null && currentEndLine !== null) {
       const sanitizedComment = sanitizeComment(currentComment.trim())
       const review: Review = {
-        start_line: currentStartLine,
-        end_line: currentEndLine,
+        startLine: currentStartLine,
+        endLine: currentEndLine,
         comment: sanitizedComment.trim()
       }
 
-      let within_patch = false
-      let best_patch_start_line = patches[0][0]
-      let best_patch_end_line = patches[0][1]
-      let max_intersection = 0
+      let withinPatch = false
+      let bestPatchStartLine = patches[0][0]
+      let bestPatchEndLine = patches[0][1]
+      let maxIntersection = 0
 
-      for (const [start_line, end_line] of patches) {
-        const intersection_start = Math.max(review.start_line, start_line)
-        const intersection_end = Math.min(review.end_line, end_line)
-        const intersection_length = Math.max(
+      for (const [startLine, endLine] of patches) {
+        const intersectionStart = Math.max(review.startLine, startLine)
+        const intersectionEnd = Math.min(review.endLine, endLine)
+        const intersectionLength = Math.max(
           0,
-          intersection_end - intersection_start + 1
+          intersectionEnd - intersectionStart + 1
         )
 
-        if (intersection_length > max_intersection) {
-          max_intersection = intersection_length
-          best_patch_start_line = start_line
-          best_patch_end_line = end_line
-          within_patch =
-            intersection_length === review.end_line - review.start_line + 1
+        if (intersectionLength > maxIntersection) {
+          maxIntersection = intersectionLength
+          bestPatchStartLine = startLine
+          bestPatchEndLine = endLine
+          withinPatch =
+            intersectionLength === review.endLine - review.startLine + 1
         }
 
-        if (within_patch) break
+        if (withinPatch) break
       }
 
-      if (!within_patch) {
-        review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.start_line}-${review.end_line}]
+      if (!withinPatch) {
+        review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.startLine}-${review.endLine}]
 
 ${review.comment}`
-        review.start_line = best_patch_start_line
-        review.end_line = best_patch_end_line
+        review.startLine = bestPatchStartLine
+        review.endLine = bestPatchEndLine
       }
 
       reviews.push(review)
 
-      core.info(
+      info(
         `Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`
       )
     }
@@ -899,15 +904,13 @@ ${review.comment}`
   for (const line of lines) {
     const lineNumberRangeMatch = line.match(lineNumberRangeRegex)
 
-    if (lineNumberRangeMatch) {
+    if (lineNumberRangeMatch != null) {
       storeReview()
       currentStartLine = parseInt(lineNumberRangeMatch[1], 10)
       currentEndLine = parseInt(lineNumberRangeMatch[2], 10)
       currentComment = ''
       if (debug) {
-        core.info(
-          `Found line number range: ${currentStartLine}-${currentEndLine}`
-        )
+        info(`Found line number range: ${currentStartLine}-${currentEndLine}`)
       }
       continue
     }
@@ -918,7 +921,7 @@ ${review.comment}`
       currentEndLine = null
       currentComment = ''
       if (debug) {
-        core.info('Found comment separator')
+        info('Found comment separator')
       }
       continue
     }
@@ -931,85 +934,4 @@ ${review.comment}`
   storeReview()
 
   return reviews
-}
-
-const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->'
-const commit_ids_marker_end = '<!-- commit_ids_reviewed_end -->'
-
-// function that takes a comment body and returns the list of commit ids that have been reviewed
-// commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
-// <!-- [commit_id] -->
-function getReviewedCommitIds(commentBody: string): string[] {
-  const start = commentBody.indexOf(commit_ids_marker_start)
-  const end = commentBody.indexOf(commit_ids_marker_end)
-  if (start === -1 || end === -1) {
-    return []
-  }
-  const ids = commentBody.substring(start + commit_ids_marker_start.length, end)
-  // remove the <!-- and --> markers from each id and extract the id and remove empty strings
-  return ids
-    .split('<!--')
-    .map(id => id.replace('-->', '').trim())
-    .filter(id => id !== '')
-}
-
-// get review commit ids comment block from the body as a string
-// including markers
-function getReviewedCommitIdsBlock(commentBody: string): string {
-  const start = commentBody.indexOf(commit_ids_marker_start)
-  const end = commentBody.indexOf(commit_ids_marker_end)
-  if (start === -1 || end === -1) {
-    return ''
-  }
-  return commentBody.substring(start, end + commit_ids_marker_end.length)
-}
-
-// add a commit id to the list of reviewed commit ids
-// if the marker doesn't exist, add it
-function addReviewedCommitId(commentBody: string, commitId: string): string {
-  const start = commentBody.indexOf(commit_ids_marker_start)
-  const end = commentBody.indexOf(commit_ids_marker_end)
-  if (start === -1 || end === -1) {
-    return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`
-  }
-  const ids = commentBody.substring(start + commit_ids_marker_start.length, end)
-  return `${commentBody.substring(
-    0,
-    start + commit_ids_marker_start.length
-  )}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`
-}
-
-// given a list of commit ids provide the highest commit id that has been reviewed
-function getHighestReviewedCommitId(
-  commitIds: string[],
-  reviewedCommitIds: string[]
-): string {
-  for (let i = commitIds.length - 1; i >= 0; i--) {
-    if (reviewedCommitIds.includes(commitIds[i])) {
-      return commitIds[i]
-    }
-  }
-  return ''
-}
-
-async function getAllCommitIds(): Promise<string[]> {
-  const allCommits = []
-  let page = 1
-  let commits
-  if (context && context.payload && context.payload.pull_request) {
-    do {
-      commits = await octokit.pulls.listCommits({
-        owner: repo.owner,
-        repo: repo.repo,
-        pull_number: context.payload.pull_request.number,
-        per_page: 100,
-        page
-      })
-
-      allCommits.push(...commits.data.map(commit => commit.sha))
-      page++
-    } while (commits.data.length > 0)
-  }
-
-  return allCommits
 }
