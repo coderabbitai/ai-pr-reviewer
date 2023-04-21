@@ -1,84 +1,84 @@
-import * as core from '@actions/core'
+import {info} from '@actions/core'
 import {minimatch} from 'minimatch'
-import {TokenLimits} from './limits.js'
+import {TokenLimits} from './limits'
 
 export class Options {
   debug: boolean
-  summary_only: boolean
-  max_files: number
-  review_comment_lgtm: boolean
-  path_filters: PathFilter
-  system_message: string
-  openai_light_model: string
-  openai_heavy_model: string
-  openai_model_temperature: number
-  openai_retries: number
-  openai_timeout_ms: number
-  openai_concurrency_limit: number
-  light_token_limits: TokenLimits
-  heavy_token_limits: TokenLimits
+  summaryOnly: boolean
+  maxFiles: number
+  reviewCommentLGTM: boolean
+  pathFilters: PathFilter
+  systemMessage: string
+  openaiLightModel: string
+  openaiHeavyModel: string
+  openaiModelTemperature: number
+  openaiRetries: number
+  openaiTimeoutMS: number
+  openaiConcurrencyLimit: number
+  lightTokenLimits: TokenLimits
+  heavyTokenLimits: TokenLimits
 
   constructor(
     debug: boolean,
-    summary_only: boolean,
-    max_files = '0',
-    review_comment_lgtm = false,
-    path_filters: string[] | null = null,
-    system_message = '',
-    openai_light_model = 'gpt-3.5-turbo',
-    openai_heavy_model = 'gpt-3.5-turbo',
-    openai_model_temperature = '0.0',
-    openai_retries = '3',
-    openai_timeout_ms = '120000',
-    openai_concurrency_limit = '4'
+    summaryOnly: boolean,
+    maxFiles = '0',
+    reviewCommentLGTM = false,
+    pathFilters: string[] | null = null,
+    systemMessage = '',
+    openaiLightModel = 'gpt-3.5-turbo',
+    openaiHeavyModel = 'gpt-3.5-turbo',
+    openaiModelTemperature = '0.0',
+    openaiRetries = '3',
+    openaiTimeoutMS = '120000',
+    openaiConcurrencyLimit = '4'
   ) {
     this.debug = debug
-    this.summary_only = summary_only
-    this.max_files = parseInt(max_files)
-    this.review_comment_lgtm = review_comment_lgtm
-    this.path_filters = new PathFilter(path_filters)
-    this.system_message = system_message
-    this.openai_light_model = openai_light_model
-    this.openai_heavy_model = openai_heavy_model
-    this.openai_model_temperature = parseFloat(openai_model_temperature)
-    this.openai_retries = parseInt(openai_retries)
-    this.openai_timeout_ms = parseInt(openai_timeout_ms)
-    this.openai_concurrency_limit = parseInt(openai_concurrency_limit)
-    this.light_token_limits = new TokenLimits(openai_light_model)
-    this.heavy_token_limits = new TokenLimits(openai_heavy_model)
+    this.summaryOnly = summaryOnly
+    this.maxFiles = parseInt(maxFiles)
+    this.reviewCommentLGTM = reviewCommentLGTM
+    this.pathFilters = new PathFilter(pathFilters)
+    this.systemMessage = systemMessage
+    this.openaiLightModel = openaiLightModel
+    this.openaiHeavyModel = openaiHeavyModel
+    this.openaiModelTemperature = parseFloat(openaiModelTemperature)
+    this.openaiRetries = parseInt(openaiRetries)
+    this.openaiTimeoutMS = parseInt(openaiTimeoutMS)
+    this.openaiConcurrencyLimit = parseInt(openaiConcurrencyLimit)
+    this.lightTokenLimits = new TokenLimits(openaiLightModel)
+    this.heavyTokenLimits = new TokenLimits(openaiHeavyModel)
   }
 
   // print all options using core.info
   print(): void {
-    core.info(`debug: ${this.debug}`)
-    core.info(`summary_only: ${this.summary_only}`)
-    core.info(`max_files: ${this.max_files}`)
-    core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`)
-    core.info(`path_filters: ${this.path_filters}`)
-    core.info(`system_message: ${this.system_message}`)
-    core.info(`openai_light_model: ${this.openai_light_model}`)
-    core.info(`openai_heavy_model: ${this.openai_heavy_model}`)
-    core.info(`openai_model_temperature: ${this.openai_model_temperature}`)
-    core.info(`openai_retries: ${this.openai_retries}`)
-    core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`)
-    core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`)
-    core.info(`summary_token_limits: ${this.light_token_limits.string()}`)
-    core.info(`review_token_limits: ${this.heavy_token_limits.string()}`)
+    info(`debug: ${this.debug}`)
+    info(`summary_only: ${this.summaryOnly}`)
+    info(`max_files: ${this.maxFiles}`)
+    info(`review_comment_lgtm: ${this.reviewCommentLGTM}`)
+    info(`path_filters: ${this.pathFilters}`)
+    info(`system_message: ${this.systemMessage}`)
+    info(`openai_light_model: ${this.openaiLightModel}`)
+    info(`openai_heavy_model: ${this.openaiHeavyModel}`)
+    info(`openai_model_temperature: ${this.openaiModelTemperature}`)
+    info(`openai_retries: ${this.openaiRetries}`)
+    info(`openai_timeout_ms: ${this.openaiTimeoutMS}`)
+    info(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`)
+    info(`summary_token_limits: ${this.lightTokenLimits.string()}`)
+    info(`review_token_limits: ${this.heavyTokenLimits.string()}`)
   }
 
-  check_path(path: string): boolean {
-    const ok = this.path_filters.check(path)
-    core.info(`checking path: ${path} => ${ok}`)
+  checkPath(path: string): boolean {
+    const ok = this.pathFilters.check(path)
+    info(`checking path: ${path} => ${ok}`)
     return ok
   }
 }
 
 export class PathFilter {
-  private rules: [string /* rule */, boolean /* exclude */][]
+  private readonly rules: Array<[string /* rule */, boolean /* exclude */]>
 
   constructor(rules: string[] | null = null) {
     this.rules = []
-    if (rules) {
+    if (rules != null) {
       for (const rule of rules) {
         const trimmed = rule?.trim()
         if (trimmed) {
@@ -120,13 +120,14 @@ export class PathFilter {
 
 export class OpenAIOptions {
   model: string
-  token_limits: TokenLimits
+  tokenLimits: TokenLimits
 
-  constructor(
-    model = 'gpt-3.5-turbo',
-    token_limits: TokenLimits | null = null
-  ) {
+  constructor(model = 'gpt-3.5-turbo', tokenLimits: TokenLimits | null = null) {
     this.model = model
-    this.token_limits = token_limits || new TokenLimits(model)
+    if (tokenLimits != null) {
+      this.tokenLimits = tokenLimits
+    } else {
+      this.tokenLimits = new TokenLimits(model)
+    }
   }
 }

@@ -1,10 +1,10 @@
-import {Inputs} from './inputs.js'
+import {type Inputs} from './inputs'
 
 export class Prompts {
   summarize: string
-  summarize_release_notes: string
+  summarizeReleaseNotes: string
 
-  summarize_file_diff = `GitHub pull request title: 
+  summarizeFileDiff = `GitHub pull request title: 
 \`$title\` 
 
 Description:
@@ -42,7 +42,7 @@ You must follow the format below strictly for triaging the diff and
 do not add any additional text in your response:
 [TRIAGE]: <NEEDS_REVIEW or APPROVED>
 `
-  summarize_changesets = `Provided below are changesets in this pull request. Changesets 
+  summarizeChangesets = `Provided below are changesets in this pull request. Changesets 
 are in chronlogical order and new changesets are appended to the
 end of the list. The format consists of filename(s) and the summary 
 of changes for those files. There is a separator between each changeset.
@@ -109,7 +109,7 @@ The comment/request that you need to directly reply to:
 $comment
 \`\`\`
 `
-  review_file_diff = `GitHub pull request title: 
+  reviewFileDiff = `GitHub pull request title: 
 \`$title\` 
 
 Description:
@@ -244,32 +244,32 @@ Changes for review are below:
 $patches
 `
 
-  constructor(summarize = '', summarize_release_notes = '') {
+  constructor(summarize = '', summarizeReleaseNotes = '') {
     this.summarize = summarize
-    this.summarize_release_notes = summarize_release_notes
+    this.summarizeReleaseNotes = summarizeReleaseNotes
   }
 
-  render_summarize_file_diff(inputs: Inputs): string {
-    return inputs.render(this.summarize_file_diff)
+  renderSummarizeFileDiff(inputs: Inputs): string {
+    return inputs.render(this.summarizeFileDiff)
   }
 
-  render_summarize_changesets(inputs: Inputs): string {
-    return inputs.render(this.summarize_changesets)
+  renderSummarizeChangesets(inputs: Inputs): string {
+    return inputs.render(this.summarizeChangesets)
   }
 
-  render_summarize(inputs: Inputs): string {
+  renderSummarize(inputs: Inputs): string {
     return inputs.render(this.summarize)
   }
 
-  render_summarize_release_notes(inputs: Inputs): string {
-    return inputs.render(this.summarize_release_notes)
+  renderSummarizeReleaseNotes(inputs: Inputs): string {
+    return inputs.render(this.summarizeReleaseNotes)
   }
 
-  render_comment(inputs: Inputs): string {
+  renderComment(inputs: Inputs): string {
     return inputs.render(this.comment)
   }
 
-  render_review_file_diff(inputs: Inputs): string {
-    return inputs.render(this.review_file_diff)
+  renderReviewFileDiff(inputs: Inputs): string {
+    return inputs.render(this.reviewFileDiff)
   }
 }

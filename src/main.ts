@@ -1,32 +1,38 @@
-import * as core from '@actions/core'
-import {Bot} from './bot.js'
-import {OpenAIOptions, Options} from './options.js'
-import {Prompts} from './prompts.js'
-import {handleReviewComment} from './review-comment.js'
-import {codeReview} from './review.js'
+import {
+  getBooleanInput,
+  getInput,
+  getMultilineInput,
+  setFailed,
+  warning
+} from '@actions/core'
+import {Bot} from './bot'
+import {OpenAIOptions, Options} from './options'
+import {Prompts} from './prompts'
+import {codeReview} from './review'
+import {handleReviewComment} from './review-comment'
 
 async function run(): Promise<void> {
   const options: Options = new Options(
-    core.getBooleanInput('debug'),
-    core.getBooleanInput('summary_only'),
-    core.getInput('max_files'),
-    core.getBooleanInput('review_comment_lgtm'),
-    core.getMultilineInput('path_filters'),
-    core.getInput('system_message'),
-    core.getInput('openai_light_model'),
-    core.getInput('openai_heavy_model'),
-    core.getInput('openai_model_temperature'),
-    core.getInput('openai_retries'),
-    core.getInput('openai_timeout_ms'),
-    core.getInput('openai_concurrency_limit')
+    getBooleanInput('debug'),
+    getBooleanInput('summary_only'),
+    getInput('max_files'),
+    getBooleanInput('review_comment_lgtm'),
+    getMultilineInput('path_filters'),
+    getInput('system_message'),
+    getInput('openai_light_model'),
+    getInput('openai_heavy_model'),
+    getInput('openai_model_temperature'),
+    getInput('openai_retries'),
+    getInput('openai_timeout_ms'),
+    getInput('openai_concurrency_limit')
   )
 
   // print options
   options.print()
 
   const prompts: Prompts = new Prompts(
-    core.getInput('summarize'),
-    core.getInput('summarize_release_notes')
+    getInput('summarize'),
+    getInput('summarize_release_notes')
   )
 
   // Create two bots, one for summary and one for review
@@ -35,10 +41,10 @@ async function run(): Promise<void> {
   try {
     lightBot = new Bot(
       options,
-      new OpenAIOptions(options.openai_light_model, options.light_token_limits)
+      new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
     )
   } catch (e: any) {
-    core.warning(
+    warning(
       `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
@@ -48,10 +54,10 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(
       options,
-      new OpenAIOptions(options.openai_heavy_model, options.heavy_token_limits)
+      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
     )
   } catch (e: any) {
-    core.warning(
+    warning(
       `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
@@ -69,25 +75,23 @@ async function run(): Promise<void> {
     ) {
       await handleReviewComment(heavyBot, options, prompts)
     } else {
-      core.warning(
-        'Skipped: this action only works on push events or pull_request'
-      )
+      warning('Skipped: this action only works on push events or pull_request')
     }
   } catch (e: any) {
     if (e instanceof Error) {
-      core.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
+      setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`)
     } else {
-      core.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
+      setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`)
     }
   }
 }
 
 process
   .on('unhandledRejection', (reason, p) => {
-    core.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
+    warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`)
   })
   .on('uncaughtException', (e: any) => {
-    core.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
+    warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
   })
 
 await run()

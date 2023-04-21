@@ -3417,14 +3417,14 @@ class Bot {
         this.options = options;
         if (process.env.OPENAI_API_KEY) {
             this.api = new ChatGPTAPI({
-                systemMessage: options.system_message,
+                systemMessage: options.systemMessage,
                 apiKey: process.env.OPENAI_API_KEY,
                 apiOrg: process.env.OPENAI_API_ORG ?? undefined,
                 debug: options.debug,
-                maxModelTokens: openaiOptions.token_limits.max_tokens,
-                maxResponseTokens: openaiOptions.token_limits.response_tokens,
+                maxModelTokens: openaiOptions.tokenLimits.maxTokens,
+                maxResponseTokens: openaiOptions.tokenLimits.responseTokens,
                 completionParams: {
-                    temperature: options.openai_model_temperature,
+                    temperature: options.openaiModelTemperature,
                     model: openaiOptions.model
                 }
             });
@@ -3441,8 +3441,9 @@ class Bot {
             return res;
         }
         catch (e) {
-            if (e instanceof ChatGPTError)
-                core.warning(`Failed to chat: ${e}, backtrace: ${e.stack}`);
+            if (e instanceof ChatGPTError) {
+                (0,core.warning)(`Failed to chat: ${e}, backtrace: ${e.stack}`);
+            }
             return res;
         }
     };
@@ -3453,46 +3454,47 @@ class Bot {
             return ['', {}];
         }
         let response;
-        if (this.api) {
+        if (this.api != null) {
             const opts = {
-                timeoutMs: this.options.openai_timeout_ms
+                timeoutMs: this.options.openaiTimeoutMS
             };
             if (ids.parentMessageId) {
                 opts.parentMessageId = ids.parentMessageId;
             }
             try {
-                response = await retry(this.api.sendMessage.bind(this.api), [message, opts], this.options.openai_retries);
+                response = await retry(this.api.sendMessage.bind(this.api), [message, opts], this.options.openaiRetries);
             }
             catch (e) {
-                if (e instanceof ChatGPTError)
-                    core.info(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`);
+                if (e instanceof ChatGPTError) {
+                    (0,core.info)(`response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`);
+                }
             }
             const end = Date.now();
-            core.info(`response: ${JSON.stringify(response)}`);
-            core.info(`openai sendMessage (including retries) response time: ${end - start} ms`);
+            (0,core.info)(`response: ${JSON.stringify(response)}`);
+            (0,core.info)(`openai sendMessage (including retries) response time: ${end - start} ms`);
         }
         else {
-            core.setFailed('The OpenAI API is not initialized');
+            (0,core.setFailed)('The OpenAI API is not initialized');
         }
-        let response_text = '';
-        if (response) {
-            response_text = response.text;
+        let responseText = '';
+        if (response != null) {
+            responseText = response.text;
         }
         else {
-            core.warning('openai response is null');
+            (0,core.warning)('openai response is null');
         }
         // remove the prefix "with " in the response
-        if (response_text.startsWith('with ')) {
-            response_text = response_text.substring(5);
+        if (responseText.startsWith('with ')) {
+            responseText = responseText.substring(5);
         }
         if (this.options.debug) {
-            core.info(`openai responses: ${response_text}`);
+            (0,core.info)(`openai responses: ${responseText}`);
         }
-        const new_ids = {
+        const newIds = {
             parentMessageId: response?.id,
             conversationId: response?.conversationId
         };
-        return [response_text, new_ids];
+        return [responseText, newIds];
     };
 }
 
@@ -3512,19 +3514,20 @@ class Bot {
 /* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
 /* harmony export */   "sr": () => (/* binding */ RAW_SUMMARY_TAG)
 /* harmony export */ });
-/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END */
+/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END, COMMIT_ID_TAG, COMMIT_ID_TAG_END */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3258);
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3258);
+
+// eslint-disable-next-line camelcase
 
 
-
+// eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const COMMENT_GREETING = `:robot: OpenAI`;
+const COMMENT_GREETING = ':robot: OpenAI';
 const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
 const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
@@ -3533,20 +3536,22 @@ const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes b
 const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
 const RAW_SUMMARY_TAG = '<!-- This is an auto-generated comment: raw summary by openai -->';
 const RAW_SUMMARY_TAG_END = '<!-- end of auto-generated comment: raw summary by openai -->';
+const COMMIT_ID_TAG = '<!-- commit_ids_reviewed_start -->';
+const COMMIT_ID_TAG_END = '<!-- commit_ids_reviewed_end -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace". Default is "replace".
      */
     async comment(message, tag, mode) {
         let target;
-        if (context.payload.pull_request) {
+        if (context.payload.pull_request != null) {
             target = context.payload.pull_request.number;
         }
-        else if (context.payload.issue) {
+        else if (context.payload.issue != null) {
             target = context.payload.issue.number;
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: context.payload.pull_request and context.payload.issue are both null`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)('Skipped: context.payload.pull_request and context.payload.issue are both null');
             return;
         }
         if (!tag) {
@@ -3564,7 +3569,7 @@ ${tag}`;
             await this.replace(body, tag, target);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unknown mode: ${mode}, use "replace" instead`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Unknown mode: ${mode}, use "replace" instead`);
             await this.replace(body, tag, target);
         }
     }
@@ -3584,7 +3589,7 @@ ${tag}`;
         }
         return content;
     }
-    get_raw_summary(summary) {
+    getRawSummary(summary) {
         const content = this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
         // remove the first and last line
         const lines = content.split('\n');
@@ -3595,60 +3600,45 @@ ${tag}`;
         lines.pop();
         return lines.join('\n');
     }
-    get_description(description) {
+    getDescription(description) {
         return this.removeContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
     }
-    get_release_notes(description) {
-        const release_notes = this.getContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
-        return release_notes.replace(/(^|\n)> .*/g, '');
+    getReleaseNotes(description) {
+        const releaseNotes = this.getContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
+        return releaseNotes.replace(/(^|\n)> .*/g, '');
     }
-    async update_description(pull_number, message) {
+    async updateDescription(pullNumber, message) {
         // add this response to the description field of the PR as release notes by looking
         // for the tag (marker)
         try {
             // get latest description from PR
-            const pr = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.get */ .K.pulls.get({
+            const pr = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.get */ .K.pulls.get({
                 owner: repo.owner,
                 repo: repo.repo,
-                pull_number
+                // eslint-disable-next-line camelcase
+                pull_number: pullNumber
             });
             let body = '';
             if (pr.data.body) {
                 body = pr.data.body;
             }
-            const description = this.get_description(body);
-            // find the tag in the description and replace the content between the tag and the tag_end
-            // if not found, add the tag and the content to the end of the description
-            const tag_index = description.indexOf(DESCRIPTION_TAG);
-            const tag_end_index = description.indexOf(DESCRIPTION_TAG_END);
-            const comment = `${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`;
-            if (tag_index === -1 || tag_end_index === -1) {
-                const new_description = `${description}\n${comment}`;
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    body: new_description
-                });
-            }
-            else {
-                let new_description = description.substring(0, tag_index);
-                new_description += comment;
-                new_description += description.substring(tag_end_index + DESCRIPTION_TAG_END.length);
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
-                    owner: repo.owner,
-                    repo: repo.repo,
-                    pull_number,
-                    body: new_description
-                });
-            }
+            const description = this.getDescription(body);
+            const messageClean = this.removeContentWithinTags(message, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
+            const newDescription = `${description}\n${DESCRIPTION_TAG}\n${messageClean}\n${DESCRIPTION_TAG_END}`;
+            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
+                owner: repo.owner,
+                repo: repo.repo,
+                // eslint-disable-next-line camelcase
+                pull_number: pullNumber,
+                body: newDescription
+            });
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get PR: ${e}, skipping adding release notes to description.`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to get PR: ${e}, skipping adding release notes to description.`);
         }
     }
     reviewCommentsBuffer = [];
-    async buffer_review_comment(path, start_line, end_line, message) {
+    async bufferReviewComment(path, startLine, endLine, message) {
         message = `${COMMENT_GREETING}
 
 ${message}
@@ -3656,25 +3646,26 @@ ${message}
 ${COMMENT_TAG}`;
         this.reviewCommentsBuffer.push({
             path,
-            start_line,
-            end_line,
+            startLine,
+            endLine,
             message
         });
     }
-    async submit_review(pull_number, commit_id) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`);
+    async submitReview(pullNumber, commitId) {
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`);
         try {
             let commentCounter = 0;
             for (const comment of this.reviewCommentsBuffer) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Posting comment: ${comment.message}`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Posting comment: ${comment.message}`);
                 let found = false;
-                const comments = await this.get_comments_at_range(pull_number, comment.path, comment.start_line, comment.end_line);
+                const comments = await this.getCommentsAtRange(pullNumber, comment.path, comment.startLine, comment.endLine);
                 for (const c of comments) {
                     if (c.body.includes(COMMENT_TAG)) {
-                        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Updating review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
-                        await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
+                        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
+                        await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
                             owner: repo.owner,
                             repo: repo.repo,
+                            // eslint-disable-next-line camelcase
                             comment_id: c.id,
                             body: comment.message
                         });
@@ -3683,32 +3674,36 @@ ${COMMENT_TAG}`;
                     }
                 }
                 if (!found) {
-                    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`);
+                    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
                     const commentData = {
                         owner: repo.owner,
                         repo: repo.repo,
-                        pull_number,
-                        commit_id,
+                        // eslint-disable-next-line camelcase
+                        pull_number: pullNumber,
+                        // eslint-disable-next-line camelcase
+                        commit_id: commitId,
                         body: comment.message,
                         path: comment.path,
-                        line: comment.end_line
+                        line: comment.endLine
                     };
-                    if (comment.start_line !== comment.end_line) {
+                    if (comment.startLine !== comment.endLine) {
+                        // eslint-disable-next-line camelcase
                         commentData.start_side = 'RIGHT';
-                        commentData.start_line = comment.start_line;
+                        // eslint-disable-next-line camelcase
+                        commentData.start_line = comment.startLine;
                     }
-                    await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment(commentData);
+                    await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment(commentData);
                 }
                 commentCounter++;
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
             }
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to submit review: ${e}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to submit review: ${e}`);
             throw e;
         }
     }
-    async review_comment_reply(pull_number, top_level_comment, message) {
+    async reviewCommentReply(pullNumber, topLevelComment, message) {
         const reply = `${COMMENT_GREETING}
 
 ${message}
@@ -3717,173 +3712,182 @@ ${COMMENT_REPLY_TAG}
 `;
         try {
             // Post the reply to the user comment
-            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
+            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
                 owner: repo.owner,
                 repo: repo.repo,
-                pull_number,
+                // eslint-disable-next-line camelcase
+                pull_number: pullNumber,
                 body: reply,
-                comment_id: top_level_comment.id
+                // eslint-disable-next-line camelcase
+                comment_id: topLevelComment.id
             });
         }
         catch (error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment ${error}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to reply to the top-level comment ${error}`);
             try {
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReplyForReviewComment */ .K.pulls.createReplyForReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
-                    pull_number,
+                    // eslint-disable-next-line camelcase
+                    pull_number: pullNumber,
                     body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
-                    comment_id: top_level_comment.id
+                    // eslint-disable-next-line camelcase
+                    comment_id: topLevelComment.id
                 });
             }
             catch (e) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to reply to the top-level comment ${e}`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to reply to the top-level comment ${e}`);
             }
         }
         try {
-            if (top_level_comment.body.includes(COMMENT_TAG)) {
+            if (topLevelComment.body.includes(COMMENT_TAG)) {
                 // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-                const newBody = top_level_comment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG);
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
+                const newBody = topLevelComment.body.replace(COMMENT_TAG, COMMENT_REPLY_TAG);
+                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
                     owner: repo.owner,
                     repo: repo.repo,
-                    comment_id: top_level_comment.id,
+                    // eslint-disable-next-line camelcase
+                    comment_id: topLevelComment.id,
                     body: newBody
                 });
             }
         }
         catch (error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to update the top-level comment ${error}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to update the top-level comment ${error}`);
         }
     }
-    async get_comments_within_range(pull_number, path, start_line, end_line) {
-        const comments = await this.list_review_comments(pull_number);
+    async getCommentsWithinRange(pullNumber, path, startLine, endLine) {
+        const comments = await this.listReviewComments(pullNumber);
         return comments.filter((comment) => comment.path === path &&
             comment.body !== '' &&
             ((comment.start_line !== undefined &&
-                comment.start_line >= start_line &&
-                comment.line <= end_line) ||
-                (start_line === end_line && comment.line === end_line)));
+                comment.start_line >= startLine &&
+                comment.line <= endLine) ||
+                (startLine === endLine && comment.line === endLine)));
     }
-    async get_comments_at_range(pull_number, path, start_line, end_line) {
-        const comments = await this.list_review_comments(pull_number);
+    async getCommentsAtRange(pullNumber, path, startLine, endLine) {
+        const comments = await this.listReviewComments(pullNumber);
         return comments.filter((comment) => comment.path === path &&
             comment.body !== '' &&
             ((comment.start_line !== undefined &&
-                comment.start_line === start_line &&
-                comment.line === end_line) ||
-                (start_line === end_line && comment.line === end_line)));
+                comment.start_line === startLine &&
+                comment.line === endLine) ||
+                (startLine === endLine && comment.line === endLine)));
     }
-    async get_comment_chains_within_range(pull_number, path, start_line, end_line, tag = '') {
-        const existing_comments = await this.get_comments_within_range(pull_number, path, start_line, end_line);
+    async getCommentChainsWithinRange(pullNumber, path, startLine, endLine, tag = '') {
+        const existingComments = await this.getCommentsWithinRange(pullNumber, path, startLine, endLine);
         // find all top most comments
-        const top_level_comments = [];
-        for (const comment of existing_comments) {
+        const topLevelComments = [];
+        for (const comment of existingComments) {
             if (!comment.in_reply_to_id) {
-                top_level_comments.push(comment);
+                topLevelComments.push(comment);
             }
         }
-        let all_chains = '';
-        let chain_num = 0;
-        for (const top_level_comment of top_level_comments) {
+        let allChains = '';
+        let chainNum = 0;
+        for (const topLevelComment of topLevelComments) {
             // get conversation chain
-            const chain = await this.compose_comment_chain(existing_comments, top_level_comment);
+            const chain = await this.composeCommentChain(existingComments, topLevelComment);
             if (chain && chain.includes(tag)) {
-                chain_num += 1;
-                all_chains += `Conversation Chain ${chain_num}:
+                chainNum += 1;
+                allChains += `Conversation Chain ${chainNum}:
 ${chain}
 ---
 `;
             }
         }
-        return all_chains;
+        return allChains;
     }
-    async compose_comment_chain(reviewComments, topLevelComment) {
+    async composeCommentChain(reviewComments, topLevelComment) {
         const conversationChain = reviewComments
             .filter((cmt) => cmt.in_reply_to_id === topLevelComment.id)
             .map((cmt) => `${cmt.user.login}: ${cmt.body}`);
         conversationChain.unshift(`${topLevelComment.user.login}: ${topLevelComment.body}`);
         return conversationChain.join('\n---\n');
     }
-    async get_comment_chain(pull_number, comment) {
+    async getCommentChain(pullNumber, comment) {
         try {
-            const review_comments = await this.list_review_comments(pull_number);
-            const top_level_comment = await this.get_top_level_comment(review_comments, comment);
-            const chain = await this.compose_comment_chain(review_comments, top_level_comment);
-            return { chain, topLevelComment: top_level_comment };
+            const reviewComments = await this.listReviewComments(pullNumber);
+            const topLevelComment = await this.getTopLevelComment(reviewComments, comment);
+            const chain = await this.composeCommentChain(reviewComments, topLevelComment);
+            return { chain, topLevelComment };
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get conversation chain: ${e}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to get conversation chain: ${e}`);
             return {
                 chain: '',
                 topLevelComment: null
             };
         }
     }
-    async get_top_level_comment(reviewComments, comment) {
-        let top_level_comment = comment;
-        while (top_level_comment.in_reply_to_id) {
-            const parent_comment = reviewComments.find((cmt) => cmt.id === top_level_comment.in_reply_to_id);
-            if (parent_comment) {
-                top_level_comment = parent_comment;
+    async getTopLevelComment(reviewComments, comment) {
+        let topLevelComment = comment;
+        while (topLevelComment.in_reply_to_id) {
+            const parentComment = reviewComments.find((cmt) => cmt.id === topLevelComment.in_reply_to_id);
+            if (parentComment) {
+                topLevelComment = parentComment;
             }
             else {
                 break;
             }
         }
-        return top_level_comment;
+        return topLevelComment;
     }
     reviewCommentsCache = {};
-    async list_review_comments(target) {
+    async listReviewComments(target) {
         if (this.reviewCommentsCache[target]) {
             return this.reviewCommentsCache[target];
         }
-        const all_comments = [];
+        const allComments = [];
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listReviewComments */ .K.pulls.listReviewComments({
+                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listReviewComments */ .K.pulls.listReviewComments({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     pull_number: target,
                     page,
+                    // eslint-disable-next-line camelcase
                     per_page: 100
                 });
-                all_comments.push(...comments);
+                allComments.push(...comments);
                 page++;
                 if (!comments || comments.length < 100) {
                     break;
                 }
             }
-            this.reviewCommentsCache[target] = all_comments;
-            return all_comments;
+            this.reviewCommentsCache[target] = allComments;
+            return allComments;
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to list review comments: ${e}`);
-            return all_comments;
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to list review comments: ${e}`);
+            return allComments;
         }
     }
     async create(body, target) {
         try {
             // get commend ID from the response
-            await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.createComment */ .K.issues.createComment({
+            await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.createComment */ .K.issues.createComment({
                 owner: repo.owner,
                 repo: repo.repo,
+                // eslint-disable-next-line camelcase
                 issue_number: target,
                 body
             });
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to create comment: ${e}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to create comment: ${e}`);
         }
     }
     async replace(body, tag, target) {
         try {
-            const cmt = await this.find_comment_with_tag(tag, target);
+            const cmt = await this.findCommentWithTag(tag, target);
             if (cmt) {
-                await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.updateComment */ .K.issues.updateComment({
+                await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.updateComment */ .K.issues.updateComment({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     comment_id: cmt.id,
                     body
                 });
@@ -3893,12 +3897,12 @@ ${chain}
             }
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to replace comment: ${e}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to replace comment: ${e}`);
         }
     }
-    async find_comment_with_tag(tag, target) {
+    async findCommentWithTag(tag, target) {
         try {
-            const comments = await this.list_comments(target);
+            const comments = await this.listComments(target);
             for (const cmt of comments) {
                 if (cmt.body && cmt.body.includes(tag)) {
                     return cmt;
@@ -3907,39 +3911,108 @@ ${chain}
             return null;
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find comment with tag: ${e}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to find comment with tag: ${e}`);
             return null;
         }
     }
     issueCommentsCache = {};
-    async list_comments(target) {
+    async listComments(target) {
         if (this.issueCommentsCache[target]) {
             return this.issueCommentsCache[target];
         }
-        const all_comments = [];
+        const allComments = [];
         let page = 1;
         try {
             for (;;) {
-                const { data: comments } = await _octokit_js__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.listComments */ .K.issues.listComments({
+                const { data: comments } = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.issues.listComments */ .K.issues.listComments({
                     owner: repo.owner,
                     repo: repo.repo,
+                    // eslint-disable-next-line camelcase
                     issue_number: target,
                     page,
+                    // eslint-disable-next-line camelcase
                     per_page: 100
                 });
-                all_comments.push(...comments);
+                allComments.push(...comments);
                 page++;
                 if (!comments || comments.length < 100) {
                     break;
                 }
             }
-            this.issueCommentsCache[target] = all_comments;
-            return all_comments;
+            this.issueCommentsCache[target] = allComments;
+            return allComments;
         }
         catch (e) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to list comments: ${e}`);
-            return all_comments;
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to list comments: ${e}`);
+            return allComments;
         }
+    }
+    // function that takes a comment body and returns the list of commit ids that have been reviewed
+    // commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
+    // <!-- [commit_id] -->
+    getReviewedCommitIds(commentBody) {
+        const start = commentBody.indexOf(COMMIT_ID_TAG);
+        const end = commentBody.indexOf(COMMIT_ID_TAG_END);
+        if (start === -1 || end === -1) {
+            return [];
+        }
+        const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end);
+        // remove the <!-- and --> markers from each id and extract the id and remove empty strings
+        return ids
+            .split('<!--')
+            .map(id => id.replace('-->', '').trim())
+            .filter(id => id !== '');
+    }
+    // get review commit ids comment block from the body as a string
+    // including markers
+    getReviewedCommitIdsBlock(commentBody) {
+        const start = commentBody.indexOf(COMMIT_ID_TAG);
+        const end = commentBody.indexOf(COMMIT_ID_TAG_END);
+        if (start === -1 || end === -1) {
+            return '';
+        }
+        return commentBody.substring(start, end + COMMIT_ID_TAG_END.length);
+    }
+    // add a commit id to the list of reviewed commit ids
+    // if the marker doesn't exist, add it
+    addReviewedCommitId(commentBody, commitId) {
+        const start = commentBody.indexOf(COMMIT_ID_TAG);
+        const end = commentBody.indexOf(COMMIT_ID_TAG_END);
+        if (start === -1 || end === -1) {
+            return `${commentBody}\n${COMMIT_ID_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_TAG_END}`;
+        }
+        const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end);
+        return `${commentBody.substring(0, start + COMMIT_ID_TAG.length)}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`;
+    }
+    // given a list of commit ids provide the highest commit id that has been reviewed
+    getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
+        for (let i = commitIds.length - 1; i >= 0; i--) {
+            if (reviewedCommitIds.includes(commitIds[i])) {
+                return commitIds[i];
+            }
+        }
+        return '';
+    }
+    async getAllCommitIds() {
+        const allCommits = [];
+        let page = 1;
+        let commits;
+        if (context && context.payload && context.payload.pull_request != null) {
+            do {
+                commits = await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.listCommits */ .K.pulls.listCommits({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    // eslint-disable-next-line camelcase
+                    pull_number: context.payload.pull_request.number,
+                    // eslint-disable-next-line camelcase
+                    per_page: 100,
+                    page
+                });
+                allCommits.push(...commits.data.map(commit => commit.sha));
+                page++;
+            } while (commits.data.length > 0);
+        }
+        return allCommits;
     }
 }
 
@@ -3954,41 +4027,41 @@ ${chain}
 /* harmony export */   "k": () => (/* binding */ Inputs)
 /* harmony export */ });
 class Inputs {
-    system_message;
+    systemMessage;
     title;
     description;
-    raw_summary;
-    release_notes;
+    rawSummary;
+    releaseNotes;
     filename;
-    file_content;
-    file_diff;
+    fileContent;
+    fileDiff;
     patches;
     diff;
-    comment_chain;
+    commentChain;
     comment;
-    constructor(system_message = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', release_notes = 'no release notes so far', filename = 'unknown', file_content = 'file contents cannot be provided', file_diff = 'file diff cannot be provided', patches = '', diff = 'no diff', comment_chain = 'no other comments on this patch', comment = 'no comment provided') {
-        this.system_message = system_message;
+    constructor(systemMessage = '', title = 'no title provided', description = 'no description provided', summary = 'no summary so far', releaseNotes = 'no release notes so far', filename = 'unknown', fileContent = 'file contents cannot be provided', fileDiff = 'file diff cannot be provided', patches = '', diff = 'no diff', commentChain = 'no other comments on this patch', comment = 'no comment provided') {
+        this.systemMessage = systemMessage;
         this.title = title;
         this.description = description;
-        this.raw_summary = summary;
-        this.release_notes = release_notes;
+        this.rawSummary = summary;
+        this.releaseNotes = releaseNotes;
         this.filename = filename;
-        this.file_content = file_content;
-        this.file_diff = file_diff;
+        this.fileContent = fileContent;
+        this.fileDiff = fileDiff;
         this.patches = patches;
         this.diff = diff;
-        this.comment_chain = comment_chain;
+        this.commentChain = commentChain;
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.system_message, this.title, this.description, this.raw_summary, this.release_notes, this.filename, this.file_content, this.file_diff, this.patches, this.diff, this.comment_chain, this.comment);
+        return new Inputs(this.systemMessage, this.title, this.description, this.rawSummary, this.releaseNotes, this.filename, this.fileContent, this.fileDiff, this.patches, this.diff, this.commentChain, this.comment);
     }
     render(content) {
         if (!content) {
             return '';
         }
-        if (this.system_message) {
-            content = content.replace('$system_message', this.system_message);
+        if (this.systemMessage) {
+            content = content.replace('$system_message', this.systemMessage);
         }
         if (this.title) {
             content = content.replace('$title', this.title);
@@ -3996,20 +4069,20 @@ class Inputs {
         if (this.description) {
             content = content.replace('$description', this.description);
         }
-        if (this.raw_summary) {
-            content = content.replace('$raw_summary', this.raw_summary);
+        if (this.rawSummary) {
+            content = content.replace('$raw_summary', this.rawSummary);
         }
-        if (this.release_notes) {
-            content = content.replace('$release_notes', this.release_notes);
+        if (this.releaseNotes) {
+            content = content.replace('$release_notes', this.releaseNotes);
         }
         if (this.filename) {
             content = content.replace('$filename', this.filename);
         }
-        if (this.file_content) {
-            content = content.replace('$file_content', this.file_content);
+        if (this.fileContent) {
+            content = content.replace('$file_content', this.fileContent);
         }
-        if (this.file_diff) {
-            content = content.replace('$file_diff', this.file_diff);
+        if (this.fileDiff) {
+            content = content.replace('$file_diff', this.fileDiff);
         }
         if (this.patches) {
             content = content.replace('$patches', this.patches);
@@ -4017,8 +4090,8 @@ class Inputs {
         if (this.diff) {
             content = content.replace('$diff', this.diff);
         }
-        if (this.comment_chain) {
-            content = content.replace('$comment_chain', this.comment_chain);
+        if (this.commentChain) {
+            content = content.replace('$comment_chain', this.commentChain);
         }
         if (this.comment) {
             content = content.replace('$comment', this.comment);
@@ -4038,11 +4111,11 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _bot_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4909);
-/* harmony import */ var _options_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8870);
-/* harmony import */ var _prompts_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4272);
-/* harmony import */ var _review_comment_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5947);
-/* harmony import */ var _review_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(2612);
+/* harmony import */ var _bot__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4909);
+/* harmony import */ var _options__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8870);
+/* harmony import */ var _prompts__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4272);
+/* harmony import */ var _review__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2612);
+/* harmony import */ var _review_comment__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(5947);
 
 
 
@@ -4050,55 +4123,55 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('debug'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('summary_only'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('max_files'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput('review_comment_lgtm'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('path_filters'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('system_message'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_light_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_heavy_model'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_model_temperature'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_retries'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_timeout_ms'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('openai_concurrency_limit'));
+    const options = new _options__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('debug'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('summary_only'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_files'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_comment_lgtm'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput)('path_filters'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('system_message'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_light_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_heavy_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_model_temperature'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_retries'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_timeout_ms'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_concurrency_limit'));
     // print options
     options.print();
-    const prompts = new _prompts_js__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize'), _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('summarize_release_notes'));
+    const prompts = new _prompts__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize_release_notes'));
     // Create two bots, one for summary and one for review
     let lightBot = null;
     try {
-        lightBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_light_model, options.light_token_limits));
+        lightBot = new _bot__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openaiLightModel, options.lightTokenLimits));
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     let heavyBot = null;
     try {
-        heavyBot = new _bot_js__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options_js__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openai_heavy_model, options.heavy_token_limits));
+        heavyBot = new _bot__WEBPACK_IMPORTED_MODULE_1__/* .Bot */ .r(options, new _options__WEBPACK_IMPORTED_MODULE_2__/* .OpenAIOptions */ .i0(options.openaiHeavyModel, options.heavyTokenLimits));
     }
     catch (e) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`);
         return;
     }
     try {
         // check if the event is pull_request
         if (process.env.GITHUB_EVENT_NAME === 'pull_request' ||
             process.env.GITHUB_EVENT_NAME === 'pull_request_target') {
-            await (0,_review_js__WEBPACK_IMPORTED_MODULE_4__/* .codeReview */ .z)(lightBot, heavyBot, options, prompts);
+            await (0,_review__WEBPACK_IMPORTED_MODULE_3__/* .codeReview */ .z)(lightBot, heavyBot, options, prompts);
         }
         else if (process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment') {
-            await (0,_review_comment_js__WEBPACK_IMPORTED_MODULE_3__/* .handleReviewComment */ .V)(heavyBot, options, prompts);
+            await (0,_review_comment__WEBPACK_IMPORTED_MODULE_4__/* .handleReviewComment */ .V)(heavyBot, options, prompts);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning('Skipped: this action only works on push events or pull_request');
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)('Skipped: this action only works on push events or pull_request');
         }
     }
     catch (e) {
         if (e instanceof Error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e.message}, backtrace: ${e.stack}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Failed to run: ${e.message}, backtrace: ${e.stack}`);
         }
         else {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`Failed to run: ${e}, backtrace: ${e.stack}`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Failed to run: ${e}, backtrace: ${e.stack}`);
         }
     }
 }
 process
     .on('unhandledRejection', (reason, p) => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Unhandled Rejection at Promise: ${reason}, promise is ${p}`);
 })
     .on('uncaughtException', (e) => {
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`);
 });
 await run();
 
@@ -4123,20 +4196,20 @@ __webpack_async_result__();
 
 
 
-const token = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('token') || process.env.GITHUB_TOKEN;
+const token = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('token') || process.env.GITHUB_TOKEN;
 const RetryAndThrottlingOctokit = _octokit_action__WEBPACK_IMPORTED_MODULE_1__/* .Octokit.plugin */ .v.plugin(_octokit_plugin_throttling__WEBPACK_IMPORTED_MODULE_2__/* .throttling */ .O, _octokit_plugin_retry__WEBPACK_IMPORTED_MODULE_3__/* .retry */ .XD);
 const octokit = new RetryAndThrottlingOctokit({
     auth: `token ${token}`,
     throttle: {
-        onRateLimit: (retryAfter, options, o, retryCount) => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Request quota exhausted for request ${options.method} ${options.url}
+        onRateLimit: (retryAfter, options, _o, retryCount) => {
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Request quota exhausted for request ${options.method} ${options.url}
 Retry after: ${retryAfter} seconds
 Retry count: ${retryCount}
 `);
             return true;
         },
-        onSecondaryRateLimit: (retryAfter, options, o) => {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
+        onSecondaryRateLimit: (_retryAfter, options) => {
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
             return true;
         }
     },
@@ -5931,26 +6004,26 @@ minimatch.unescape = unescape_unescape;
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./lib/limits.js
 class TokenLimits {
-    max_tokens;
-    request_tokens;
-    response_tokens;
+    maxTokens;
+    requestTokens;
+    responseTokens;
     constructor(model = 'gpt-3.5-turbo') {
         if (model === 'gpt-4-32k') {
-            this.max_tokens = 32600;
-            this.response_tokens = 4000;
+            this.maxTokens = 32600;
+            this.responseTokens = 4000;
         }
         else if (model === 'gpt-4') {
-            this.max_tokens = 8000;
-            this.response_tokens = 2000;
+            this.maxTokens = 8000;
+            this.responseTokens = 2000;
         }
         else {
-            this.max_tokens = 3900;
-            this.response_tokens = 1000;
+            this.maxTokens = 3900;
+            this.responseTokens = 1000;
         }
-        this.request_tokens = this.max_tokens - this.response_tokens;
+        this.requestTokens = this.maxTokens - this.responseTokens;
     }
     string() {
-        return `max_tokens=${this.max_tokens}, request_tokens=${this.request_tokens}, response_tokens=${this.response_tokens}`;
+        return `max_tokens=${this.maxTokens}, request_tokens=${this.requestTokens}, response_tokens=${this.responseTokens}`;
     }
 }
 
@@ -5960,55 +6033,55 @@ class TokenLimits {
 
 class Options {
     debug;
-    summary_only;
-    max_files;
-    review_comment_lgtm;
-    path_filters;
-    system_message;
-    openai_light_model;
-    openai_heavy_model;
-    openai_model_temperature;
-    openai_retries;
-    openai_timeout_ms;
-    openai_concurrency_limit;
-    light_token_limits;
-    heavy_token_limits;
-    constructor(debug, summary_only, max_files = '0', review_comment_lgtm = false, path_filters = null, system_message = '', openai_light_model = 'gpt-3.5-turbo', openai_heavy_model = 'gpt-3.5-turbo', openai_model_temperature = '0.0', openai_retries = '3', openai_timeout_ms = '120000', openai_concurrency_limit = '4') {
+    summaryOnly;
+    maxFiles;
+    reviewCommentLGTM;
+    pathFilters;
+    systemMessage;
+    openaiLightModel;
+    openaiHeavyModel;
+    openaiModelTemperature;
+    openaiRetries;
+    openaiTimeoutMS;
+    openaiConcurrencyLimit;
+    lightTokenLimits;
+    heavyTokenLimits;
+    constructor(debug, summaryOnly, maxFiles = '0', reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4') {
         this.debug = debug;
-        this.summary_only = summary_only;
-        this.max_files = parseInt(max_files);
-        this.review_comment_lgtm = review_comment_lgtm;
-        this.path_filters = new PathFilter(path_filters);
-        this.system_message = system_message;
-        this.openai_light_model = openai_light_model;
-        this.openai_heavy_model = openai_heavy_model;
-        this.openai_model_temperature = parseFloat(openai_model_temperature);
-        this.openai_retries = parseInt(openai_retries);
-        this.openai_timeout_ms = parseInt(openai_timeout_ms);
-        this.openai_concurrency_limit = parseInt(openai_concurrency_limit);
-        this.light_token_limits = new TokenLimits(openai_light_model);
-        this.heavy_token_limits = new TokenLimits(openai_heavy_model);
+        this.summaryOnly = summaryOnly;
+        this.maxFiles = parseInt(maxFiles);
+        this.reviewCommentLGTM = reviewCommentLGTM;
+        this.pathFilters = new PathFilter(pathFilters);
+        this.systemMessage = systemMessage;
+        this.openaiLightModel = openaiLightModel;
+        this.openaiHeavyModel = openaiHeavyModel;
+        this.openaiModelTemperature = parseFloat(openaiModelTemperature);
+        this.openaiRetries = parseInt(openaiRetries);
+        this.openaiTimeoutMS = parseInt(openaiTimeoutMS);
+        this.openaiConcurrencyLimit = parseInt(openaiConcurrencyLimit);
+        this.lightTokenLimits = new TokenLimits(openaiLightModel);
+        this.heavyTokenLimits = new TokenLimits(openaiHeavyModel);
     }
     // print all options using core.info
     print() {
-        core.info(`debug: ${this.debug}`);
-        core.info(`summary_only: ${this.summary_only}`);
-        core.info(`max_files: ${this.max_files}`);
-        core.info(`review_comment_lgtm: ${this.review_comment_lgtm}`);
-        core.info(`path_filters: ${this.path_filters}`);
-        core.info(`system_message: ${this.system_message}`);
-        core.info(`openai_light_model: ${this.openai_light_model}`);
-        core.info(`openai_heavy_model: ${this.openai_heavy_model}`);
-        core.info(`openai_model_temperature: ${this.openai_model_temperature}`);
-        core.info(`openai_retries: ${this.openai_retries}`);
-        core.info(`openai_timeout_ms: ${this.openai_timeout_ms}`);
-        core.info(`openai_concurrency_limit: ${this.openai_concurrency_limit}`);
-        core.info(`summary_token_limits: ${this.light_token_limits.string()}`);
-        core.info(`review_token_limits: ${this.heavy_token_limits.string()}`);
+        (0,core.info)(`debug: ${this.debug}`);
+        (0,core.info)(`summary_only: ${this.summaryOnly}`);
+        (0,core.info)(`max_files: ${this.maxFiles}`);
+        (0,core.info)(`review_comment_lgtm: ${this.reviewCommentLGTM}`);
+        (0,core.info)(`path_filters: ${this.pathFilters}`);
+        (0,core.info)(`system_message: ${this.systemMessage}`);
+        (0,core.info)(`openai_light_model: ${this.openaiLightModel}`);
+        (0,core.info)(`openai_heavy_model: ${this.openaiHeavyModel}`);
+        (0,core.info)(`openai_model_temperature: ${this.openaiModelTemperature}`);
+        (0,core.info)(`openai_retries: ${this.openaiRetries}`);
+        (0,core.info)(`openai_timeout_ms: ${this.openaiTimeoutMS}`);
+        (0,core.info)(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`);
+        (0,core.info)(`summary_token_limits: ${this.lightTokenLimits.string()}`);
+        (0,core.info)(`review_token_limits: ${this.heavyTokenLimits.string()}`);
     }
-    check_path(path) {
-        const ok = this.path_filters.check(path);
-        core.info(`checking path: ${path} => ${ok}`);
+    checkPath(path) {
+        const ok = this.pathFilters.check(path);
+        (0,core.info)(`checking path: ${path} => ${ok}`);
         return ok;
     }
 }
@@ -6016,7 +6089,7 @@ class PathFilter {
     rules;
     constructor(rules = null) {
         this.rules = [];
-        if (rules) {
+        if (rules != null) {
             for (const rule of rules) {
                 const trimmed = rule?.trim();
                 if (trimmed) {
@@ -6055,10 +6128,15 @@ class PathFilter {
 }
 class OpenAIOptions {
     model;
-    token_limits;
-    constructor(model = 'gpt-3.5-turbo', token_limits = null) {
+    tokenLimits;
+    constructor(model = 'gpt-3.5-turbo', tokenLimits = null) {
         this.model = model;
-        this.token_limits = token_limits || new TokenLimits(model);
+        if (tokenLimits != null) {
+            this.tokenLimits = tokenLimits;
+        }
+        else {
+            this.tokenLimits = new TokenLimits(model);
+        }
     }
 }
 
@@ -6074,8 +6152,8 @@ class OpenAIOptions {
 /* harmony export */ });
 class Prompts {
     summarize;
-    summarize_release_notes;
-    summarize_file_diff = `GitHub pull request title: 
+    summarizeReleaseNotes;
+    summarizeFileDiff = `GitHub pull request title: 
 \`$title\` 
 
 Description:
@@ -6113,7 +6191,7 @@ You must follow the format below strictly for triaging the diff and
 do not add any additional text in your response:
 [TRIAGE]: <NEEDS_REVIEW or APPROVED>
 `;
-    summarize_changesets = `Provided below are changesets in this pull request. Changesets 
+    summarizeChangesets = `Provided below are changesets in this pull request. Changesets 
 are in chronlogical order and new changesets are appended to the
 end of the list. The format consists of filename(s) and the summary 
 of changes for those files. There is a separator between each changeset.
@@ -6179,7 +6257,7 @@ The comment/request that you need to directly reply to:
 $comment
 \`\`\`
 `;
-    review_file_diff = `GitHub pull request title: 
+    reviewFileDiff = `GitHub pull request title: 
 \`$title\` 
 
 Description:
@@ -6313,27 +6391,27 @@ Example response:
 Changes for review are below:
 $patches
 `;
-    constructor(summarize = '', summarize_release_notes = '') {
+    constructor(summarize = '', summarizeReleaseNotes = '') {
         this.summarize = summarize;
-        this.summarize_release_notes = summarize_release_notes;
+        this.summarizeReleaseNotes = summarizeReleaseNotes;
     }
-    render_summarize_file_diff(inputs) {
-        return inputs.render(this.summarize_file_diff);
+    renderSummarizeFileDiff(inputs) {
+        return inputs.render(this.summarizeFileDiff);
     }
-    render_summarize_changesets(inputs) {
-        return inputs.render(this.summarize_changesets);
+    renderSummarizeChangesets(inputs) {
+        return inputs.render(this.summarizeChangesets);
     }
-    render_summarize(inputs) {
+    renderSummarize(inputs) {
         return inputs.render(this.summarize);
     }
-    render_summarize_release_notes(inputs) {
-        return inputs.render(this.summarize_release_notes);
+    renderSummarizeReleaseNotes(inputs) {
+        return inputs.render(this.summarizeReleaseNotes);
     }
-    render_comment(inputs) {
+    renderComment(inputs) {
         return inputs.render(this.comment);
     }
-    render_review_file_diff(inputs) {
-        return inputs.render(this.review_file_diff);
+    renderReviewFileDiff(inputs) {
+        return inputs.render(this.reviewFileDiff);
     }
 }
 
@@ -6351,69 +6429,72 @@ $patches
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _commenter_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
-/* harmony import */ var _inputs_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6180);
-/* harmony import */ var _octokit_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3258);
-/* harmony import */ var _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
+/* harmony import */ var _commenter__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3339);
+/* harmony import */ var _inputs__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(6180);
+/* harmony import */ var _octokit__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3258);
+/* harmony import */ var _tokenizer__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(652);
+
+// eslint-disable-next-line camelcase
 
 
 
 
 
-
+// eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
 const ASK_BOT = '@openai';
 const handleReviewComment = async (heavyBot, options, prompts) => {
-    const commenter = new _commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
-    const inputs = new _inputs_js__WEBPACK_IMPORTED_MODULE_5__/* .Inputs */ .k();
+    const commenter = new _commenter__WEBPACK_IMPORTED_MODULE_2__/* .Commenter */ .Es();
+    const inputs = new _inputs__WEBPACK_IMPORTED_MODULE_5__/* .Inputs */ .k();
     if (context.eventName !== 'pull_request_review_comment') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} is not a pull_request_review_comment event`);
         return;
     }
     if (!context.payload) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing payload`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} event is missing payload`);
         return;
     }
     const comment = context.payload.comment;
-    if (!comment) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing comment`);
+    if (comment == null) {
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} event is missing comment`);
         return;
     }
-    if (!context.payload.pull_request || !context.payload.repository) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is missing pull_request`);
+    if (context.payload.pull_request == null ||
+        context.payload.repository == null) {
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} event is missing pull_request`);
         return;
     }
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
-        inputs.description = commenter.get_description(context.payload.pull_request.body);
-        inputs.release_notes = commenter.get_release_notes(context.payload.pull_request.body);
+        inputs.description = commenter.getDescription(context.payload.pull_request.body);
+        inputs.releaseNotes = commenter.getReleaseNotes(context.payload.pull_request.body);
     }
     // check if the comment was created and not edited or deleted
     if (context.payload.action !== 'created') {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Skipped: ${context.eventName} event is not created`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Skipped: ${context.eventName} event is not created`);
         return;
     }
     // Check if the comment is not from the bot itself
-    if (!comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
-        !comment.body.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
-        const pull_number = context.payload.pull_request.number;
+    if (!comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) &&
+        !comment.body.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD)) {
+        const pullNumber = context.payload.pull_request.number;
         inputs.comment = `${comment.user.login}: ${comment.body}`;
         inputs.diff = comment.diff_hunk;
         inputs.filename = comment.path;
-        const { chain: comment_chain, topLevelComment } = await commenter.get_comment_chain(pull_number, comment);
+        const { chain: commentChain, topLevelComment } = await commenter.getCommentChain(pullNumber, comment);
         if (!topLevelComment) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to find the top-level comment to reply to`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)('Failed to find the top-level comment to reply to');
             return;
         }
-        inputs.comment_chain = comment_chain;
+        inputs.commentChain = commentChain;
         // check whether this chain contains replies from the bot
-        if (comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
-            comment_chain.includes(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
+        if (commentChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_TAG */ .Rs) ||
+            commentChain.includes(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .COMMENT_REPLY_TAG */ .aD) ||
             comment.body.includes(ASK_BOT)) {
-            let file_content = '';
+            let fileContent = '';
             try {
-                const contents = await _octokit_js__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.getContent */ .K.repos.getContent({
+                const contents = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.getContent */ .K.repos.getContent({
                     owner: repo.owner,
                     repo: repo.repo,
                     path: comment.path,
@@ -6422,18 +6503,18 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 if (contents.data) {
                     if (!Array.isArray(contents.data)) {
                         if (contents.data.type === 'file' && contents.data.content) {
-                            file_content = Buffer.from(contents.data.content, 'base64').toString();
+                            fileContent = Buffer.from(contents.data.content, 'base64').toString();
                         }
                     }
                 }
             }
             catch (error) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file contents: ${error}, skipping.`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to get file contents: ${error}, skipping.`);
             }
-            let file_diff = '';
+            let fileDiff = '';
             try {
                 // get diff for this file by comparing the base and head commits
-                const diffAll = await _octokit_js__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.compareCommits */ .K.repos.compareCommits({
+                const diffAll = await _octokit__WEBPACK_IMPORTED_MODULE_3__/* .octokit.repos.compareCommits */ .K.repos.compareCommits({
                     owner: repo.owner,
                     repo: repo.repo,
                     base: context.payload.pull_request.base.sha,
@@ -6441,75 +6522,74 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
                 });
                 if (diffAll.data) {
                     const files = diffAll.data.files;
-                    if (files) {
+                    if (files != null) {
                         const file = files.find(f => f.filename === comment.path);
-                        if (file && file.patch) {
-                            file_diff = file.patch;
+                        if (file != null && file.patch) {
+                            fileDiff = file.patch;
                         }
                     }
                 }
             }
             catch (error) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.warning(`Failed to get file diff: ${error}, skipping.`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to get file diff: ${error}, skipping.`);
             }
             // use file diff if no diff was found in the comment
             if (inputs.diff.length === 0) {
-                if (file_diff.length > 0) {
-                    inputs.diff = file_diff;
-                    file_diff = '';
+                if (fileDiff.length > 0) {
+                    inputs.diff = fileDiff;
+                    fileDiff = '';
                 }
                 else {
-                    await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff could not be found.');
+                    await commenter.reviewCommentReply(pullNumber, topLevelComment, 'Cannot reply to this comment as diff could not be found.');
                     return;
                 }
             }
             // get tokens so far
-            let tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(prompts.render_comment(inputs));
-            if (tokens > options.heavy_token_limits.request_tokens) {
-                await commenter.review_comment_reply(pull_number, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
+            let tokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(prompts.renderComment(inputs));
+            if (tokens > options.heavyTokenLimits.requestTokens) {
+                await commenter.reviewCommentReply(pullNumber, topLevelComment, 'Cannot reply to this comment as diff being commented is too large and exceeds the token limit.');
                 return;
             }
             // pack file content and diff into the inputs if they are not too long
-            if (file_content.length > 0) {
+            if (fileContent.length > 0) {
                 // count occurrences of $file_content in prompt
-                const file_content_count = prompts.comment.split('$file_content').length - 1;
-                const file_content_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_content);
-                if (file_content_count > 0 &&
-                    tokens + file_content_tokens * file_content_count <=
-                        options.heavy_token_limits.request_tokens) {
-                    tokens += file_content_tokens * file_content_count;
-                    inputs.file_content = file_content;
+                const fileContentCount = prompts.comment.split('$file_content').length - 1;
+                const fileContentTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(fileContent);
+                if (fileContentCount > 0 &&
+                    tokens + fileContentTokens * fileContentCount <=
+                        options.heavyTokenLimits.requestTokens) {
+                    tokens += fileContentTokens * fileContentCount;
+                    inputs.fileContent = fileContent;
                 }
             }
-            if (file_diff.length > 0) {
+            if (fileDiff.length > 0) {
                 // count occurrences of $file_diff in prompt
-                const file_diff_count = prompts.comment.split('$file_diff').length - 1;
-                const file_diff_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(file_diff);
-                if (file_diff_count > 0 &&
-                    tokens + file_diff_tokens * file_diff_count <=
-                        options.heavy_token_limits.request_tokens) {
-                    tokens += file_diff_tokens * file_diff_count;
-                    inputs.file_diff = file_diff;
+                const fileDiffCount = prompts.comment.split('$file_diff').length - 1;
+                const fileDiffTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(fileDiff);
+                if (fileDiffCount > 0 &&
+                    tokens + fileDiffTokens * fileDiffCount <=
+                        options.heavyTokenLimits.requestTokens) {
+                    tokens += fileDiffTokens * fileDiffCount;
+                    inputs.fileDiff = fileDiff;
                 }
             }
             // get summary of the PR
-            const summary = await commenter.find_comment_with_tag(_commenter_js__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pull_number);
+            const summary = await commenter.findCommentWithTag(_commenter__WEBPACK_IMPORTED_MODULE_2__/* .SUMMARIZE_TAG */ .Rp, pullNumber);
             if (summary) {
                 // pack summary into the inputs if it is not too long
-                const raw_summary = commenter.get_raw_summary(summary.body);
-                const summary_tokens = _tokenizer_js__WEBPACK_IMPORTED_MODULE_4__/* .get_token_count */ .u(raw_summary);
-                if (tokens + summary_tokens <=
-                    options.heavy_token_limits.request_tokens) {
-                    tokens += summary_tokens;
-                    inputs.raw_summary = raw_summary;
+                const rawSummary = commenter.getRawSummary(summary.body);
+                const summaryTokens = (0,_tokenizer__WEBPACK_IMPORTED_MODULE_4__/* .getTokenCount */ .V)(rawSummary);
+                if (tokens + summaryTokens <= options.heavyTokenLimits.requestTokens) {
+                    tokens += summaryTokens;
+                    inputs.rawSummary = rawSummary;
                 }
             }
-            const [reply] = await heavyBot.chat(prompts.render_comment(inputs), {});
-            await commenter.review_comment_reply(pull_number, topLevelComment, reply);
+            const [reply] = await heavyBot.chat(prompts.renderComment(inputs), {});
+            await commenter.reviewCommentReply(pullNumber, topLevelComment, reply);
         }
     }
     else {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`Skipped: ${context.eventName} event is from the bot itself`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Skipped: ${context.eventName} event is from the bot itself`);
     }
 };
 
@@ -6679,66 +6759,68 @@ var octokit = __nccwpck_require__(3258);
 var tokenizer = __nccwpck_require__(652);
 ;// CONCATENATED MODULE: ./lib/review.js
 
+// eslint-disable-next-line camelcase
 
 
 
 
 
 
+// eslint-disable-next-line camelcase
 const context = github.context;
 const repo = context.repo;
-const ignore_keyword = '@openai: ignore';
+const ignoreKeyword = '@openai: ignore';
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
-    const openai_concurrency_limit = pLimit(options.openai_concurrency_limit);
+    const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit);
     if (context.eventName !== 'pull_request' &&
         context.eventName !== 'pull_request_target') {
-        core.warning(`Skipped: current event is ${context.eventName}, only support pull_request event`);
+        (0,core.warning)(`Skipped: current event is ${context.eventName}, only support pull_request event`);
         return;
     }
-    if (!context.payload.pull_request) {
-        core.warning(`Skipped: context.payload.pull_request is null`);
+    if (context.payload.pull_request == null) {
+        (0,core.warning)('Skipped: context.payload.pull_request is null');
         return;
     }
     const inputs = new lib_inputs/* Inputs */.k();
     inputs.title = context.payload.pull_request.title;
-    if (context.payload.pull_request.body) {
-        inputs.description = commenter.get_description(context.payload.pull_request.body);
-        inputs.release_notes = commenter.get_release_notes(context.payload.pull_request.body);
+    if (context.payload.pull_request.body != null) {
+        inputs.description = commenter.getDescription(context.payload.pull_request.body);
+        inputs.releaseNotes = commenter.getReleaseNotes(context.payload.pull_request.body);
     }
     // if the description contains ignore_keyword, skip
-    if (inputs.description.includes(ignore_keyword)) {
-        core.info(`Skipped: description contains ignore_keyword`);
+    if (inputs.description.includes(ignoreKeyword)) {
+        (0,core.info)('Skipped: description contains ignore_keyword');
         return;
     }
     // as gpt-3.5-turbo isn't paying attention to system message, add to inputs for now
-    inputs.system_message = options.system_message;
+    inputs.systemMessage = options.systemMessage;
     // get SUMMARIZE_TAG message
-    const existing_summarize_cmt = await commenter.find_comment_with_tag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
-    let existing_commit_ids_block = '';
-    if (existing_summarize_cmt) {
-        inputs.raw_summary = commenter.get_raw_summary(existing_summarize_cmt.body);
-        existing_commit_ids_block = getReviewedCommitIdsBlock(existing_summarize_cmt.body);
+    const existingSummarizeCmt = await commenter.findCommentWithTag(lib_commenter/* SUMMARIZE_TAG */.Rp, context.payload.pull_request.number);
+    let existingCommitIdsBlock = '';
+    if (existingSummarizeCmt != null) {
+        inputs.rawSummary = commenter.getRawSummary(existingSummarizeCmt.body);
+        existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(existingSummarizeCmt.body);
     }
-    const allCommitIds = await getAllCommitIds();
+    const allCommitIds = await commenter.getAllCommitIds();
     // find highest reviewed commit id
-    let highest_reviewed_commit_id = '';
-    if (existing_commit_ids_block) {
-        highest_reviewed_commit_id = getHighestReviewedCommitId(allCommitIds, getReviewedCommitIds(existing_commit_ids_block));
+    let highestReviewedCommitId = '';
+    if (existingCommitIdsBlock !== '') {
+        highestReviewedCommitId = commenter.getHighestReviewedCommitId(allCommitIds, commenter.getReviewedCommitIds(existingCommitIdsBlock));
     }
-    if (highest_reviewed_commit_id === '' ||
-        highest_reviewed_commit_id === context.payload.pull_request.head.sha) {
-        core.info(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
-        highest_reviewed_commit_id = context.payload.pull_request.base.sha;
+    if (highestReviewedCommitId === '' ||
+        highestReviewedCommitId === context.payload.pull_request.head.sha) {
+        (0,core.info)(`Will review from the base commit: ${context.payload.pull_request.base.sha}`);
+        highestReviewedCommitId = context.payload.pull_request.base.sha;
     }
     else {
-        core.info(`Will review from commit: ${highest_reviewed_commit_id}`);
+        (0,core.info)(`Will review from commit: ${highestReviewedCommitId}`);
     }
     // Fetch the diff between the highest reviewed commit and the latest commit of the PR branch
     const incrementalDiff = await octokit/* octokit.repos.compareCommits */.K.repos.compareCommits({
         owner: repo.owner,
         repo: repo.repo,
-        base: highest_reviewed_commit_id,
+        base: highestReviewedCommitId,
         head: context.payload.pull_request.head.sha
     });
     // Fetch the diff between the target branch's base commit and the latest commit of the PR branch
@@ -6750,39 +6832,39 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     });
     const incrementalFiles = incrementalDiff.data.files;
     const targetBranchFiles = targetBranchDiff.data.files;
-    if (!incrementalFiles || !targetBranchFiles) {
-        core.warning(`Skipped: files data is missing`);
+    if (incrementalFiles == null || targetBranchFiles == null) {
+        (0,core.warning)('Skipped: files data is missing');
         return;
     }
     // Filter out any file that is changed compared to the incremental changes
     const files = targetBranchFiles.filter(targetBranchFile => incrementalFiles.some(incrementalFile => incrementalFile.filename === targetBranchFile.filename));
-    if (!files) {
-        core.warning(`Skipped: files is null`);
+    if (files.length === 0) {
+        (0,core.warning)('Skipped: files is null');
         return;
     }
     const commits = incrementalDiff.data.commits;
-    if (!commits) {
-        core.warning(`Skipped: commits is null`);
+    if (commits.length === 0) {
+        (0,core.warning)('Skipped: ommits is null');
         return;
     }
     // skip files if they are filtered out
-    const filter_selected_files = [];
-    const filter_ignored_files = [];
+    const filterSelectedFiles = [];
+    const filterIgnoredFiles = [];
     for (const file of files) {
-        if (!options.check_path(file.filename)) {
-            core.info(`skip for excluded path: ${file.filename}`);
-            filter_ignored_files.push(file);
+        if (!options.checkPath(file.filename)) {
+            (0,core.info)(`skip for excluded path: ${file.filename}`);
+            filterIgnoredFiles.push(file);
         }
         else {
-            filter_selected_files.push(file);
+            filterSelectedFiles.push(file);
         }
     }
     // find hunks to review
-    const filtered_files = await Promise.all(filter_selected_files.map(async (file) => {
+    const filteredFiles = await Promise.all(filterSelectedFiles.map(async (file) => {
         // retrieve file contents
-        let file_content = '';
-        if (!context.payload.pull_request) {
-            core.warning(`Skipped: context.payload.pull_request is null`);
+        let fileContent = '';
+        if (context.payload.pull_request == null) {
+            (0,core.warning)('Skipped: context.payload.pull_request is null');
             return null;
         }
         try {
@@ -6792,98 +6874,99 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
                 path: file.filename,
                 ref: context.payload.pull_request.base.sha
             });
-            if (contents.data) {
+            if (contents.data != null) {
                 if (!Array.isArray(contents.data)) {
-                    if (contents.data.type === 'file' && contents.data.content) {
-                        file_content = Buffer.from(contents.data.content, 'base64').toString();
+                    if (contents.data.type === 'file' &&
+                        contents.data.content != null) {
+                        fileContent = Buffer.from(contents.data.content, 'base64').toString();
                     }
                 }
             }
         }
-        catch (error) {
-            core.warning(`Failed to get file contents: ${error}`);
+        catch (e) {
+            (0,core.warning)(`Failed to get file contents: ${e}`);
         }
-        let file_diff = '';
-        if (file.patch) {
-            file_diff = file.patch;
+        let fileDiff = '';
+        if (file.patch != null) {
+            fileDiff = file.patch;
         }
         const patches = [];
-        for (const patch of split_patch(file.patch)) {
-            const patch_lines = patch_start_end_line(patch);
-            if (!patch_lines) {
+        for (const patch of splitPatch(file.patch)) {
+            const patchLines = patchStartEndLine(patch);
+            if (patchLines == null) {
                 continue;
             }
-            const hunks = parse_patch(patch);
-            if (!hunks) {
+            const hunks = parsePatch(patch);
+            if (hunks == null) {
                 continue;
             }
-            const hunks_str = `
+            const hunksStr = `
 ---new_hunk---
 \`\`\`
-${hunks.new_hunk}
+${hunks.newHunk}
 \`\`\`
 
 ---old_hunk---
 \`\`\`
-${hunks.old_hunk}
+${hunks.oldHunk}
 \`\`\`
 `;
             patches.push([
-                patch_lines.new_hunk.start_line,
-                patch_lines.new_hunk.end_line,
-                hunks_str
+                patchLines.newHunk.startLine,
+                patchLines.newHunk.endLine,
+                hunksStr
             ]);
         }
         if (patches.length > 0) {
-            return [file.filename, file_content, file_diff, patches];
+            return [file.filename, fileContent, fileDiff, patches];
         }
         else {
             return null;
         }
     }));
     // Filter out any null results
-    const files_and_changes = filtered_files.filter(file => file !== null);
-    if (files_and_changes.length === 0) {
-        core.error(`Skipped: no files to review`);
+    const filesAndChanges = filteredFiles.filter(file => file !== null);
+    if (filesAndChanges.length === 0) {
+        (0,core.error)('Skipped: no files to review');
         return;
     }
-    const summaries_failed = [];
-    const do_summary = async (filename, file_content, file_diff) => {
+    const summariesFailed = [];
+    const doSummary = async (filename, fileContent, fileDiff) => {
         const ins = inputs.clone();
-        if (file_diff.length === 0) {
-            core.warning(`summarize: file_diff is empty, skip ${filename}`);
-            summaries_failed.push(`${filename} (empty diff)`);
+        if (fileDiff.length === 0) {
+            (0,core.warning)(`summarize: file_diff is empty, skip ${filename}`);
+            summariesFailed.push(`${filename} (empty diff)`);
             return null;
         }
         ins.filename = filename;
         // render prompt based on inputs so far
-        let tokens = tokenizer/* get_token_count */.u(prompts.render_summarize_file_diff(ins));
-        const diff_tokens = tokenizer/* get_token_count */.u(file_diff);
-        if (tokens + diff_tokens > options.light_token_limits.request_tokens) {
-            core.info(`summarize: diff tokens exceeds limit, skip ${filename}`);
-            summaries_failed.push(`${filename} (diff tokens exceeds limit)`);
+        let tokens = (0,tokenizer/* getTokenCount */.V)(prompts.renderSummarizeFileDiff(ins));
+        const diffTokens = (0,tokenizer/* getTokenCount */.V)(fileDiff);
+        if (tokens + diffTokens > options.lightTokenLimits.requestTokens) {
+            (0,core.info)(`summarize: diff tokens exceeds limit, skip ${filename}`);
+            summariesFailed.push(`${filename} (diff tokens exceeds limit)`);
             return null;
         }
-        ins.file_diff = file_diff;
-        tokens += file_diff.length;
+        ins.fileDiff = fileDiff;
+        tokens += fileDiff.length;
         // optionally pack file_content
-        if (file_content.length > 0) {
+        if (fileContent.length > 0) {
             // count occurrences of $file_content in prompt
-            const file_content_count = prompts.summarize_file_diff.split('$file_content').length - 1;
-            const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-            if (file_content_count > 0 &&
-                tokens + file_content_tokens * file_content_count <=
-                    options.light_token_limits.request_tokens) {
-                tokens += file_content_tokens * file_content_count;
-                ins.file_content = file_content;
+            const fileContentCount = prompts.summarizeFileDiff.split('$file_content').length - 1;
+            const fileContentTokens = (0,tokenizer/* getTokenCount */.V)(fileContent);
+            if (fileContentCount > 0 &&
+                tokens + fileContentTokens * fileContentCount <=
+                    options.lightTokenLimits.requestTokens) {
+                tokens += fileContentTokens * fileContentCount;
+                ins.fileContent = fileContent;
             }
         }
         // summarize content
         try {
-            const [summarize_resp] = await lightBot.chat(prompts.render_summarize_file_diff(ins), {});
-            if (!summarize_resp) {
-                core.info('summarize: nothing obtained from openai');
-                summaries_failed.push(`${filename} (nothing obtained from openai)`);
+            const [summarizeResp] = await lightBot.chat(prompts.renderSummarizeFileDiff(ins), {});
+            if (summarizeResp === '') {
+                (0,core.info)('summarize: nothing obtained from openai');
+                summariesFailed.push(`${filename} (nothing obtained from openai)`);
                 return null;
             }
             else {
@@ -6891,34 +6974,34 @@ ${hunks.old_hunk}
                 // Format is : [TRIAGE]: <NEEDS_REVIEW or APPROVED>
                 // if the change needs review return true, else false
                 const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/;
-                const triageMatch = summarize_resp.match(triageRegex);
-                if (triageMatch) {
+                const triageMatch = summarizeResp.match(triageRegex);
+                if (triageMatch != null) {
                     const triage = triageMatch[1];
-                    const needs_review = triage === 'NEEDS_REVIEW' ? true : false;
+                    const needsReview = triage === 'NEEDS_REVIEW';
                     // remove this line from the comment
-                    const summary = summarize_resp.replace(triageRegex, '').trim();
-                    core.info(`filename: ${filename}, triage: ${triage}`);
-                    return [filename, summary, needs_review];
+                    const summary = summarizeResp.replace(triageRegex, '').trim();
+                    (0,core.info)(`filename: ${filename}, triage: ${triage}`);
+                    return [filename, summary, needsReview];
                 }
                 else {
-                    return [filename, summarize_resp, true];
+                    return [filename, summarizeResp, true];
                 }
             }
         }
-        catch (error) {
-            core.warning(`summarize: error from openai: ${error}`);
-            summaries_failed.push(`${filename} (error from openai: ${error})`);
+        catch (e) {
+            (0,core.warning)(`summarize: error from openai: ${e}`);
+            summariesFailed.push(`${filename} (error from openai: ${e})})`);
             return null;
         }
     };
     const summaryPromises = [];
-    const skipped_files = [];
-    for (const [filename, file_content, file_diff] of files_and_changes) {
-        if (options.max_files <= 0 || summaryPromises.length < options.max_files) {
-            summaryPromises.push(openai_concurrency_limit(async () => do_summary(filename, file_content, file_diff)));
+    const skippedFiles = [];
+    for (const [filename, fileContent, fileDiff] of filesAndChanges) {
+        if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
+            summaryPromises.push(openaiConcurrencyLimit(async () => await doSummary(filename, fileContent, fileDiff)));
         }
         else {
-            skipped_files.push(filename);
+            skippedFiles.push(filename);
         }
     }
     const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
@@ -6926,47 +7009,52 @@ ${hunks.old_hunk}
         // join summaries into one in the batches of 20
         // and ask the bot to summarize the summaries
         for (let i = 0; i < summaries.length; i += 20) {
-            const summaries_batch = summaries.slice(i, i + 20);
-            for (const [filename, summary] of summaries_batch) {
-                inputs.raw_summary += `---
+            const summariesBatch = summaries.slice(i, i + 20);
+            for (const [filename, summary] of summariesBatch) {
+                inputs.rawSummary += `---
 ${filename}: ${summary}
 `;
             }
             // ask chatgpt to summarize the summaries
-            const [summarize_resp] = await heavyBot.chat(prompts.render_summarize_changesets(inputs), {});
-            if (!summarize_resp) {
-                core.warning('summarize: nothing obtained from openai');
+            const [summarizeResp] = await heavyBot.chat(prompts.renderSummarizeChangesets(inputs), {});
+            if (summarizeResp === '') {
+                (0,core.warning)('summarize: nothing obtained from openai');
             }
             else {
-                inputs.raw_summary = summarize_resp;
+                inputs.rawSummary = summarizeResp;
             }
         }
     }
-    let next_summarize_ids = {};
+    let nextSummarizeIds = {};
     // final summary
-    const [summarize_final_response, summarize_final_response_ids] = await heavyBot.chat(prompts.render_summarize(inputs), next_summarize_ids);
-    if (!summarize_final_response) {
-        core.info('summarize: nothing obtained from openai');
+    const [summarizeFinalResponse, summarizeFinalResponseIds] = await heavyBot.chat(prompts.renderSummarize(inputs), nextSummarizeIds);
+    if (summarizeFinalResponse === '') {
+        (0,core.info)('summarize: nothing obtained from openai');
     }
     else {
         // final release notes
-        next_summarize_ids = summarize_final_response_ids;
-        const [release_notes_response, release_notes_ids] = await heavyBot.chat(prompts.render_summarize_release_notes(inputs), next_summarize_ids);
-        if (!release_notes_response) {
-            core.info('release notes: nothing obtained from openai');
+        nextSummarizeIds = summarizeFinalResponseIds;
+        const [releaseNotesResponse, releaseNotesIds] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), nextSummarizeIds);
+        if (releaseNotesResponse === '') {
+            (0,core.info)('release notes: nothing obtained from openai');
         }
         else {
-            next_summarize_ids = release_notes_ids;
-            inputs.release_notes = release_notes_response.replace(/(^|\n)> .*/g, '');
+            nextSummarizeIds = releaseNotesIds;
+            inputs.releaseNotes = releaseNotesResponse.replace(/(^|\n)> .*/g, '');
             let message = '### Summary by OpenAI\n\n';
-            message += release_notes_response;
-            commenter.update_description(context.payload.pull_request.number, message);
+            message += releaseNotesResponse;
+            try {
+                await commenter.updateDescription(context.payload.pull_request.number, message);
+            }
+            catch (e) {
+                (0,core.warning)(`release notes: error from github: ${e.message}`);
+            }
         }
     }
-    let summarize_comment = `${summarize_final_response}
+    let summarizeComment = `${summarizeFinalResponse}
 ${lib_commenter/* RAW_SUMMARY_TAG */.sr}
 <!--
-${inputs.raw_summary}
+${inputs.rawSummary}
 -->
 ${lib_commenter/* RAW_SUMMARY_TAG_END */.SR}
 ${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
@@ -6985,120 +7073,120 @@ ${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
 
 ---
 
-${filter_ignored_files.length > 0
+${filterIgnoredFiles.length > 0
         ? `
 <details>
-<summary>Files ignored due to filter (${filter_ignored_files.length})</summary>
+<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
 
 ### Ignored files
 
-* ${filter_ignored_files.map(file => file.filename).join('\n* ')}
+* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
 
 </details>
 `
         : ''}
 
-${skipped_files.length > 0
+${skippedFiles.length > 0
         ? `
 <details>
-<summary>Files not processed due to max files limit (${skipped_files.length})</summary>
+<summary>Files not processed due to max files limit (${skippedFiles.length})</summary>
 
 ### Not processed
 
-* ${skipped_files.join('\n* ')}
+* ${skippedFiles.join('\n* ')}
 
 </details>
 `
         : ''}
 
-${summaries_failed.length > 0
+${summariesFailed.length > 0
         ? `
 <details>
-<summary>Files not summarized due to errors (${summaries_failed.length})</summary>
+<summary>Files not summarized due to errors (${summariesFailed.length})</summary>
 
 ### Failed to summarize
 
-* ${summaries_failed.join('\n* ')}
+* ${summariesFailed.join('\n* ')}
 
 </details>
 `
         : ''}
 `;
-    if (options.summary_only !== true) {
-        const files_and_changes_review = files_and_changes.filter(([filename]) => {
-            const needs_review = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
-            return needs_review;
+    if (!options.summaryOnly) {
+        const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
+            const needsReview = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
+            return needsReview;
         });
-        const reviews_skipped = files_and_changes
-            .filter(([filename]) => !files_and_changes_review.some(([reviewFilename]) => reviewFilename === filename))
+        const reviewsSkipped = filesAndChanges
+            .filter(([filename]) => !filesAndChangesReview.some(([reviewFilename]) => reviewFilename === filename))
             .map(([filename]) => filename);
         // failed reviews array
-        const reviews_failed = [];
-        const do_review = async (filename, file_content, patches) => {
+        const reviewsFailed = [];
+        const doReview = async (filename, fileContent, patches) => {
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
             // calculate tokens based on inputs so far
-            let tokens = tokenizer/* get_token_count */.u(prompts.render_review_file_diff(ins));
+            let tokens = (0,tokenizer/* getTokenCount */.V)(prompts.renderReviewFileDiff(ins));
             // loop to calculate total patch tokens
-            let patches_to_pack = 0;
+            let patchesToPack = 0;
             for (const [, , patch] of patches) {
-                const patch_tokens = tokenizer/* get_token_count */.u(patch);
-                if (tokens + patch_tokens > options.heavy_token_limits.request_tokens) {
+                const patchTokens = (0,tokenizer/* getTokenCount */.V)(patch);
+                if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
                     break;
                 }
-                tokens += patch_tokens;
-                patches_to_pack += 1;
+                tokens += patchTokens;
+                patchesToPack += 1;
             }
             // try packing file_content into this request
-            const file_content_count = prompts.review_file_diff.split('$file_content').length - 1;
-            const file_content_tokens = tokenizer/* get_token_count */.u(file_content);
-            if (file_content_count > 0 &&
-                tokens + file_content_tokens * file_content_count <=
-                    options.heavy_token_limits.request_tokens) {
-                ins.file_content = file_content;
-                tokens += file_content_tokens * file_content_count;
+            const fileContentCount = prompts.reviewFileDiff.split('$file_content').length - 1;
+            const fileContentTokens = (0,tokenizer/* getTokenCount */.V)(fileContent);
+            if (fileContentCount > 0 &&
+                tokens + fileContentTokens * fileContentCount <=
+                    options.heavyTokenLimits.requestTokens) {
+                ins.fileContent = fileContent;
+                tokens += fileContentTokens * fileContentCount;
             }
-            let patches_packed = 0;
-            for (const [start_line, end_line, patch] of patches) {
-                if (!context.payload.pull_request) {
-                    core.warning('No pull request found, skipping.');
+            let patchesPacked = 0;
+            for (const [startLine, endLine, patch] of patches) {
+                if (context.payload.pull_request == null) {
+                    (0,core.warning)('No pull request found, skipping.');
                     continue;
                 }
                 // see if we can pack more patches into this request
-                if (patches_packed >= patches_to_pack) {
-                    core.info(`unable to pack more patches into this request, packed: ${patches_packed}, to pack: ${patches_to_pack}`);
+                if (patchesPacked >= patchesToPack) {
+                    (0,core.info)(`unable to pack more patches into this request, packed: ${patchesPacked}, to pack: ${patchesToPack}`);
                     break;
                 }
-                patches_packed += 1;
-                let comment_chain = '';
+                patchesPacked += 1;
+                let commentChain = '';
                 try {
-                    const all_chains = await commenter.get_comment_chains_within_range(context.payload.pull_request.number, filename, start_line, end_line, lib_commenter/* COMMENT_REPLY_TAG */.aD);
-                    if (all_chains.length > 0) {
-                        core.info(`Found comment chains: ${all_chains} for ${filename}`);
-                        comment_chain = all_chains;
+                    const allChains = await commenter.getCommentChainsWithinRange(context.payload.pull_request.number, filename, startLine, endLine, lib_commenter/* COMMENT_REPLY_TAG */.aD);
+                    if (allChains.length > 0) {
+                        (0,core.info)(`Found comment chains: ${allChains} for ${filename}`);
+                        commentChain = allChains;
                     }
                 }
                 catch (e) {
-                    core.warning(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
+                    (0,core.warning)(`Failed to get comments: ${e}, skipping. backtrace: ${e.stack}`);
                 }
                 // try packing comment_chain into this request
-                const comment_chain_tokens = tokenizer/* get_token_count */.u(comment_chain);
-                if (tokens + comment_chain_tokens >
-                    options.heavy_token_limits.request_tokens) {
-                    comment_chain = '';
+                const commentChainTokens = (0,tokenizer/* getTokenCount */.V)(commentChain);
+                if (tokens + commentChainTokens >
+                    options.heavyTokenLimits.requestTokens) {
+                    commentChain = '';
                 }
                 else {
-                    tokens += comment_chain_tokens;
+                    tokens += commentChainTokens;
                 }
                 ins.patches += `
 ${patch}
 `;
-                if (comment_chain !== '') {
+                if (commentChain !== '') {
                     ins.patches += `
 ---comment_chains---
 \`\`\`
-${comment_chain}
+${commentChain}
 \`\`\`
 `;
                 }
@@ -7108,83 +7196,85 @@ ${comment_chain}
             }
             // perform review
             try {
-                const [response] = await heavyBot.chat(prompts.render_review_file_diff(ins), {});
-                if (!response) {
-                    core.info('review: nothing obtained from openai');
-                    reviews_failed.push(`${filename} (no response)`);
+                const [response] = await heavyBot.chat(prompts.renderReviewFileDiff(ins), {});
+                if (response === '') {
+                    (0,core.info)('review: nothing obtained from openai');
+                    reviewsFailed.push(`${filename} (no response)`);
                     return;
                 }
                 // parse review
                 const reviews = parseReview(response, patches, options.debug);
                 for (const review of reviews) {
                     // check for LGTM
-                    if (!options.review_comment_lgtm &&
+                    if (!options.reviewCommentLGTM &&
                         (review.comment.includes('LGTM') ||
                             review.comment.includes('looks good to me'))) {
                         continue;
                     }
-                    if (!context.payload.pull_request) {
-                        core.warning('No pull request found, skipping.');
+                    if (context.payload.pull_request == null) {
+                        (0,core.warning)('No pull request found, skipping.');
                         continue;
                     }
                     try {
-                        await commenter.buffer_review_comment(filename, review.start_line, review.end_line, `${review.comment}`);
+                        await commenter.bufferReviewComment(filename, review.startLine, review.endLine, `${review.comment}`);
                     }
                     catch (e) {
-                        reviews_failed.push(`${filename} comment failed (${e})`);
+                        reviewsFailed.push(`${filename} comment failed (${e})`);
                     }
                 }
             }
             catch (e) {
-                core.warning(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`);
-                reviews_failed.push(`${filename} (${e})`);
+                (0,core.warning)(`Failed to review: ${e}, skipping. backtrace: ${e.stack}`);
+                reviewsFailed.push(`${filename} (${e})`);
             }
         };
         const reviewPromises = [];
-        for (const [filename, file_content, , patches] of files_and_changes_review) {
-            if (options.max_files <= 0 || reviewPromises.length < options.max_files) {
-                reviewPromises.push(openai_concurrency_limit(async () => do_review(filename, file_content, patches)));
+        for (const [filename, fileContent, , patches] of filesAndChangesReview) {
+            if (options.maxFiles <= 0 || reviewPromises.length < options.maxFiles) {
+                reviewPromises.push(openaiConcurrencyLimit(async () => {
+                    await doReview(filename, fileContent, patches);
+                }));
             }
             else {
-                skipped_files.push(filename);
+                skippedFiles.push(filename);
             }
         }
         await Promise.all(reviewPromises);
-        summarize_comment += `
-${reviews_failed.length > 0
+        summarizeComment += `
+${reviewsFailed.length > 0
             ? `<details>
-<summary>Files not reviewed due to errors in this run (${reviews_failed.length})</summary>
+<summary>Files not reviewed due to errors in this run (${reviewsFailed.length})</summary>
 
 ### Failed to review
 
-* ${reviews_failed.join('\n* ')}
+* ${reviewsFailed.join('\n* ')}
 
 </details>
 `
             : ''}
 
-${reviews_skipped.length > 0
+${reviewsSkipped.length > 0
             ? `<details>
-<summary>Files not reviewed due to simple changes (${reviews_skipped.length})</summary>
+<summary>Files not reviewed due to simple changes (${reviewsSkipped.length})</summary>
 
 ### Skipped review
 
-* ${reviews_skipped.join('\n* ')}
+* ${reviewsSkipped.join('\n* ')}
 
 </details>
 `
             : ''}
 `;
         // add existing_comment_ids_block with latest head sha
-        summarize_comment += `\n${addReviewedCommitId(existing_commit_ids_block, context.payload.pull_request.head.sha)}`;
+        summarizeComment += `\n${commenter.addReviewedCommitId(existingCommitIdsBlock, context.payload.pull_request.head.sha)}`;
     }
     // post the final summary comment
-    await commenter.comment(`${summarize_comment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
+    await commenter.comment(`${summarizeComment}`, lib_commenter/* SUMMARIZE_TAG */.Rp, 'replace');
     // post the review
-    await commenter.submit_review(context.payload.pull_request.number, commits[commits.length - 1].sha);
+    await commenter.submitReview(context.payload.pull_request.number, commits[commits.length - 1].sha);
 };
-const split_patch = (patch) => {
-    if (!patch) {
+const splitPatch = (patch) => {
+    if (patch == null) {
         return [];
     }
     const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@).*$/gm;
@@ -7205,22 +7295,22 @@ const split_patch = (patch) => {
     }
     return result;
 };
-const patch_start_end_line = (patch) => {
+const patchStartEndLine = (patch) => {
     const pattern = /(^@@ -(\d+),(\d+) \+(\d+),(\d+) @@)/gm;
     const match = pattern.exec(patch);
-    if (match) {
-        const old_begin = parseInt(match[2]);
-        const old_diff = parseInt(match[3]);
-        const new_begin = parseInt(match[4]);
-        const new_diff = parseInt(match[5]);
+    if (match != null) {
+        const oldBegin = parseInt(match[2]);
+        const oldDiff = parseInt(match[3]);
+        const newBegin = parseInt(match[4]);
+        const newDiff = parseInt(match[5]);
         return {
-            old_hunk: {
-                start_line: old_begin,
-                end_line: old_begin + old_diff - 1
+            oldHunk: {
+                startLine: oldBegin,
+                endLine: oldBegin + oldDiff - 1
             },
-            new_hunk: {
-                start_line: new_begin,
-                end_line: new_begin + new_diff - 1
+            newHunk: {
+                startLine: newBegin,
+                endLine: newBegin + newDiff - 1
             }
         };
     }
@@ -7228,15 +7318,15 @@ const patch_start_end_line = (patch) => {
         return null;
     }
 };
-const parse_patch = (patch) => {
-    const hunkInfo = patch_start_end_line(patch);
-    if (!hunkInfo) {
+const parsePatch = (patch) => {
+    const hunkInfo = patchStartEndLine(patch);
+    if (hunkInfo == null) {
         return null;
     }
-    const old_hunk_lines = [];
-    const new_hunk_lines = [];
-    //let old_line = hunkInfo.old_hunk.start_line
-    let new_line = hunkInfo.new_hunk.start_line;
+    const oldHunkLines = [];
+    const newHunkLines = [];
+    // let old_line = hunkInfo.old_hunk.start_line
+    let newLine = hunkInfo.newHunk.startLine;
     const lines = patch.split('\n').slice(1); // Skip the @@ line
     // Remove the last line if it's empty
     if (lines[lines.length - 1] === '') {
@@ -7244,23 +7334,23 @@ const parse_patch = (patch) => {
     }
     for (const line of lines) {
         if (line.startsWith('-')) {
-            old_hunk_lines.push(`${line.substring(1)}`);
-            //old_line++
+            oldHunkLines.push(`${line.substring(1)}`);
+            // old_line++
         }
         else if (line.startsWith('+')) {
-            new_hunk_lines.push(`${new_line}: ${line.substring(1)}`);
-            new_line++;
+            newHunkLines.push(`${newLine}: ${line.substring(1)}`);
+            newLine++;
         }
         else {
-            old_hunk_lines.push(`${line}`);
-            new_hunk_lines.push(`${new_line}: ${line}`);
-            //old_line++
-            new_line++;
+            oldHunkLines.push(`${line}`);
+            newHunkLines.push(`${newLine}: ${line}`);
+            // old_line++
+            newLine++;
         }
     }
     return {
-        old_hunk: old_hunk_lines.join('\n'),
-        new_hunk: new_hunk_lines.join('\n')
+        oldHunk: oldHunkLines.join('\n'),
+        newHunk: newHunkLines.join('\n')
     };
 };
 function parseReview(response, patches, debug = false) {
@@ -7275,37 +7365,37 @@ function parseReview(response, patches, debug = false) {
         if (currentStartLine !== null && currentEndLine !== null) {
             const sanitizedComment = sanitizeComment(currentComment.trim());
             const review = {
-                start_line: currentStartLine,
-                end_line: currentEndLine,
+                startLine: currentStartLine,
+                endLine: currentEndLine,
                 comment: sanitizedComment.trim()
             };
-            let within_patch = false;
-            let best_patch_start_line = patches[0][0];
-            let best_patch_end_line = patches[0][1];
-            let max_intersection = 0;
-            for (const [start_line, end_line] of patches) {
-                const intersection_start = Math.max(review.start_line, start_line);
-                const intersection_end = Math.min(review.end_line, end_line);
-                const intersection_length = Math.max(0, intersection_end - intersection_start + 1);
-                if (intersection_length > max_intersection) {
-                    max_intersection = intersection_length;
-                    best_patch_start_line = start_line;
-                    best_patch_end_line = end_line;
-                    within_patch =
-                        intersection_length === review.end_line - review.start_line + 1;
+            let withinPatch = false;
+            let bestPatchStartLine = patches[0][0];
+            let bestPatchEndLine = patches[0][1];
+            let maxIntersection = 0;
+            for (const [startLine, endLine] of patches) {
+                const intersectionStart = Math.max(review.startLine, startLine);
+                const intersectionEnd = Math.min(review.endLine, endLine);
+                const intersectionLength = Math.max(0, intersectionEnd - intersectionStart + 1);
+                if (intersectionLength > maxIntersection) {
+                    maxIntersection = intersectionLength;
+                    bestPatchStartLine = startLine;
+                    bestPatchEndLine = endLine;
+                    withinPatch =
+                        intersectionLength === review.endLine - review.startLine + 1;
                 }
-                if (within_patch)
+                if (withinPatch)
                     break;
             }
-            if (!within_patch) {
-                review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.start_line}-${review.end_line}]
+            if (!withinPatch) {
+                review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.startLine}-${review.endLine}]
 
 ${review.comment}`;
-                review.start_line = best_patch_start_line;
-                review.end_line = best_patch_end_line;
+                review.startLine = bestPatchStartLine;
+                review.endLine = bestPatchEndLine;
             }
             reviews.push(review);
-            core.info(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
+            (0,core.info)(`Stored comment for line range ${currentStartLine}-${currentEndLine}: ${currentComment.trim()}`);
         }
     }
     function sanitizeComment(comment) {
@@ -7332,13 +7422,13 @@ ${review.comment}`;
     }
     for (const line of lines) {
         const lineNumberRangeMatch = line.match(lineNumberRangeRegex);
-        if (lineNumberRangeMatch) {
+        if (lineNumberRangeMatch != null) {
             storeReview();
             currentStartLine = parseInt(lineNumberRangeMatch[1], 10);
             currentEndLine = parseInt(lineNumberRangeMatch[2], 10);
             currentComment = '';
             if (debug) {
-                core.info(`Found line number range: ${currentStartLine}-${currentEndLine}`);
+                (0,core.info)(`Found line number range: ${currentStartLine}-${currentEndLine}`);
             }
             continue;
         }
@@ -7348,7 +7438,7 @@ ${review.comment}`;
             currentEndLine = null;
             currentComment = '';
             if (debug) {
-                core.info('Found comment separator');
+                (0,core.info)('Found comment separator');
             }
             continue;
         }
@@ -7359,73 +7449,6 @@ ${review.comment}`;
     storeReview();
     return reviews;
 }
-const commit_ids_marker_start = '<!-- commit_ids_reviewed_start -->';
-const commit_ids_marker_end = '<!-- commit_ids_reviewed_end -->';
-// function that takes a comment body and returns the list of commit ids that have been reviewed
-// commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
-// <!-- [commit_id] -->
-function getReviewedCommitIds(commentBody) {
-    const start = commentBody.indexOf(commit_ids_marker_start);
-    const end = commentBody.indexOf(commit_ids_marker_end);
-    if (start === -1 || end === -1) {
-        return [];
-    }
-    const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
-    // remove the <!-- and --> markers from each id and extract the id and remove empty strings
-    return ids
-        .split('<!--')
-        .map(id => id.replace('-->', '').trim())
-        .filter(id => id !== '');
-}
-// get review commit ids comment block from the body as a string
-// including markers
-function getReviewedCommitIdsBlock(commentBody) {
-    const start = commentBody.indexOf(commit_ids_marker_start);
-    const end = commentBody.indexOf(commit_ids_marker_end);
-    if (start === -1 || end === -1) {
-        return '';
-    }
-    return commentBody.substring(start, end + commit_ids_marker_end.length);
-}
-// add a commit id to the list of reviewed commit ids
-// if the marker doesn't exist, add it
-function addReviewedCommitId(commentBody, commitId) {
-    const start = commentBody.indexOf(commit_ids_marker_start);
-    const end = commentBody.indexOf(commit_ids_marker_end);
-    if (start === -1 || end === -1) {
-        return `${commentBody}\n${commit_ids_marker_start}\n<!-- ${commitId} -->\n${commit_ids_marker_end}`;
-    }
-    const ids = commentBody.substring(start + commit_ids_marker_start.length, end);
-    return `${commentBody.substring(0, start + commit_ids_marker_start.length)}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`;
-}
-// given a list of commit ids provide the highest commit id that has been reviewed
-function getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
-    for (let i = commitIds.length - 1; i >= 0; i--) {
-        if (reviewedCommitIds.includes(commitIds[i])) {
-            return commitIds[i];
-        }
-    }
-    return '';
-}
-async function getAllCommitIds() {
-    const allCommits = [];
-    let page = 1;
-    let commits;
-    if (context && context.payload && context.payload.pull_request) {
-        do {
-            commits = await octokit/* octokit.pulls.listCommits */.K.pulls.listCommits({
-                owner: repo.owner,
-                repo: repo.repo,
-                pull_number: context.payload.pull_request.number,
-                per_page: 100,
-                page
-            });
-            allCommits.push(...commits.data.map(commit => commit.sha));
-            page++;
-        } while (commits.data.length > 0);
-    }
-    return allCommits;
-}
 
 
 /***/ }),
@@ -7435,16 +7458,17 @@ async function getAllCommitIds() {
 
 "use strict";
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   "u": () => (/* binding */ get_token_count)
+/* harmony export */   "V": () => (/* binding */ getTokenCount)
 /* harmony export */ });
 /* unused harmony export encode */
 /* harmony import */ var _dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3171);
+// eslint-disable-next-line camelcase
 
 const tokenizer = (0,_dqbd_tiktoken__WEBPACK_IMPORTED_MODULE_0__/* .get_encoding */ .iw)('cl100k_base');
 function encode(input) {
     return tokenizer.encode(input);
 }
-function get_token_count(input) {
+function getTokenCount(input) {
     input = input.replace(/<\|endoftext\|>/g, '');
     return encode(input).length;
 }

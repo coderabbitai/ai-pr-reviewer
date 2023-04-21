@@ -1,12 +1,13 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-import * as core from '@actions/core'
-import * as github from '@actions/github'
-import {octokit} from './octokit.js'
+import {info, warning} from '@actions/core'
+// eslint-disable-next-line camelcase
+import {context as github_context} from '@actions/github'
+import {octokit} from './octokit'
 
-const context = github.context
+// eslint-disable-next-line camelcase
+const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = `:robot: OpenAI`
+export const COMMENT_GREETING = ':robot: OpenAI'
 
 export const COMMENT_TAG =
   '<!-- This is an auto-generated comment by OpenAI -->'
@@ -29,19 +30,22 @@ export const RAW_SUMMARY_TAG =
 export const RAW_SUMMARY_TAG_END =
   '<!-- end of auto-generated comment: raw summary by openai -->'
 
+export const COMMIT_ID_TAG = '<!-- commit_ids_reviewed_start -->'
+export const COMMIT_ID_TAG_END = '<!-- commit_ids_reviewed_end -->'
+
 export class Commenter {
   /**
    * @param mode Can be "create", "replace". Default is "replace".
    */
   async comment(message: string, tag: string, mode: string) {
     let target: number
-    if (context.payload.pull_request) {
+    if (context.payload.pull_request != null) {
       target = context.payload.pull_request.number
-    } else if (context.payload.issue) {
+    } else if (context.payload.issue != null) {
       target = context.payload.issue.number
     } else {
-      core.warning(
-        `Skipped: context.payload.pull_request and context.payload.issue are both null`
+      warning(
+        'Skipped: context.payload.pull_request and context.payload.issue are both null'
       )
       return
     }
@@ -61,7 +65,7 @@ ${tag}`
     } else if (mode === 'replace') {
       await this.replace(body, tag, target)
     } else {
-      core.warning(`Unknown mode: ${mode}, use "replace" instead`)
+      warning(`Unknown mode: ${mode}, use "replace" instead`)
       await this.replace(body, tag, target)
     }
   }
@@ -84,7 +88,7 @@ ${tag}`
     return content
   }
 
-  get_raw_summary(summary: string) {
+  getRawSummary(summary: string) {
     const content = this.getContentWithinTags(
       summary,
       RAW_SUMMARY_TAG,
@@ -100,7 +104,7 @@ ${tag}`
     return lines.join('\n')
   }
 
-  get_description(description: string) {
+  getDescription(description: string) {
     return this.removeContentWithinTags(
       description,
       DESCRIPTION_TAG,
@@ -108,16 +112,16 @@ ${tag}`
     )
   }
 
-  get_release_notes(description: string) {
-    const release_notes = this.getContentWithinTags(
+  getReleaseNotes(description: string) {
+    const releaseNotes = this.getContentWithinTags(
       description,
       DESCRIPTION_TAG,
       DESCRIPTION_TAG_END
     )
-    return release_notes.replace(/(^|\n)> .*/g, '')
+    return releaseNotes.replace(/(^|\n)> .*/g, '')
   }
 
-  async update_description(pull_number: number, message: string) {
+  async updateDescription(pullNumber: number, message: string) {
     // add this response to the description field of the PR as release notes by looking
     // for the tag (marker)
     try {
@@ -125,58 +129,46 @@ ${tag}`
       const pr = await octokit.pulls.get({
         owner: repo.owner,
         repo: repo.repo,
-        pull_number
+        // eslint-disable-next-line camelcase
+        pull_number: pullNumber
       })
       let body = ''
       if (pr.data.body) {
         body = pr.data.body
       }
-      const description = this.get_description(body)
+      const description = this.getDescription(body)
 
-      // find the tag in the description and replace the content between the tag and the tag_end
-      // if not found, add the tag and the content to the end of the description
-      const tag_index = description.indexOf(DESCRIPTION_TAG)
-      const tag_end_index = description.indexOf(DESCRIPTION_TAG_END)
-      const comment = `${DESCRIPTION_TAG}\n${message}\n${DESCRIPTION_TAG_END}`
-      if (tag_index === -1 || tag_end_index === -1) {
-        const new_description = `${description}\n${comment}`
-        await octokit.pulls.update({
-          owner: repo.owner,
-          repo: repo.repo,
-          pull_number,
-          body: new_description
-        })
-      } else {
-        let new_description = description.substring(0, tag_index)
-        new_description += comment
-        new_description += description.substring(
-          tag_end_index + DESCRIPTION_TAG_END.length
-        )
-        await octokit.pulls.update({
-          owner: repo.owner,
-          repo: repo.repo,
-          pull_number,
-          body: new_description
-        })
-      }
+      const messageClean = this.removeContentWithinTags(
+        message,
+        DESCRIPTION_TAG,
+        DESCRIPTION_TAG_END
+      )
+      const newDescription = `${description}\n${DESCRIPTION_TAG}\n${messageClean}\n${DESCRIPTION_TAG_END}`
+      await octokit.pulls.update({
+        owner: repo.owner,
+        repo: repo.repo,
+        // eslint-disable-next-line camelcase
+        pull_number: pullNumber,
+        body: newDescription
+      })
     } catch (e) {
-      core.warning(
+      warning(
         `Failed to get PR: ${e}, skipping adding release notes to description.`
       )
     }
   }
 
-  private reviewCommentsBuffer: {
+  private readonly reviewCommentsBuffer: Array<{
     path: string
-    start_line: number
-    end_line: number
+    startLine: number
+    endLine: number
     message: string
-  }[] = []
+  }> = []
 
-  async buffer_review_comment(
+  async bufferReviewComment(
     path: string,
-    start_line: number,
-    end_line: number,
+    startLine: number,
+    endLine: number,
     message: string
   ) {
     message = `${COMMENT_GREETING}
@@ -186,35 +178,36 @@ ${message}
 ${COMMENT_TAG}`
     this.reviewCommentsBuffer.push({
       path,
-      start_line,
-      end_line,
+      startLine,
+      endLine,
       message
     })
   }
 
-  async submit_review(pull_number: number, commit_id: string) {
-    core.info(
-      `Submitting review for PR #${pull_number}, total comments: ${this.reviewCommentsBuffer.length}`
+  async submitReview(pullNumber: number, commitId: string) {
+    info(
+      `Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`
     )
     try {
       let commentCounter = 0
       for (const comment of this.reviewCommentsBuffer) {
-        core.info(`Posting comment: ${comment.message}`)
+        info(`Posting comment: ${comment.message}`)
         let found = false
-        const comments = await this.get_comments_at_range(
-          pull_number,
+        const comments = await this.getCommentsAtRange(
+          pullNumber,
           comment.path,
-          comment.start_line,
-          comment.end_line
+          comment.startLine,
+          comment.endLine
         )
         for (const c of comments) {
           if (c.body.includes(COMMENT_TAG)) {
-            core.info(
-              `Updating review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`
+            info(
+              `Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
             )
             await octokit.pulls.updateReviewComment({
               owner: repo.owner,
               repo: repo.repo,
+              // eslint-disable-next-line camelcase
               comment_id: c.id,
               body: comment.message
             })
@@ -224,41 +217,45 @@ ${COMMENT_TAG}`
         }
 
         if (!found) {
-          core.info(
-            `Creating new review comment for ${comment.path}:${comment.start_line}-${comment.end_line}: ${comment.message}`
+          info(
+            `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
           )
           const commentData: any = {
             owner: repo.owner,
             repo: repo.repo,
-            pull_number,
-            commit_id,
+            // eslint-disable-next-line camelcase
+            pull_number: pullNumber,
+            // eslint-disable-next-line camelcase
+            commit_id: commitId,
             body: comment.message,
             path: comment.path,
-            line: comment.end_line
+            line: comment.endLine
           }
 
-          if (comment.start_line !== comment.end_line) {
+          if (comment.startLine !== comment.endLine) {
+            // eslint-disable-next-line camelcase
             commentData.start_side = 'RIGHT'
-            commentData.start_line = comment.start_line
+            // eslint-disable-next-line camelcase
+            commentData.start_line = comment.startLine
           }
 
           await octokit.pulls.createReviewComment(commentData)
         }
 
         commentCounter++
-        core.info(
+        info(
           `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
         )
       }
     } catch (e) {
-      core.warning(`Failed to submit review: ${e}`)
+      warning(`Failed to submit review: ${e}`)
       throw e
     }
   }
 
-  async review_comment_reply(
-    pull_number: number,
-    top_level_comment: any,
+  async reviewCommentReply(
+    pullNumber: number,
+    topLevelComment: any,
     message: string
   ) {
     const reply = `${COMMENT_GREETING}
@@ -272,120 +269,125 @@ ${COMMENT_REPLY_TAG}
       await octokit.pulls.createReplyForReviewComment({
         owner: repo.owner,
         repo: repo.repo,
-        pull_number,
+        // eslint-disable-next-line camelcase
+        pull_number: pullNumber,
         body: reply,
-        comment_id: top_level_comment.id
+        // eslint-disable-next-line camelcase
+        comment_id: topLevelComment.id
       })
     } catch (error) {
-      core.warning(`Failed to reply to the top-level comment ${error}`)
+      warning(`Failed to reply to the top-level comment ${error}`)
       try {
         await octokit.pulls.createReplyForReviewComment({
           owner: repo.owner,
           repo: repo.repo,
-          pull_number,
+          // eslint-disable-next-line camelcase
+          pull_number: pullNumber,
           body: `Could not post the reply to the top-level comment due to the following error: ${error}`,
-          comment_id: top_level_comment.id
+          // eslint-disable-next-line camelcase
+          comment_id: topLevelComment.id
         })
       } catch (e) {
-        core.warning(`Failed to reply to the top-level comment ${e}`)
+        warning(`Failed to reply to the top-level comment ${e}`)
       }
     }
     try {
-      if (top_level_comment.body.includes(COMMENT_TAG)) {
+      if (topLevelComment.body.includes(COMMENT_TAG)) {
         // replace COMMENT_TAG with COMMENT_REPLY_TAG in topLevelComment
-        const newBody = top_level_comment.body.replace(
+        const newBody = topLevelComment.body.replace(
           COMMENT_TAG,
           COMMENT_REPLY_TAG
         )
         await octokit.pulls.updateReviewComment({
           owner: repo.owner,
           repo: repo.repo,
-          comment_id: top_level_comment.id,
+          // eslint-disable-next-line camelcase
+          comment_id: topLevelComment.id,
           body: newBody
         })
       }
     } catch (error) {
-      core.warning(`Failed to update the top-level comment ${error}`)
+      warning(`Failed to update the top-level comment ${error}`)
     }
   }
 
-  async get_comments_within_range(
-    pull_number: number,
+  async getCommentsWithinRange(
+    pullNumber: number,
     path: string,
-    start_line: number,
-    end_line: number
+    startLine: number,
+    endLine: number
   ) {
-    const comments = await this.list_review_comments(pull_number)
+    const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
         comment.body !== '' &&
         ((comment.start_line !== undefined &&
-          comment.start_line >= start_line &&
-          comment.line <= end_line) ||
-          (start_line === end_line && comment.line === end_line))
+          comment.start_line >= startLine &&
+          comment.line <= endLine) ||
+          (startLine === endLine && comment.line === endLine))
     )
   }
 
-  async get_comments_at_range(
-    pull_number: number,
+  async getCommentsAtRange(
+    pullNumber: number,
     path: string,
-    start_line: number,
-    end_line: number
+    startLine: number,
+    endLine: number
   ) {
-    const comments = await this.list_review_comments(pull_number)
+    const comments = await this.listReviewComments(pullNumber)
     return comments.filter(
       (comment: any) =>
         comment.path === path &&
         comment.body !== '' &&
         ((comment.start_line !== undefined &&
-          comment.start_line === start_line &&
-          comment.line === end_line) ||
-          (start_line === end_line && comment.line === end_line))
+          comment.start_line === startLine &&
+          comment.line === endLine) ||
+          (startLine === endLine && comment.line === endLine))
     )
   }
 
-  async get_comment_chains_within_range(
-    pull_number: number,
+  async getCommentChainsWithinRange(
+    pullNumber: number,
     path: string,
-    start_line: number,
-    end_line: number,
+    startLine: number,
+    endLine: number,
     tag = ''
   ) {
-    const existing_comments = await this.get_comments_within_range(
-      pull_number,
+    const existingComments = await this.getCommentsWithinRange(
+      pullNumber,
       path,
-      start_line,
-      end_line
+      startLine,
+      endLine
     )
     // find all top most comments
-    const top_level_comments = []
-    for (const comment of existing_comments) {
+    const topLevelComments = []
+    for (const comment of existingComments) {
       if (!comment.in_reply_to_id) {
-        top_level_comments.push(comment)
+        topLevelComments.push(comment)
       }
     }
 
-    let all_chains = ''
-    let chain_num = 0
-    for (const top_level_comment of top_level_comments) {
+    let allChains = ''
+    let chainNum = 0
+    for (const topLevelComment of topLevelComments) {
       // get conversation chain
-      const chain = await this.compose_comment_chain(
-        existing_comments,
-        top_level_comment
+      const chain = await this.composeCommentChain(
+        existingComments,
+        topLevelComment
       )
       if (chain && chain.includes(tag)) {
-        chain_num += 1
-        all_chains += `Conversation Chain ${chain_num}:
+        chainNum += 1
+        allChains += `Conversation Chain ${chainNum}:
 ${chain}
 ---
 `
       }
     }
-    return all_chains
+    return allChains
   }
 
-  async compose_comment_chain(reviewComments: any[], topLevelComment: any) {
+  async composeCommentChain(reviewComments: any[], topLevelComment: any) {
     const conversationChain = reviewComments
       .filter((cmt: any) => cmt.in_reply_to_id === topLevelComment.id)
       .map((cmt: any) => `${cmt.user.login}: ${cmt.body}`)
@@ -397,20 +399,20 @@ ${chain}
     return conversationChain.join('\n---\n')
   }
 
-  async get_comment_chain(pull_number: number, comment: any) {
+  async getCommentChain(pullNumber: number, comment: any) {
     try {
-      const review_comments = await this.list_review_comments(pull_number)
-      const top_level_comment = await this.get_top_level_comment(
-        review_comments,
+      const reviewComments = await this.listReviewComments(pullNumber)
+      const topLevelComment = await this.getTopLevelComment(
+        reviewComments,
         comment
       )
-      const chain = await this.compose_comment_chain(
-        review_comments,
-        top_level_comment
+      const chain = await this.composeCommentChain(
+        reviewComments,
+        topLevelComment
       )
-      return {chain, topLevelComment: top_level_comment}
+      return {chain, topLevelComment}
     } catch (e) {
-      core.warning(`Failed to get conversation chain: ${e}`)
+      warning(`Failed to get conversation chain: ${e}`)
       return {
         chain: '',
         topLevelComment: null
@@ -418,54 +420,56 @@ ${chain}
     }
   }
 
-  async get_top_level_comment(reviewComments: any[], comment: any) {
-    let top_level_comment = comment
+  async getTopLevelComment(reviewComments: any[], comment: any) {
+    let topLevelComment = comment
 
-    while (top_level_comment.in_reply_to_id) {
-      const parent_comment = reviewComments.find(
-        (cmt: any) => cmt.id === top_level_comment.in_reply_to_id
+    while (topLevelComment.in_reply_to_id) {
+      const parentComment = reviewComments.find(
+        (cmt: any) => cmt.id === topLevelComment.in_reply_to_id
       )
 
-      if (parent_comment) {
-        top_level_comment = parent_comment
+      if (parentComment) {
+        topLevelComment = parentComment
       } else {
         break
       }
     }
 
-    return top_level_comment
+    return topLevelComment
   }
 
   private reviewCommentsCache: Record<number, any[]> = {}
 
-  async list_review_comments(target: number) {
+  async listReviewComments(target: number) {
     if (this.reviewCommentsCache[target]) {
       return this.reviewCommentsCache[target]
     }
 
-    const all_comments: any[] = []
+    const allComments: any[] = []
     let page = 1
     try {
       for (;;) {
         const {data: comments} = await octokit.pulls.listReviewComments({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           pull_number: target,
           page,
+          // eslint-disable-next-line camelcase
           per_page: 100
         })
-        all_comments.push(...comments)
+        allComments.push(...comments)
         page++
         if (!comments || comments.length < 100) {
           break
         }
       }
 
-      this.reviewCommentsCache[target] = all_comments
-      return all_comments
+      this.reviewCommentsCache[target] = allComments
+      return allComments
     } catch (e) {
-      core.warning(`Failed to list review comments: ${e}`)
-      return all_comments
+      warning(`Failed to list review comments: ${e}`)
+      return allComments
     }
   }
 
@@ -475,21 +479,23 @@ ${chain}
       await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
+        // eslint-disable-next-line camelcase
         issue_number: target,
         body
       })
     } catch (e) {
-      core.warning(`Failed to create comment: ${e}`)
+      warning(`Failed to create comment: ${e}`)
     }
   }
 
   async replace(body: string, tag: string, target: number) {
     try {
-      const cmt = await this.find_comment_with_tag(tag, target)
+      const cmt = await this.findCommentWithTag(tag, target)
       if (cmt) {
         await octokit.issues.updateComment({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           comment_id: cmt.id,
           body
         })
@@ -497,13 +503,13 @@ ${chain}
         await this.create(body, target)
       }
     } catch (e) {
-      core.warning(`Failed to replace comment: ${e}`)
+      warning(`Failed to replace comment: ${e}`)
     }
   }
 
-  async find_comment_with_tag(tag: string, target: number) {
+  async findCommentWithTag(tag: string, target: number) {
     try {
-      const comments = await this.list_comments(target)
+      const comments = await this.listComments(target)
       for (const cmt of comments) {
         if (cmt.body && cmt.body.includes(tag)) {
           return cmt
@@ -512,41 +518,123 @@ ${chain}
 
       return null
     } catch (e: unknown) {
-      core.warning(`Failed to find comment with tag: ${e}`)
+      warning(`Failed to find comment with tag: ${e}`)
       return null
     }
   }
 
   private issueCommentsCache: Record<number, any[]> = {}
 
-  async list_comments(target: number) {
+  async listComments(target: number) {
     if (this.issueCommentsCache[target]) {
       return this.issueCommentsCache[target]
     }
 
-    const all_comments: any[] = []
+    const allComments: any[] = []
     let page = 1
     try {
       for (;;) {
         const {data: comments} = await octokit.issues.listComments({
           owner: repo.owner,
           repo: repo.repo,
+          // eslint-disable-next-line camelcase
           issue_number: target,
           page,
+          // eslint-disable-next-line camelcase
           per_page: 100
         })
-        all_comments.push(...comments)
+        allComments.push(...comments)
         page++
         if (!comments || comments.length < 100) {
           break
         }
       }
 
-      this.issueCommentsCache[target] = all_comments
-      return all_comments
+      this.issueCommentsCache[target] = allComments
+      return allComments
     } catch (e: any) {
-      core.warning(`Failed to list comments: ${e}`)
-      return all_comments
+      warning(`Failed to list comments: ${e}`)
+      return allComments
     }
+  }
+
+  // function that takes a comment body and returns the list of commit ids that have been reviewed
+  // commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
+  // <!-- [commit_id] -->
+  getReviewedCommitIds(commentBody: string): string[] {
+    const start = commentBody.indexOf(COMMIT_ID_TAG)
+    const end = commentBody.indexOf(COMMIT_ID_TAG_END)
+    if (start === -1 || end === -1) {
+      return []
+    }
+    const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end)
+    // remove the <!-- and --> markers from each id and extract the id and remove empty strings
+    return ids
+      .split('<!--')
+      .map(id => id.replace('-->', '').trim())
+      .filter(id => id !== '')
+  }
+
+  // get review commit ids comment block from the body as a string
+  // including markers
+  getReviewedCommitIdsBlock(commentBody: string): string {
+    const start = commentBody.indexOf(COMMIT_ID_TAG)
+    const end = commentBody.indexOf(COMMIT_ID_TAG_END)
+    if (start === -1 || end === -1) {
+      return ''
+    }
+    return commentBody.substring(start, end + COMMIT_ID_TAG_END.length)
+  }
+
+  // add a commit id to the list of reviewed commit ids
+  // if the marker doesn't exist, add it
+  addReviewedCommitId(commentBody: string, commitId: string): string {
+    const start = commentBody.indexOf(COMMIT_ID_TAG)
+    const end = commentBody.indexOf(COMMIT_ID_TAG_END)
+    if (start === -1 || end === -1) {
+      return `${commentBody}\n${COMMIT_ID_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_TAG_END}`
+    }
+    const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end)
+    return `${commentBody.substring(
+      0,
+      start + COMMIT_ID_TAG.length
+    )}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`
+  }
+
+  // given a list of commit ids provide the highest commit id that has been reviewed
+  getHighestReviewedCommitId(
+    commitIds: string[],
+    reviewedCommitIds: string[]
+  ): string {
+    for (let i = commitIds.length - 1; i >= 0; i--) {
+      if (reviewedCommitIds.includes(commitIds[i])) {
+        return commitIds[i]
+      }
+    }
+    return ''
+  }
+
+  async getAllCommitIds(): Promise<string[]> {
+    const allCommits = []
+    let page = 1
+    let commits
+    if (context && context.payload && context.payload.pull_request != null) {
+      do {
+        commits = await octokit.pulls.listCommits({
+          owner: repo.owner,
+          repo: repo.repo,
+          // eslint-disable-next-line camelcase
+          pull_number: context.payload.pull_request.number,
+          // eslint-disable-next-line camelcase
+          per_page: 100,
+          page
+        })
+
+        allCommits.push(...commits.data.map(commit => commit.sha))
+        page++
+      } while (commits.data.length > 0)
+    }
+
+    return allCommits
   }
 }
