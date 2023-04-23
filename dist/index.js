@@ -7247,11 +7247,13 @@ ${commentChain}
         }
         await Promise.all(reviewPromises);
         summarizeComment += `
+In the recent run, only the files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${context.payload.pull_request.head.ref}\` commits were reviewed.
+
 ${reviewsFailed.length > 0
             ? `<details>
-<summary>Files not reviewed due to errors in this run (${reviewsFailed.length})</summary>
+<summary>Files not reviewed due to errors in the recent run (${reviewsFailed.length})</summary>
 
-### Failed to review
+### Failed to review in the last run
 
 * ${reviewsFailed.join('\n* ')}
 
@@ -7263,7 +7265,7 @@ ${reviewsSkipped.length > 0
             ? `<details>
 <summary>Files not reviewed due to simple changes (${reviewsSkipped.length})</summary>
 
-### Skipped review
+### Skipped review in the recent run
 
 * ${reviewsSkipped.join('\n* ')}
 
