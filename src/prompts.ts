@@ -50,7 +50,6 @@ Your task is to de-deduplicate and group together files with
 related/similar changes into a single changeset. Respond with the updated 
 changesets using the same format as the input. 
 
-Changesets:
 $raw_summary
 `
 
