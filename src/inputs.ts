@@ -16,9 +16,9 @@ export class Inputs {
     systemMessage = '',
     title = 'no title provided',
     description = 'no description provided',
-    summary = 'no summary so far',
-    releaseNotes = 'no release notes so far',
-    filename = 'unknown',
+    rawSummary = '',
+    releaseNotes = '',
+    filename = '',
     fileContent = 'file contents cannot be provided',
     fileDiff = 'file diff cannot be provided',
     patches = '',
@@ -29,7 +29,7 @@ export class Inputs {
     this.systemMessage = systemMessage
     this.title = title
     this.description = description
-    this.rawSummary = summary
+    this.rawSummary = rawSummary
     this.releaseNotes = releaseNotes
     this.filename = filename
     this.fileContent = fileContent
