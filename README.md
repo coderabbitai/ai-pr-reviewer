@@ -5,13 +5,47 @@
 ## Overview
 
 This [OpenAI ChatGPT-based](https://platform.openai.com/docs/guides/chat) GitHub
-Action provides a summary, release notes and review of pull requests. The
-prompts have been tuned for a concise response. To prevent excessive
-notifications, this action can be configured to skip adding review comments when
-the changes look good for the most part.
+Action provides a summary, release notes and review of pull requests. The unique
+features of this action are:
 
-In addition, this action can also reply to the user comments made on the review
-by this action.
+- Unlike other approaches that provide a simple summary and/or conversation,
+  this action reviews the changes line by line and provides code change
+  suggestions that can be directly committed from the GitHub UI. The prompts
+  have been tuned carefully to comment on exact lines within changed hunks of
+  code.
+- Continuous, yet incremental, reviews on each commit with a pull request. This
+  is unlike other approaches that provide a one-time review on the entire pull
+  request when requested by the user.
+- Incremental reviews save on OpenAI costs while also reducing noise. Changed
+  files are tracked between commits and the base of the pull request
+- The action is designed to be used with a "light" summarization model (e.g.
+  `gpt-3.5-turbo`) and a "heavy" review model (e.g. `gpt-4`). This allows for a
+  cheaper and faster summarization process and a more accurate review process.
+  **For best results, setting `gpt-4` as the "heavy" model instead of the
+  `gpt-3.5-turbo` (default) is highly recommended.**
+- This action supports a conversation with the bot in the context of lines of
+  code or entire files. Useful for providing further context to the bot for its
+  next review, to generate test cases, to reduce complexity of the code and so
+  on.
+- By default, the action is configured to skip more in-depth review when the
+  changes are simple (e.g. typo fixes). This is based on the triage done during
+  the summarization stage. This feature can be disabled by setting
+  `review_simple_changes` to `true`.
+- By default, the action is configured to skip adding review comments when the
+  changes look good for the most part. This feature can be disabled by setting
+  `review_comment_lgtm` to `true`.
+- You can tailor the following prompts:
+  - `system_message`: Defines the objective and the personality of the bot. You
+    can change this prompt to focus on or ignore certain aspects of the review
+    process, e.g. documentation, code quality, etc. Furthermore, you can even
+    change the bot to do marketing material review instead of code review.
+  - `summarize`: Summarizes the pull request into a table of changes etc.
+  - `summarize_release_notes`: Summarize the changes in the pull request for
+    release notes purposes.
+- You can altogether skip the reviews, setting the `summary_only` to `true`. But
+  that defeats the main purpose of this action. Other tools such as GitHub's
+  [Copliot for Pull Requests](https://githubnext.com/projects/copilot-for-pull-requests)
+  may be a cheaper and good enough alternative in that case.
 
 NOTES:
 
@@ -58,6 +92,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
+          review_simple_changes: false
           review_comment_lgtm: false
 ```
 
@@ -101,7 +136,9 @@ To ignore a PR, add the following keyword in the PR description:
 - `OPENAI_API_KEY`: use this to authenticate with OpenAI API. You can get one
   [here](https://platform.openai.com/account/api-keys). Please add this key to
   your GitHub Action secrets.
-- `OPENAI_API_ORG`: (optional) use this to use the specified organisation with OpenAI API if you have multiple. Please add this key to your GitHub Action secrets.
+- `OPENAI_API_ORG`: (optional) use this to use the specified organisation with
+  OpenAI API if you have multiple. Please add this key to your GitHub Action
+  secrets.
 
 ### Models: `gpt-4` and `gpt-3.5-turbo`
 
@@ -217,6 +254,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
+          review_simple_changes: false
           review_comment_lgtm: false
 ```
 

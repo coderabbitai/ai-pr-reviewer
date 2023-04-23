@@ -6,6 +6,7 @@ export class Options {
   debug: boolean
   summaryOnly: boolean
   maxFiles: number
+  reviewSimpleChanges: boolean
   reviewCommentLGTM: boolean
   pathFilters: PathFilter
   systemMessage: string
@@ -22,6 +23,7 @@ export class Options {
     debug: boolean,
     summaryOnly: boolean,
     maxFiles = '0',
+    reviewSimpleChanges = false,
     reviewCommentLGTM = false,
     pathFilters: string[] | null = null,
     systemMessage = '',
@@ -35,6 +37,7 @@ export class Options {
     this.debug = debug
     this.summaryOnly = summaryOnly
     this.maxFiles = parseInt(maxFiles)
+    this.reviewSimpleChanges = reviewSimpleChanges
     this.reviewCommentLGTM = reviewCommentLGTM
     this.pathFilters = new PathFilter(pathFilters)
     this.systemMessage = systemMessage
@@ -53,6 +56,7 @@ export class Options {
     info(`debug: ${this.debug}`)
     info(`summary_only: ${this.summaryOnly}`)
     info(`max_files: ${this.maxFiles}`)
+    info(`review_simple_changes: ${this.reviewSimpleChanges}`)
     info(`review_comment_lgtm: ${this.reviewCommentLGTM}`)
     info(`path_filters: ${this.pathFilters}`)
     info(`system_message: ${this.systemMessage}`)

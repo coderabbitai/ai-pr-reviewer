@@ -23,8 +23,8 @@ $file_diff
 \`\`\`
 
 I would like you to summarize the diff within 50 words.
-
-Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
+`
+  triageFileDiff = `Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
 \`APPROVED\` based on the following criteria:
 
 - If the diff involves any modifications to the logic or functionality, even if they 
@@ -248,8 +248,15 @@ $patches
     this.summarizeReleaseNotes = summarizeReleaseNotes
   }
 
-  renderSummarizeFileDiff(inputs: Inputs): string {
-    return inputs.render(this.summarizeFileDiff)
+  renderSummarizeFileDiff(
+    inputs: Inputs,
+    reviewSimpleChanges: boolean
+  ): string {
+    let prompt = this.summarizeFileDiff
+    if (reviewSimpleChanges === false) {
+      prompt += this.triageFileDiff
+    }
+    return inputs.render(prompt)
   }
 
   renderSummarizeChangesets(inputs: Inputs): string {

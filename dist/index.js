@@ -4123,7 +4123,7 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('debug'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('summary_only'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_files'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_comment_lgtm'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput)('path_filters'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('system_message'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_light_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_heavy_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_model_temperature'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_retries'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_timeout_ms'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_concurrency_limit'));
+    const options = new _options__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('debug'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('summary_only'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_files'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_simple_changes'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_comment_lgtm'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput)('path_filters'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('system_message'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_light_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_heavy_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_model_temperature'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_retries'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_timeout_ms'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _prompts__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize_release_notes'));
@@ -6035,6 +6035,7 @@ class Options {
     debug;
     summaryOnly;
     maxFiles;
+    reviewSimpleChanges;
     reviewCommentLGTM;
     pathFilters;
     systemMessage;
@@ -6046,10 +6047,11 @@ class Options {
     openaiConcurrencyLimit;
     lightTokenLimits;
     heavyTokenLimits;
-    constructor(debug, summaryOnly, maxFiles = '0', reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4') {
+    constructor(debug, summaryOnly, maxFiles = '0', reviewSimpleChanges = false, reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4') {
         this.debug = debug;
         this.summaryOnly = summaryOnly;
         this.maxFiles = parseInt(maxFiles);
+        this.reviewSimpleChanges = reviewSimpleChanges;
         this.reviewCommentLGTM = reviewCommentLGTM;
         this.pathFilters = new PathFilter(pathFilters);
         this.systemMessage = systemMessage;
@@ -6067,6 +6069,7 @@ class Options {
         (0,core.info)(`debug: ${this.debug}`);
         (0,core.info)(`summary_only: ${this.summaryOnly}`);
         (0,core.info)(`max_files: ${this.maxFiles}`);
+        (0,core.info)(`review_simple_changes: ${this.reviewSimpleChanges}`);
         (0,core.info)(`review_comment_lgtm: ${this.reviewCommentLGTM}`);
         (0,core.info)(`path_filters: ${this.pathFilters}`);
         (0,core.info)(`system_message: ${this.systemMessage}`);
@@ -6172,8 +6175,8 @@ $file_diff
 \`\`\`
 
 I would like you to summarize the diff within 50 words.
-
-Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
+`;
+    triageFileDiff = `Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
 \`APPROVED\` based on the following criteria:
 
 - If the diff involves any modifications to the logic or functionality, even if they 
@@ -6394,8 +6397,12 @@ $patches
         this.summarize = summarize;
         this.summarizeReleaseNotes = summarizeReleaseNotes;
     }
-    renderSummarizeFileDiff(inputs) {
-        return inputs.render(this.summarizeFileDiff);
+    renderSummarizeFileDiff(inputs, reviewSimpleChanges) {
+        let prompt = this.summarizeFileDiff;
+        if (reviewSimpleChanges === false) {
+            prompt += this.triageFileDiff;
+        }
+        return inputs.render(prompt);
     }
     renderSummarizeChangesets(inputs) {
         return inputs.render(this.summarizeChangesets);
@@ -6939,7 +6946,7 @@ ${hunks.oldHunk}
         }
         ins.filename = filename;
         // render prompt based on inputs so far
-        let tokens = (0,tokenizer/* getTokenCount */.V)(prompts.renderSummarizeFileDiff(ins));
+        let tokens = (0,tokenizer/* getTokenCount */.V)(prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges));
         const diffTokens = (0,tokenizer/* getTokenCount */.V)(fileDiff);
         if (tokens + diffTokens > options.lightTokenLimits.requestTokens) {
             (0,core.info)(`summarize: diff tokens exceeds limit, skip ${filename}`);
@@ -6962,29 +6969,29 @@ ${hunks.oldHunk}
         }
         // summarize content
         try {
-            const [summarizeResp] = await lightBot.chat(prompts.renderSummarizeFileDiff(ins), {});
+            const [summarizeResp] = await lightBot.chat(prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges), {});
             if (summarizeResp === '') {
                 (0,core.info)('summarize: nothing obtained from openai');
                 summariesFailed.push(`${filename} (nothing obtained from openai)`);
                 return null;
             }
             else {
-                // parse the comment to look for triage classification
-                // Format is : [TRIAGE]: <NEEDS_REVIEW or APPROVED>
-                // if the change needs review return true, else false
-                const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/;
-                const triageMatch = summarizeResp.match(triageRegex);
-                if (triageMatch != null) {
-                    const triage = triageMatch[1];
-                    const needsReview = triage === 'NEEDS_REVIEW';
-                    // remove this line from the comment
-                    const summary = summarizeResp.replace(triageRegex, '').trim();
-                    (0,core.info)(`filename: ${filename}, triage: ${triage}`);
-                    return [filename, summary, needsReview];
+                if (options.reviewSimpleChanges === false) {
+                    // parse the comment to look for triage classification
+                    // Format is : [TRIAGE]: <NEEDS_REVIEW or APPROVED>
+                    // if the change needs review return true, else false
+                    const triageRegex = /\[TRIAGE\]:\s*(NEEDS_REVIEW|APPROVED)/;
+                    const triageMatch = summarizeResp.match(triageRegex);
+                    if (triageMatch != null) {
+                        const triage = triageMatch[1];
+                        const needsReview = triage === 'NEEDS_REVIEW';
+                        // remove this line from the comment
+                        const summary = summarizeResp.replace(triageRegex, '').trim();
+                        (0,core.info)(`filename: ${filename}, triage: ${triage}`);
+                        return [filename, summary, needsReview];
+                    }
                 }
-                else {
-                    return [filename, summarizeResp, true];
-                }
+                return [filename, summarizeResp, true];
             }
         }
         catch (e) {
@@ -7240,11 +7247,14 @@ ${commentChain}
         }
         await Promise.all(reviewPromises);
         summarizeComment += `
+---
+In the recent run, only the files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${context.payload.pull_request.head.sha}\` commits were reviewed.
+
 ${reviewsFailed.length > 0
             ? `<details>
-<summary>Files not reviewed due to errors in this run (${reviewsFailed.length})</summary>
+<summary>Files not reviewed due to errors in the recent run (${reviewsFailed.length})</summary>
 
-### Failed to review
+### Failed to review in the last run
 
 * ${reviewsFailed.join('\n* ')}
 
@@ -7256,7 +7266,7 @@ ${reviewsSkipped.length > 0
             ? `<details>
 <summary>Files not reviewed due to simple changes (${reviewsSkipped.length})</summary>
 
-### Skipped review
+### Skipped review in the recent run
 
 * ${reviewsSkipped.join('\n* ')}
 
