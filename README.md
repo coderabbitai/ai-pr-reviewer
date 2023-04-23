@@ -23,7 +23,6 @@ NOTES:
   [more conservative data usage policy](https://openai.com/policies/api-data-usage-policies)
   compared to their ChatGPT offering.
 - This action is not affiliated with OpenAI.
-- This action is going through rapid iteration, so expect breaking changes.
 
 ## Usage
 
