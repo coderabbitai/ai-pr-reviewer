@@ -21,6 +21,8 @@ features of this action are:
 - The action is designed to be used with a "light" summarization model (e.g.
   `gpt-3.5-turbo`) and a "heavy" review model (e.g. `gpt-4`). This allows for a
   cheaper and faster summarization process and a more accurate review process.
+  **For best results, setting `gpt-4` as the "heavy" model instead of the
+  `gpt-3.5-turbo` (default) is highly recommended.**
 - This action supports a conversation with the bot in the context of lines of
   code or entire files. Useful for providing further context to the bot for its
   next review, to generate test cases, to reduce complexity of the code and so
