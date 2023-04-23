@@ -7248,7 +7248,7 @@ ${commentChain}
         await Promise.all(reviewPromises);
         summarizeComment += `
 ---
-In the recent run, only the files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${context.payload.pull_request.head.ref}\` commits were reviewed.
+In the recent run, only the files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${context.payload.pull_request.head.sha}\` commits were reviewed.
 
 ${reviewsFailed.length > 0
             ? `<details>
