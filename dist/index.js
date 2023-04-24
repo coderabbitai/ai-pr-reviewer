@@ -6290,56 +6290,40 @@ Format for changes:
   ...
 
 Instructions:
-- The above format for changes consists of multiple change sections. Each change 
-  section consists of a new hunk (annotated with line numbers), an old hunk and 
-  optionally, existing comment chains. The line number annotation on each line 
-  in the new hunk is of the format \`<line_number><colon><whitespace>\`.  
-- Note that the code in the old hunk does not exist anymore as it was replaced 
-  by the new hunk. The new hunk is the code that you need to review. Consider 
-  the context provided by the old hunk and associated comment chain when reviewing 
-  the new hunk.  
-- Your task is to do a line by line review of new hunks and point out 
-  substantive issues in those line number ranges. For each issue you 
-  identify, please provide the exact line number range (inclusive) where 
-  the issue occurs.
-- Only respond in the below response format (consisting of review
-  sections) and nothing else. Each review section must consist of a line 
-  number range and a review comment for that line number range. Optionally, 
-  you can include a single replacement suggestion snippet and/or multiple 
-  new code snippets in the review comment. There's a separator between review 
-  sections.
-- It's important that line number ranges for each review section must 
-  be within the line number range of a specific new hunk. i.e. 
-  <start_line_number> must belong to the same hunk as the 
-  <end_line_number>. The line number range is sufficient to map your 
-  comment to the code changes in GitHub pull request.
-- Do not summarize the changes or repeat back provided code in the review 
-  comments and only focus on pointing out substantive issues.
-- Use Markdown format for review comment text.
-- Fenced code blocks must be used for new content and replacement 
-  code/text snippets and must not be annotated with line numbers.
-- If needed, provide a replacement suggestion using fenced code blocks 
-  with the \`suggestion\` as the language identifier. The line number range 
-  in the review section must map exactly to the line number range (inclusive) 
-  that need to be replaced within a new_hunk.
-  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
-  of code, the line number range must be those exact 2 lines. If an entire hunk 
-  need to be replaced with new code, then the line number range must be the 
-  entire hunk. Replacement suggestions should be complete units that can be
-  directly committed by the user in the GitHub UI.
-- Replacement code/text snippets must be complete and correctly 
-  formatted. Each replacement suggestion must be provided as a separate review 
-  section with relevant line number ranges.  
+
+- The format for changes provided above consists of multiple change 
+  sections, each containing a new hunk (annotated with line numbers), 
+  an old hunk, and optionally, existing comment chains. Note that the 
+  old hunk code has been replaced by the new hunk.
+- Your task is to review new hunks line by line, ONLY pointing out 
+  substantive issues within line number ranges. Provide the exact line 
+  number range (inclusive) for each issue. Focus on identifying specific 
+  issues and avoid summarizing changes or providing general feedback.
+- IMPORTANT: Respond only in the response format (consisting of review 
+  sections). Each review section must have a line number range and a review 
+  comment for that range. Do not include general feedback or summaries. You 
+  may optionally include a single replacement suggestion snippet and/or 
+  multiple new code snippets in the review comment. Separate review sections 
+  using separators.
+- IMPORTANT: Line number ranges for each review section must be within the 
+  range of a specific new hunk. <start_line_number> must belong to the same 
+  hunk as the <end_line_number>. The line number range is sufficient to map 
+  your comment to the code changes in the GitHub pull request.
+- Use Markdown format for review comment text and fenced code blocks for
+  code snippets. Do not annotate code snippets with line numbers.
+- If needed, provide replacement suggestions using fenced code blocks with the 
+  \`suggestion\` language identifier. The line number range must map exactly 
+  to the range that needs to be replaced within a new hunk. Replacement 
+  suggestions should be complete and correctly formatted units for direct 
+  committing in the GitHub UI. Each suggestion must be provided as a separate 
+  review section with relevant line number ranges.
 - If needed, suggest new code using the correct language identifier in the 
-  fenced code blocks. These snippets may be added to a different file, such 
-  as test cases. Multiple new code snippets are allowed within a single 
+  fenced code blocks. These snippets may be added to a different file, 
+  such as test cases. Multiple new code snippets are allowed within a single 
   review section.
-- If there are no substantive issues detected at a line range and/or the 
-  implementation looks good, you must respond with the comment "LGTM!" and 
-  nothing else for the respective line range in a review section.
-- Reflect on your comments and line number ranges before sending the final 
-  response to ensure accuracy of line number ranges and replacement
-  snippets.
+- If no substantive issues are detected or the implementation looks good, 
+  respond with "LGTM!" and nothing else for the respective line range in a 
+  review section.
 
 Response format expected:
   <start_line_number>-<end_line_number>:
@@ -6373,9 +6357,11 @@ Example changes:
       return x + y
 
 Example response:
-  3-3:
+  1-3:
   There's a typo in the return statement.
   \`\`\`suggestion
+  def add(x, y):
+      z = x + y
       return z
   \`\`\`
   ---
