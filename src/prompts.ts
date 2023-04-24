@@ -168,7 +168,7 @@ Instructions:
 - Use Markdown format for review comment text.
 - Use fenced code blocks for new content and replacement code/text snippets 
   without line number annotations. 
-- When providing replacement suggestions, use fenced code blocks with the 
+- If needed, provide replacement suggestions using fenced code blocks with the 
   \`suggestion\` language identifier. The line number range must map exactly 
   to the range that needs to be replaced within a new hunk. Replacement 
   suggestions should be complete and correctly formatted units for direct 
