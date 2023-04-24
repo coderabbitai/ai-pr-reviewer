@@ -3507,7 +3507,6 @@ class Bot {
 "use strict";
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Es": () => (/* binding */ Commenter),
-/* harmony export */   "Nh": () => (/* binding */ EXTRA_CONTENT_TAG),
 /* harmony export */   "Rp": () => (/* binding */ SUMMARIZE_TAG),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
 /* harmony export */   "SR": () => (/* binding */ RAW_SUMMARY_TAG_END),
@@ -3531,11 +3530,13 @@ const COMMENT_GREETING = ':robot: OpenAI';
 const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
 const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
-const EXTRA_CONTENT_TAG = '<!-- Extra content -->';
 const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
 const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
-const RAW_SUMMARY_TAG = '<!-- This is an auto-generated comment: raw summary by openai -->';
-const RAW_SUMMARY_TAG_END = '<!-- end of auto-generated comment: raw summary by openai -->';
+const RAW_SUMMARY_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
+<!--
+`;
+const RAW_SUMMARY_TAG_END = `-->
+<!-- end of auto-generated comment: raw summary by openai -->`;
 const COMMIT_ID_TAG = '<!-- commit_ids_reviewed_start -->';
 const COMMIT_ID_TAG_END = '<!-- commit_ids_reviewed_end -->';
 class Commenter {
@@ -3590,15 +3591,7 @@ ${tag}`;
         return content;
     }
     getRawSummary(summary) {
-        const content = this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
-        // remove the first and last line
-        const lines = content.split('\n');
-        if (lines.length < 3) {
-            return '';
-        }
-        lines.shift();
-        lines.pop();
-        return lines.join('\n');
+        return this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
     }
     getDescription(description) {
         return this.removeContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
@@ -7059,11 +7052,8 @@ ${filename}: ${summary}
     }
     let summarizeComment = `${summarizeFinalResponse}
 ${lib_commenter/* RAW_SUMMARY_TAG */.sr}
-<!--
 ${inputs.rawSummary}
--->
 ${lib_commenter/* RAW_SUMMARY_TAG_END */.SR}
-${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
 ---
 
 ### Chat with 🤖 OpenAI Bot (\`@openai\`)

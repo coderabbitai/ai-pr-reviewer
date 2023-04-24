@@ -18,17 +18,16 @@ export const COMMENT_REPLY_TAG =
 export const SUMMARIZE_TAG =
   '<!-- This is an auto-generated comment: summarize by openai -->'
 
-export const EXTRA_CONTENT_TAG = '<!-- Extra content -->'
-
 export const DESCRIPTION_TAG =
   '<!-- This is an auto-generated comment: release notes by openai -->'
 export const DESCRIPTION_TAG_END =
   '<!-- end of auto-generated comment: release notes by openai -->'
 
-export const RAW_SUMMARY_TAG =
-  '<!-- This is an auto-generated comment: raw summary by openai -->'
-export const RAW_SUMMARY_TAG_END =
-  '<!-- end of auto-generated comment: raw summary by openai -->'
+export const RAW_SUMMARY_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
+<!--
+`
+export const RAW_SUMMARY_TAG_END = `-->
+<!-- end of auto-generated comment: raw summary by openai -->`
 
 export const COMMIT_ID_TAG = '<!-- commit_ids_reviewed_start -->'
 export const COMMIT_ID_TAG_END = '<!-- commit_ids_reviewed_end -->'
@@ -89,19 +88,11 @@ ${tag}`
   }
 
   getRawSummary(summary: string) {
-    const content = this.getContentWithinTags(
+    return this.getContentWithinTags(
       summary,
       RAW_SUMMARY_TAG,
       RAW_SUMMARY_TAG_END
     )
-    // remove the first and last line
-    const lines = content.split('\n')
-    if (lines.length < 3) {
-      return ''
-    }
-    lines.shift()
-    lines.pop()
-    return lines.join('\n')
   }
 
   getDescription(description: string) {

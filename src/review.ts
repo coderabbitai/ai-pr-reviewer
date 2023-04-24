@@ -6,7 +6,6 @@ import {type Bot} from './bot'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
-  EXTRA_CONTENT_TAG,
   RAW_SUMMARY_TAG,
   RAW_SUMMARY_TAG_END,
   SUMMARIZE_TAG
@@ -403,11 +402,8 @@ ${filename}: ${summary}
 
   let summarizeComment = `${summarizeFinalResponse}
 ${RAW_SUMMARY_TAG}
-<!--
 ${inputs.rawSummary}
--->
 ${RAW_SUMMARY_TAG_END}
-${EXTRA_CONTENT_TAG}
 ---
 
 ### Chat with 🤖 OpenAI Bot (\`@openai\`)
