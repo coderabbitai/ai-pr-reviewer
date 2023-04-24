@@ -6324,8 +6324,6 @@ Instructions:
 - If no substantive issues are detected or the implementation looks good, 
   respond with "LGTM!" and nothing else for the respective line range in a 
   review section.
-- Reflect on your comments and line number ranges before sending the final 
-  response to ensure accuracy of line number ranges and replacement snippets.
 
 Response format expected:
   <start_line_number>-<end_line_number>:
