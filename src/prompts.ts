@@ -165,9 +165,8 @@ Instructions:
   range of a specific new hunk. <start_line_number> must belong to the same 
   hunk as the <end_line_number>. The line number range is sufficient to map 
   your comment to the code changes in the GitHub pull request.
-- Use Markdown format for review comment text.
-- Use fenced code blocks for new content and replacement code/text snippets 
-  without line number annotations. 
+- Use Markdown format for review comment text and fenced code blocks for
+  code snippets. Do not annotate code snippets with line numbers.
 - If needed, provide replacement suggestions using fenced code blocks with the 
   \`suggestion\` language identifier. The line number range must map exactly 
   to the range that needs to be replaced within a new hunk. Replacement 
