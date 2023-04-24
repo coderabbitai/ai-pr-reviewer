@@ -3507,14 +3507,13 @@ class Bot {
 "use strict";
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "Es": () => (/* binding */ Commenter),
-/* harmony export */   "Nh": () => (/* binding */ EXTRA_CONTENT_TAG),
 /* harmony export */   "Rp": () => (/* binding */ SUMMARIZE_TAG),
 /* harmony export */   "Rs": () => (/* binding */ COMMENT_TAG),
-/* harmony export */   "SR": () => (/* binding */ RAW_SUMMARY_TAG_END),
 /* harmony export */   "aD": () => (/* binding */ COMMENT_REPLY_TAG),
-/* harmony export */   "sr": () => (/* binding */ RAW_SUMMARY_TAG)
+/* harmony export */   "oi": () => (/* binding */ RAW_SUMMARY_START_TAG),
+/* harmony export */   "rV": () => (/* binding */ RAW_SUMMARY_END_TAG)
 /* harmony export */ });
-/* unused harmony exports COMMENT_GREETING, DESCRIPTION_TAG, DESCRIPTION_TAG_END, COMMIT_ID_TAG, COMMIT_ID_TAG_END */
+/* unused harmony exports COMMENT_GREETING, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG, COMMIT_ID_START_TAG, COMMIT_ID_END_TAG */
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2186);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5438);
@@ -3531,13 +3530,15 @@ const COMMENT_GREETING = ':robot: OpenAI';
 const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
 const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
-const EXTRA_CONTENT_TAG = '<!-- Extra content -->';
-const DESCRIPTION_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
-const DESCRIPTION_TAG_END = '<!-- end of auto-generated comment: release notes by openai -->';
-const RAW_SUMMARY_TAG = '<!-- This is an auto-generated comment: raw summary by openai -->';
-const RAW_SUMMARY_TAG_END = '<!-- end of auto-generated comment: raw summary by openai -->';
-const COMMIT_ID_TAG = '<!-- commit_ids_reviewed_start -->';
-const COMMIT_ID_TAG_END = '<!-- commit_ids_reviewed_end -->';
+const DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
+const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by openai -->';
+const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
+<!--
+`;
+const RAW_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: raw summary by openai -->`;
+const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->';
+const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->';
 class Commenter {
     /**
      * @param mode Can be "create", "replace". Default is "replace".
@@ -3590,21 +3591,13 @@ ${tag}`;
         return content;
     }
     getRawSummary(summary) {
-        const content = this.getContentWithinTags(summary, RAW_SUMMARY_TAG, RAW_SUMMARY_TAG_END);
-        // remove the first and last line
-        const lines = content.split('\n');
-        if (lines.length < 3) {
-            return '';
-        }
-        lines.shift();
-        lines.pop();
-        return lines.join('\n');
+        return this.getContentWithinTags(summary, RAW_SUMMARY_START_TAG, RAW_SUMMARY_END_TAG);
     }
     getDescription(description) {
-        return this.removeContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
+        return this.removeContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
     }
     getReleaseNotes(description) {
-        const releaseNotes = this.getContentWithinTags(description, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
+        const releaseNotes = this.getContentWithinTags(description, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
         return releaseNotes.replace(/(^|\n)> .*/g, '');
     }
     async updateDescription(pullNumber, message) {
@@ -3623,8 +3616,8 @@ ${tag}`;
                 body = pr.data.body;
             }
             const description = this.getDescription(body);
-            const messageClean = this.removeContentWithinTags(message, DESCRIPTION_TAG, DESCRIPTION_TAG_END);
-            const newDescription = `${description}\n${DESCRIPTION_TAG}\n${messageClean}\n${DESCRIPTION_TAG_END}`;
+            const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
+            const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
             await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
@@ -3951,12 +3944,12 @@ ${chain}
     // commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
     // <!-- [commit_id] -->
     getReviewedCommitIds(commentBody) {
-        const start = commentBody.indexOf(COMMIT_ID_TAG);
-        const end = commentBody.indexOf(COMMIT_ID_TAG_END);
+        const start = commentBody.indexOf(COMMIT_ID_START_TAG);
+        const end = commentBody.indexOf(COMMIT_ID_END_TAG);
         if (start === -1 || end === -1) {
             return [];
         }
-        const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end);
+        const ids = commentBody.substring(start + COMMIT_ID_START_TAG.length, end);
         // remove the <!-- and --> markers from each id and extract the id and remove empty strings
         return ids
             .split('<!--')
@@ -3966,23 +3959,23 @@ ${chain}
     // get review commit ids comment block from the body as a string
     // including markers
     getReviewedCommitIdsBlock(commentBody) {
-        const start = commentBody.indexOf(COMMIT_ID_TAG);
-        const end = commentBody.indexOf(COMMIT_ID_TAG_END);
+        const start = commentBody.indexOf(COMMIT_ID_START_TAG);
+        const end = commentBody.indexOf(COMMIT_ID_END_TAG);
         if (start === -1 || end === -1) {
             return '';
         }
-        return commentBody.substring(start, end + COMMIT_ID_TAG_END.length);
+        return commentBody.substring(start, end + COMMIT_ID_END_TAG.length);
     }
     // add a commit id to the list of reviewed commit ids
     // if the marker doesn't exist, add it
     addReviewedCommitId(commentBody, commitId) {
-        const start = commentBody.indexOf(COMMIT_ID_TAG);
-        const end = commentBody.indexOf(COMMIT_ID_TAG_END);
+        const start = commentBody.indexOf(COMMIT_ID_START_TAG);
+        const end = commentBody.indexOf(COMMIT_ID_END_TAG);
         if (start === -1 || end === -1) {
-            return `${commentBody}\n${COMMIT_ID_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_TAG_END}`;
+            return `${commentBody}\n${COMMIT_ID_START_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_END_TAG}`;
         }
-        const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end);
-        return `${commentBody.substring(0, start + COMMIT_ID_TAG.length)}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`;
+        const ids = commentBody.substring(start + COMMIT_ID_START_TAG.length, end);
+        return `${commentBody.substring(0, start + COMMIT_ID_START_TAG.length)}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`;
     }
     // given a list of commit ids provide the highest commit id that has been reviewed
     getHighestReviewedCommitId(commitIds, reviewedCommitIds) {
@@ -7058,12 +7051,9 @@ ${filename}: ${summary}
         }
     }
     let summarizeComment = `${summarizeFinalResponse}
-${lib_commenter/* RAW_SUMMARY_TAG */.sr}
-<!--
+${lib_commenter/* RAW_SUMMARY_START_TAG */.oi}
 ${inputs.rawSummary}
--->
-${lib_commenter/* RAW_SUMMARY_TAG_END */.SR}
-${lib_commenter/* EXTRA_CONTENT_TAG */.Nh}
+${lib_commenter/* RAW_SUMMARY_END_TAG */.rV}
 ---
 
 ### Chat with 🤖 OpenAI Bot (\`@openai\`)
