@@ -18,20 +18,19 @@ export const COMMENT_REPLY_TAG =
 export const SUMMARIZE_TAG =
   '<!-- This is an auto-generated comment: summarize by openai -->'
 
-export const EXTRA_CONTENT_TAG = '<!-- Extra content -->'
-
-export const DESCRIPTION_TAG =
+export const DESCRIPTION_START_TAG =
   '<!-- This is an auto-generated comment: release notes by openai -->'
-export const DESCRIPTION_TAG_END =
+export const DESCRIPTION_END_TAG =
   '<!-- end of auto-generated comment: release notes by openai -->'
 
-export const RAW_SUMMARY_TAG =
-  '<!-- This is an auto-generated comment: raw summary by openai -->'
-export const RAW_SUMMARY_TAG_END =
-  '<!-- end of auto-generated comment: raw summary by openai -->'
+export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
+<!--
+`
+export const RAW_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: raw summary by openai -->`
 
-export const COMMIT_ID_TAG = '<!-- commit_ids_reviewed_start -->'
-export const COMMIT_ID_TAG_END = '<!-- commit_ids_reviewed_end -->'
+export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
+export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
 
 export class Commenter {
   /**
@@ -89,34 +88,26 @@ ${tag}`
   }
 
   getRawSummary(summary: string) {
-    const content = this.getContentWithinTags(
+    return this.getContentWithinTags(
       summary,
-      RAW_SUMMARY_TAG,
-      RAW_SUMMARY_TAG_END
+      RAW_SUMMARY_START_TAG,
+      RAW_SUMMARY_END_TAG
     )
-    // remove the first and last line
-    const lines = content.split('\n')
-    if (lines.length < 3) {
-      return ''
-    }
-    lines.shift()
-    lines.pop()
-    return lines.join('\n')
   }
 
   getDescription(description: string) {
     return this.removeContentWithinTags(
       description,
-      DESCRIPTION_TAG,
-      DESCRIPTION_TAG_END
+      DESCRIPTION_START_TAG,
+      DESCRIPTION_END_TAG
     )
   }
 
   getReleaseNotes(description: string) {
     const releaseNotes = this.getContentWithinTags(
       description,
-      DESCRIPTION_TAG,
-      DESCRIPTION_TAG_END
+      DESCRIPTION_START_TAG,
+      DESCRIPTION_END_TAG
     )
     return releaseNotes.replace(/(^|\n)> .*/g, '')
   }
@@ -140,10 +131,10 @@ ${tag}`
 
       const messageClean = this.removeContentWithinTags(
         message,
-        DESCRIPTION_TAG,
-        DESCRIPTION_TAG_END
+        DESCRIPTION_START_TAG,
+        DESCRIPTION_END_TAG
       )
-      const newDescription = `${description}\n${DESCRIPTION_TAG}\n${messageClean}\n${DESCRIPTION_TAG_END}`
+      const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
       await octokit.pulls.update({
         owner: repo.owner,
         repo: repo.repo,
@@ -562,12 +553,12 @@ ${chain}
   // commit ids are comments between the commit_ids_reviewed_start and commit_ids_reviewed_end markers
   // <!-- [commit_id] -->
   getReviewedCommitIds(commentBody: string): string[] {
-    const start = commentBody.indexOf(COMMIT_ID_TAG)
-    const end = commentBody.indexOf(COMMIT_ID_TAG_END)
+    const start = commentBody.indexOf(COMMIT_ID_START_TAG)
+    const end = commentBody.indexOf(COMMIT_ID_END_TAG)
     if (start === -1 || end === -1) {
       return []
     }
-    const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end)
+    const ids = commentBody.substring(start + COMMIT_ID_START_TAG.length, end)
     // remove the <!-- and --> markers from each id and extract the id and remove empty strings
     return ids
       .split('<!--')
@@ -578,26 +569,26 @@ ${chain}
   // get review commit ids comment block from the body as a string
   // including markers
   getReviewedCommitIdsBlock(commentBody: string): string {
-    const start = commentBody.indexOf(COMMIT_ID_TAG)
-    const end = commentBody.indexOf(COMMIT_ID_TAG_END)
+    const start = commentBody.indexOf(COMMIT_ID_START_TAG)
+    const end = commentBody.indexOf(COMMIT_ID_END_TAG)
     if (start === -1 || end === -1) {
       return ''
     }
-    return commentBody.substring(start, end + COMMIT_ID_TAG_END.length)
+    return commentBody.substring(start, end + COMMIT_ID_END_TAG.length)
   }
 
   // add a commit id to the list of reviewed commit ids
   // if the marker doesn't exist, add it
   addReviewedCommitId(commentBody: string, commitId: string): string {
-    const start = commentBody.indexOf(COMMIT_ID_TAG)
-    const end = commentBody.indexOf(COMMIT_ID_TAG_END)
+    const start = commentBody.indexOf(COMMIT_ID_START_TAG)
+    const end = commentBody.indexOf(COMMIT_ID_END_TAG)
     if (start === -1 || end === -1) {
-      return `${commentBody}\n${COMMIT_ID_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_TAG_END}`
+      return `${commentBody}\n${COMMIT_ID_START_TAG}\n<!-- ${commitId} -->\n${COMMIT_ID_END_TAG}`
     }
-    const ids = commentBody.substring(start + COMMIT_ID_TAG.length, end)
+    const ids = commentBody.substring(start + COMMIT_ID_START_TAG.length, end)
     return `${commentBody.substring(
       0,
-      start + COMMIT_ID_TAG.length
+      start + COMMIT_ID_START_TAG.length
     )}${ids}<!-- ${commitId} -->\n${commentBody.substring(end)}`
   }
 
