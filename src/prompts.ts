@@ -150,8 +150,10 @@ Instructions:
 - The format for changes provided above consists of multiple change 
   sections, each containing a new hunk (annotated with line numbers), 
   an old hunk, and optionally, existing comment chains. Note that the 
-  old hunk code has been replaced by the new hunk.
-- Your task is to review new hunks line by line, ONLY pointing out 
+  old hunk code has been replaced by the new hunk. The line number 
+  annotation on each line in the new hunk is of the format 
+  \`<line_number><colon><whitespace>\`.
+- Your task is to review ONLY the new hunks line by line, ONLY pointing out 
   substantive issues within line number ranges. Provide the exact line 
   number range (inclusive) for each issue. Focus on identifying specific 
   issues and avoid summarizing changes or providing general feedback.
@@ -169,17 +171,23 @@ Instructions:
   code snippets. Do not annotate code snippets with line numbers.
 - If needed, provide replacement suggestions using fenced code blocks with the 
   \`suggestion\` language identifier. The line number range must map exactly 
-  to the range that needs to be replaced within a new hunk. Replacement 
-  suggestions should be complete and correctly formatted units for direct 
-  committing in the GitHub UI. Each suggestion must be provided as a separate 
+  to the range (inclusive) that needs to be replaced within a new hunk. For 
+  instance, if 2 lines of code in a hunk need to be replaced with 15 lines 
+  of code, the line number range must be those exact 2 lines. If an entire 
+  hunk need to be replaced with new code, then the line number range must 
+  be the entire hunk.
+- Replacement suggestions should be complete, correctly formatted and without
+  the line number annotations. Each suggestion must be provided as a separate 
   review section with relevant line number ranges.
 - If needed, suggest new code using the correct language identifier in the 
   fenced code blocks. These snippets may be added to a different file, 
   such as test cases. Multiple new code snippets are allowed within a single 
   review section.
-- If no substantive issues are detected or the implementation looks good, 
-  respond with "LGTM!" and nothing else for the respective line range in a 
-  review section.
+- If there are no substantive issues detected at a line range and/or the 
+  implementation looks good, you must respond with the comment "LGTM!" and 
+  nothing else for the respective line range in a review section.
+- Reflect on your comments and line number ranges before sending the final 
+  response to ensure accuracy of line number ranges and replacement snippets.
 
 Response format expected:
   <start_line_number>-<end_line_number>:
