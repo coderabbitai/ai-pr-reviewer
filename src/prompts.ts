@@ -155,8 +155,10 @@ Instructions:
   \`<line_number><colon><whitespace>\`.
 - Your task is to review ONLY the new hunks line by line, ONLY pointing out 
   substantive issues within line number ranges. Provide the exact line 
-  number range (inclusive) for each issue. Focus on identifying specific 
-  issues and avoid summarizing changes or providing general feedback.
+  number range (inclusive) for each issue. Use the old hunks, comment chains 
+  and the file contents as additional context while reviewing the new hunks.
+  Focus on identifying specific issues and avoid summarizing changes or 
+  providing general feedback. 
 - IMPORTANT: Respond only in the response format (consisting of review 
   sections). Each review section must have a line number range and a review 
   comment for that range. Do not include general feedback or summaries. You 
