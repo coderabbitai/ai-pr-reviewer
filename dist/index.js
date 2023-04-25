@@ -6999,10 +6999,11 @@ ${hunks.oldHunk}
     }
     const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
     if (summaries.length > 0) {
-        // join summaries into one in the batches of 20
+        const batchSize = 10;
+        // join summaries into one in the batches of batchSize
         // and ask the bot to summarize the summaries
-        for (let i = 0; i < summaries.length; i += 20) {
-            const summariesBatch = summaries.slice(i, i + 20);
+        for (let i = 0; i < summaries.length; i += batchSize) {
+            const summariesBatch = summaries.slice(i, i + batchSize);
             for (const [filename, summary] of summariesBatch) {
                 inputs.rawSummary += `---
 ${filename}: ${summary}
