@@ -79,7 +79,7 @@ inputs:
   openai_timeout_ms:
     required: false
     description: 'Timeout for OpenAI API call in millis'
-    default: '120000'
+    default: '180000'
   openai_concurrency_limit:
     required: false
     description: 'How many concurrent API calls to make to OpenAI servers?'
