@@ -6299,8 +6299,10 @@ Instructions:
   \`<line_number><colon><whitespace>\`.
 - Your task is to review ONLY the new hunks line by line, ONLY pointing out 
   substantive issues within line number ranges. Provide the exact line 
-  number range (inclusive) for each issue. Focus on identifying specific 
-  issues and avoid summarizing changes or providing general feedback.
+  number range (inclusive) for each issue. Consider additional context 
+  provided by old hunks, comment chains and the file content while 
+  reviewing the new hunks. Focus on identifying specific issues and 
+  avoid summarizing changes or providing general feedback. 
 - IMPORTANT: Respond only in the response format (consisting of review 
   sections). Each review section must have a line number range and a review 
   comment for that range. Do not include general feedback or summaries. You 
@@ -6999,10 +7001,11 @@ ${hunks.oldHunk}
     }
     const summaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
     if (summaries.length > 0) {
-        // join summaries into one in the batches of 20
+        const batchSize = 10;
+        // join summaries into one in the batches of batchSize
         // and ask the bot to summarize the summaries
-        for (let i = 0; i < summaries.length; i += 20) {
-            const summariesBatch = summaries.slice(i, i + 20);
+        for (let i = 0; i < summaries.length; i += batchSize) {
+            const summariesBatch = summaries.slice(i, i + batchSize);
             for (const [filename, summary] of summariesBatch) {
                 inputs.rawSummary += `---
 ${filename}: ${summary}
