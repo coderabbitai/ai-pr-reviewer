@@ -112,11 +112,6 @@ inputs:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      Here is the summary of changes you have generated for files:
-      ```
-      $raw_summary
-      ```
-
       Provide your final response in the `markdown` format with 
       the following content:
         - High-level summary (comment on the overall change instead of 

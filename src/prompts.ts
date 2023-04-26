@@ -12,11 +12,6 @@ Description:
 $description
 \`\`\`
 
-Content of file \`$filename\` prior to changes:
-\`\`\`
-$file_content
-\`\`\`
-
 Diff:
 \`\`\`diff
 $file_diff
@@ -53,61 +48,13 @@ changesets using the same format as the input.
 $raw_summary
 `
 
-  comment = `A comment was made on a GitHub pull request review for a 
-diff hunk on file \`$filename\`. I would like you to follow 
-the instructions in that comment. 
+  summarizePrefix = `Here is the summary of changes you have generated for files:
+      \`\`\`
+      $raw_summary
+      \`\`\`
 
-Pull request title:
-\`$title\`
-
-Description:
-\`\`\`
-$description
-\`\`\`
-
-OpenAI generated notes:
-\`\`\`
-$release_notes
-\`\`\`
-
-Content of file prior to changes:
-\`\`\`
-$file_content
-\`\`\`
-
-Entire diff:
-\`\`\`diff
-$file_diff
-\`\`\`
-
-Diff being commented on:
-\`\`\`diff
-$diff
-\`\`\`
-
-The format of a comment in the chain is:
-\`user: comment\`
-
-Comment chain (including the new comment):
-\`\`\`
-$comment_chain
-\`\`\`
-
-Please reply directly to the new comment (instead of suggesting 
-a reply) and your reply will be posted as-is.
-
-If the comment contains instructions/requests for you, please comply. 
-For example, if the comment is asking you to generate documentation 
-comments on the code, in your reply please generate the required code.
-
-In your reply, please make sure to begin the reply by tagging the user 
-with "@user".
-
-The comment/request that you need to directly reply to:
-\`\`\`
-$comment
-\`\`\`
 `
+
   reviewFileDiff = `GitHub pull request title: 
 \`$title\` 
 
@@ -239,6 +186,62 @@ Changes for review are below:
 $patches
 `
 
+  comment = `A comment was made on a GitHub pull request review for a 
+diff hunk on file \`$filename\`. I would like you to follow 
+the instructions in that comment. 
+
+Pull request title:
+\`$title\`
+
+Description:
+\`\`\`
+$description
+\`\`\`
+
+OpenAI generated notes:
+\`\`\`
+$release_notes
+\`\`\`
+
+Content of file prior to changes:
+\`\`\`
+$file_content
+\`\`\`
+
+Entire diff:
+\`\`\`diff
+$file_diff
+\`\`\`
+
+Diff being commented on:
+\`\`\`diff
+$diff
+\`\`\`
+
+The format of a comment in the chain is:
+\`user: comment\`
+
+Comment chain (including the new comment):
+\`\`\`
+$comment_chain
+\`\`\`
+
+Please reply directly to the new comment (instead of suggesting 
+a reply) and your reply will be posted as-is.
+
+If the comment contains instructions/requests for you, please comply. 
+For example, if the comment is asking you to generate documentation 
+comments on the code, in your reply please generate the required code.
+
+In your reply, please make sure to begin the reply by tagging the user 
+with "@user".
+
+The comment/request that you need to directly reply to:
+\`\`\`
+$comment
+\`\`\`
+`
+
   constructor(summarize = '', summarizeReleaseNotes = '') {
     this.summarize = summarize
     this.summarizeReleaseNotes = summarizeReleaseNotes
@@ -260,7 +263,8 @@ $patches
   }
 
   renderSummarize(inputs: Inputs): string {
-    return inputs.render(this.summarize)
+    const prompt = this.summarizePrefix + this.summarize
+    return inputs.render(prompt)
   }
 
   renderSummarizeReleaseNotes(inputs: Inputs): string {
