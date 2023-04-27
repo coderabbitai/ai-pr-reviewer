@@ -14,7 +14,8 @@ import {handleReviewComment} from './review-comment'
 async function run(): Promise<void> {
   const options: Options = new Options(
     getBooleanInput('debug'),
-    getBooleanInput('summary_only'),
+    getBooleanInput('disable_review'),
+    getBooleanInput('disable_release_notes'),
     getInput('max_files'),
     getBooleanInput('review_simple_changes'),
     getBooleanInput('review_comment_lgtm'),

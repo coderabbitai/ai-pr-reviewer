@@ -377,8 +377,11 @@ ${filename}: ${summary}
   if (summarizeFinalResponse === '') {
     info('summarize: nothing obtained from openai')
   } else {
-    // final release notes
     nextSummarizeIds = summarizeFinalResponseIds
+  }
+
+  if (options.disableReleaseNotes === false) {
+    // final release notes
     const [releaseNotesResponse, releaseNotesIds] = await heavyBot.chat(
       prompts.renderSummarizeReleaseNotes(inputs),
       nextSummarizeIds
@@ -470,7 +473,7 @@ ${
 }
 `
 
-  if (!options.summaryOnly) {
+  if (!options.disableReview) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
       const needsReview =
         summaries.find(

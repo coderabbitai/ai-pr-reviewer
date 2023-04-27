@@ -4,7 +4,8 @@ import {TokenLimits} from './limits'
 
 export class Options {
   debug: boolean
-  summaryOnly: boolean
+  disableReview: boolean
+  disableReleaseNotes: boolean
   maxFiles: number
   reviewSimpleChanges: boolean
   reviewCommentLGTM: boolean
@@ -21,7 +22,8 @@ export class Options {
 
   constructor(
     debug: boolean,
-    summaryOnly: boolean,
+    disableReview: boolean,
+    disableReleaseNotes: boolean,
     maxFiles = '0',
     reviewSimpleChanges = false,
     reviewCommentLGTM = false,
@@ -35,7 +37,8 @@ export class Options {
     openaiConcurrencyLimit = '4'
   ) {
     this.debug = debug
-    this.summaryOnly = summaryOnly
+    this.disableReview = disableReview
+    this.disableReleaseNotes = disableReleaseNotes
     this.maxFiles = parseInt(maxFiles)
     this.reviewSimpleChanges = reviewSimpleChanges
     this.reviewCommentLGTM = reviewCommentLGTM
@@ -54,7 +57,8 @@ export class Options {
   // print all options using core.info
   print(): void {
     info(`debug: ${this.debug}`)
-    info(`summary_only: ${this.summaryOnly}`)
+    info(`disable_review: ${this.disableReview}`)
+    info(`disable_release_notes: ${this.disableReleaseNotes}`)
     info(`max_files: ${this.maxFiles}`)
     info(`review_simple_changes: ${this.reviewSimpleChanges}`)
     info(`review_comment_lgtm: ${this.reviewCommentLGTM}`)
