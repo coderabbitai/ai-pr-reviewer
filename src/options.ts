@@ -19,6 +19,7 @@ export class Options {
   openaiConcurrencyLimit: number
   lightTokenLimits: TokenLimits
   heavyTokenLimits: TokenLimits
+  apiBaseUrl: string
 
   constructor(
     debug: boolean,
@@ -34,7 +35,8 @@ export class Options {
     openaiModelTemperature = '0.0',
     openaiRetries = '3',
     openaiTimeoutMS = '120000',
-    openaiConcurrencyLimit = '4'
+    openaiConcurrencyLimit = '4',
+    apiBaseUrl = "https://api.openai.com/v1"
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -52,6 +54,7 @@ export class Options {
     this.openaiConcurrencyLimit = parseInt(openaiConcurrencyLimit)
     this.lightTokenLimits = new TokenLimits(openaiLightModel)
     this.heavyTokenLimits = new TokenLimits(openaiHeavyModel)
+    this.apiBaseUrl = apiBaseUrl
   }
 
   // print all options using core.info
@@ -72,6 +75,7 @@ export class Options {
     info(`openai_concurrency_limit: ${this.openaiConcurrencyLimit}`)
     info(`summary_token_limits: ${this.lightTokenLimits.string()}`)
     info(`review_token_limits: ${this.heavyTokenLimits.string()}`)
+    info(`api_base_url: ${this.apiBaseUrl}`)
   }
 
   checkPath(path: string): boolean {
