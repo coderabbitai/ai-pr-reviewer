@@ -33,7 +33,6 @@ jobs:
         with:
           debug: true
           review_comment_lgtm: false
-          disable_release_notes: true
           path_filters: |
             !dist/**
             !**/*.lock
