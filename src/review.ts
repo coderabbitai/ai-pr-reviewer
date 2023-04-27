@@ -52,9 +52,6 @@ export const codeReview = async (
     inputs.description = commenter.getDescription(
       context.payload.pull_request.body
     )
-    inputs.releaseNotes = commenter.getReleaseNotes(
-      context.payload.pull_request.body
-    )
   }
 
   // if the description contains ignore_keyword, skip
@@ -390,7 +387,6 @@ ${filename}: ${summary}
       info('release notes: nothing obtained from openai')
     } else {
       nextSummarizeIds = releaseNotesIds
-      inputs.releaseNotes = releaseNotesResponse.replace(/(^|\n)> .*/g, '')
       let message = '### Summary by OpenAI\n\n'
       message += releaseNotesResponse
       try {

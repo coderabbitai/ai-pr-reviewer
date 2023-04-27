@@ -3,7 +3,6 @@ export class Inputs {
   title: string
   description: string
   rawSummary: string
-  releaseNotes: string
   filename: string
   fileContent: string
   fileDiff: string
@@ -17,7 +16,6 @@ export class Inputs {
     title = 'no title provided',
     description = 'no description provided',
     rawSummary = '',
-    releaseNotes = '',
     filename = '',
     fileContent = 'file contents cannot be provided',
     fileDiff = 'file diff cannot be provided',
@@ -30,7 +28,6 @@ export class Inputs {
     this.title = title
     this.description = description
     this.rawSummary = rawSummary
-    this.releaseNotes = releaseNotes
     this.filename = filename
     this.fileContent = fileContent
     this.fileDiff = fileDiff
@@ -46,7 +43,6 @@ export class Inputs {
       this.title,
       this.description,
       this.rawSummary,
-      this.releaseNotes,
       this.filename,
       this.fileContent,
       this.fileDiff,
@@ -72,9 +68,6 @@ export class Inputs {
     }
     if (this.rawSummary) {
       content = content.replace('$raw_summary', this.rawSummary)
-    }
-    if (this.releaseNotes) {
-      content = content.replace('$release_notes', this.releaseNotes)
     }
     if (this.filename) {
       content = content.replace('$filename', this.filename)
