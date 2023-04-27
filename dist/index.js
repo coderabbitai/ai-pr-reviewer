@@ -6062,7 +6062,8 @@ class Options {
     // print all options using core.info
     print() {
         (0,core.info)(`debug: ${this.debug}`);
-        (0,core.info)(`summary_only: ${this.disableReview}`);
+        (0,core.info)(`disable_review: ${this.disableReview}`);
+        (0,core.info)(`disable_release_notes: ${this.disableReleaseNotes}`);
         (0,core.info)(`max_files: ${this.maxFiles}`);
         (0,core.info)(`review_simple_changes: ${this.reviewSimpleChanges}`);
         (0,core.info)(`review_comment_lgtm: ${this.reviewCommentLGTM}`);
