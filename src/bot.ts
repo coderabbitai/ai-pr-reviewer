@@ -26,6 +26,7 @@ export class Bot {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
       this.api = new ChatGPTAPI({
+        apiBaseUrl: options.apiBaseUrl,
         systemMessage: options.systemMessage,
         apiKey: process.env.OPENAI_API_KEY,
         apiOrg: process.env.OPENAI_API_ORG ?? undefined,
