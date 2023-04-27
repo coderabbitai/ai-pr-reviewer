@@ -4116,7 +4116,7 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 async function run() {
-    const options = new _options__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('debug'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('summary_only'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_files'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_simple_changes'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_comment_lgtm'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput)('path_filters'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('system_message'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_light_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_heavy_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_model_temperature'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_retries'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_timeout_ms'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_concurrency_limit'));
+    const options = new _options__WEBPACK_IMPORTED_MODULE_2__/* .Options */ .Ei((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('debug'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('disable_review'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('disable_release_notes'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('max_files'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_simple_changes'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('review_comment_lgtm'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput)('path_filters'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('system_message'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_light_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_heavy_model'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_model_temperature'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_retries'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_timeout_ms'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('openai_concurrency_limit'));
     // print options
     options.print();
     const prompts = new _prompts__WEBPACK_IMPORTED_MODULE_5__/* .Prompts */ .j((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize'), (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('summarize_release_notes'));
@@ -6026,7 +6026,8 @@ class TokenLimits {
 
 class Options {
     debug;
-    summaryOnly;
+    disableReview;
+    disableReleaseNotes;
     maxFiles;
     reviewSimpleChanges;
     reviewCommentLGTM;
@@ -6040,9 +6041,10 @@ class Options {
     openaiConcurrencyLimit;
     lightTokenLimits;
     heavyTokenLimits;
-    constructor(debug, summaryOnly, maxFiles = '0', reviewSimpleChanges = false, reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4') {
+    constructor(debug, disableReview, disableReleaseNotes, maxFiles = '0', reviewSimpleChanges = false, reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4') {
         this.debug = debug;
-        this.summaryOnly = summaryOnly;
+        this.disableReview = disableReview;
+        this.disableReleaseNotes = disableReleaseNotes;
         this.maxFiles = parseInt(maxFiles);
         this.reviewSimpleChanges = reviewSimpleChanges;
         this.reviewCommentLGTM = reviewCommentLGTM;
@@ -6060,7 +6062,8 @@ class Options {
     // print all options using core.info
     print() {
         (0,core.info)(`debug: ${this.debug}`);
-        (0,core.info)(`summary_only: ${this.summaryOnly}`);
+        (0,core.info)(`disable_review: ${this.disableReview}`);
+        (0,core.info)(`disable_release_notes: ${this.disableReleaseNotes}`);
         (0,core.info)(`max_files: ${this.maxFiles}`);
         (0,core.info)(`review_simple_changes: ${this.reviewSimpleChanges}`);
         (0,core.info)(`review_comment_lgtm: ${this.reviewCommentLGTM}`);
@@ -6206,9 +6209,9 @@ Description:
 $description
 \`\`\`
 
-OpenAI generated notes:
+OpenAI generated summary:
 \`\`\`
-$release_notes
+$raw_summary
 \`\`\`
 
 Content of \`$filename\` prior to changes:
@@ -6342,9 +6345,9 @@ Description:
 $description
 \`\`\`
 
-OpenAI generated notes:
+OpenAI generated summary:
 \`\`\`
-$release_notes
+$raw_summary
 \`\`\`
 
 Content of file prior to changes:
@@ -7032,8 +7035,10 @@ ${filename}: ${summary}
         (0,core.info)('summarize: nothing obtained from openai');
     }
     else {
-        // final release notes
         nextSummarizeIds = summarizeFinalResponseIds;
+    }
+    if (options.disableReleaseNotes === false) {
+        // final release notes
         const [releaseNotesResponse, releaseNotesIds] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), nextSummarizeIds);
         if (releaseNotesResponse === '') {
             (0,core.info)('release notes: nothing obtained from openai');
@@ -7109,7 +7114,7 @@ ${summariesFailed.length > 0
 `
         : ''}
 `;
-    if (!options.summaryOnly) {
+    if (!options.disableReview) {
         const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
             const needsReview = summaries.find(([summaryFilename]) => summaryFilename === filename)?.[2] ?? true;
             return needsReview;
