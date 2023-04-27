@@ -63,9 +63,9 @@ Description:
 $description
 \`\`\`
 
-OpenAI generated notes:
+OpenAI generated summary:
 \`\`\`
-$release_notes
+$raw_summary
 \`\`\`
 
 Content of \`$filename\` prior to changes:
@@ -200,9 +200,9 @@ Description:
 $description
 \`\`\`
 
-OpenAI generated notes:
+OpenAI generated summary:
 \`\`\`
-$release_notes
+$raw_summary
 \`\`\`
 
 Content of file prior to changes:

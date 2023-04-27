@@ -54,9 +54,13 @@ inputs:
       !**/_gen/**
       !**/generated/**
       !**/vendor/**
-  summary_only:
+  disable_review:
     required: false
     description: 'Only provide the summary and skip the code review.'
+    default: 'false'
+  disable_release_notes:
+    required: false
+    description: 'Disable release notes'
     default: 'false'
   openai_light_model:
     required: false
