@@ -6209,11 +6209,6 @@ Description:
 $description
 \`\`\`
 
-OpenAI generated summary:
-\`\`\`
-$raw_summary
-\`\`\`
-
 Content of \`$filename\` prior to changes:
 \`\`\`
 $file_content
@@ -6343,11 +6338,6 @@ Pull request title:
 Description:
 \`\`\`
 $description
-\`\`\`
-
-OpenAI generated summary:
-\`\`\`
-$raw_summary
 \`\`\`
 
 Content of file prior to changes:
