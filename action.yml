@@ -62,6 +62,11 @@ inputs:
     required: false
     description: 'Disable release notes'
     default: 'false'
+  openai_base_url:
+    required: false
+    description:
+      'The url of the openai api interface.'
+    default: 'https://api.openai.com/v1'
   openai_light_model:
     required: false
     description:

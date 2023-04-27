@@ -26,7 +26,8 @@ async function run(): Promise<void> {
     getInput('openai_model_temperature'),
     getInput('openai_retries'),
     getInput('openai_timeout_ms'),
-    getInput('openai_concurrency_limit')
+    getInput('openai_concurrency_limit'),
+    getInput('openai_base_url')
   )
 
   // print options
