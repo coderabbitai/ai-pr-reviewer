@@ -4025,7 +4025,6 @@ class Inputs {
     title;
     description;
     rawSummary;
-    releaseNotes;
     filename;
     fileContent;
     fileDiff;
@@ -4033,12 +4032,11 @@ class Inputs {
     diff;
     commentChain;
     comment;
-    constructor(systemMessage = '', title = 'no title provided', description = 'no description provided', rawSummary = '', releaseNotes = '', filename = '', fileContent = 'file contents cannot be provided', fileDiff = 'file diff cannot be provided', patches = '', diff = 'no diff', commentChain = 'no other comments on this patch', comment = 'no comment provided') {
+    constructor(systemMessage = '', title = 'no title provided', description = 'no description provided', rawSummary = '', filename = '', fileContent = 'file contents cannot be provided', fileDiff = 'file diff cannot be provided', patches = '', diff = 'no diff', commentChain = 'no other comments on this patch', comment = 'no comment provided') {
         this.systemMessage = systemMessage;
         this.title = title;
         this.description = description;
         this.rawSummary = rawSummary;
-        this.releaseNotes = releaseNotes;
         this.filename = filename;
         this.fileContent = fileContent;
         this.fileDiff = fileDiff;
@@ -4048,7 +4046,7 @@ class Inputs {
         this.comment = comment;
     }
     clone() {
-        return new Inputs(this.systemMessage, this.title, this.description, this.rawSummary, this.releaseNotes, this.filename, this.fileContent, this.fileDiff, this.patches, this.diff, this.commentChain, this.comment);
+        return new Inputs(this.systemMessage, this.title, this.description, this.rawSummary, this.filename, this.fileContent, this.fileDiff, this.patches, this.diff, this.commentChain, this.comment);
     }
     render(content) {
         if (!content) {
@@ -4065,9 +4063,6 @@ class Inputs {
         }
         if (this.rawSummary) {
             content = content.replace('$raw_summary', this.rawSummary);
-        }
-        if (this.releaseNotes) {
-            content = content.replace('$release_notes', this.releaseNotes);
         }
         if (this.filename) {
             content = content.replace('$filename', this.filename);
@@ -6043,7 +6038,7 @@ class Options {
     lightTokenLimits;
     heavyTokenLimits;
     apiBaseUrl;
-    constructor(debug, disableReview, disableReleaseNotes, maxFiles = '0', reviewSimpleChanges = false, reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4', apiBaseUrl = "https://api.openai.com/v1") {
+    constructor(debug, disableReview, disableReleaseNotes, maxFiles = '0', reviewSimpleChanges = false, reviewCommentLGTM = false, pathFilters = null, systemMessage = '', openaiLightModel = 'gpt-3.5-turbo', openaiHeavyModel = 'gpt-3.5-turbo', openaiModelTemperature = '0.0', openaiRetries = '3', openaiTimeoutMS = '120000', openaiConcurrencyLimit = '4', apiBaseUrl = 'https://api.openai.com/v1') {
         this.debug = debug;
         this.disableReview = disableReview;
         this.disableReleaseNotes = disableReleaseNotes;
@@ -6469,7 +6464,6 @@ const handleReviewComment = async (heavyBot, options, prompts) => {
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body) {
         inputs.description = commenter.getDescription(context.payload.pull_request.body);
-        inputs.releaseNotes = commenter.getReleaseNotes(context.payload.pull_request.body);
     }
     // check if the comment was created and not edited or deleted
     if (context.payload.action !== 'created') {
@@ -6787,7 +6781,6 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
     inputs.title = context.payload.pull_request.title;
     if (context.payload.pull_request.body != null) {
         inputs.description = commenter.getDescription(context.payload.pull_request.body);
-        inputs.releaseNotes = commenter.getReleaseNotes(context.payload.pull_request.body);
     }
     // if the description contains ignore_keyword, skip
     if (inputs.description.includes(ignoreKeyword)) {
@@ -7044,7 +7037,6 @@ ${filename}: ${summary}
         }
         else {
             nextSummarizeIds = releaseNotesIds;
-            inputs.releaseNotes = releaseNotesResponse.replace(/(^|\n)> .*/g, '');
             let message = '### Summary by OpenAI\n\n';
             message += releaseNotesResponse;
             try {
