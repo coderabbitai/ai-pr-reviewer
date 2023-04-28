@@ -7144,6 +7144,7 @@ ${summariesFailed.length > 0
             for (const [, , patch] of patches) {
                 const patchTokens = (0,tokenizer/* getTokenCount */.V)(patch);
                 if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
+                    (0,core.info)(`packing ${patchesToPack} / ${patches.length} patches`);
                     break;
                 }
                 tokens += patchTokens;
@@ -7166,7 +7167,7 @@ ${summariesFailed.length > 0
                 }
                 // see if we can pack more patches into this request
                 if (patchesPacked >= patchesToPack) {
-                    (0,core.info)(`unable to pack more patches into this request, packed: ${patchesPacked}, to pack: ${patchesToPack}`);
+                    (0,core.info)(`unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`);
                     break;
                 }
                 patchesPacked += 1;

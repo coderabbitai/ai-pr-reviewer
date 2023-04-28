@@ -509,6 +509,7 @@ ${
       for (const [, , patch] of patches) {
         const patchTokens = getTokenCount(patch)
         if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
+          info(`packing ${patchesToPack} / ${patches.length} patches`)
           break
         }
         tokens += patchTokens
@@ -537,7 +538,7 @@ ${
         // see if we can pack more patches into this request
         if (patchesPacked >= patchesToPack) {
           info(
-            `unable to pack more patches into this request, packed: ${patchesPacked}, to pack: ${patchesToPack}`
+            `unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`
           )
           break
         }
