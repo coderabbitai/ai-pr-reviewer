@@ -6944,6 +6944,7 @@ ${hunks.oldHunk}
     }
     const summariesFailed = [];
     const doSummary = async (filename, fileContent, fileDiff) => {
+        (0,core.info)(`summarize: ${filename}`);
         const ins = inputs.clone();
         if (fileDiff.length === 0) {
             (0,core.warning)(`summarize: file_diff is empty, skip ${filename}`);
@@ -7134,6 +7135,7 @@ ${summariesFailed.length > 0
         // failed reviews array
         const reviewsFailed = [];
         const doReview = async (filename, fileContent, patches) => {
+            (0,core.info)(`reviewing ${filename}`);
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
@@ -7144,7 +7146,10 @@ ${summariesFailed.length > 0
             for (const [, , patch] of patches) {
                 const patchTokens = (0,tokenizer/* getTokenCount */.V)(patch);
                 if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
-                    (0,core.info)(`packing ${patchesToPack} / ${patches.length} patches`);
+                    (0,core.info)(`only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`);
+                    if (options.debug) {
+                        (0,core.info)(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`);
+                    }
                     break;
                 }
                 tokens += patchTokens;
