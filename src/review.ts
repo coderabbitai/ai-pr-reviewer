@@ -251,6 +251,7 @@ ${hunks.oldHunk}
     fileContent: string,
     fileDiff: string
   ): Promise<[string, string, boolean] | null> => {
+    info(`summarize: ${filename}`)
     const ins = inputs.clone()
     if (fileDiff.length === 0) {
       warning(`summarize: file_diff is empty, skip ${filename}`)
@@ -498,6 +499,7 @@ ${
       fileContent: string,
       patches: Array<[number, number, string]>
     ): Promise<void> => {
+      info(`reviewing ${filename}`)
       // make a copy of inputs
       const ins: Inputs = inputs.clone()
       ins.filename = filename
@@ -509,7 +511,9 @@ ${
       for (const [, , patch] of patches) {
         const patchTokens = getTokenCount(patch)
         if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
-          info(`packing ${patchesToPack} / ${patches.length} patches`)
+          info(
+            `only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`
+          )
           break
         }
         tokens += patchTokens
