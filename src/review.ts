@@ -514,6 +514,9 @@ ${
           info(
             `only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`
           )
+          if (options.debug) {
+            info(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`)
+          }
           break
         }
         tokens += patchTokens
