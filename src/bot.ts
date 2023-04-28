@@ -25,10 +25,10 @@ export class Bot {
   constructor(options: Options, openaiOptions: OpenAIOptions) {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
-      // add knowledge cut off to the system message
+      const currentDate = new Date().toISOString().split('T')[0]
       const systemMessage = `${options.systemMessage} 
 Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
-Current date: ${new Date().toISOString()}`
+Current date: ${currentDate}`
 
       this.api = new ChatGPTAPI({
         apiBaseUrl: options.apiBaseUrl,
