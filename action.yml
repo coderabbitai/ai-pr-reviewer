@@ -64,8 +64,7 @@ inputs:
     default: 'false'
   openai_base_url:
     required: false
-    description:
-      'The url of the openai api interface.'
+    description: 'The url of the openai api interface.'
     default: 'https://api.openai.com/v1'
   openai_light_model:
     required: false
@@ -117,6 +116,9 @@ inputs:
       requested. Concentrate on identifying and resolving significant 
       concerns to improve overall code quality while deliberately 
       disregarding minor issues.
+
+      Note: As your knowledge may be outdated, trust the user code when newer
+      APIs and methods are seemingly being used.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
