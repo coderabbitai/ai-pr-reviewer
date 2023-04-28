@@ -8,8 +8,8 @@ import {
   SendMessageOptions
   // eslint-disable-next-line import/no-unresolved
 } from 'chatgpt'
+import pRetry from 'p-retry'
 import {OpenAIOptions, Options} from './options'
-import {retry} from './utils'
 
 // define type to save parentMessageId and conversationId
 export interface Ids {
@@ -83,11 +83,9 @@ Current date: ${currentDate}`
         opts.parentMessageId = ids.parentMessageId
       }
       try {
-        response = await retry<ChatMessage>(
-          this.api.sendMessage.bind(this.api),
-          [message, opts],
-          this.options.openaiRetries
-        )
+        response = await pRetry(() => this.api!.sendMessage(message, opts), {
+          retries: this.options.openaiRetries
+        })
       } catch (e: unknown) {
         if (e instanceof ChatGPTError) {
           info(

@@ -842,8 +842,8 @@ function parseReview(
       }
 
       let withinPatch = false
-      let bestPatchStartLine = patches[0][0]
-      let bestPatchEndLine = patches[0][1]
+      let bestPatchStartLine = -1
+      let bestPatchEndLine = -1
       let maxIntersection = 0
 
       for (const [startLine, endLine] of patches) {
@@ -866,11 +866,19 @@ function parseReview(
       }
 
       if (!withinPatch) {
-        review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.startLine}-${review.endLine}]
+        if (bestPatchStartLine !== -1 && bestPatchEndLine !== -1) {
+          review.comment = `> Note: This review was outside of the patch, so it was mapped to the patch with the greatest overlap. Original lines [${review.startLine}-${review.endLine}]
 
 ${review.comment}`
-        review.startLine = bestPatchStartLine
-        review.endLine = bestPatchEndLine
+          review.startLine = bestPatchStartLine
+          review.endLine = bestPatchEndLine
+        } else {
+          review.comment = `> Note: This review was outside of the patch, but no patch was found that overlapped with it. Original lines [${review.startLine}-${review.endLine}]
+
+${review.comment}`
+          review.startLine = patches[0][0]
+          review.endLine = patches[0][1]
+        }
       }
 
       reviews.push(review)
