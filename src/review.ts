@@ -187,7 +187,11 @@ export const codeReview = async (
           }
         }
       } catch (e: any) {
-        warning(`Failed to get file contents: ${e as string}`)
+        warning(
+          `Failed to get file contents: ${
+            e as string
+          }. This is OK if it's a new file.`
+        )
       }
 
       let fileDiff = ''
@@ -247,6 +251,7 @@ ${hunks.oldHunk}
     fileContent: string,
     fileDiff: string
   ): Promise<[string, string, boolean] | null> => {
+    info(`summarize: ${filename}`)
     const ins = inputs.clone()
     if (fileDiff.length === 0) {
       warning(`summarize: file_diff is empty, skip ${filename}`)
@@ -494,6 +499,7 @@ ${
       fileContent: string,
       patches: Array<[number, number, string]>
     ): Promise<void> => {
+      info(`reviewing ${filename}`)
       // make a copy of inputs
       const ins: Inputs = inputs.clone()
       ins.filename = filename
@@ -505,6 +511,9 @@ ${
       for (const [, , patch] of patches) {
         const patchTokens = getTokenCount(patch)
         if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
+          info(
+            `only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`
+          )
           break
         }
         tokens += patchTokens
@@ -533,8 +542,11 @@ ${
         // see if we can pack more patches into this request
         if (patchesPacked >= patchesToPack) {
           info(
-            `unable to pack more patches into this request, packed: ${patchesPacked}, to pack: ${patchesToPack}`
+            `unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`
           )
+          if (options.debug) {
+            info(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`)
+          }
           break
         }
         patchesPacked += 1

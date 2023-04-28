@@ -4,18 +4,23 @@ export class Prompts {
   summarize: string
   summarizeReleaseNotes: string
 
-  summarizeFileDiff = `GitHub pull request title: 
+  summarizeFileDiff = `## GitHub PR Title
+
 \`$title\` 
 
-Description:
+## Description
+
 \`\`\`
 $description
 \`\`\`
 
-Diff:
+## Diff
+
 \`\`\`diff
 $file_diff
 \`\`\`
+
+## Instructions for you
 
 I would like you to summarize the diff within 50 words.
 `
@@ -55,41 +60,19 @@ $raw_summary
 
 `
 
-  reviewFileDiff = `GitHub pull request title: 
+  reviewFileDiff = `## GitHub PR Title
+
 \`$title\` 
 
-Description:
+## Description
+
 \`\`\`
 $description
 \`\`\`
 
-Content of \`$filename\` prior to changes:
-\`\`\`
-$file_content
-\`\`\`
+## Instructions for you
 
-Format for changes:
-  ---new_hunk---
-  \`\`\`
-  <new hunk annotated with line numbers>
-  \`\`\`
-
-  ---old_hunk---
-  \`\`\`
-  <old hunk that was replaced by the new hunk above>
-  \`\`\`
-
-  ---comment_chains---
-  \`\`\`
-  <comment chains>
-  \`\`\`
-
-  ---end_change_section---
-  ...
-
-Instructions:
-
-- The format for changes provided above consists of multiple change 
+- The format for changes provided below consists of multiple change 
   sections, each containing a new hunk (annotated with line numbers), 
   an old hunk, and optionally, existing comment chains. Note that the 
   old hunk code has been replaced by the new hunk. The line number 
@@ -135,7 +118,28 @@ Instructions:
 - Reflect on your comments and line number ranges before sending the final 
   response to ensure accuracy of line number ranges and replacement snippets.
 
-Response format expected:
+### Format for changes
+
+  ---new_hunk---
+  \`\`\`
+  <new hunk annotated with line numbers>
+  \`\`\`
+
+  ---old_hunk---
+  \`\`\`
+  <old hunk that was replaced by the new hunk above>
+  \`\`\`
+
+  ---comment_chains---
+  \`\`\`
+  <comment chains>
+  \`\`\`
+
+  ---end_change_section---
+  ...
+
+### Response format expected
+
   <start_line_number>-<end_line_number>:
   <review comment>
   ---
@@ -153,7 +157,8 @@ Response format expected:
   ---
   ...
 
-Example changes:
+### Example changes
+
   ---new_hunk---
   1: def add(x, y):
   2:     z = x+y
@@ -166,7 +171,8 @@ Example changes:
   def add(x, y):
       return x + y
 
-Example response:
+### Example response
+
   1-3:
   There's a typo in the return statement.
   \`\`\`suggestion
@@ -179,49 +185,44 @@ Example response:
   LGTM!
   ---
 
-Changes for review are below:
+## Changes made to \`$filename\` for your review
+
 $patches
 `
 
-  comment = `A comment was made on a GitHub pull request review for a 
-diff hunk on file \`$filename\`. I would like you to follow 
+  comment = `A comment was made on a GitHub PR review for a 
+diff hunk on a file - \`$filename\`. I would like you to follow 
 the instructions in that comment. 
 
-Pull request title:
+## GitHub PR Title
+
 \`$title\`
 
-Description:
+## Description
+
 \`\`\`
 $description
 \`\`\`
 
-OpenAI generated summary:
+## OpenAI generated summary
+
 \`\`\`
 $raw_summary
 \`\`\`
 
-Content of file prior to changes:
-\`\`\`
-$file_content
-\`\`\`
+## Entire diff
 
-Entire diff:
 \`\`\`diff
 $file_diff
 \`\`\`
 
-Diff being commented on:
+## Diff being commented on
+
 \`\`\`diff
 $diff
 \`\`\`
 
-The format of a comment in the chain is:
-\`user: comment\`
-
-Comment chain (including the new comment):
-\`\`\`
-$comment_chain
-\`\`\`
+## Instructions for you
 
 Please reply directly to the new comment (instead of suggesting 
 a reply) and your reply will be posted as-is.
@@ -233,7 +234,18 @@ comments on the code, in your reply please generate the required code.
 In your reply, please make sure to begin the reply by tagging the user 
 with "@user".
 
-The comment/request that you need to directly reply to:
+## Comment format
+
+\`user: comment\`
+
+## Comment chain (including the new comment)
+
+\`\`\`
+$comment_chain
+\`\`\`
+
+## The comment/request that you need to directly reply to
+
 \`\`\`
 $comment
 \`\`\`

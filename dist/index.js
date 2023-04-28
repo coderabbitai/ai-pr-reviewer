@@ -3535,7 +3535,8 @@ const COMMENT_GREETING = ':robot: OpenAI';
 const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
 const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
-const DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
+const DESCRIPTION_START_TAG = `
+<!-- This is an auto-generated comment: release notes by openai -->`;
 const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by openai -->';
 const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
 <!--
@@ -3622,7 +3623,7 @@ ${tag}`;
             }
             const description = this.getDescription(body);
             const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
-            const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
+            const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
             await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
@@ -6012,10 +6013,11 @@ class TokenLimits {
             this.responseTokens = 2000;
         }
         else {
-            this.maxTokens = 3900;
+            this.maxTokens = 4000;
             this.responseTokens = 1000;
         }
-        this.requestTokens = this.maxTokens - this.responseTokens;
+        // provide some margin for the request tokens
+        this.requestTokens = this.maxTokens - this.responseTokens - 100;
     }
     string() {
         return `max_tokens=${this.maxTokens}, request_tokens=${this.requestTokens}, response_tokens=${this.responseTokens}`;
@@ -6157,18 +6159,23 @@ class OpenAIOptions {
 class Prompts {
     summarize;
     summarizeReleaseNotes;
-    summarizeFileDiff = `GitHub pull request title: 
+    summarizeFileDiff = `## GitHub PR Title
+
 \`$title\` 
 
-Description:
+## Description
+
 \`\`\`
 $description
 \`\`\`
 
-Diff:
+## Diff
+
 \`\`\`diff
 $file_diff
 \`\`\`
+
+## Instructions for you
 
 I would like you to summarize the diff within 50 words.
 `;
@@ -6206,41 +6213,19 @@ $raw_summary
       \`\`\`
 
 `;
-    reviewFileDiff = `GitHub pull request title: 
+    reviewFileDiff = `## GitHub PR Title
+
 \`$title\` 
 
-Description:
+## Description
+
 \`\`\`
 $description
 \`\`\`
 
-Content of \`$filename\` prior to changes:
-\`\`\`
-$file_content
-\`\`\`
+## Instructions for you
 
-Format for changes:
-  ---new_hunk---
-  \`\`\`
-  <new hunk annotated with line numbers>
-  \`\`\`
-
-  ---old_hunk---
-  \`\`\`
-  <old hunk that was replaced by the new hunk above>
-  \`\`\`
-
-  ---comment_chains---
-  \`\`\`
-  <comment chains>
-  \`\`\`
-
-  ---end_change_section---
-  ...
-
-Instructions:
-
-- The format for changes provided above consists of multiple change 
+- The format for changes provided below consists of multiple change 
   sections, each containing a new hunk (annotated with line numbers), 
   an old hunk, and optionally, existing comment chains. Note that the 
   old hunk code has been replaced by the new hunk. The line number 
@@ -6286,7 +6271,28 @@ Instructions:
 - Reflect on your comments and line number ranges before sending the final 
   response to ensure accuracy of line number ranges and replacement snippets.
 
-Response format expected:
+### Format for changes
+
+  ---new_hunk---
+  \`\`\`
+  <new hunk annotated with line numbers>
+  \`\`\`
+
+  ---old_hunk---
+  \`\`\`
+  <old hunk that was replaced by the new hunk above>
+  \`\`\`
+
+  ---comment_chains---
+  \`\`\`
+  <comment chains>
+  \`\`\`
+
+  ---end_change_section---
+  ...
+
+### Response format expected
+
   <start_line_number>-<end_line_number>:
   <review comment>
   ---
@@ -6304,7 +6310,8 @@ Response format expected:
   ---
   ...
 
-Example changes:
+### Example changes
+
   ---new_hunk---
   1: def add(x, y):
   2:     z = x+y
@@ -6317,7 +6324,8 @@ Example changes:
   def add(x, y):
       return x + y
 
-Example response:
+### Example response
+
   1-3:
   There's a typo in the return statement.
   \`\`\`suggestion
@@ -6330,48 +6338,43 @@ Example response:
   LGTM!
   ---
 
-Changes for review are below:
+## Changes made to \`$filename\` for your review
+
 $patches
 `;
-    comment = `A comment was made on a GitHub pull request review for a 
-diff hunk on file \`$filename\`. I would like you to follow 
+    comment = `A comment was made on a GitHub PR review for a 
+diff hunk on a file - \`$filename\`. I would like you to follow 
 the instructions in that comment. 
 
-Pull request title:
+## GitHub PR Title
+
 \`$title\`
 
-Description:
+## Description
+
 \`\`\`
 $description
 \`\`\`
 
-OpenAI generated summary:
+## OpenAI generated summary
+
 \`\`\`
 $raw_summary
 \`\`\`
 
-Content of file prior to changes:
-\`\`\`
-$file_content
-\`\`\`
+## Entire diff
 
-Entire diff:
 \`\`\`diff
 $file_diff
 \`\`\`
 
-Diff being commented on:
+## Diff being commented on
+
 \`\`\`diff
 $diff
 \`\`\`
 
-The format of a comment in the chain is:
-\`user: comment\`
-
-Comment chain (including the new comment):
-\`\`\`
-$comment_chain
-\`\`\`
+## Instructions for you
 
 Please reply directly to the new comment (instead of suggesting 
 a reply) and your reply will be posted as-is.
@@ -6383,7 +6386,18 @@ comments on the code, in your reply please generate the required code.
 In your reply, please make sure to begin the reply by tagging the user 
 with "@user".
 
-The comment/request that you need to directly reply to:
+## Comment format
+
+\`user: comment\`
+
+## Comment chain (including the new comment)
+
+\`\`\`
+$comment_chain
+\`\`\`
+
+## The comment/request that you need to directly reply to
+
 \`\`\`
 $comment
 \`\`\`
@@ -6884,7 +6898,7 @@ const codeReview = async (lightBot, heavyBot, options, prompts) => {
             }
         }
         catch (e) {
-            (0,core.warning)(`Failed to get file contents: ${e}`);
+            (0,core.warning)(`Failed to get file contents: ${e}. This is OK if it's a new file.`);
         }
         let fileDiff = '';
         if (file.patch != null) {
@@ -6932,6 +6946,7 @@ ${hunks.oldHunk}
     }
     const summariesFailed = [];
     const doSummary = async (filename, fileContent, fileDiff) => {
+        (0,core.info)(`summarize: ${filename}`);
         const ins = inputs.clone();
         if (fileDiff.length === 0) {
             (0,core.warning)(`summarize: file_diff is empty, skip ${filename}`);
@@ -7122,6 +7137,7 @@ ${summariesFailed.length > 0
         // failed reviews array
         const reviewsFailed = [];
         const doReview = async (filename, fileContent, patches) => {
+            (0,core.info)(`reviewing ${filename}`);
             // make a copy of inputs
             const ins = inputs.clone();
             ins.filename = filename;
@@ -7132,6 +7148,7 @@ ${summariesFailed.length > 0
             for (const [, , patch] of patches) {
                 const patchTokens = (0,tokenizer/* getTokenCount */.V)(patch);
                 if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
+                    (0,core.info)(`only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`);
                     break;
                 }
                 tokens += patchTokens;
@@ -7154,7 +7171,10 @@ ${summariesFailed.length > 0
                 }
                 // see if we can pack more patches into this request
                 if (patchesPacked >= patchesToPack) {
-                    (0,core.info)(`unable to pack more patches into this request, packed: ${patchesPacked}, to pack: ${patchesToPack}`);
+                    (0,core.info)(`unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`);
+                    if (options.debug) {
+                        (0,core.info)(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`);
+                    }
                     break;
                 }
                 patchesPacked += 1;
