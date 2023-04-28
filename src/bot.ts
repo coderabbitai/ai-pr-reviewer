@@ -1,3 +1,5 @@
+import './fetch-polyfill'
+
 import {info, setFailed, warning} from '@actions/core'
 import {
   ChatGPTAPI,
