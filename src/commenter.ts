@@ -18,8 +18,8 @@ export const COMMENT_REPLY_TAG =
 export const SUMMARIZE_TAG =
   '<!-- This is an auto-generated comment: summarize by openai -->'
 
-export const DESCRIPTION_START_TAG =
-  '<!-- This is an auto-generated comment: release notes by openai -->'
+export const DESCRIPTION_START_TAG = `
+<!-- This is an auto-generated comment: release notes by openai -->`
 export const DESCRIPTION_END_TAG =
   '<!-- end of auto-generated comment: release notes by openai -->'
 
@@ -134,7 +134,7 @@ ${tag}`
         DESCRIPTION_START_TAG,
         DESCRIPTION_END_TAG
       )
-      const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
+      const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
       await octokit.pulls.update({
         owner: repo.owner,
         repo: repo.repo,

@@ -3535,7 +3535,8 @@ const COMMENT_GREETING = ':robot: OpenAI';
 const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
 const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
-const DESCRIPTION_START_TAG = '<!-- This is an auto-generated comment: release notes by openai -->';
+const DESCRIPTION_START_TAG = `
+<!-- This is an auto-generated comment: release notes by openai -->`;
 const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by openai -->';
 const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
 <!--
@@ -3622,7 +3623,7 @@ ${tag}`;
             }
             const description = this.getDescription(body);
             const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
-            const newDescription = `${description}\n${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
+            const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
             await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
