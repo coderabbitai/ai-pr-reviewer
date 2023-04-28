@@ -514,9 +514,6 @@ ${
           info(
             `only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`
           )
-          if (options.debug) {
-            info(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`)
-          }
           break
         }
         tokens += patchTokens
@@ -547,6 +544,9 @@ ${
           info(
             `unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`
           )
+          if (options.debug) {
+            info(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`)
+          }
           break
         }
         patchesPacked += 1

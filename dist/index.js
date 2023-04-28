@@ -7147,9 +7147,6 @@ ${summariesFailed.length > 0
                 const patchTokens = (0,tokenizer/* getTokenCount */.V)(patch);
                 if (tokens + patchTokens > options.heavyTokenLimits.requestTokens) {
                     (0,core.info)(`only packing ${patchesToPack} / ${patches.length} patches, tokens: ${tokens} / ${options.heavyTokenLimits.requestTokens}`);
-                    if (options.debug) {
-                        (0,core.info)(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`);
-                    }
                     break;
                 }
                 tokens += patchTokens;
@@ -7173,6 +7170,9 @@ ${summariesFailed.length > 0
                 // see if we can pack more patches into this request
                 if (patchesPacked >= patchesToPack) {
                     (0,core.info)(`unable to pack more patches into this request, packed: ${patchesPacked}, total patches: ${patches.length}, skipping.`);
+                    if (options.debug) {
+                        (0,core.info)(`prompt so far: ${prompts.renderReviewFileDiff(ins)}`);
+                    }
                     break;
                 }
                 patchesPacked += 1;
