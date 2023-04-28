@@ -187,7 +187,11 @@ export const codeReview = async (
           }
         }
       } catch (e: any) {
-        warning(`Failed to get file contents: ${e as string}`)
+        warning(
+          `Failed to get file contents: ${
+            e as string
+          }. This is OK if it's a new file.`
+        )
       }
 
       let fileDiff = ''
