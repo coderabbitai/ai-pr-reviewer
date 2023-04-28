@@ -25,9 +25,14 @@ export class Bot {
   constructor(options: Options, openaiOptions: OpenAIOptions) {
     this.options = options
     if (process.env.OPENAI_API_KEY) {
+      // add knowledge cut off to the system message
+      const systemMessage = `${options.systemMessage} 
+Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
+Current date: ${new Date().toISOString()}`
+
       this.api = new ChatGPTAPI({
         apiBaseUrl: options.apiBaseUrl,
-        systemMessage: options.systemMessage,
+        systemMessage,
         apiKey: process.env.OPENAI_API_KEY,
         apiOrg: process.env.OPENAI_API_ORG ?? undefined,
         debug: options.debug,

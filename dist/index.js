@@ -3416,9 +3416,13 @@ class Bot {
     constructor(options, openaiOptions) {
         this.options = options;
         if (process.env.OPENAI_API_KEY) {
+            // add knowledge cut off to the system message
+            const systemMessage = `${options.systemMessage} 
+Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
+Current date: ${new Date().toISOString()}`;
             this.api = new ChatGPTAPI({
                 apiBaseUrl: options.apiBaseUrl,
-                systemMessage: options.systemMessage,
+                systemMessage,
                 apiKey: process.env.OPENAI_API_KEY,
                 apiOrg: process.env.OPENAI_API_ORG ?? undefined,
                 debug: options.debug,
@@ -5996,7 +6000,9 @@ class TokenLimits {
     maxTokens;
     requestTokens;
     responseTokens;
+    knowledgeCutOff;
     constructor(model = 'gpt-3.5-turbo') {
+        this.knowledgeCutOff = 'September 2021';
         if (model === 'gpt-4-32k') {
             this.maxTokens = 32600;
             this.responseTokens = 4000;

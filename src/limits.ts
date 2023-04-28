@@ -2,8 +2,10 @@ export class TokenLimits {
   maxTokens: number
   requestTokens: number
   responseTokens: number
+  knowledgeCutOff: string
 
   constructor(model = 'gpt-3.5-turbo') {
+    this.knowledgeCutOff = 'September 2021'
     if (model === 'gpt-4-32k') {
       this.maxTokens = 32600
       this.responseTokens = 4000
