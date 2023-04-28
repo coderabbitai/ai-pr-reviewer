@@ -842,8 +842,8 @@ function parseReview(
       }
 
       let withinPatch = false
-      let bestPatchStartLine = patches[0][0]
-      let bestPatchEndLine = patches[0][1]
+      let bestPatchStartLine = -1
+      let bestPatchEndLine = -1
       let maxIntersection = 0
 
       for (const [startLine, endLine] of patches) {
