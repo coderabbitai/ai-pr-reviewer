@@ -91,28 +91,6 @@ export const handleReviewComment = async (
       commentChain.includes(COMMENT_REPLY_TAG) ||
       comment.body.includes(ASK_BOT)
     ) {
-      let fileContent = ''
-      try {
-        const contents = await octokit.repos.getContent({
-          owner: repo.owner,
-          repo: repo.repo,
-          path: comment.path,
-          ref: context.payload.pull_request.base.sha
-        })
-        if (contents.data) {
-          if (!Array.isArray(contents.data)) {
-            if (contents.data.type === 'file' && contents.data.content) {
-              fileContent = Buffer.from(
-                contents.data.content,
-                'base64'
-              ).toString()
-            }
-          }
-        }
-      } catch (error) {
-        warning(`Failed to get file contents: ${error}, skipping.`)
-      }
-
       let fileDiff = ''
       try {
         // get diff for this file by comparing the base and head commits
@@ -161,22 +139,7 @@ export const handleReviewComment = async (
         )
         return
       }
-      // pack file content and diff into the inputs if they are not too long
-      if (fileContent.length > 0) {
-        // count occurrences of $file_content in prompt
-        const fileContentCount =
-          prompts.comment.split('$file_content').length - 1
-        const fileContentTokens = getTokenCount(fileContent)
-        if (
-          fileContentCount > 0 &&
-          tokens + fileContentTokens * fileContentCount <=
-            options.heavyTokenLimits.requestTokens
-        ) {
-          tokens += fileContentTokens * fileContentCount
-          inputs.fileContent = fileContent
-        }
-      }
-
+      // pack file diff into the inputs if they are not too long
       if (fileDiff.length > 0) {
         // count occurrences of $file_diff in prompt
         const fileDiffCount = prompts.comment.split('$file_diff').length - 1
@@ -197,12 +160,15 @@ export const handleReviewComment = async (
         pullNumber
       )
       if (summary) {
-        // pack summary into the inputs if it is not too long
-        const rawSummary = commenter.getRawSummary(summary.body)
-        const summaryTokens = getTokenCount(rawSummary)
-        if (tokens + summaryTokens <= options.heavyTokenLimits.requestTokens) {
-          tokens += summaryTokens
-          inputs.rawSummary = rawSummary
+        // pack short summary into the inputs if it is not too long
+        const shortSummary = commenter.getShortSummary(summary.body)
+        const shortSummaryTokens = getTokenCount(shortSummary)
+        if (
+          tokens + shortSummaryTokens <=
+          options.heavyTokenLimits.requestTokens
+        ) {
+          tokens += shortSummaryTokens
+          inputs.shortSummary = shortSummary
         }
       }
 

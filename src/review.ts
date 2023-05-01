@@ -8,6 +8,8 @@ import {
   COMMENT_REPLY_TAG,
   RAW_SUMMARY_END_TAG,
   RAW_SUMMARY_START_TAG,
+  SHORT_SUMMARY_END_TAG,
+  SHORT_SUMMARY_START_TAG,
   SUMMARIZE_TAG
 } from './commenter'
 import {Inputs} from './inputs'
@@ -71,6 +73,7 @@ export const codeReview = async (
   let existingCommitIdsBlock = ''
   if (existingSummarizeCmt != null) {
     inputs.rawSummary = commenter.getRawSummary(existingSummarizeCmt.body)
+    inputs.shortSummary = commenter.getShortSummary(existingSummarizeCmt.body)
     existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
       existingSummarizeCmt.body
     )
@@ -276,21 +279,6 @@ ${hunks.oldHunk}
     ins.fileDiff = fileDiff
     tokens += fileDiff.length
 
-    // optionally pack file_content
-    if (fileContent.length > 0) {
-      // count occurrences of $file_content in prompt
-      const fileContentCount =
-        prompts.summarizeFileDiff.split('$file_content').length - 1
-      const fileContentTokens = getTokenCount(fileContent)
-      if (
-        fileContentCount > 0 &&
-        tokens + fileContentTokens * fileContentCount <=
-          options.lightTokenLimits.requestTokens
-      ) {
-        tokens += fileContentTokens * fileContentCount
-        ins.fileContent = fileContent
-      }
-    }
     // summarize content
     try {
       const [summarizeResp] = await lightBot.chat(
@@ -371,27 +359,24 @@ ${filename}: ${summary}
     }
   }
 
-  let nextSummarizeIds = {}
-
   // final summary
-  const [summarizeFinalResponse, summarizeFinalResponseIds] =
-    await heavyBot.chat(prompts.renderSummarize(inputs), nextSummarizeIds)
+  const [summarizeFinalResponse] = await heavyBot.chat(
+    prompts.renderSummarize(inputs),
+    {}
+  )
   if (summarizeFinalResponse === '') {
     info('summarize: nothing obtained from openai')
-  } else {
-    nextSummarizeIds = summarizeFinalResponseIds
   }
 
   if (options.disableReleaseNotes === false) {
     // final release notes
-    const [releaseNotesResponse, releaseNotesIds] = await heavyBot.chat(
+    const [releaseNotesResponse] = await heavyBot.chat(
       prompts.renderSummarizeReleaseNotes(inputs),
-      nextSummarizeIds
+      {}
     )
     if (releaseNotesResponse === '') {
       info('release notes: nothing obtained from openai')
     } else {
-      nextSummarizeIds = releaseNotesIds
       let message = '### Summary by OpenAI\n\n'
       message += releaseNotesResponse
       try {
@@ -405,10 +390,20 @@ ${filename}: ${summary}
     }
   }
 
+  // generate a short summary as well
+  const [summarizeShortResponse] = await heavyBot.chat(
+    prompts.renderSummarizeShort(inputs),
+    {}
+  )
+  inputs.shortSummary = summarizeShortResponse
+
   let summarizeComment = `${summarizeFinalResponse}
 ${RAW_SUMMARY_START_TAG}
 ${inputs.rawSummary}
 ${RAW_SUMMARY_END_TAG}
+${SHORT_SUMMARY_START_TAG}
+${inputs.shortSummary}
+${SHORT_SUMMARY_END_TAG}
 ---
 
 ### Chat with 🤖 OpenAI Bot (\`@openai\`)
@@ -473,7 +468,6 @@ ${
     : ''
 }
 `
-
   if (!options.disableReview) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
       const needsReview =
@@ -518,19 +512,6 @@ ${
         }
         tokens += patchTokens
         patchesToPack += 1
-      }
-
-      // try packing file_content into this request
-      const fileContentCount =
-        prompts.reviewFileDiff.split('$file_content').length - 1
-      const fileContentTokens = getTokenCount(fileContent)
-      if (
-        fileContentCount > 0 &&
-        tokens + fileContentTokens * fileContentCount <=
-          options.heavyTokenLimits.requestTokens
-      ) {
-        ins.fileContent = fileContent
-        tokens += fileContentTokens * fileContentCount
       }
 
       let patchesPacked = 0

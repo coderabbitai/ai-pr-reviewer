@@ -29,6 +29,13 @@ export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: ra
 export const RAW_SUMMARY_END_TAG = `-->
 <!-- end of auto-generated comment: raw summary by openai -->`
 
+export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by openai -->
+<!--
+`
+
+export const SHORT_SUMMARY_END_TAG = `-->
+<!-- end of auto-generated comment: short summary by openai -->`
+
 export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
 export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
 
@@ -92,6 +99,14 @@ ${tag}`
       summary,
       RAW_SUMMARY_START_TAG,
       RAW_SUMMARY_END_TAG
+    )
+  }
+
+  getShortSummary(summary: string) {
+    return this.getContentWithinTags(
+      summary,
+      SHORT_SUMMARY_START_TAG,
+      SHORT_SUMMARY_END_TAG
     )
   }
 
