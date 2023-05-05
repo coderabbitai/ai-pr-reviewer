@@ -194,22 +194,22 @@ ${COMMENT_TAG}`
     info(
       `Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`
     )
-    try {
-      let commentCounter = 0
-      for (const comment of this.reviewCommentsBuffer) {
-        info(`Posting comment: ${comment.message}`)
-        let found = false
-        const comments = await this.getCommentsAtRange(
-          pullNumber,
-          comment.path,
-          comment.startLine,
-          comment.endLine
-        )
-        for (const c of comments) {
-          if (c.body.includes(COMMENT_TAG)) {
-            info(
-              `Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
-            )
+    let commentCounter = 0
+    for (const comment of this.reviewCommentsBuffer) {
+      info(`Posting comment: ${comment.message}`)
+      let found = false
+      const comments = await this.getCommentsAtRange(
+        pullNumber,
+        comment.path,
+        comment.startLine,
+        comment.endLine
+      )
+      for (const c of comments) {
+        if (c.body.includes(COMMENT_TAG)) {
+          info(
+            `Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
+          )
+          try {
             await octokit.pulls.updateReviewComment({
               owner: repo.owner,
               repo: repo.repo,
@@ -217,45 +217,47 @@ ${COMMENT_TAG}`
               comment_id: c.id,
               body: comment.message
             })
-            found = true
-            break
+          } catch (e) {
+            warning(`Failed to update review comment: ${e}`)
           }
+          found = true
+          break
         }
-
-        if (!found) {
-          info(
-            `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
-          )
-          const commentData: any = {
-            owner: repo.owner,
-            repo: repo.repo,
-            // eslint-disable-next-line camelcase
-            pull_number: pullNumber,
-            // eslint-disable-next-line camelcase
-            commit_id: commitId,
-            body: comment.message,
-            path: comment.path,
-            line: comment.endLine
-          }
-
-          if (comment.startLine !== comment.endLine) {
-            // eslint-disable-next-line camelcase
-            commentData.start_side = 'RIGHT'
-            // eslint-disable-next-line camelcase
-            commentData.start_line = comment.startLine
-          }
-
-          await octokit.pulls.createReviewComment(commentData)
-        }
-
-        commentCounter++
-        info(
-          `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
-        )
       }
-    } catch (e) {
-      warning(`Failed to submit review: ${e}`)
-      throw e
+
+      if (!found) {
+        info(
+          `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
+        )
+        const commentData: any = {
+          owner: repo.owner,
+          repo: repo.repo,
+          // eslint-disable-next-line camelcase
+          pull_number: pullNumber,
+          // eslint-disable-next-line camelcase
+          commit_id: commitId,
+          body: comment.message,
+          path: comment.path,
+          line: comment.endLine
+        }
+
+        if (comment.startLine !== comment.endLine) {
+          // eslint-disable-next-line camelcase
+          commentData.start_side = 'RIGHT'
+          // eslint-disable-next-line camelcase
+          commentData.start_line = comment.startLine
+        }
+        try {
+          await octokit.pulls.createReviewComment(commentData)
+        } catch (e) {
+          warning(`Failed to create review comment: ${e}`)
+        }
+      }
+
+      commentCounter++
+      info(
+        `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
+      )
     }
   }
 

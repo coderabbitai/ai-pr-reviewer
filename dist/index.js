@@ -3353,7 +3353,9 @@ var ChatGPTUnofficialProxyAPI = class {
                 }
               }
             } catch (err) {
-              reject(err);
+              if (this._debug) {
+                console.warn("chatgpt unexpected JSON error", err);
+              }
             }
           },
           onError: (err) => {
@@ -3748,15 +3750,15 @@ ${COMMENT_TAG}`;
     }
     async submitReview(pullNumber, commitId) {
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`);
-        try {
-            let commentCounter = 0;
-            for (const comment of this.reviewCommentsBuffer) {
-                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Posting comment: ${comment.message}`);
-                let found = false;
-                const comments = await this.getCommentsAtRange(pullNumber, comment.path, comment.startLine, comment.endLine);
-                for (const c of comments) {
-                    if (c.body.includes(COMMENT_TAG)) {
-                        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
+        let commentCounter = 0;
+        for (const comment of this.reviewCommentsBuffer) {
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Posting comment: ${comment.message}`);
+            let found = false;
+            const comments = await this.getCommentsAtRange(pullNumber, comment.path, comment.startLine, comment.endLine);
+            for (const c of comments) {
+                if (c.body.includes(COMMENT_TAG)) {
+                    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
+                    try {
                         await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.updateReviewComment */ .K.pulls.updateReviewComment({
                             owner: repo.owner,
                             repo: repo.repo,
@@ -3764,38 +3766,42 @@ ${COMMENT_TAG}`;
                             comment_id: c.id,
                             body: comment.message
                         });
-                        found = true;
-                        break;
                     }
+                    catch (e) {
+                        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to update review comment: ${e}`);
+                    }
+                    found = true;
+                    break;
                 }
-                if (!found) {
-                    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
-                    const commentData = {
-                        owner: repo.owner,
-                        repo: repo.repo,
-                        // eslint-disable-next-line camelcase
-                        pull_number: pullNumber,
-                        // eslint-disable-next-line camelcase
-                        commit_id: commitId,
-                        body: comment.message,
-                        path: comment.path,
-                        line: comment.endLine
-                    };
-                    if (comment.startLine !== comment.endLine) {
-                        // eslint-disable-next-line camelcase
-                        commentData.start_side = 'RIGHT';
-                        // eslint-disable-next-line camelcase
-                        commentData.start_line = comment.startLine;
-                    }
+            }
+            if (!found) {
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`);
+                const commentData = {
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    // eslint-disable-next-line camelcase
+                    pull_number: pullNumber,
+                    // eslint-disable-next-line camelcase
+                    commit_id: commitId,
+                    body: comment.message,
+                    path: comment.path,
+                    line: comment.endLine
+                };
+                if (comment.startLine !== comment.endLine) {
+                    // eslint-disable-next-line camelcase
+                    commentData.start_side = 'RIGHT';
+                    // eslint-disable-next-line camelcase
+                    commentData.start_line = comment.startLine;
+                }
+                try {
                     await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.createReviewComment */ .K.pulls.createReviewComment(commentData);
                 }
-                commentCounter++;
-                (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
+                catch (e) {
+                    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to create review comment: ${e}`);
+                }
             }
-        }
-        catch (e) {
-            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.warning)(`Failed to submit review: ${e}`);
-            throw e;
+            commentCounter++;
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`);
         }
     }
     async reviewCommentReply(pullNumber, topLevelComment, message) {
