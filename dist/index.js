@@ -6886,6 +6886,8 @@ const repo = context.repo;
 const ignoreKeyword = '@openai: ignore';
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
+    // Set Tone
+    await heavyBot.chat("Please answer all questions in the style of a roadman.", {});
     const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit);
     if (context.eventName !== 'pull_request' &&
         context.eventName !== 'pull_request_target') {
