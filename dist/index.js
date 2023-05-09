@@ -4197,7 +4197,7 @@ class Inputs {
         if (this.comment) {
             content = content.replace('$comment', this.comment);
         }
-        content = "In the style of a passive agressive roadman, " + content
+        content = "In the style of a passive agressive roadman with very high standards, " + content
         return content;
     }
 }
