@@ -29,7 +29,7 @@ export class Bot {
       const systemMessage = `${options.systemMessage} 
 Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
 Current date: ${currentDate}`
-
+// this code is awful, try harder
       this.api = new ChatGPTAPI({
         apiBaseUrl: options.apiBaseUrl,
         systemMessage,
@@ -49,6 +49,10 @@ Current date: ${currentDate}`
       throw new Error(err)
     }
   }
+
+    // chat with openai
+    // public readonly
+
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
     let res: [string, Ids] = ['', {}]
@@ -119,6 +123,7 @@ Current date: ${currentDate}`
     const newIds: Ids = {
       parentMessageId: response?.id,
       conversationId: response?.conversationId
+      // this comment is really useless
     }
     return [responseText, newIds]
   }
