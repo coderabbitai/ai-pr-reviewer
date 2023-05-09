@@ -32,6 +32,12 @@ export const codeReview = async (
 ): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
+  // Set Tone
+  await heavyBot.chat(
+    "Please answer all questions in the style of a roadman.",
+    {}
+  )
+
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
 
   if (
