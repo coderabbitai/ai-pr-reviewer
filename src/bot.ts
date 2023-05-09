@@ -75,6 +75,8 @@ Current date: ${currentDate}`
     const start = Date.now()
     if (!message) {
       return ['', {}]
+    }else{
+      message = "In the style of a roadman, " + message
     }
 
     let response: ChatMessage | undefined
