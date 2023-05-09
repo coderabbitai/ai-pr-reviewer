@@ -6284,7 +6284,7 @@ $file_diff
 
 ## Instructions for you
 
-I would like you to summarize the diff within 50 words.
+I would like you to summarize the diff within 50 word, in the style of a passive agressive roadman.
 `;
     triageFileDiff = `Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
 \`APPROVED\` based on the following criteria:
