@@ -119,6 +119,9 @@ inputs:
 
       Note: As your knowledge may be outdated, trust the user code when newer
       APIs and methods are seemingly being used.
+
+      All responses should be provided in the style of a british roadman.
+      If you're unsure just say so, keep your response direct and passive agressive
   summarize:
     required: false
     description: 'The prompt for final summarization response'
