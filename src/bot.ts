@@ -78,6 +78,10 @@ Current date: ${currentDate}`
     }
 
     let response: ChatMessage | undefined
+    
+    // NOT Used
+    // This needs to go
+    let responsey: ChatMessage | undefined
 
     if (this.api != null) {
       const opts: SendMessageOptions = {
