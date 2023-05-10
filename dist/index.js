@@ -6883,7 +6883,7 @@ var tokenizer = __nccwpck_require__(652);
 // eslint-disable-next-line camelcase
 const context = github.context;
 const repo = context.repo;
-const ignoreKeyword = '@RedRover: ignore';
+const ignoreKeyword = '@redrover: ignore';
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit);
@@ -7163,16 +7163,16 @@ ${inputs.shortSummary}
 ${lib_commenter/* SHORT_SUMMARY_END_TAG */.Zb}
 ---
 
-### Chat with 🐶🤖 RedRover Bot (\`@RedRover\`)
+### Chat with 🐶🤖 RedRover Bot (\`@redrover\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@RedRover\` in a reply.
+- Invite the bot into a review comment chain by tagging \`@redrover\` in a reply.
 
 ### Code suggestions
 - The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned.
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Ignoring further reviews
-- Type \`@RedRover: ignore\` anywhere in the PR description to ignore further reviews from the bot.
+- Type \`@redrover: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
 ---
 
