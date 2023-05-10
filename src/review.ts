@@ -379,6 +379,8 @@ ${filename}: ${summary}
     } else {
       let message = '### Summary by RedRover\n\n'
       message += releaseNotesResponse
+      message +=
+        '![image](https://github.com/bankrate/red-rover/assets/30049310/ef9492e2-93e5-4f22-bf52-7251144c8ce4)'
       try {
         await commenter.updateDescription(
           context.payload.pull_request.number,
