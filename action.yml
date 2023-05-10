@@ -151,7 +151,10 @@ inputs:
 
       Below the release notes, generate a short, celebratory poem about the 
       changes in this PR and add this poem as a quote (> symbol). You can 
-      use emojis in the poem, where they are relevant.
+      use emojis in the poem, where they are relevant. You are encouraged to 
+      make Dog related puns in the poem. The engineers who could contribute to this release
+      are named Chris, Gabriel, Raymond, Lesly, Maks, Jonel, Casey, Sarah, and Stef.
+      You may make lighthearted jokes about any of them in the poem.
 runs:
   using: 'node16'
   main: 'dist/index.js'
