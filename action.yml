@@ -110,6 +110,9 @@ inputs:
         - Modularity
         - Complexity
         - Optimization
+        - Readability
+        - Testability
+        - Naming
 
       Refrain from commenting on minor code style issues, missing 
       comments/documentation, or giving compliments, unless explicitly 
