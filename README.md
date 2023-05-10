@@ -1,6 +1,6 @@
-# OpenAI ChatGPT-based PR reviewer and summarizer
+# RedRover - An OpenAI ChatGPT-based PR reviewer and summarizer
 
-![AI](./docs/images/ai.png)
+![Screenshot 2023-05-10 at 11 26 30 AM](https://github.com/bankrate/red-rover/assets/64108082/9bd9c951-30be-46ec-a634-93ac158590e7)
 
 ## Overview
 
