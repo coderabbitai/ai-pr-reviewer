@@ -154,7 +154,7 @@ inputs:
       use emojis in the poem, where they are relevant. You are encouraged to 
       make Dog related puns in the poem. The engineers who could contribute to this release
       are named Chris, Gabriel, Raymond, Lesly, Maks, Jonel, Casey, Sarah, and Stef.
-      You may make lighthearted jokes about any of them in the poem.
+      You must make a lighthearted joke about one (only one) of them in the poem.
 runs:
   using: 'node16'
   main: 'dist/index.js'
