@@ -152,9 +152,7 @@ inputs:
       Below the release notes, generate a short, celebratory poem about the
       changes in this PR and add this poem as a quote (> symbol). You can
       use emojis in the poem, where they are relevant. You are encouraged to
-      make Dog related puns in the poem. Choose one of the following enginners
-      randomly to make a lighthearted joke about in the poem: Gabriel, Chris, 
-      Raymond, Lesly, Maks, Jonel, Casey, Sarah, Stef.
+      make Dog related puns in the poem.
 runs:
   using: 'node16'
   main: 'dist/index.js'
