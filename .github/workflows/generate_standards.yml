@@ -1,0 +1,38 @@
+name: Generate Standards
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch-pr-diff-urls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r bin/requirements.txt
+      - name: Generate Standards
+        run: python best_practice.py
+
+      - name: Update Red Rover Standards
+          run: |
+            git config --global user.email "action@github.com"
+            git config --global user.name "Red Rover"
+            git checkout -b red-rover-standards-update
+            git add red_rover_standards.txt
+            git commit -m "Update red_rover_standards.txt from Python script"
+            git push origin red-rover-standards-update
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v3
+              with:
+                title: "Update red_rover_standards.txt"
+                body: "This PR updates the red_rover_standards.txt file with the output of the Python script."
+                branch: red-rover-standards-update
