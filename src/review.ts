@@ -22,7 +22,7 @@ import {getTokenCount} from './tokenizer'
 const context = github_context
 const repo = context.repo
 
-const ignoreKeyword = '@openai: ignore'
+const ignoreKeyword = '@RedRover: ignore'
 
 export const codeReview = async (
   lightBot: Bot,
@@ -287,8 +287,8 @@ ${hunks.oldHunk}
       )
 
       if (summarizeResp === '') {
-        info('summarize: nothing obtained from openai')
-        summariesFailed.push(`${filename} (nothing obtained from openai)`)
+        info('summarize: nothing fetched from RedRover')
+        summariesFailed.push(`${filename} (nothing fetched from RedRover)`)
         return null
       } else {
         if (options.reviewSimpleChanges === false) {
@@ -311,8 +311,8 @@ ${hunks.oldHunk}
         return [filename, summarizeResp, true]
       }
     } catch (e: any) {
-      warning(`summarize: error from openai: ${e as string}`)
-      summariesFailed.push(`${filename} (error from openai: ${e as string})})`)
+      warning(`summarize: error from RedRover: ${e as string}`)
+      summariesFailed.push(`${filename} (error from RedRover: ${e as string})})`)
       return null
     }
   }
@@ -352,7 +352,7 @@ ${filename}: ${summary}
         {}
       )
       if (summarizeResp === '') {
-        warning('summarize: nothing obtained from openai')
+        warning('summarize: nothing fetched from RedRover')
       } else {
         inputs.rawSummary = summarizeResp
       }
@@ -365,7 +365,7 @@ ${filename}: ${summary}
     {}
   )
   if (summarizeFinalResponse === '') {
-    info('summarize: nothing obtained from openai')
+    info('summarize: nothing fetched from RedRover')
   }
 
   if (options.disableReleaseNotes === false) {
@@ -375,9 +375,9 @@ ${filename}: ${summary}
       {}
     )
     if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
+      info('release notes: nothing fetched from RedRover')
     } else {
-      let message = '### Summary by OpenAI\n\n'
+      let message = '### Summary by RedRover\n\n'
       message += releaseNotesResponse
       try {
         await commenter.updateDescription(
@@ -406,16 +406,16 @@ ${inputs.shortSummary}
 ${SHORT_SUMMARY_END_TAG}
 ---
 
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
+### Chat with 🤖 RedRover Bot (\`@RedRover\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+- Invite the bot into a review comment chain by tagging \`@RedRover\` in a reply.
 
 ### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned.
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Ignoring further reviews
-- Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
+- Type \`@RedRover: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
 ---
 
@@ -588,7 +588,7 @@ ${commentChain}
           {}
         )
         if (response === '') {
-          info('review: nothing obtained from openai')
+          info('review: nothing fetched from RedRover')
           reviewsFailed.push(`${filename} (no response)`)
           return
         }
