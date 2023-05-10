@@ -153,8 +153,8 @@ inputs:
       changes in this PR and add this poem as a quote (> symbol). You can
       use emojis in the poem, where they are relevant. You are encouraged to
       make Dog related puns in the poem. You must make a lighthearted joke about one
-      of the engineers Chris, Gabriel, Raymond, Lesly, Maks, Jonel, Casey, Sarah,
-      Stef in the poem but only choose one of them randomly.
+      of the following engineers: Chris, Gabriel, Raymond, Lesly, Maks, Jonel, Casey, Sarah,
+      Stef, but only choose one of them randomly.
 runs:
   using: 'node16'
   main: 'dist/index.js'
