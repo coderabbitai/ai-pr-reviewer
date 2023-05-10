@@ -6883,7 +6883,7 @@ var tokenizer = __nccwpck_require__(652);
 // eslint-disable-next-line camelcase
 const context = github.context;
 const repo = context.repo;
-const ignoreKeyword = '@openai: ignore';
+const ignoreKeyword = '@RedRover: ignore';
 const codeReview = async (lightBot, heavyBot, options, prompts) => {
     const commenter = new lib_commenter/* Commenter */.Es();
     const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit);
@@ -7068,8 +7068,8 @@ ${hunks.oldHunk}
         try {
             const [summarizeResp] = await lightBot.chat(prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges), {});
             if (summarizeResp === '') {
-                (0,core.info)('summarize: nothing obtained from openai');
-                summariesFailed.push(`${filename} (nothing obtained from openai)`);
+                (0,core.info)('summarize: nothing fetched from RedRover');
+                summariesFailed.push(`${filename} (nothing fetched from RedRover)`);
                 return null;
             }
             else {
@@ -7092,8 +7092,8 @@ ${hunks.oldHunk}
             }
         }
         catch (e) {
-            (0,core.warning)(`summarize: error from openai: ${e}`);
-            summariesFailed.push(`${filename} (error from openai: ${e})})`);
+            (0,core.warning)(`summarize: error from RedRover: ${e}`);
+            summariesFailed.push(`${filename} (error from RedRover: ${e})})`);
             return null;
         }
     };
@@ -7122,7 +7122,7 @@ ${filename}: ${summary}
             // ask chatgpt to summarize the summaries
             const [summarizeResp] = await heavyBot.chat(prompts.renderSummarizeChangesets(inputs), {});
             if (summarizeResp === '') {
-                (0,core.warning)('summarize: nothing obtained from openai');
+                (0,core.warning)('summarize: nothing fetched from RedRover');
             }
             else {
                 inputs.rawSummary = summarizeResp;
@@ -7132,16 +7132,16 @@ ${filename}: ${summary}
     // final summary
     const [summarizeFinalResponse] = await heavyBot.chat(prompts.renderSummarize(inputs), {});
     if (summarizeFinalResponse === '') {
-        (0,core.info)('summarize: nothing obtained from openai');
+        (0,core.info)('summarize: nothing fetched from RedRover');
     }
     if (options.disableReleaseNotes === false) {
         // final release notes
         const [releaseNotesResponse] = await heavyBot.chat(prompts.renderSummarizeReleaseNotes(inputs), {});
         if (releaseNotesResponse === '') {
-            (0,core.info)('release notes: nothing obtained from openai');
+            (0,core.info)('release notes: nothing fetched from RedRover');
         }
         else {
-            let message = '### Summary by OpenAI\n\n';
+            let message = '### Summary by RedRover\n\n';
             message += releaseNotesResponse;
             try {
                 await commenter.updateDescription(context.payload.pull_request.number, message);
@@ -7163,16 +7163,16 @@ ${inputs.shortSummary}
 ${lib_commenter/* SHORT_SUMMARY_END_TAG */.Zb}
 ---
 
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
+### Chat with 🐶🤖 RedRover Bot (\`@RedRover\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+- Invite the bot into a review comment chain by tagging \`@RedRover\` in a reply.
 
 ### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned.
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Ignoring further reviews
-- Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
+- Type \`@RedRover: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
 ---
 
@@ -7297,7 +7297,7 @@ ${commentChain}
             try {
                 const [response] = await heavyBot.chat(prompts.renderReviewFileDiff(ins), {});
                 if (response === '') {
-                    (0,core.info)('review: nothing obtained from openai');
+                    (0,core.info)('review: nothing fetched from RedRover');
                     reviewsFailed.push(`${filename} (no response)`);
                     return;
                 }
