@@ -21,6 +21,10 @@ jobs:
           pip install -r bin/requirements.txt
       - name: Generate Standards
         run: python best_practice.py
+        env:
+          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Update Red Rover Standards
           run: |
