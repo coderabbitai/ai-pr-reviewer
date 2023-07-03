@@ -18,7 +18,6 @@ def count_tokens_tiktoken(text):
 
 
 def split_text_into_chunks(text, max_tokens):
-    print(text)
     words = text.split()
     current_chunk = []
     chunks = []
@@ -97,23 +96,18 @@ headers = {
 
 # Fetch the last 10 pull requests
 url = f"https://api.github.com/repos/{GITHUB_REPO}/pulls?state=closed&per_page=10"
-print(url)
 response = requests.get(url, headers=headers)
 pull_requests = response.json()
-print(pull_requests)
 # Add diffs to list
 commits_list = []
 for pr in pull_requests:
     diff_url = pr["diff_url"]
-    print(diff_url)
     diff_response = requests.get(diff_url, headers=headers)
     diff_response = diff_response.text
     # limit diffs to 30,000 tokens
     if count_tokens_tiktoken(diff_response) < 30000:
-        print(diff_response)
         commits_list.append(diff_response)
 
-print(commits_list)
 def identify_best_practices(commits_list):
     best_practices_list = []
     for commit in commits_list:
