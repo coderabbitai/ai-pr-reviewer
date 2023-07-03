@@ -15,10 +15,23 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('**/bin/requirements.txt') }}
+          restore-keys: |
+            pip-
+       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r bin/requirements.txt
+          if [ -d ~/.cache/pip ]; then
+            pip install --no-index --find-links=${HOME}/.cache/pip -r bin/requirements.txt
+          else
+            pip install -r bin/requirements.txt
+          fi
+          
       - name: Generate Standards
         run: python bin/best_practices.py
         env:
@@ -33,6 +46,7 @@ jobs:
           git add red_rover_standards.txt
           git commit -m "Update red_rover_standards.txt from Python script"
           git push origin red-rover-standards-update
+      
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
