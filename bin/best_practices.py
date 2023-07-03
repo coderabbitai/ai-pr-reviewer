@@ -10,7 +10,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Fetch environment variables
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_OWNER = os.getenv("GITHUB_OWNER")
 GITHUB_REPO = os.getenv("GITHUB_REPO")
 
 def count_tokens_tiktoken(text):
@@ -97,7 +96,7 @@ headers = {
 }
 
 # Fetch the last 10 pull requests
-url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/pulls?state=closed&per_page=10"
+url = f"https://api.github.com/repos/{GITHUB_REPO}/pulls?state=closed&per_page=10"
 print(url)
 response = requests.get(url, headers=headers)
 pull_requests = response.json()

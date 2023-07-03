@@ -23,7 +23,6 @@ jobs:
         run: python bin/best_practices.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Update Red Rover Standards
