@@ -28,6 +28,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "${{ github.event.pull_request.head.repo.full_name }}"
+          echo "${{ github.repository }}"
           python -m pip install --upgrade pip
           pip install -r bin/requirements.txt
 
@@ -53,4 +55,4 @@ jobs:
           title: "Update red_rover_standards.txt"
           body: "This PR updates the red_rover_standards.txt file with the output of the Python script."
           branch: red-rover-standards-update
-          push-to-fork: ${{ github.repository }}
+          base: main
