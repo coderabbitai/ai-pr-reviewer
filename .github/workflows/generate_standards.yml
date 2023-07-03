@@ -32,6 +32,7 @@ jobs:
         run: python bin/best_practices.py
         env:
           GITHUB_TOKEN: ${{ secrets.BANKRATE_BOT_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Update Red Rover Standards
