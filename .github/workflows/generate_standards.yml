@@ -20,7 +20,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r bin/requirements.txt
       - name: Generate Standards
-        run: python bin/best_practice.py
+        run: python bin/best_practices.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
