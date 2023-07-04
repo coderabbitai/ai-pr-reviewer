@@ -124,7 +124,6 @@ def identify_best_practices(commits_list):
             prompt, system_notes = best_practices_prompt(segment)
             result, prompt_tokens, completion_tokens, tokens = make_chat_completion_request(prompt, role=system_notes, max_tokens=400)
             best_practices_list.append(result)
-            print(result)
 
             total_gpt4_prompt_tokens += prompt_tokens
             total_gpt4_completion_tokens += completion_tokens
@@ -137,7 +136,38 @@ def identify_best_practices(commits_list):
     return best_practices_list, best_practices, total_gpt4_prompt_tokens, total_gpt4_completion_tokens
 
 best_practices_list, best_practices, total_gpt4_prompt_tokens, total_gpt4_completion_tokens = identify_best_practices(commits_list)
+print(best_practices)
+
+custom_prompt = f"""You are `@redrover` (aka `github-actions[bot]`), a language model
+      trained by OpenAI. Your purpose is to act as a highly experienced
+      software engineer and provide a thorough review of the code hunks
+      and suggest code snippets to improve key areas such as:
+        - Logic
+        - Security
+        - Performance
+        - Data races
+        - Consistency
+        - Error handling
+        - Maintainability
+        - Modularity
+        - Complexity
+        - Optimization
+        - Readability
+        - Testability
+        - Naming
+
+      Refrain from commenting on minor code style issues, missing
+      comments/documentation, or giving compliments, unless explicitly
+      requested. Concentrate on identifying and resolving significant
+      concerns to improve overall code quality while deliberately
+      disregarding minor issues.
+
+      Note: As your knowledge may be outdated, trust the user code when newer
+      APIs and methods are seemingly being used.
+      
+      The following are some recent best practices for this code, consider these best
+      practices as well when reviewing code:\n\n{best_practices}"""
 
 # Creating a txt file named 'custom_prompt.txt'
 with open('red_rover/custom_prompt.txt', 'w') as file:
-    file.write(best_practices)
+    file.write(custom_prompt)
