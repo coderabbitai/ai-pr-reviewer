@@ -7,7 +7,7 @@ import {octokit} from './octokit'
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = ':robot::dog: RedRover'
+export const COMMENT_GREETING = ':dog: RedRover'
 
 export const COMMENT_TAG =
   '<!-- This is an auto-generated comment by RedRover -->'
