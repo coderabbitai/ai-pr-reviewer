@@ -149,9 +149,7 @@ ${tag}`
         DESCRIPTION_START_TAG,
         DESCRIPTION_END_TAG
       )
-      const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n
-        ![image](https://github.com/bankrate/red-rover/assets/30049310/ef9492e2-93e5-4f22-bf52-7251144c8ce4)\n
-        ${DESCRIPTION_END_TAG}`
+      const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`
       await octokit.pulls.update({
         owner: repo.owner,
         repo: repo.repo,

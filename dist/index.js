@@ -3721,9 +3721,7 @@ ${tag}`;
             }
             const description = this.getDescription(body);
             const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
-            const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n
-        ![image](https://github.com/bankrate/red-rover/assets/30049310/ef9492e2-93e5-4f22-bf52-7251144c8ce4)\n
-        ${DESCRIPTION_END_TAG}`;
+            const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
             await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
