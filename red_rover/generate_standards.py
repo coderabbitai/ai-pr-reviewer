@@ -139,5 +139,5 @@ def identify_best_practices(commits_list):
 best_practices_list, best_practices, total_gpt4_prompt_tokens, total_gpt4_completion_tokens = identify_best_practices(commits_list)
 
 # Creating a txt file named 'custom_prompt.txt'
-with open('custom_prompt.txt', 'w') as file:
+with open('red_rover/custom_prompt.txt', 'w') as file:
     file.write(best_practices)
