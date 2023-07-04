@@ -1,4 +1,4 @@
-name: Generate Standards
+name: RedRover Generate Standards
 
 on:
   workflow_dispatch:
@@ -19,27 +19,31 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('bin/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('red_rover/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r bin/requirements.txt
+          pip install -r red_rover/requirements.txt
 
       - name: Generate Standards
-        run: |
-          cd bin
-          python best_practices.py
+        run: python red_rover/generate_standards.py
         env:
           GITHUB_TOKEN: ${{ secrets.BANKRATE_BOT_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create Pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
-          title: "Update Red Rover Best Practices"
-          body: "This PR updates the red_rover_standards.txt file using the bin/best_practices.py script."
+          title: "Update Red Rover standards specific to this repo"
+          body: "This PR updates the red_rover/custom_prompt.txt file using the red_rover/generate_standards.py script."
           branch: red-rover-standards-update
+
+      - name: Post Pull Request URL
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"

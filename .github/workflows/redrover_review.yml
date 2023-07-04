@@ -1,4 +1,4 @@
-name: OpenAI Reviewer
+name: RedRover Reviewer
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Read file
         id: file
-        run: echo "::set-output name=content::$(cat bin/red_rover_standards.txt)"
+        run: echo "::set-output name=content::$(cat red_rover/custom_prompt.txt)"
       - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.BANKRATE_BOT_TOKEN }}

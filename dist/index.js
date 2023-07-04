@@ -3621,23 +3621,23 @@ Current date: ${currentDate}`;
 // eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const COMMENT_GREETING = ':robot: OpenAI';
-const COMMENT_TAG = '<!-- This is an auto-generated comment by OpenAI -->';
-const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by OpenAI -->';
-const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by openai -->';
+const COMMENT_GREETING = ':robot::dog: RedRover';
+const COMMENT_TAG = '<!-- This is an auto-generated comment by RedRover -->';
+const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by RedRover -->';
+const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by RedRover -->';
 const DESCRIPTION_START_TAG = `
-<!-- This is an auto-generated comment: release notes by openai -->`;
-const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by openai -->';
-const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
+<!-- This is an auto-generated comment: release notes by RedRover -->`;
+const DESCRIPTION_END_TAG = '<!-- end of auto-generated comment: release notes by RedRover -->';
+const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by RedRover -->
 <!--
 `;
 const RAW_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: raw summary by openai -->`;
-const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by openai -->
+<!-- end of auto-generated comment: raw summary by RedRover -->`;
+const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by RedRover -->
 <!--
 `;
 const SHORT_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: short summary by openai -->`;
+<!-- end of auto-generated comment: short summary by RedRover -->`;
 const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->';
 const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->';
 class Commenter {
@@ -3721,7 +3721,9 @@ ${tag}`;
             }
             const description = this.getDescription(body);
             const messageClean = this.removeContentWithinTags(message, DESCRIPTION_START_TAG, DESCRIPTION_END_TAG);
-            const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n${DESCRIPTION_END_TAG}`;
+            const newDescription = `${description}${DESCRIPTION_START_TAG}\n${messageClean}\n
+        ![image](https://github.com/bankrate/red-rover/assets/30049310/ef9492e2-93e5-4f22-bf52-7251144c8ce4)\n
+        ${DESCRIPTION_END_TAG}`;
             await _octokit__WEBPACK_IMPORTED_MODULE_2__/* .octokit.pulls.update */ .K.pulls.update({
                 owner: repo.owner,
                 repo: repo.repo,
@@ -7143,6 +7145,8 @@ ${filename}: ${summary}
         else {
             let message = '### Summary by RedRover\n\n';
             message += releaseNotesResponse;
+            message +=
+                '![image](https://github.com/bankrate/red-rover/assets/30049310/ef9492e2-93e5-4f22-bf52-7251144c8ce4)';
             try {
                 await commenter.updateDescription(context.payload.pull_request.number, message);
             }

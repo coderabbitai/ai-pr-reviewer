@@ -38,7 +38,7 @@ def split_text_into_chunks(text, max_tokens):
 
     return chunks
 
-def make_chat_completion_request(prompt, role = "You are a helpful assistant.", max_tokens=200, temperature=0.7):
+def make_chat_completion_request(prompt, role = "You are a helpful assistant.", max_tokens=200, temperature=0.1):
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
@@ -138,6 +138,6 @@ def identify_best_practices(commits_list):
 
 best_practices_list, best_practices, total_gpt4_prompt_tokens, total_gpt4_completion_tokens = identify_best_practices(commits_list)
 
-# Creating a txt file named 'best_practices.txt'
-with open('red_rover_standards.txt', 'w') as file:
+# Creating a txt file named 'custom_prompt.txt'
+with open('custom_prompt.txt', 'w') as file:
     file.write(best_practices)
