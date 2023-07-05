@@ -1,6 +1,8 @@
 name: RedRover Generate Standards
 
 on:
+  schedule:
+    - cron: "0 0 1 * *"
   workflow_dispatch:
 
 jobs:
@@ -35,13 +37,17 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_REPO: ${{ github.repository }}
 
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M')"
+
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
-          title: "Update Red Rover standards specific to this repo"
-          body: "This PR updates the red_rover/custom_prompt.txt file using the red_rover/generate_standards.py script."
-          branch: red-rover-standards-update
+          title: "Update Red Rover standards specific to this repo - ${{ steps.date.outputs.date }}"
+          body: "This PR updates the red_rover/custom_prompt.txt file using the red_rover/generate_standards.py script. These PRs are generated once a month to keep the standards specific to this repo up to date. Red Rover uses this during its PR reviews to provide feedback. The github action to generate this PR, RedRover Generate Standards, can also be run manually if desired. The 10 most recent PRs are used to generate the standards. You can review the changes in this PR and determine if you want to use them or not."
+          branch: red-rover-standards-update-${{ steps.date.outputs.date }}
 
       - name: Post Pull Request URL
         if: ${{ steps.cpr.outputs.pull-request-number }}
