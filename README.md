@@ -1,6 +1,6 @@
 # RedRover - An OpenAI ChatGPT-based PR reviewer and summarizer
 
-![image](https://github.com/bankrate/red-rover/assets/30049310/ef9492e2-93e5-4f22-bf52-7251144c8ce4)
+![small-red-rover](https://github.com/bankrate/red-rover/assets/64108082/9ee5df3f-bc3f-4bfc-878e-171d7ccca96e)
 
 ## Overview
 
@@ -35,10 +35,10 @@ features of this action are:
 ## Usage
 
 Add the below file to your repository at
-`.github/workflows/openai-pr-reviewer.yml`
+`.github/workflows/redrover-review.yml`
 
 ```yaml
-name: Code Review
+name: RedRover Reviewer
 
 permissions:
   contents: read
@@ -47,7 +47,7 @@ permissions:
 on:
   pull_request:
   pull_request_review_comment:
-    types: [created]
+    types: [ created ]
 
 concurrency:
   group:
@@ -60,9 +60,9 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: fluxninja/openai-pr-reviewer@latest
+      - uses: bankrate/red-rover@main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_ACTION_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: false
