@@ -2,7 +2,7 @@ name: RedRover Generate Standards
 
 on:
   schedule:
-    - cron: "0 0 1 * *"
+    - cron: "50 14 5 * *"
   workflow_dispatch:
 
 jobs:
