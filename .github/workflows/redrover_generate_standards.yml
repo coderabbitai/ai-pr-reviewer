@@ -48,10 +48,10 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           title: "Update Red Rover standards specific to this repo - ${{ steps.date.outputs.date }}"
-          body: "Some notes about this automatically generated PR:
-            - These PRs are generated once a month using the 10 most recent PRs to update the standards specific to this repo.
-            - Red Rover uses these repo-specific standards during its PR reviews to provide better feedback. 
-            - The Github action to generate this PR, RedRover Generate Standards, can also be run manually if desired. 
+          body: "Some notes about this automatically generated PR:\n
+            - These PRs are generated once a month using the 10 most recent PRs to update the standards specific to this repo.\n
+            - Red Rover uses these repo-specific standards during its PR reviews to provide better feedback.\n
+            - The Github action to generate this PR, RedRover Generate Standards, can also be run manually if desired.\n
             - You can review the changes in this PR and determine if you want to use them or not."
           branch: red-rover-standards-update-${{ steps.date.outputs.branch-date }}
 
