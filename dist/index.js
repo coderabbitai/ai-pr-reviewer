@@ -7165,7 +7165,7 @@ ${inputs.shortSummary}
 ${lib_commenter/* SHORT_SUMMARY_END_TAG */.Zb}
 ---
 
-### Chat with 🐶🤖 RedRover Bot (\`@redrover\`)
+### Chat with 🐶 RedRover Bot (\`@redrover\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
 - Invite the bot into a review comment chain by tagging \`@redrover\` in a reply.
 
