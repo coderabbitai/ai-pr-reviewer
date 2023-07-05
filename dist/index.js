@@ -3621,7 +3621,7 @@ Current date: ${currentDate}`;
 // eslint-disable-next-line camelcase
 const context = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context;
 const repo = context.repo;
-const COMMENT_GREETING = ':robot::dog: RedRover';
+const COMMENT_GREETING = ':dog: RedRover';
 const COMMENT_TAG = '<!-- This is an auto-generated comment by RedRover -->';
 const COMMENT_REPLY_TAG = '<!-- This is an auto-generated reply by RedRover -->';
 const SUMMARIZE_TAG = '<!-- This is an auto-generated comment: summarize by RedRover -->';
