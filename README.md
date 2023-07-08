@@ -1,5 +1,6 @@
 
-# Introducing CodeRabbit : Redifining Your Code Reviewes
+
+# Introducing CodeRabbit : Redifining Your Code Reviewes <br/>
 
 We're excited to announce a significant development in our openai-pr-reviewer project.  Built on the strong foundation of this open-source work, we're launching a new professional version st [coderabbit.ai](http://Coderabbit.ai). CodeRabbit promises additional features , dedicated customer support and emphasizes our commitment to enhancing the quality of code reviews. <br/>
 In the coming days, we will be rolling out more features in Coderabbit designed to revolutionize your code review process. While Coderabbiteeps the spirit of the open-source project, it will introduce enhancements based on user feedback and our future-oriented vision. A prime area of focus will continue to be the enhancement of review quality, ensuring that your coding process becomes increasingly efficient and effective.<br/>
