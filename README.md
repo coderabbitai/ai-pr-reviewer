@@ -33,7 +33,8 @@ features of this action are:
   process or even change the review objective.
 
 # Professional Version of CodeRabbit  <br/>
-Professinal version of our openai-pr-reviewer project is now live at [coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation, CodeRabbit offers improved features , dedicated support, and our renewed commitment to superior code reviews.
+The professional version of our openai-pr-reviewer project is now live at [coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation, CodeRabbit offers improved features, dedicated support, and our ongoing commitment to superior code reviews.
+
 
 ## Usage
 
