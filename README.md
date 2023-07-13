@@ -1,14 +1,3 @@
-
-
-# Introducing CodeRabbit : Redefining Your Code Reviewes <br/>
-
-We're excited to announce a significant development in our openai-pr-reviewer project.  Built on the strong foundation of this open-source work, we're launching a new professional version at [coderabbit.ai](http://Coderabbit.ai), where we will be focusing our future development.CodeRabbit promises additional features , dedicated customer support and emphasizes our commitment to enhancing the quality of code reviews. <br/>
-In the coming days, we will be rolling out more features in CodeRabbit designed to revolutionize your code review process. While CodeRabbit keeps the spirit of the open-source project, it will introduce enhancements based on user feedback and our future-oriented vision. A prime area of focus will continue to be the enhancement of review quality, ensuring that your coding process becomes increasingly efficient and effective.<br/>
-We extend our heartfelt gratitude to our open-source contributors, whose efforts have been vital in shaping this project. We invite you to visit [coderabbit.ai](http://Coderabbit.ai) to explore Coderabbit and experience the forthcoming value-additions to your coding workflow. We're offering a free trial for you to get started.<br/>
-Remember, the core project will continue to remain open-source and accessible to all. However, for those who wish to further tailor the application to their unique needs, we encourage you to request customization options through [coderabbit.ai](http://Coderabbit.ai).
-Your ongoing support and trust keep us inspired. We're excited about this next phase and we always welcome your feedback and suggestions. We look forward to continuing this enriching journey with you.
-
-Refer the section below for our open-source project. 
 # OpenAI ChatGPT-based PR reviewer and summarizer
 
 ![AI](./docs/images/ai.png)
@@ -42,6 +31,9 @@ features of this action are:
 - **Customizable prompts**: Tailor the `system_message`, `summarize`, and
   `summarize_release_notes` prompts to focus on specific aspects of the review
   process or even change the review objective.
+
+# Professional Version of CodeRabbit  <br/>
+Professinal version of our openai-pr-reviewer project is now live at [coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation, CodeRabbit offers improved features , dedicated support, and our renewed commitment to superior code reviews.
 
 ## Usage
 
