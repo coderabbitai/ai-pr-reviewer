@@ -46,7 +46,7 @@ do not add any additional text in your response:
 are in chronlogical order and new changesets are appended to the
 end of the list. The format consists of filename(s) and the summary 
 of changes for those files. There is a separator between each changeset.
-Your task is to de-deduplicate and group together files with
+Your task is to deduplicate and group together files with
 related/similar changes into a single changeset. Respond with the updated 
 changesets using the same format as the input. 
 
