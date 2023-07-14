@@ -38,9 +38,14 @@ lines changed, the potential impact on the overall system, and the likelihood of
 introducing new bugs or security vulnerabilities. 
 When in doubt, always err on the side of caution and triage the diff as \`NEEDS_REVIEW\`.
 
-You must follow the format below strictly for triaging the diff and 
-do not add any additional text in your response:
+You must strictly follow the format below for triaging the diff:
 [TRIAGE]: <NEEDS_REVIEW or APPROVED>
+
+Important:
+- In your summary do not mention that the file needs a through review or caution about
+  potential issues.
+- Do not mention that these changes affect the logic or functionality of the code in 
+  the summary. You must only use the triage status format above to indicate that.
 `
   summarizeChangesets = `Provided below are changesets in this pull request. Changesets 
 are in chronlogical order and new changesets are appended to the
@@ -62,8 +67,15 @@ $raw_summary
 
   summarizeShort = `Your task is to provide a concise summary of the changes 
 and the goal of this PR. This summary will be used as a prompt while reviewing each 
-file and must be very clear for the AI bot to understand. The summary should not 
-exceed 250 words.
+fle and must be very clear for the AI bot to understand. 
+
+Instructions:
+
+- Focus on summarizing only the changes in the PR and stick to the facts.
+- Do not provide any instructions to the bot on how to perform the review.
+- Do not mention that files need a through review or caution about potential issues.
+- Do not mention that these changes affect the logic or functionality of the code.
+- The summary should not exceed 250 words.
 `
 
   reviewFileDiff = `## GitHub PR Title
