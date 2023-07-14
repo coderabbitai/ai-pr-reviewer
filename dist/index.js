@@ -6327,7 +6327,7 @@ $raw_summary
 `;
     summarizeShort = `Your task is to provide a concise summary of the changes 
 and the goal of this PR. This summary will be used as a prompt while reviewing each 
-fle and must be very clear for the AI bot to understand. 
+file and must be very clear for the AI bot to understand. 
 
 Instructions:
 
