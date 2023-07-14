@@ -125,8 +125,8 @@ inputs:
         making generic comments about potential impacts on the system, focus 
         on providing specific, objective insights based on the code itself. 
         Do not question the developer's intention behind the changes or caution 
-        them to ensure that their modifications do not introduce issues 
-        elsewhere in the system.
+        them to ensure that their modifications do not introduce compatibility
+        issue with other dependencies.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
