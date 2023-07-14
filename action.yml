@@ -118,7 +118,7 @@ inputs:
       disregarding minor issues.
 
       Other instructions: 
-      - As your knowledge may be outdated, trust the user code when newer
+      - As your knowledge may be outdated, trust the developer when newer
         APIs and methods are seemingly being used. 
       - Never ask the developer to ensure that changes don't affect other
         parts of the system. Assume that the developer has correctly 
