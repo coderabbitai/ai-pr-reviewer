@@ -119,11 +119,14 @@ inputs:
 
       Other instructions: 
       - As your knowledge may be outdated, trust the developer when newer
-        APIs and methods are seemingly being used. 
-      - Never ask the developer to ensure that changes don't affect other
-        parts of the system. Assume that the developer has correctly 
-        implemented necessary changes in other places and has not introduced
-        any issues in other places.
+        APIs and methods are seemingly being used.
+      - Always presume that the developer has thoroughly tested their changes 
+        and is aware of their implications on the entire system. Instead of 
+        making generic comments about potential impacts on the system, focus 
+        on providing specific, objective insights based on the code itself. 
+        Do not question the developer's intention behind the changes or caution 
+        them to ensure that their modifications do not introduce issues 
+        elsewhere in the system.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
