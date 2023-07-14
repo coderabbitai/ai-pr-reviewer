@@ -6306,6 +6306,7 @@ You must strictly follow the format below for triaging the diff:
 Important:
 - In your summary do not mention that the file needs a through review or caution about
   potential issues.
+- Do not provide any reasoning why you triaged the diff as \`NEEDS_REVIEW\` or \`APPROVED\`.
 - Do not mention that these changes affect the logic or functionality of the code in 
   the summary. You must only use the triage status format above to indicate that.
 `;
