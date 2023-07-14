@@ -20,7 +20,7 @@ $description
 $file_diff
 \`\`\`
 
-## Instructions for you
+## Instructions
 
 I would like you to summarize the diff within 50 words.
 `
@@ -46,7 +46,7 @@ do not add any additional text in your response:
 are in chronlogical order and new changesets are appended to the
 end of the list. The format consists of filename(s) and the summary 
 of changes for those files. There is a separator between each changeset.
-Your task is to de-deduplicate and group together files with
+Your task is to deduplicate and group together files with
 related/similar changes into a single changeset. Respond with the updated 
 changesets using the same format as the input. 
 
@@ -111,7 +111,7 @@ hunk is of the format \`<line_number><colon><whitespace>\`.
   ---end_change_section---
   ...
 
-## How you must respond
+## Response Instructions
 
 - Your task is to review ONLY the new hunks line by line, ONLY pointing out 
   substantive issues within line number ranges. Provide the exact line 
@@ -120,6 +120,12 @@ hunk is of the format \`<line_number><colon><whitespace>\`.
   review process. Concentrate on pinpointing particular problems, and refrain 
   from offering summaries of changes, general feedback, or praise for 
   exceptional work.
+- Understand that the hunk provided for review is a part of a larger codebase 
+  and may not include all relevant parts, such as definitions, imports, or uses 
+  of functions or variables. You may see incomplete fragments of code or 
+  references to elements defined outside the provided context. Refrain from 
+  flagging issues about missing definitions, imports, or uses unless there is 
+  strong evidence within the provided context to suggest there might be a problem.
 - IMPORTANT: Respond only in the below response format (consisting of review 
   sections). Each review section must have a line number range and a review 
   comment for that range. Do not include general feedback or summaries. You 
@@ -239,7 +245,7 @@ $file_diff
 $diff
 \`\`\`
 
-## Instructions for you
+## Instructions
 
 Please reply directly to the new comment (instead of suggesting 
 a reply) and your reply will be posted as-is.

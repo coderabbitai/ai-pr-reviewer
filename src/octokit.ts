@@ -6,13 +6,14 @@ import {throttling} from '@octokit/plugin-throttling'
 const token = getInput('token') || process.env.GITHUB_TOKEN
 
 const RetryAndThrottlingOctokit = Octokit.plugin(throttling, retry)
+
 export const octokit = new RetryAndThrottlingOctokit({
   auth: `token ${token}`,
   throttle: {
     onRateLimit: (
       retryAfter: number,
       options: any,
-      _o: Octokit,
+      _o: any,
       retryCount: number
     ) => {
       warning(
