@@ -32,9 +32,12 @@ features of this action are:
   `summarize_release_notes` prompts to focus on specific aspects of the review
   process or even change the review objective.
 
-# Professional Version of CodeRabbit  <br/>
-The professional version of our openai-pr-reviewer project is now live at [coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation, CodeRabbit offers improved features, dedicated support, and our ongoing commitment to superior code reviews.
+# Professional Version of CodeRabbit <br/>
 
+The professional version of our openai-pr-reviewer project is now live at
+[coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
+CodeRabbit offers improved features, dedicated support, and our ongoing
+commitment to superior code reviews.
 
 ## Usage
 
@@ -64,7 +67,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: fluxninja/openai-pr-reviewer@latest
+      - uses: coderabbitai/openai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -226,7 +229,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: fluxninja/openai-pr-reviewer@latest
+      - uses: coderabbitai/openai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
