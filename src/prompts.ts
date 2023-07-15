@@ -166,9 +166,8 @@ hunk is of the format \`<line_number><colon><whitespace>\`.
   in the fenced code blocks. These snippets may be added to a different file 
   (e.g. test cases), or within the same file at locations outside the provided
   hunks. Multiple new code snippets are allowed within a single review section.
-- IMPORTANT: If there are no issues found, you must only respond with the 
-  comment "LGTM!" for the line range in the review section. Do not include 
-  any other text.
+- IMPORTANT: If there are no issues found on a line range, you must only 
+  respond with the text \`LGTM!\` for that line range in the review section. 
 - Reflect on your comments and line number ranges before sending the final 
   response to ensure accuracy of line number ranges and replacement snippets.
 
