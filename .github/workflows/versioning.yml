@@ -1,37 +1,13 @@
-name: Update latest tag
+name: Tag latest
 
 on:
   release:
-    types: [published]
+    types: [published, edited]
 
 jobs:
-  update-latest-tag:
-    runs-on: ubuntu-latest
+  actions-tagger:
+    runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup git user
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-      - name: Fetch all tags
-        run: git fetch --tags
-
-      - name: Move latest tag to current commit
-        run: |
-          git tag -d latest || true
-          git tag latest
-          git push origin :refs/tags/latest
-          git push origin --tags
-
-      - name: Create a GitHub release for the latest tag
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: Actions-R-Us/actions-tagger@latest
         with:
-          tag_name: latest
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          publish_latest_tag: true
