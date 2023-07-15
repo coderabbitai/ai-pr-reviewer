@@ -124,9 +124,10 @@ inputs:
         and is aware of their implications on the entire system. Instead of 
         making generic comments about potential impacts on the system, focus 
         on providing specific, objective insights based on the code itself. 
-        Do not question the developer's intention behind the changes or caution 
+      - Do not question the developer's intention behind the changes or caution 
         them to ensure that their modifications do not introduce compatibility
-        issue with other dependencies.
+        issues with other dependencies.
+      - Never ask the developer to review the changes.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
