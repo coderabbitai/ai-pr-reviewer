@@ -33,8 +33,49 @@ inputs:
       - https://github.com/isaacs/minimatch
     default: |
       !dist/**
+      !**/*.app
+      !**/*.bin
+      !**/*.bz2
+      !**/*.class
+      !**/*.db
+      !**/*.csv
+      !**/*.tsv
+      !**/*.dat
+      !**/*.dll
+      !**/*.dylib
+      !**/*.egg
+      !**/*.glif
+      !**/*.gz
+      !**/*.xz
+      !**/*.zip
+      !**/*.zst
+      !**/*.ico
+      !**/*.jar
+      !**/*.tar
+      !**/*.war
+      !**/*.lo
+      !**/*.log
+      !**/*.mp3
+      !**/*.mp4
+      !**/*.nar
+      !**/*.o
+      !**/*.ogg
+      !**/*.otf
+      !**/*.p
+      !**/*.pdf
+      !**/*.pkl
+      !**/*.pickle
+      !**/*.pyc
+      !**/*.pyd
+      !**/*.pyo
+      !**/*.rkt
+      !**/*.so
+      !**/*.ss
+      !**/*.eot
+      !**/*.exe
       !**/*.pb.go
       !**/*.lock
+      !**/*.ttf
       !**/*.yaml
       !**/*.yml
       !**/*.cfg
@@ -46,10 +87,17 @@ inputs:
       !**/*.json
       !**/*.mmd
       !**/*.svg
+      !**/*.jpeg
+      !**/*.jpg
       !**/*.png
+      !**/*.gif
+      !**/*.webm
+      !**/*.woff
+      !**/*.woff2
       !**/*.dot
       !**/*.md5sum
       !**/*.wasm
+      !**/*.snap
       !**/gen/**
       !**/_gen/**
       !**/generated/**
@@ -74,7 +122,7 @@ inputs:
   openai_heavy_model:
     required: false
     description: 'Model to use for complex tasks such as code reviews.'
-    default: 'gpt-3.5-turbo'
+    default: 'gpt-4'
   openai_model_temperature:
     required: false
     description: 'Temperature for GPT model'
