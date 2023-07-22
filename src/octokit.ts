@@ -33,6 +33,6 @@ Retry count: ${retryCount}
   },
   retry: {
     doNotRetry: ['429'],
-    maxRetries: 10
+    maxRetries: 3
   }
 })
