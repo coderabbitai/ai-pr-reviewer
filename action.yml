@@ -126,7 +126,7 @@ inputs:
   openai_model_temperature:
     required: false
     description: 'Temperature for GPT model'
-    default: '0.0'
+    default: '0.05'
   openai_retries:
     required: false
     description:
