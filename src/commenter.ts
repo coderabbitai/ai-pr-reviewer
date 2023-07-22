@@ -226,10 +226,7 @@ ${COMMENT_TAG}`
     })
 
     const pendingReview = reviews.data.find(
-      review =>
-        review.state === 'PENDING' &&
-        review.user != null &&
-        review.user.login === 'github-actions[bot]'
+      review => review.state === 'PENDING'
     )
 
     if (pendingReview) {
