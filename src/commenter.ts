@@ -225,6 +225,11 @@ ${COMMENT_TAG}`
       pull_number: pullNumber
     })
 
+    // log all reviews
+    for (const review of reviews.data) {
+      info(`Review for PR #${pullNumber}: ${review.user} ${review.state}`)
+    }
+
     const pendingReview = reviews.data.find(
       review => review.state === 'PENDING'
     )
