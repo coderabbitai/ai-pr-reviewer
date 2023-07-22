@@ -553,7 +553,7 @@ ${chain}
 
   async create(body: string, target: number) {
     try {
-      // get commend ID from the response
+      // get comment ID from the response
       await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
