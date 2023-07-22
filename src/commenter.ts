@@ -243,9 +243,7 @@ ${COMMENT_TAG}`
         commit_id: commitId,
         body: comment.message,
         path: comment.path,
-        line: comment.endLine,
-        // eslint-disable-next-line camelcase
-        review_id: review.data.id
+        line: comment.endLine
       }
 
       if (comment.startLine !== comment.endLine) {
