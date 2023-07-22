@@ -191,13 +191,21 @@ ${COMMENT_TAG}`
   }
 
   async submitReview(pullNumber: number, commitId: string) {
+    const review = await octokit.pulls.createReview({
+      owner: repo.owner,
+      repo: repo.repo,
+      // eslint-disable-next-line camelcase
+      pull_number: pullNumber,
+      // eslint-disable-next-line camelcase
+      commit_id: commitId
+    })
+
     info(
       `Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`
     )
     let commentCounter = 0
     for (const comment of this.reviewCommentsBuffer) {
       info(`Posting comment: ${comment.message}`)
-      let found = false
       const comments = await this.getCommentsAtRange(
         pullNumber,
         comment.path,
@@ -207,51 +215,49 @@ ${COMMENT_TAG}`
       for (const c of comments) {
         if (c.body.includes(COMMENT_TAG)) {
           info(
-            `Updating review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
+            `Deleting review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
           )
           try {
-            await octokit.pulls.updateReviewComment({
+            await octokit.pulls.deleteReviewComment({
               owner: repo.owner,
               repo: repo.repo,
               // eslint-disable-next-line camelcase
-              comment_id: c.id,
-              body: comment.message
+              comment_id: c.id
             })
+            // TODO: remove from the cache
           } catch (e) {
-            warning(`Failed to update review comment: ${e}`)
+            warning(`Failed to delete review comment: ${e}`)
           }
-          found = true
-          break
         }
       }
 
-      if (!found) {
-        info(
-          `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
-        )
-        const commentData: any = {
-          owner: repo.owner,
-          repo: repo.repo,
-          // eslint-disable-next-line camelcase
-          pull_number: pullNumber,
-          // eslint-disable-next-line camelcase
-          commit_id: commitId,
-          body: comment.message,
-          path: comment.path,
-          line: comment.endLine
-        }
+      info(
+        `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
+      )
+      const commentData: any = {
+        owner: repo.owner,
+        repo: repo.repo,
+        // eslint-disable-next-line camelcase
+        pull_number: pullNumber,
+        // eslint-disable-next-line camelcase
+        commit_id: commitId,
+        body: comment.message,
+        path: comment.path,
+        line: comment.endLine,
+        // eslint-disable-next-line camelcase
+        review_id: review.data.id
+      }
 
-        if (comment.startLine !== comment.endLine) {
-          // eslint-disable-next-line camelcase
-          commentData.start_side = 'RIGHT'
-          // eslint-disable-next-line camelcase
-          commentData.start_line = comment.startLine
-        }
-        try {
-          await octokit.pulls.createReviewComment(commentData)
-        } catch (e) {
-          warning(`Failed to create review comment: ${e}`)
-        }
+      if (comment.startLine !== comment.endLine) {
+        // eslint-disable-next-line camelcase
+        commentData.start_side = 'RIGHT'
+        // eslint-disable-next-line camelcase
+        commentData.start_line = comment.startLine
+      }
+      try {
+        await octokit.pulls.createReviewComment(commentData)
+      } catch (e) {
+        warning(`Failed to create review comment: ${e}`)
       }
 
       commentCounter++
@@ -259,6 +265,16 @@ ${COMMENT_TAG}`
         `Comment ${commentCounter}/${this.reviewCommentsBuffer.length} posted`
       )
     }
+
+    await octokit.pulls.submitReview({
+      owner: repo.owner,
+      repo: repo.repo,
+      // eslint-disable-next-line camelcase
+      pull_number: pullNumber,
+      // eslint-disable-next-line camelcase
+      review_id: review.data.id,
+      event: 'COMMENT'
+    })
   }
 
   async reviewCommentReply(
