@@ -191,6 +191,32 @@ ${COMMENT_TAG}`
   }
 
   async submitReview(pullNumber: number, commitId: string) {
+    const reviews = await octokit.pulls.listReviews({
+      owner: repo.owner,
+      repo: repo.repo,
+      // eslint-disable-next-line camelcase
+      pull_number: pullNumber
+    })
+
+    const pendingReview = reviews.data.find(
+      review =>
+        review.state === 'PENDING' &&
+        review.user != null &&
+        review.user.login === 'coderabbitai'
+    )
+
+    if (pendingReview) {
+      info(`Deleting pending review: ${pendingReview.id}`)
+      await octokit.pulls.deletePendingReview({
+        owner: repo.owner,
+        repo: repo.repo,
+        // eslint-disable-next-line camelcase
+        pull_number: pullNumber,
+        // eslint-disable-next-line camelcase
+        review_id: pendingReview.id
+      })
+    }
+
     const review = await octokit.pulls.createReview({
       owner: repo.owner,
       repo: repo.repo,
