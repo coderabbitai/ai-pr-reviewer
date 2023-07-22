@@ -225,9 +225,9 @@ ${COMMENT_TAG}`
       pull_number: pullNumber
     })
 
-    // log all reviews
+    // log all reviews as json
     for (const review of reviews.data) {
-      info(`Review for PR #${pullNumber}: ${review.user} ${review.state}`)
+      info(`Review for PR #${pullNumber}: ${JSON.stringify(review)}`)
     }
 
     const pendingReview = reviews.data.find(
@@ -235,6 +235,9 @@ ${COMMENT_TAG}`
     )
 
     if (pendingReview) {
+      info(
+        `Deleting pending review for PR #${pullNumber} id: ${pendingReview.id}`
+      )
       await octokit.pulls.deletePendingReview({
         owner: repo.owner,
         repo: repo.repo,
