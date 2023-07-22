@@ -191,47 +191,7 @@ ${COMMENT_TAG}`
   }
 
   async submitReview(pullNumber: number, commitId: string) {
-    const reviews = await octokit.pulls.listReviews({
-      owner: repo.owner,
-      repo: repo.repo,
-      // eslint-disable-next-line camelcase
-      pull_number: pullNumber
-    })
-
-    const pendingReview = reviews.data.find(
-      review =>
-        review.state === 'PENDING' &&
-        review.user != null &&
-        review.user.login === 'coderabbitai'
-    )
-
-    if (pendingReview) {
-      info(`Deleting pending review: ${pendingReview.id}`)
-      await octokit.pulls.deletePendingReview({
-        owner: repo.owner,
-        repo: repo.repo,
-        // eslint-disable-next-line camelcase
-        pull_number: pullNumber,
-        // eslint-disable-next-line camelcase
-        review_id: pendingReview.id
-      })
-    }
-
-    const review = await octokit.pulls.createReview({
-      owner: repo.owner,
-      repo: repo.repo,
-      // eslint-disable-next-line camelcase
-      pull_number: pullNumber,
-      // eslint-disable-next-line camelcase
-      commit_id: commitId
-    })
-
-    info(
-      `Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`
-    )
-    let commentCounter = 0
     for (const comment of this.reviewCommentsBuffer) {
-      info(`Posting comment: ${comment.message}`)
       const comments = await this.getCommentsAtRange(
         pullNumber,
         comment.path,
@@ -256,7 +216,48 @@ ${COMMENT_TAG}`
           }
         }
       }
+    }
 
+    const reviews = await octokit.pulls.listReviews({
+      owner: repo.owner,
+      repo: repo.repo,
+      // eslint-disable-next-line camelcase
+      pull_number: pullNumber
+    })
+
+    const pendingReview = reviews.data.find(
+      review =>
+        review.state === 'PENDING' &&
+        review.user != null &&
+        review.user.login === 'github-actions[bot]'
+    )
+
+    if (pendingReview) {
+      await octokit.pulls.deletePendingReview({
+        owner: repo.owner,
+        repo: repo.repo,
+        // eslint-disable-next-line camelcase
+        pull_number: pullNumber,
+        // eslint-disable-next-line camelcase
+        review_id: pendingReview.id
+      })
+    }
+
+    const review = await octokit.pulls.createReview({
+      owner: repo.owner,
+      repo: repo.repo,
+      // eslint-disable-next-line camelcase
+      pull_number: pullNumber,
+      // eslint-disable-next-line camelcase
+      commit_id: commitId
+    })
+
+    info(
+      `Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}`
+    )
+
+    let commentCounter = 0
+    for (const comment of this.reviewCommentsBuffer) {
       info(
         `Creating new review comment for ${comment.path}:${comment.startLine}-${comment.endLine}: ${comment.message}`
       )
