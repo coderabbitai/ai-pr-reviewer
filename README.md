@@ -41,7 +41,7 @@ To use this tool, you need to add the provided YAML file to your repository and 
 For more information on usage, examples, contributing, and FAQs, you can refer to the sections below. 
 
 - [Overview](#overview)
-- [Install](#install_instructions)
+- [Install instructions](#install_instructions)
 - [Conversation with OpenAI](#conversation-with-openai)
 - [Examples](#examples)
 - [Contribute](#contribute)
