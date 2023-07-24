@@ -41,7 +41,7 @@ To use this tool, you need to add the provided YAML file to your repository and 
 For more information on usage, examples, contributing, and FAQs, you can refer to the sections below. 
 
 - [Overview](#overview)
-- [Install instructions](#install_instructions)
+- [Install instructions](#install-instructions)
 - [Conversation with OpenAI](#conversation-with-openai)
 - [Examples](#examples)
 - [Contribute](#contribute)
@@ -172,7 +172,7 @@ To ignore a PR, add the following keyword in the PR description:
 
 
 ## Examples
-Some of the reviews done by pr-reviewer
+Some of the reviews done by ai-pr-reviewer
 
 ![PR Summary](./docs/images/openai-pr-summary.png)
 
