@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <div>
     <a href="https://github.com/coderabbitai/openai-pr-reviewer)/commits/main">
-    <img alt="GitHub" src="https://img.shields.io/github/last-commit/coderabbitai/ai-pr-reviewer/main?style=for-the-badge" height="20">
+    <img alt="GitHub" src="https://img.shields.io/github/last-commit/coderabbitai/openai-pr-reviewer/main?style=for-the-badge" height="20">
     </a>
     </div>
 
