@@ -226,6 +226,9 @@ ${COMMENT_TAG}`
   }
 
   async submitReview(pullNumber: number, commitId: string) {
+    if (this.reviewCommentsBuffer.length === 0) {
+      return
+    }
     for (const comment of this.reviewCommentsBuffer) {
       const comments = await this.getCommentsAtRange(
         pullNumber,
