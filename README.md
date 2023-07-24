@@ -75,7 +75,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: fluxninja/openai-pr-reviewer@latest
+      - uses: coderabbitai/ai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -239,7 +239,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: fluxninja/openai-pr-reviewer@latest
+      - uses: coderabbitai/ai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
