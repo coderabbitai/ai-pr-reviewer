@@ -41,11 +41,11 @@ To use this tool, you need to add the provided YAML file to your repository and 
 For more information on usage, examples, contributing, and FAQs, you can refer to the sections below. 
 
 - [Overview](#overview)
-- [Install](#instal)
-- [Conversation with OpenAI](#Conversation-with-OpenAI)
+- [Install](#install)
+- [Conversation with OpenAI](#conversation-with-openai)
 - [Examples](#examples)
 - [Contribute](#contribute)
-- [FAQs](#FAQs)
+- [FAQs](#faqs)
 
 ## Install
 ai-pr-reviewer runs as a GitHub Action. 
