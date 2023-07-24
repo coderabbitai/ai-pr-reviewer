@@ -12,7 +12,7 @@
 CodeRabbit ai-pr-reviewer is an open-source project built on AI, designed to enhance developer productivity and efficiency by performing automated reviews of pull requests.
 Features:
 
-- **PR Summerization**: It generates a summary and release notes of the changes in the pull request.
+- **PR Summarization**: It generates a summary and release notes of the changes in the pull request.
 - **Line-by-line code change suggestions**: Reviews the changes line
   by line and provides code change suggestions that can be directly committed
   from the GitHub UI.
