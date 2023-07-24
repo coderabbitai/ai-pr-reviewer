@@ -1,4 +1,4 @@
-import {getInput, warning} from '@actions/core'
+import {getInput} from '@actions/core'
 import {Octokit} from '@octokit/action'
 import {retry} from '@octokit/plugin-retry'
 import {throttling} from '@octokit/plugin-throttling'
@@ -13,26 +13,24 @@ export const octokit = new RetryAndThrottlingOctokit({
     onRateLimit: (
       retryAfter: number,
       options: any,
-      _o: any,
+      _o: typeof Octokit,
       retryCount: number
     ) => {
-      warning(
+      console.log(
         `Request quota exhausted for request ${options.method} ${options.url}
 Retry after: ${retryAfter} seconds
 Retry count: ${retryCount}
 `
       )
-      return true
+      if (retryCount <= 3) {
+        console.log(`Retrying after ${retryAfter} seconds!`)
+        return true
+      }
     },
-    onSecondaryRateLimit: (_retryAfter: number, options: any) => {
-      warning(
-        `SecondaryRateLimit detected for request ${options.method} ${options.url}`
+    onSecondaryRateLimit: (retryAfter: number, options: any) => {
+      console.log(
+        `SecondaryRateLimit detected for request ${options.method} ${options.url} ; retry after ${retryAfter} seconds`
       )
-      return true
     }
-  },
-  retry: {
-    doNotRetry: ['429'],
-    maxRetries: 3
   }
 })
