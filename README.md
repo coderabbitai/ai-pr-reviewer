@@ -1,14 +1,19 @@
-# OpenAI ChatGPT-based PR reviewer and summarizer
-
-![AI](./docs/images/ai.png)
+##  AI based PR reviewer and summarizer
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<div>
+    <a href="https://github.com/coderabbitai/openai-pr-reviewer)/commits/main">
+    <img alt="GitHub" src="https://img.shields.io/github/last-commit/coderabbitai/ai-pr-reviewer/main?style=for-the-badge" height="20">
+    </a>
+    </div>
 
 ## Overview
 
-This [OpenAI ChatGPT-based](https://platform.openai.com/docs/guides/chat) GitHub
-Action provides a summary, release notes and review of pull requests. The unique
-features of this action are:
 
-- **Line-by-line code change suggestions**: This action reviews the changes line
+CodeRabbit ai-pr-reviewer is an open-source project built on AI, designed to enhance developer productivity and efficiency by performing automated reviews of pull requests.
+Features:
+
+- **PR Summerization**: It generates a summary and release notes of the changes in the pull request.
+- **Line-by-line code change suggestions**: Reviews the changes line
   by line and provides code change suggestions that can be directly committed
   from the GitHub UI.
 - **Continuous, incremental reviews**: Reviews are performed on each commit
@@ -32,15 +37,18 @@ features of this action are:
   `summarize_release_notes` prompts to focus on specific aspects of the review
   process or even change the review objective.
 
-# Professional Version of CodeRabbit <br/>
+To use this tool, you need to add the provided YAML file to your repository and configure the required environment variables, such as GITHUB_TOKEN and OPENAI_API_KEY.
+For more information on usage, examples, contributing, and FAQs, you can refer to the sections below. 
 
-The professional version of our openai-pr-reviewer project is now live at
-[coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
-CodeRabbit offers improved features, dedicated support, and our ongoing
-commitment to superior code reviews.
+- [Overview](#overview)
+- [Install](#instal)
+- [Conversation with OpenAI](#Conversation-with-OpenAI)
+- [Examples](#examples)
+- [Contribute](#contribute)
+- [FAQs](#FAQs)
 
-## Usage
-
+## Install
+ai-pr-reviewer runs as a GitHub Action. 
 Add the below file to your repository at
 `.github/workflows/openai-pr-reviewer.yml`
 
@@ -67,7 +75,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: coderabbitai/openai-pr-reviewer@v1
+      - uses: fluxninja/openai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -77,38 +85,6 @@ jobs:
           review_comment_lgtm: false
 ```
 
-### Conversation with OpenAI
-
-You can reply to a review comment made by this action and get a response based
-on the diff context. Additionally, you can invite the bot to a conversation by
-tagging it in the comment (`@openai`).
-
-Example:
-
-> @openai Please generate a test plan for this file.
-
-Note: A review comment is a comment made on a diff or a file in the pull
-request.
-
-### Ignoring PRs
-
-Sometimes it is useful to ignore a PR. For example, if you are using this action
-to review documentation, you can ignore PRs that only change the documentation.
-To ignore a PR, add the following keyword in the PR description:
-
-```text
-@openai: ignore
-```
-
-### Screenshots
-
-![PR Summary](./docs/images/openai-pr-summary.png)
-
-![PR Release Notes](./docs/images/openai-pr-release-notes.png)
-
-![PR Review](./docs/images/openai-pr-review.png)
-
-![PR Conversation](./docs/images/openai-review-conversation.png)
 
 #### Environment variables
 
@@ -123,7 +99,7 @@ To ignore a PR, add the following keyword in the PR description:
 
 ### Models: `gpt-4` and `gpt-3.5-turbo`
 
-At FluxNinja, we use `gpt-3.5-turbo` for lighter tasks such as summarizing the
+Recommend using `gpt-3.5-turbo` for lighter tasks such as summarizing the
 changes (`openai_light_model` in configuration) and `gpt-4` for more complex
 review and commenting tasks (`openai_heavy_model` in configuration).
 
@@ -149,14 +125,8 @@ system_message: |
   infrastructure.
 
   Company context -
-  FluxNinja is a cloud-native intelligent load management platform.
-  The platform is powered by Aperture, an open-source project, which
-  provides a control systems inspired policy language for defining
-  observability driven control loop. FluxNinja's load management,
-  such as prioritized load shedding and load-based autoscaling,
-  ensures system stability. FluxNinja ARC, the commercial solution,
-  offers advanced analytics, intelligent alerting, and policy
-  visualization.
+  CodeRabbit is an AI-powered Code reviewer.It boosts code quality and cuts manual effort. Offers context-aware, line-by-line feedback, highlights critical changes,
+  enables bot interaction, and lets you commit suggestions directly from GitHub.
 
   When reviewing or generating content focus on key areas such as -
   - Accuracy
@@ -176,10 +146,49 @@ system_message: |
 
 </details>
 
+
+## Conversation with OpenAI
+
+You can reply to a review comment made by this action and get a response based
+on the diff context. Additionally, you can invite the bot to a conversation by
+tagging it in the comment (`@openai`).
+
+Example:
+
+> @openai Please generate a test plan for this file.
+
+Note: A review comment is a comment made on a diff or a file in the pull
+request.
+
+### Ignoring PRs
+
+Sometimes it is useful to ignore a PR. For example, if you are using this action
+to review documentation, you can ignore PRs that only change the documentation.
+To ignore a PR, add the following keyword in the PR description:
+
+```text
+@openai: ignore
+```
+
+
+## Examples
+Some of the reviews done by pr-reviewer
+
+![PR Summary](./docs/images/openai-pr-summary.png)
+
+![PR Release Notes](./docs/images/openai-pr-release-notes.png)
+
+![PR Review](./docs/images/openai-pr-review.png)
+
+![PR Conversation](./docs/images/openai-review-conversation.png)
+
 Any suggestions or pull requests for improving the prompts are highly
 appreciated.
 
-## Developing
+
+## Contribute
+
+### Developing
 
 > First, you'll need to have a reasonably modern version of `node` handy, tested
 > with node 16.
@@ -195,6 +204,7 @@ Build the typescript and package it for distribution
 ```bash
 $ npm run build && npm run package
 ```
+
 
 ## FAQs
 
@@ -229,7 +239,7 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: coderabbitai/openai-pr-reviewer@v1
+      - uses: fluxninja/openai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
