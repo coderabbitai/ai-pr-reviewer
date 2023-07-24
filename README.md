@@ -41,13 +41,13 @@ To use this tool, you need to add the provided YAML file to your repository and 
 For more information on usage, examples, contributing, and FAQs, you can refer to the sections below. 
 
 - [Overview](#overview)
-- [Install](#install)
+- [Install](#install_instructions)
 - [Conversation with OpenAI](#conversation-with-openai)
 - [Examples](#examples)
 - [Contribute](#contribute)
 - [FAQs](#faqs)
 
-## Install
+## Install instructions
 ai-pr-reviewer runs as a GitHub Action. 
 Add the below file to your repository at
 `.github/workflows/openai-pr-reviewer.yml`
