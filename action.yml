@@ -139,7 +139,11 @@ inputs:
   openai_concurrency_limit:
     required: false
     description: 'How many concurrent API calls to make to OpenAI servers?'
-    default: '4'
+    default: '6'
+  github_concurrency_limit:
+    required: false
+    description: 'How many concurrent API calls to make to GitHub?'
+    default: '6'
   system_message:
     required: false
     description: 'System message to be sent to OpenAI'
