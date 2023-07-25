@@ -33,6 +33,7 @@ export const codeReview = async (
   const commenter: Commenter = new Commenter()
 
   const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
+  const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
 
   if (
     context.eventName !== 'pull_request' &&
@@ -162,57 +163,58 @@ export const codeReview = async (
   const filteredFiles: Array<
     [string, string, string, Array<[number, number, string]>] | null
   > = await Promise.all(
-    filterSelectedFiles.map(async file => {
-      // retrieve file contents
-      let fileContent = ''
-      if (context.payload.pull_request == null) {
-        warning('Skipped: context.payload.pull_request is null')
-        return null
-      }
-      try {
-        const contents = await octokit.repos.getContent({
-          owner: repo.owner,
-          repo: repo.repo,
-          path: file.filename,
-          ref: context.payload.pull_request.base.sha
-        })
-        if (contents.data != null) {
-          if (!Array.isArray(contents.data)) {
-            if (
-              contents.data.type === 'file' &&
-              contents.data.content != null
-            ) {
-              fileContent = Buffer.from(
-                contents.data.content,
-                'base64'
-              ).toString()
+    filterSelectedFiles.map(file =>
+      githubConcurrencyLimit(async () => {
+        // retrieve file contents
+        let fileContent = ''
+        if (context.payload.pull_request == null) {
+          warning('Skipped: context.payload.pull_request is null')
+          return null
+        }
+        try {
+          const contents = await octokit.repos.getContent({
+            owner: repo.owner,
+            repo: repo.repo,
+            path: file.filename,
+            ref: context.payload.pull_request.base.sha
+          })
+          if (contents.data != null) {
+            if (!Array.isArray(contents.data)) {
+              if (
+                contents.data.type === 'file' &&
+                contents.data.content != null
+              ) {
+                fileContent = Buffer.from(
+                  contents.data.content,
+                  'base64'
+                ).toString()
+              }
             }
           }
+        } catch (e: any) {
+          warning(
+            `Failed to get file contents: ${
+              e as string
+            }. This is OK if it's a new file.`
+          )
         }
-      } catch (e: any) {
-        warning(
-          `Failed to get file contents: ${
-            e as string
-          }. This is OK if it's a new file.`
-        )
-      }
 
-      let fileDiff = ''
-      if (file.patch != null) {
-        fileDiff = file.patch
-      }
+        let fileDiff = ''
+        if (file.patch != null) {
+          fileDiff = file.patch
+        }
 
-      const patches: Array<[number, number, string]> = []
-      for (const patch of splitPatch(file.patch)) {
-        const patchLines = patchStartEndLine(patch)
-        if (patchLines == null) {
-          continue
-        }
-        const hunks = parsePatch(patch)
-        if (hunks == null) {
-          continue
-        }
-        const hunksStr = `
+        const patches: Array<[number, number, string]> = []
+        for (const patch of splitPatch(file.patch)) {
+          const patchLines = patchStartEndLine(patch)
+          if (patchLines == null) {
+            continue
+          }
+          const hunks = parsePatch(patch)
+          if (hunks == null) {
+            continue
+          }
+          const hunksStr = `
 ---new_hunk---
 \`\`\`
 ${hunks.newHunk}
@@ -223,18 +225,24 @@ ${hunks.newHunk}
 ${hunks.oldHunk}
 \`\`\`
 `
-        patches.push([
-          patchLines.newHunk.startLine,
-          patchLines.newHunk.endLine,
-          hunksStr
-        ])
-      }
-      if (patches.length > 0) {
-        return [file.filename, fileContent, fileDiff, patches]
-      } else {
-        return null
-      }
-    })
+          patches.push([
+            patchLines.newHunk.startLine,
+            patchLines.newHunk.endLine,
+            hunksStr
+          ])
+        }
+        if (patches.length > 0) {
+          return [file.filename, fileContent, fileDiff, patches] as [
+            string,
+            string,
+            string,
+            Array<[number, number, string]>
+          ]
+        } else {
+          return null
+        }
+      })
+    )
   )
 
   // Filter out any null results

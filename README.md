@@ -1,5 +1,7 @@
-##  AI based PR reviewer and summarizer
+# AI-based PR reviewer and summarizer
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 <div>
     <a href="https://github.com/coderabbitai/openai-pr-reviewer)/commits/main">
     <img alt="GitHub" src="https://img.shields.io/github/last-commit/coderabbitai/openai-pr-reviewer/main?style=for-the-badge" height="20">
@@ -8,14 +10,15 @@
 
 ## Overview
 
+CodeRabbit `ai-pr-reviewer` is an open-source project built on AI, designed to
+enhance developer productivity and efficiency by performing automated reviews of
+pull requests. Features:
 
-CodeRabbit ai-pr-reviewer is an open-source project built on AI, designed to enhance developer productivity and efficiency by performing automated reviews of pull requests.
-Features:
-
-- **PR Summarization**: It generates a summary and release notes of the changes in the pull request.
-- **Line-by-line code change suggestions**: Reviews the changes line
-  by line and provides code change suggestions that can be directly committed
-  from the GitHub UI.
+- **PR Summarization**: It generates a summary and release notes of the changes
+  in the pull request.
+- **Line-by-line code change suggestions**: Reviews the changes line by line and
+  provides code change suggestions that can be directly committed from the
+  GitHub UI.
 - **Continuous, incremental reviews**: Reviews are performed on each commit
   within a pull request, rather than a one-time review on the entire pull
   request.
@@ -37,8 +40,10 @@ Features:
   `summarize_release_notes` prompts to focus on specific aspects of the review
   process or even change the review objective.
 
-To use this tool, you need to add the provided YAML file to your repository and configure the required environment variables, such as GITHUB_TOKEN and OPENAI_API_KEY.
-For more information on usage, examples, contributing, and FAQs, you can refer to the sections below. 
+To use this tool, you need to add the provided YAML file to your repository and
+configure the required environment variables, such as `GITHUB_TOKEN` and
+`OPENAI_API_KEY`. For more information on usage, examples, contributing, and
+FAQs, you can refer to the sections below.
 
 - [Overview](#overview)
 - [Install instructions](#install-instructions)
@@ -48,9 +53,9 @@ For more information on usage, examples, contributing, and FAQs, you can refer t
 - [FAQs](#faqs)
 
 ## Install instructions
-ai-pr-reviewer runs as a GitHub Action. 
-Add the below file to your repository at
-`.github/workflows/openai-pr-reviewer.yml`
+
+`ai-pr-reviewer` runs as a GitHub Action. Add the below file to your repository
+at `.github/workflows/openai-pr-reviewer.yml`
 
 ```yaml
 name: Code Review
@@ -84,7 +89,6 @@ jobs:
           review_simple_changes: false
           review_comment_lgtm: false
 ```
-
 
 #### Environment variables
 
@@ -146,7 +150,6 @@ system_message: |
 
 </details>
 
-
 ## Conversation with OpenAI
 
 You can reply to a review comment made by this action and get a response based
@@ -170,8 +173,8 @@ To ignore a PR, add the following keyword in the PR description:
 @openai: ignore
 ```
 
-
 ## Examples
+
 Some of the reviews done by ai-pr-reviewer
 
 ![PR Summary](./docs/images/openai-pr-summary.png)
@@ -184,7 +187,6 @@ Some of the reviews done by ai-pr-reviewer
 
 Any suggestions or pull requests for improving the prompts are highly
 appreciated.
-
 
 ## Contribute
 
@@ -204,7 +206,6 @@ Build the typescript and package it for distribution
 ```bash
 $ npm run build && npm run package
 ```
-
 
 ## FAQs
 
