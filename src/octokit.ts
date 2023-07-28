@@ -31,6 +31,14 @@ Retry count: ${retryCount}
       warning(
         `SecondaryRateLimit detected for request ${options.method} ${options.url} ; retry after ${retryAfter} seconds`
       )
+      // if we are doing a POST method on /repos/{owner}/{repo}/pulls/{pull_number}/reviews then we shouldn't retry
+      if (
+        options.method === 'POST' &&
+        options.url.match(/\/repos\/.*\/.*\/pulls\/.*\/reviews/)
+      ) {
+        return false
+      }
+      return true
     }
   }
 })
