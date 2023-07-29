@@ -23,7 +23,7 @@ $file_diff
 ## Instructions
 
 I would like you to succintly summarize the diff within 100 words.
-If applicable, your summary should include a note about alteractions 
+If applicable, your summary should include a note about alterations 
 to the signatures of exported functions, global data structures and 
 variables, and any changes that might affect the external inteface or 
 behavior of the code.
