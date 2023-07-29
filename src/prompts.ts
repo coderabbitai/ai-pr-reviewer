@@ -22,9 +22,11 @@ $file_diff
 
 ## Instructions
 
-I would like you to summarize the diff within 100 words by noting the
-changes made to the function signatures, control structures, and
-variable assignments.
+I would like you to succintly summarize the diff within 100 words.
+If applicable, your summary should include a note about alteractions 
+to the signatures of exported functions, global data structures and 
+variables, and any changes that might affect the external inteface or 
+behavior of the code.
 `
   triageFileDiff = `Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
 \`APPROVED\` based on the following criteria:
