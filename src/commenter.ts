@@ -233,6 +233,22 @@ ${COMMENT_TAG}`
 
   async submitReview(pullNumber: number, commitId: string, statusMsg: string) {
     if (this.reviewCommentsBuffer.length === 0) {
+      // Submit empty review with statusMsg
+      info(`Submitting empty review for PR #${pullNumber}`)
+      try {
+        await octokit.pulls.createReview({
+          owner: repo.owner,
+          repo: repo.repo,
+          // eslint-disable-next-line camelcase
+          pull_number: pullNumber,
+          // eslint-disable-next-line camelcase
+          commit_id: commitId,
+          event: 'COMMENT',
+          body: statusMsg
+        })
+      } catch (e) {
+        warning(`Failed to submit empty review: ${e}`)
+      }
       return
     }
     for (const comment of this.reviewCommentsBuffer) {
