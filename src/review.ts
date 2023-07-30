@@ -619,51 +619,55 @@ ${commentChain}
 `
       }
 
-      // perform review
-      try {
-        const [response] = await heavyBot.chat(
-          prompts.renderReviewFileDiff(ins),
-          {}
-        )
-        if (response === '') {
-          info('review: nothing obtained from openai')
-          reviewsFailed.push(`${filename} (no response)`)
-          return
-        }
-        // parse review
-        const reviews = parseReview(response, patches, options.debug)
-        for (const review of reviews) {
-          // check for LGTM
-          if (
-            !options.reviewCommentLGTM &&
-            (review.comment.includes('LGTM') ||
-              review.comment.includes('looks good to me'))
-          ) {
-            continue
+      if (patchesPacked > 0) {
+        // perform review
+        try {
+          const [response] = await heavyBot.chat(
+            prompts.renderReviewFileDiff(ins),
+            {}
+          )
+          if (response === '') {
+            info('review: nothing obtained from openai')
+            reviewsFailed.push(`${filename} (no response)`)
+            return
           }
-          if (context.payload.pull_request == null) {
-            warning('No pull request found, skipping.')
-            continue
-          }
+          // parse review
+          const reviews = parseReview(response, patches, options.debug)
+          for (const review of reviews) {
+            // check for LGTM
+            if (
+              !options.reviewCommentLGTM &&
+              (review.comment.includes('LGTM') ||
+                review.comment.includes('looks good to me'))
+            ) {
+              continue
+            }
+            if (context.payload.pull_request == null) {
+              warning('No pull request found, skipping.')
+              continue
+            }
 
-          try {
-            await commenter.bufferReviewComment(
-              filename,
-              review.startLine,
-              review.endLine,
-              `${review.comment}`
-            )
-          } catch (e: any) {
-            reviewsFailed.push(`${filename} comment failed (${e as string})`)
+            try {
+              await commenter.bufferReviewComment(
+                filename,
+                review.startLine,
+                review.endLine,
+                `${review.comment}`
+              )
+            } catch (e: any) {
+              reviewsFailed.push(`${filename} comment failed (${e as string})`)
+            }
           }
+        } catch (e: any) {
+          warning(
+            `Failed to review: ${e as string}, skipping. backtrace: ${
+              e.stack as string
+            }`
+          )
+          reviewsFailed.push(`${filename} (${e as string})`)
         }
-      } catch (e: any) {
-        warning(
-          `Failed to review: ${e as string}, skipping. backtrace: ${
-            e.stack as string
-          }`
-        )
-        reviewsFailed.push(`${filename} (${e as string})`)
+      } else {
+        reviewsSkipped.push(`${filename} (diff too large)`)
       }
     }
 
