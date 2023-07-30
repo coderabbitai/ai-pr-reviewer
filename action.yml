@@ -174,10 +174,11 @@ inputs:
     default: |
       Provide your final response in the `markdown` format with 
       the following content:
-        - Walkthrough based on a high-level summary (comment on the 
-          overall change instead of specific files within 80 words)
-        - Table of files and their summaries. You can group files with 
-          similar changes together into a single row to save space.
+        - *Walkthrough*: A high-level summary of the  
+          overall change instead of specific files within 80 words.
+        - *Changes*: A table of files and their summaries. You can group 
+          files with similar changes together into a single row to conserve
+          space.
 
       Avoid additional commentary as this summary will be added as a 
       comment on the GitHub pull request.
