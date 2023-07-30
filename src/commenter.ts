@@ -231,7 +231,7 @@ ${COMMENT_TAG}`
     }
   }
 
-  async submitReview(pullNumber: number, commitId: string) {
+  async submitReview(pullNumber: number, commitId: string, statusMsg: string) {
     if (this.reviewCommentsBuffer.length === 0) {
       return
     }
@@ -304,7 +304,8 @@ ${COMMENT_TAG}`
         pull_number: pullNumber,
         // eslint-disable-next-line camelcase
         review_id: review.data.id,
-        event: 'COMMENT'
+        event: 'COMMENT',
+        body: statusMsg
       })
     } catch (e) {
       warning(
@@ -732,11 +733,7 @@ ${chain}
   }
 
   // add in-progress status to the comment body
-  addInProgressStatus(
-    commentBody: string,
-    headCommitId: string,
-    highestReviewedCommitId: string
-  ): string {
+  addInProgressStatus(commentBody: string, statusMsg: string): string {
     const start = commentBody.indexOf(IN_PROGRESS_START_TAG)
     const end = commentBody.indexOf(IN_PROGRESS_END_TAG)
     // add to the beginning of the comment body if the marker doesn't exist
@@ -746,10 +743,7 @@ ${chain}
 
 Currently reviewing new changes in this PR...
 
-<details>
-<summary>Details</summary>
-The files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${headCommitId}\` commits are being reviewed.
-</details>
+${statusMsg}
 
 ${IN_PROGRESS_END_TAG}
 

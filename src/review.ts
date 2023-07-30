@@ -262,11 +262,40 @@ ${hunks.oldHunk}
     return
   }
 
+  let statusMsg = `<details>
+<summary>Commits</summary>
+Files that changed from the base of the PR and between ${highestReviewedCommitId} and ${
+    context.payload.pull_request.head.sha
+  } commits.
+</details>
+<details>
+<summary>Files selected ${filesAndChanges.length}</summary>
+### Selected files
+
+${filesAndChanges
+  .map(([filename, , , patches]) => `* ${filename} (${patches.length} hunks)`)
+  .join('\n')}
+</details>
+${
+  filterIgnoredFiles.length > 0
+    ? `
+<details>
+<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
+
+### Ignored files
+
+* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
+
+</details>
+`
+    : ''
+}
+`
+
   // update the existing comment with in progress status
   const inProgressSummarizeCmt = commenter.addInProgressStatus(
     existingSummarizeCmtBody,
-    context.payload.pull_request.head.sha,
-    highestReviewedCommitId
+    statusMsg
   )
 
   // add in progress status to the summarize comment
@@ -447,22 +476,9 @@ ${SHORT_SUMMARY_END_TAG}
 - Type \`@coderabbitai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
 </details>
-
-${
-  filterIgnoredFiles.length > 0
-    ? `
-<details>
-<summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
-
-### Ignored files
-
-* ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
-
-</details>
 `
-    : ''
-}
 
+  statusMsg += `
 ${
   skippedFiles.length > 0
     ? `
@@ -479,7 +495,6 @@ ${
 `
     : ''
 }
-
 ${
   summariesFailed.length > 0
     ? `
@@ -497,6 +512,7 @@ ${
     : ''
 }
 `
+
   if (!options.disableReview) {
     const filesAndChangesReview = filesAndChanges.filter(([filename]) => {
       const needsReview =
@@ -673,15 +689,13 @@ ${commentChain}
 
     await Promise.all(reviewPromises)
 
-    summarizeComment += `
+    statusMsg += `
 ${
   reviewsFailed.length > 0
     ? `<details>
-<summary>Files not reviewed due to errors in the recent run (${
-        reviewsFailed.length
-      })</summary>
+<summary>Files not reviewed due to errors (${reviewsFailed.length})</summary>
 
-### Failed to review in the last run
+### Failed to review
 
 * ${reviewsFailed.join('\n* ')}
 
@@ -689,7 +703,6 @@ ${
 `
     : ''
 }
-
 ${
   reviewsSkipped.length > 0
     ? `<details>
@@ -697,7 +710,7 @@ ${
         reviewsSkipped.length
       })</summary>
 
-### Skipped review in the recent run
+### Skipped review
 
 * ${reviewsSkipped.join('\n* ')}
 
@@ -719,7 +732,8 @@ ${
   // post the review
   await commenter.submitReview(
     context.payload.pull_request.number,
-    commits[commits.length - 1].sha
+    commits[commits.length - 1].sha,
+    statusMsg
   )
 }
 
