@@ -22,7 +22,7 @@ import {getTokenCount} from './tokenizer'
 const context = github_context
 const repo = context.repo
 
-const ignoreKeyword = '@openai: ignore'
+const ignoreKeyword = '@coderabbitai: ignore'
 
 export const codeReview = async (
   lightBot: Bot,
@@ -72,11 +72,13 @@ export const codeReview = async (
     context.payload.pull_request.number
   )
   let existingCommitIdsBlock = ''
+  let existingSummarizeCmtBody = ''
   if (existingSummarizeCmt != null) {
-    inputs.rawSummary = commenter.getRawSummary(existingSummarizeCmt.body)
-    inputs.shortSummary = commenter.getShortSummary(existingSummarizeCmt.body)
+    existingSummarizeCmtBody = existingSummarizeCmt.body
+    inputs.rawSummary = commenter.getRawSummary(existingSummarizeCmtBody)
+    inputs.shortSummary = commenter.getShortSummary(existingSummarizeCmtBody)
     existingCommitIdsBlock = commenter.getReviewedCommitIdsBlock(
-      existingSummarizeCmt.body
+      existingSummarizeCmtBody
     )
   }
 
@@ -140,13 +142,6 @@ export const codeReview = async (
     return
   }
 
-  const commits = incrementalDiff.data.commits
-
-  if (commits.length === 0) {
-    warning('Skipped: ommits is null')
-    return
-  }
-
   // skip files if they are filtered out
   const filterSelectedFiles = []
   const filterIgnoredFiles = []
@@ -157,6 +152,18 @@ export const codeReview = async (
     } else {
       filterSelectedFiles.push(file)
     }
+  }
+
+  if (filterSelectedFiles.length === 0) {
+    warning('Skipped: filterSelectedFiles is null')
+    return
+  }
+
+  const commits = incrementalDiff.data.commits
+
+  if (commits.length === 0) {
+    warning('Skipped: commits is null')
+    return
   }
 
   // find hunks to review
@@ -254,6 +261,16 @@ ${hunks.oldHunk}
     error('Skipped: no files to review')
     return
   }
+
+  // update the existing comment with in progress status
+  const inProgressSummarizeCmt = commenter.addInProgressStatus(
+    existingSummarizeCmtBody,
+    context.payload.pull_request.head.sha,
+    highestReviewedCommitId
+  )
+
+  // add in progress status to the summarize comment
+  await commenter.comment(`${inProgressSummarizeCmt}`, SUMMARIZE_TAG, 'replace')
 
   const summariesFailed: string[] = []
 
@@ -385,7 +402,7 @@ ${filename}: ${summary}
     if (releaseNotesResponse === '') {
       info('release notes: nothing obtained from openai')
     } else {
-      let message = '### Summary by OpenAI\n\n'
+      let message = '### Summary by CodeRabbit OSS\n\n'
       message += releaseNotesResponse
       try {
         await commenter.updateDescription(
@@ -412,20 +429,24 @@ ${RAW_SUMMARY_END_TAG}
 ${SHORT_SUMMARY_START_TAG}
 ${inputs.shortSummary}
 ${SHORT_SUMMARY_END_TAG}
+
 ---
 
-### Chat with 🤖 OpenAI Bot (\`@openai\`)
+<details>
+<summary>Notes</summary>
+
+### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41" alt="Image description" width="20" height="20">  CodeRabbit Bot (\`@coderabbitai\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@openai\` in a reply.
+- Invite the bot into a review comment chain by tagging \`@coderabbitai\` in a reply.
 
 ### Code suggestions
 - The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Ignoring further reviews
-- Type \`@openai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
+- Type \`@coderabbitai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
----
+</details>
 
 ${
   filterIgnoredFiles.length > 0
@@ -653,11 +674,6 @@ ${commentChain}
     await Promise.all(reviewPromises)
 
     summarizeComment += `
----
-In the recent run, only the files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${
-      context.payload.pull_request.head.sha
-    }\` commits were reviewed.
-
 ${
   reviewsFailed.length > 0
     ? `<details>

@@ -7,34 +7,40 @@ import {octokit} from './octokit'
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = ':robot: OpenAI'
+export const COMMENT_GREETING = `<img src="https://avatars.githubusercontent.com/in/347564?s=41" alt="Image description" width="20" height="20">   CodeRabbit`
 
 export const COMMENT_TAG =
-  '<!-- This is an auto-generated comment by OpenAI -->'
+  '<!-- This is an auto-generated comment by CodeRabbit -->'
 
 export const COMMENT_REPLY_TAG =
-  '<!-- This is an auto-generated reply by OpenAI -->'
+  '<!-- This is an auto-generated reply by CodeRabbit -->'
 
 export const SUMMARIZE_TAG =
-  '<!-- This is an auto-generated comment: summarize by openai -->'
+  '<!-- This is an auto-generated comment: summarize by coderabbit.ai -->'
+
+export const IN_PROGRESS_START_TAG =
+  '<!-- This is an auto-generated comment: summarize review in progress by coderabbit.ai -->'
+
+export const IN_PROGRESS_END_TAG =
+  '<!-- end of auto-generated comment: summarize review in progress by coderabbit.ai -->'
 
 export const DESCRIPTION_START_TAG = `
-<!-- This is an auto-generated comment: release notes by openai -->`
+<!-- This is an auto-generated comment: release notes by coderabbit.ai -->`
 export const DESCRIPTION_END_TAG =
-  '<!-- end of auto-generated comment: release notes by openai -->'
+  '<!-- end of auto-generated comment: release notes by coderabbit.ai -->'
 
-export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by openai -->
+export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by coderabbit.ai -->
 <!--
 `
 export const RAW_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: raw summary by openai -->`
+<!-- end of auto-generated comment: raw summary by coderabbit.ai -->`
 
-export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by openai -->
+export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by coderabbit.ai -->
 <!--
 `
 
 export const SHORT_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: short summary by openai -->`
+<!-- end of auto-generated comment: short summary by coderabbit.ai -->`
 
 export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
 export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
@@ -557,13 +563,19 @@ ${chain}
   async create(body: string, target: number) {
     try {
       // get comment ID from the response
-      await octokit.issues.createComment({
+      const response = await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
         // eslint-disable-next-line camelcase
         issue_number: target,
         body
       })
+      // add comment to issueCommentsCache
+      if (this.issueCommentsCache[target]) {
+        this.issueCommentsCache[target].push(response.data)
+      } else {
+        this.issueCommentsCache[target] = [response.data]
+      }
     } catch (e) {
       warning(`Failed to create comment: ${e}`)
     }
@@ -717,5 +729,49 @@ ${chain}
     }
 
     return allCommits
+  }
+
+  // add in-progress status to the comment body
+  addInProgressStatus(
+    commentBody: string,
+    headCommitId: string,
+    highestReviewedCommitId: string
+  ): string {
+    const start = commentBody.indexOf(IN_PROGRESS_START_TAG)
+    const end = commentBody.indexOf(IN_PROGRESS_END_TAG)
+    // add to the beginning of the comment body if the marker doesn't exist
+    // otherwise do nothing
+    if (start === -1 || end === -1) {
+      return `${IN_PROGRESS_START_TAG}
+
+Currently reviewing new changes in this PR...
+
+<details>
+<summary>Details</summary>
+The files that changed from the \`base\` of the PR and between \`${highestReviewedCommitId}\` and \`${headCommitId}\` commits are being reviewed.
+</details>
+
+${IN_PROGRESS_END_TAG}
+
+---
+
+${commentBody}`
+    }
+    return commentBody
+  }
+
+  // remove in-progress status from the comment body
+  removeInProgressStatus(commentBody: string): string {
+    const start = commentBody.indexOf(IN_PROGRESS_START_TAG)
+    const end = commentBody.indexOf(IN_PROGRESS_END_TAG)
+    // remove the in-progress status if the marker exists
+    // otherwise do nothing
+    if (start !== -1 && end !== -1) {
+      return (
+        commentBody.substring(0, start) +
+        commentBody.substring(end + IN_PROGRESS_END_TAG.length)
+      )
+    }
+    return commentBody
   }
 }
