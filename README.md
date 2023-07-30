@@ -177,13 +177,13 @@ To ignore a PR, add the following keyword in the PR description:
 
 Some of the reviews done by ai-pr-reviewer
 
-![PR Summary](./docs/images/openai-pr-summary.png)
+![PR Summary](./docs/PRSummary.png)
 
-![PR Release Notes](./docs/images/openai-pr-release-notes.png)
+![PR Release Notes](./docs/images/ReleaseNotes.png)
 
-![PR Review](./docs/images/openai-pr-review.png)
+![PR Review](./docs/images/section-1.png)
 
-![PR Conversation](./docs/images/openai-review-conversation.png)
+![PR Conversation](./docs/images/section-3.png)
 
 Any suggestions or pull requests for improving the prompts are highly
 appreciated.
