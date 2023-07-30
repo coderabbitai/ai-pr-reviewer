@@ -174,8 +174,8 @@ inputs:
     default: |
       Provide your final response in the `markdown` format with 
       the following content:
-        - High-level summary (comment on the overall change instead of 
-          specific files within 80 words)
+        - Walkthrough based on a high-level summary (comment on the 
+          overall change instead of specific files within 80 words)
         - Table of files and their summaries. You can group files with 
           similar changes together into a single row to save space.
 

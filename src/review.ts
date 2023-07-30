@@ -269,7 +269,7 @@ Files that changed from the base of the PR and between ${highestReviewedCommitId
   } commits.
 </details>
 <details>
-<summary>Files selected ${filesAndChanges.length}</summary>
+<summary>Files selected (${filesAndChanges.length})</summary>
 
 ${filesAndChanges
   .map(([filename, , , patches]) => `* ${filename} (${patches.length} hunks)`)
