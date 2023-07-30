@@ -162,7 +162,7 @@ export const codeReview = async (
   const commits = incrementalDiff.data.commits
 
   if (commits.length === 0) {
-    warning('Skipped: ommits is null')
+    warning('Skipped: commits is null')
     return
   }
 

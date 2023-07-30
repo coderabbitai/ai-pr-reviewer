@@ -563,13 +563,19 @@ ${chain}
   async create(body: string, target: number) {
     try {
       // get comment ID from the response
-      await octokit.issues.createComment({
+      const response = await octokit.issues.createComment({
         owner: repo.owner,
         repo: repo.repo,
         // eslint-disable-next-line camelcase
         issue_number: target,
         body
       })
+      // add comment to issueCommentsCache
+      if (this.issueCommentsCache[target]) {
+        this.issueCommentsCache[target].push(response.data)
+      } else {
+        this.issueCommentsCache[target] = [response.data]
+      }
     } catch (e) {
       warning(`Failed to create comment: ${e}`)
     }
