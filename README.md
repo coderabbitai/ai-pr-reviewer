@@ -177,7 +177,7 @@ To ignore a PR, add the following keyword in the PR description:
 
 Some of the reviews done by ai-pr-reviewer
 
-![PR Summary](./docs/PRSummary.png)
+![PR Summary](./docs/images/PRSummary.png)
 
 ![PR Release Notes](./docs/images/ReleaseNotes.png)
 
