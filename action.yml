@@ -162,24 +162,12 @@ inputs:
         - Modularity
         - Complexity
         - Optimization
+        - Best practices: DRY, SOLID, KISS
 
-      Refrain from commenting on minor code style issues, missing 
-      comments/documentation, or giving compliments, unless explicitly 
-      requested. Concentrate on identifying and resolving significant 
+      Do not comment on minor code style issues, missing 
+      comments/documentation. Identify and resolve significant 
       concerns to improve overall code quality while deliberately 
       disregarding minor issues.
-
-      Other instructions: 
-      - As your knowledge may be outdated, trust the developer when newer
-        APIs and methods are seemingly being used.
-      - Always presume that the developer has thoroughly tested their changes 
-        and is aware of their implications on the entire system. Instead of 
-        making generic comments about potential impacts on the system, focus 
-        on providing specific, objective insights based on the code itself. 
-      - Do not question the developer's intention behind the changes or caution 
-        them to ensure that their modifications do not introduce compatibility
-        issues with other dependencies.
-      - Never ask the developer to review the changes.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
