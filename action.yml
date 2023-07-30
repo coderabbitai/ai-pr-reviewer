@@ -1,9 +1,9 @@
-name: 'OpenAI ChatGPT based PR Reviewer & Summarizer'
-description: 'OpenAI ChatGPT based PR Reviewer and Summarizer'
+name: 'AI-based PR Reviewer & Summarizer with Chat Capabilities'
+description: 'AI-based PR Reviewer & Summarizer with Chat Capabilities'
 branding:
-  icon: 'aperture'
+  icon: 'git-merge'
   color: 'orange'
-author: 'FluxNinja, Inc.'
+author: 'CodeRabbit LLC'
 inputs:
   debug:
     required: false

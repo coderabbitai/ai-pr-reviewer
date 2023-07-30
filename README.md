@@ -3,8 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <div>
-    <a href="https://github.com/coderabbitai/openai-pr-reviewer)/commits/main">
-    <img alt="GitHub" src="https://img.shields.io/github/last-commit/coderabbitai/openai-pr-reviewer/main?style=for-the-badge" height="20">
+    <a href="https://github.com/coderabbitai/ai-pr-reviewer)/commits/main">
+    <img alt="GitHub" src="https://img.shields.io/github/last-commit/coderabbitai/ai-pr-reviewer/main?style=for-the-badge" height="20">
     </a>
     </div>
 
@@ -47,7 +47,7 @@ FAQs, you can refer to the sections below.
 
 - [Overview](#overview)
 - [Install instructions](#install-instructions)
-- [Conversation with OpenAI](#conversation-with-openai)
+- [Conversation with CodeRabbit](#conversation-with-coderabbit)
 - [Examples](#examples)
 - [Contribute](#contribute)
 - [FAQs](#faqs)
@@ -55,7 +55,7 @@ FAQs, you can refer to the sections below.
 ## Install instructions
 
 `ai-pr-reviewer` runs as a GitHub Action. Add the below file to your repository
-at `.github/workflows/openai-pr-reviewer.yml`
+at `.github/workflows/ai-pr-reviewer.yml`
 
 ```yaml
 name: Code Review
@@ -123,7 +123,7 @@ value. For example, to review docs/blog posts, you can use the following prompt:
 
 ```yaml
 system_message: |
-  You are `@openai` (aka `github-actions[bot]`), a language model
+  You are `@coderabbitai` (aka `github-actions[bot]`), a language model
   trained by OpenAI. Your purpose is to act as a highly experienced
   DevRel (developer relations) professional with focus on cloud-native
   infrastructure.
@@ -150,15 +150,15 @@ system_message: |
 
 </details>
 
-## Conversation with OpenAI
+## Conversation with CodeRabbit
 
 You can reply to a review comment made by this action and get a response based
 on the diff context. Additionally, you can invite the bot to a conversation by
-tagging it in the comment (`@openai`).
+tagging it in the comment (`@coderabbitai`).
 
 Example:
 
-> @openai Please generate a test plan for this file.
+> @coderabbitai Please generate a test plan for this file.
 
 Note: A review comment is a comment made on a diff or a file in the pull
 request.
@@ -170,7 +170,7 @@ to review documentation, you can ignore PRs that only change the documentation.
 To ignore a PR, add the following keyword in the PR description:
 
 ```text
-@openai: ignore
+@coderabbitai: ignore
 ```
 
 ## Examples
