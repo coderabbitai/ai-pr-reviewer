@@ -270,7 +270,6 @@ Files that changed from the base of the PR and between ${highestReviewedCommitId
 </details>
 <details>
 <summary>Files selected ${filesAndChanges.length}</summary>
-### Selected files
 
 ${filesAndChanges
   .map(([filename, , , patches]) => `* ${filename} (${patches.length} hunks)`)
@@ -281,8 +280,6 @@ ${
     ? `
 <details>
 <summary>Files ignored due to filter (${filterIgnoredFiles.length})</summary>
-
-### Ignored files
 
 * ${filterIgnoredFiles.map(file => file.filename).join('\n* ')}
 
@@ -431,7 +428,7 @@ ${filename}: ${summary}
     if (releaseNotesResponse === '') {
       info('release notes: nothing obtained from openai')
     } else {
-      let message = '### Summary by CodeRabbit OSS\n\n'
+      let message = '### Summary by CodeRabbit\n\n'
       message += releaseNotesResponse
       try {
         await commenter.updateDescription(
@@ -487,8 +484,6 @@ ${
         skippedFiles.length
       })</summary>
 
-### Not processed
-
 * ${skippedFiles.join('\n* ')}
 
 </details>
@@ -502,8 +497,6 @@ ${
 <summary>Files not summarized due to errors (${
         summariesFailed.length
       })</summary>
-
-### Failed to summarize
 
 * ${summariesFailed.join('\n* ')}
 
@@ -695,8 +688,6 @@ ${
     ? `<details>
 <summary>Files not reviewed due to errors (${reviewsFailed.length})</summary>
 
-### Failed to review
-
 * ${reviewsFailed.join('\n* ')}
 
 </details>
@@ -709,8 +700,6 @@ ${
 <summary>Files not reviewed due to simple changes (${
         reviewsSkipped.length
       })</summary>
-
-### Skipped review
 
 * ${reviewsSkipped.join('\n* ')}
 

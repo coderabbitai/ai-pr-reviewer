@@ -297,6 +297,11 @@ ${COMMENT_TAG}`
         `Submitting review for PR #${pullNumber}, total comments: ${this.reviewCommentsBuffer.length}, review id: ${review.data.id}`
       )
 
+      const body = `${COMMENT_GREETING}
+
+${statusMsg}
+`
+
       await octokit.pulls.submitReview({
         owner: repo.owner,
         repo: repo.repo,
@@ -305,7 +310,7 @@ ${COMMENT_TAG}`
         // eslint-disable-next-line camelcase
         review_id: review.data.id,
         event: 'COMMENT',
-        body: statusMsg
+        body
       })
     } catch (e) {
       warning(
