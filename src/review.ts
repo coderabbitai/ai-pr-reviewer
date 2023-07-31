@@ -722,10 +722,10 @@ ${
     : ''
 }
 <details>
-<summary>Comments Processed</summary>
+<summary>Review comments generated</summary>
 
-* LGTM: ${lgtmCount}
 * Review: ${reviewCount}
+* LGTM: ${lgtmCount}
 
 </details>
 `
