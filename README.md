@@ -22,7 +22,7 @@ CodeRabbit offers superior features including enhanced context and advanced prom
 and our ongoing commitment to superior code reviews.
 
 
-## ai-pr-reviewer Features:
+## Reviewer Features:
 
 - **PR Summarization**: It generates a summary and release notes of the changes
   in the pull request.
@@ -58,7 +58,7 @@ FAQs, you can refer to the sections below.
 
 - [Overview](#overview)
 - [Professional Version of CodeRabbit](#professional-version-of-coderabbit)
-- [ai-pr-reviewer Features](#ai-pr-reviewer_features)
+- [Reviewer Features](#Reviewer-features)
 - [Install instructions](#install-instructions)
 - [Conversation with CodeRabbit](#conversation-with-coderabbit)
 - [Examples](#examples)
