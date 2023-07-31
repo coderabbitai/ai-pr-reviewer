@@ -15,7 +15,7 @@ enhance developer productivity and efficiency by performing automated reviews of
 pull requests. 
 
 # Professional Version of CodeRabbit 
-<br/>
+
 The professional version of our openai-pr-reviewer project is now live at
 [coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
 CodeRabbit offers superior features including enhanced context and advanced prompts, dedicated support, 
