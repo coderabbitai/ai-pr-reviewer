@@ -722,7 +722,7 @@ ${
     : ''
 }
 <details>
-<summary>Review comments generated</summary>
+<summary>Review comments generated (${reviewCount + lgtmCount})</summary>
 
 * Review: ${reviewCount}
 * LGTM: ${lgtmCount}
