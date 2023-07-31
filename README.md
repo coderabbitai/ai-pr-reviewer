@@ -12,7 +12,17 @@
 
 CodeRabbit `ai-pr-reviewer` is an open-source project built on AI, designed to
 enhance developer productivity and efficiency by performing automated reviews of
-pull requests. Features:
+pull requests. 
+
+# Professional Version of CodeRabbit <br/>
+
+The professional version of our openai-pr-reviewer project is now live at
+[coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
+CodeRabbit offers superior features including enhanced context and advanced prompts, dedicated support, 
+and our ongoing commitment to superior code reviews.
+
+
+## ai-pr-reviewer Features:
 
 - **PR Summarization**: It generates a summary and release notes of the changes
   in the pull request.
@@ -48,18 +58,13 @@ FAQs, you can refer to the sections below.
 
 - [Overview](#overview)
 - [Professional Version of CodeRabbit](#professional-version-of-coderabbit)
+- [ai-pr-reviewer Features](#ai-pr-reviewer_features)
 - [Install instructions](#install-instructions)
 - [Conversation with CodeRabbit](#conversation-with-coderabbit)
 - [Examples](#examples)
 - [Contribute](#contribute)
 - [FAQs](#faqs)
 
-# Professional Version of CodeRabbit <br/>
-
-The professional version of our openai-pr-reviewer project is now live at
-[coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
-CodeRabbit offers superior features including enhanced context and advanced prompts, dedicated support, 
-and our ongoing commitment to superior code reviews.
 
 
 ## Install instructions
