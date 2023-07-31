@@ -268,13 +268,19 @@ Files that changed from the base of the PR and between ${highestReviewedCommitId
     context.payload.pull_request.head.sha
   } commits.
 </details>
+${
+  filesAndChanges.length > 0
+    ? `
 <details>
 <summary>Files selected (${filesAndChanges.length})</summary>
 
-${filesAndChanges
-  .map(([filename, , , patches]) => `* ${filename} (${patches.length} hunks)`)
-  .join('\n')}
+* ${filesAndChanges
+        .map(([filename, , , patches]) => `${filename} (${patches.length})`)
+        .join('\n* ')}
 </details>
+`
+    : ''
+}
 ${
   filterIgnoredFiles.length > 0
     ? `
@@ -526,6 +532,8 @@ ${
 
     // failed reviews array
     const reviewsFailed: string[] = []
+    let lgtmCount = 0
+    let reviewCount = 0
     const doReview = async (
       filename: string,
       fileContent: string,
@@ -640,6 +648,7 @@ ${commentChain}
               (review.comment.includes('LGTM') ||
                 review.comment.includes('looks good to me'))
             ) {
+              lgtmCount += 1
               continue
             }
             if (context.payload.pull_request == null) {
@@ -648,6 +657,7 @@ ${commentChain}
             }
 
             try {
+              reviewCount += 1
               await commenter.bufferReviewComment(
                 filename,
                 review.startLine,
@@ -711,6 +721,13 @@ ${
 `
     : ''
 }
+<details>
+<summary>Comments Processed</summary>
+
+* LGTM: ${lgtmCount}
+* Review: ${reviewCount}
+
+</details>
 `
     // add existing_comment_ids_block with latest head sha
     summarizeComment += `\n${commenter.addReviewedCommitId(
