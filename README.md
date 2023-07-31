@@ -45,7 +45,15 @@ configure the required environment variables, such as `GITHUB_TOKEN` and
 `OPENAI_API_KEY`. For more information on usage, examples, contributing, and
 FAQs, you can refer to the sections below.
 
+# Professional Version of CodeRabbit <br/>
+
+The professional version of our openai-pr-reviewer project is now live at
+[coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
+CodeRabbit offers improved features, dedicated support, and our ongoing
+commitment to superior code reviews.
+
 - [Overview](#overview)
+- [Professional Version of CodeRabbit](#professional-version-of-coderabbit)
 - [Install instructions](#install-instructions)
 - [Conversation with CodeRabbit](#conversation-with-coderabbit)
 - [Examples](#examples)
