@@ -57,8 +57,8 @@ FAQs, you can refer to the sections below.
 
 
 - [Overview](#overview)
-- [Professional Version of CodeRabbit](#professional-version-of-coderabbit)
-- [Reviewer Features](#Reviewer-features)
+- [Professional Version of CodeRabbit](#Professional-Version-of-CodeRabbit)
+- [Reviewer Features](#reviewer-features)
 - [Install instructions](#install-instructions)
 - [Conversation with CodeRabbit](#conversation-with-coderabbit)
 - [Examples](#examples)
