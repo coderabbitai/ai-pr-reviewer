@@ -207,18 +207,18 @@ format \`<line_number><colon><whitespace>\`.
 
   ---new_hunk---
   \`\`\`
-  12:     z = x / y
-  13:     return z
-  14: 
+      z = x / y
+      return z
+
   15: def add(x, y):
   16:     z = x - y
   17:     retrn z
   18:
   19: def multiply(x, y):
   20:     return x * y
-  21: 
-  22: def subtract(x, y):
-  23:     z = x - y
+
+  def subtract(x, y):
+      z = x - y
   \`\`\`
   
   ---old_hunk---

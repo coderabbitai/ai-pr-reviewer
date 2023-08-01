@@ -810,7 +810,6 @@ const parsePatch = (
   const oldHunkLines: string[] = []
   const newHunkLines: string[] = []
 
-  // let old_line = hunkInfo.old_hunk.start_line
   let newLine = hunkInfo.newHunk.startLine
 
   const lines = patch.split('\n').slice(1) // Skip the @@ line
@@ -820,17 +819,29 @@ const parsePatch = (
     lines.pop()
   }
 
+  // Keep track of first 3 and last 3 lines in the new hunk
+  const startLines = 3
+  const endLines = lines.length - 3
+
   for (const line of lines) {
     if (line.startsWith('-')) {
       oldHunkLines.push(`${line.substring(1)}`)
-      // old_line++
     } else if (line.startsWith('+')) {
-      newHunkLines.push(`${newLine}: ${line.substring(1)}`)
+      // Skip line number annotations for the first 3 and the last 3 lines
+      if (newHunkLines.length < startLines || newHunkLines.length >= endLines) {
+        newHunkLines.push(`${line.substring(1)}`)
+      } else {
+        newHunkLines.push(`${newLine}: ${line.substring(1)}`)
+      }
       newLine++
     } else {
       oldHunkLines.push(`${line}`)
-      newHunkLines.push(`${newLine}: ${line}`)
-      // old_line++
+      // Skip line number annotations for the first 3 and the last 3 lines
+      if (newHunkLines.length < startLines || newHunkLines.length >= endLines) {
+        newHunkLines.push(`${line}`)
+      } else {
+        newHunkLines.push(`${newLine}: ${line}`)
+      }
       newLine++
     }
   }
