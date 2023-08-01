@@ -835,13 +835,10 @@ const parsePatch = (
     if (line.startsWith('-')) {
       oldHunkLines.push(`${line.substring(1)}`)
     } else if (line.startsWith('+')) {
-      if (currentLine <= skipStart || currentLine > lines.length - skipEnd) {
-        newHunkLines.push(`${line.substring(1)}`)
-      } else {
-        newHunkLines.push(`${newLine}: ${line.substring(1)}`)
-      }
+      newHunkLines.push(`${newLine}: ${line.substring(1)}`)
       newLine++
     } else {
+      // context line
       oldHunkLines.push(`${line}`)
       if (currentLine <= skipStart || currentLine > lines.length - skipEnd) {
         newHunkLines.push(`${line}`)
