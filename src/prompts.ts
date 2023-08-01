@@ -204,6 +204,7 @@ format \`<line_number><colon><whitespace>\`.
 ### Example changes
 
   ---new_hunk---
+  \`\`\`
   12:     z = x / y
   13:     return z
   14: 
@@ -216,8 +217,10 @@ format \`<line_number><colon><whitespace>\`.
   21: 
   22: def subtract(x, y):
   23:     z = x - y
+  \`\`\`
   
   ---old_hunk---
+  \`\`\`
       z = x / y
       return z
 
@@ -226,6 +229,7 @@ format \`<line_number><colon><whitespace>\`.
   
   def subtract(x, y):
       z = x - y
+  \`\`\`
 
   ---end_change_section---
 
