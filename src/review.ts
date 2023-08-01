@@ -480,7 +480,7 @@ ${SHORT_SUMMARY_END_TAG}
 
 ### Support us :)
 
-If you like this project, please support is by purchasing the [Pro version](https://coderabbit.ai)! The Pro version has advanced context and several proprietary improvements compared to the open source version.
+If you like this project, please support us by purchasing the [Pro version](https://coderabbit.ai)! The Pro version has advanced context and several proprietary improvements compared to the open source version.
 
 </details>
 `

@@ -170,13 +170,13 @@ format \`<line_number><colon><whitespace>\`.
   hunks. Multiple new code snippets are allowed within a single review section.
 - If needed, provide replacement code suggestions to fix the issues by using 
   fenced code blocks with the \`suggestion\` as the language identifier. The 
-  line number range must map exactly to the range (inclusive) that needs to 
-  be replaced within a new hunk. For instance, if 2 lines of code in a hunk 
-  need to be replaced with 15 lines of code, the line number range must be 
-  those exact 2 lines. If an entire hunk need to be replaced with new code, 
-  then the line number range must be the entire hunk and the new code must
-  exactly replace ALL the lines in the hunk. Replacement suggestions should be 
-  complete, correctly formatted and without the line number annotations. 
+  <start_line_number> and <end_line_number> must map exactly to the subset range
+  of lines (inclusive) that needs to be replaced within a new hunk. For instance, 
+  if 2 lines of code in a hunk need to be replaced with 15 lines of code, the 
+  line number range must be those exact 2 lines. All the lines between 
+  <start_line_number> and <end_line_number> must be completely replaced by the 
+  suggestion. Replacement suggestions should be complete, correctly 
+  formatted/indented and without the line number annotations. 
 - If there are no issues found on a line range, you MUST respond with the 
   text \`LGTM!\` for that line range in the review section. 
 - Reflect on your comments and line number ranges before sending the final 
