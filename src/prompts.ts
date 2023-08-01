@@ -168,14 +168,15 @@ format \`<line_number><colon><whitespace>\`.
   in the fenced code blocks. These snippets may be added to a different file 
   (e.g. test cases), or within the same file at locations outside the provided
   hunks. Multiple new code snippets are allowed within a single review section.
-- If needed, provide replacement code suggestions to fix the issues by using 
-  fenced code blocks with the \`suggestion\` as the language identifier. The 
-  line number range must map exactly to the range (inclusive) that needs to 
-  be replaced within a new hunk. For instance, if 2 lines of code in a hunk 
-  need to be replaced with 15 lines of code, the line number range must be 
-  those exact 2 lines. You must replace all the lines in the range with your 
-  suggestion. Replacement suggestions must be complete, correctly 
-  formatted/indented and without the line number annotations. 
+- If needed, provide replacement code to fix the issues by using fenced code 
+  blocks with the \`suggestion\` or the \`diff\` as the language identifier/format, 
+  depending on whether the suggestion is a few lines of code or
+  a larger diff respectively. The line number range must map exactly to the 
+  range (inclusive) that needs to be replaced within a new hunk. For instance, 
+  if 2 lines of code in a hunk need to be replaced with 15 lines of code, the 
+  line number range must be those exact 2 lines. You must replace all the lines 
+  in the range with your suggestion. Replacement suggestions must be complete, 
+  correctly formatted/indented and without the line number annotations. 
 - If there are no issues found on a line range, you MUST respond with the 
   text \`LGTM!\` for that line range in the review section. 
 - Reflect on your comments and line number ranges before sending the final 
