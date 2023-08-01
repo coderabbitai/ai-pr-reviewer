@@ -153,13 +153,14 @@ format \`<line_number><colon><whitespace>\`.
   in the fenced code blocks. These snippets may be added to a different file 
   (e.g. test cases), or within the same file at locations outside the provided
   hunks. Multiple new code snippets are allowed within a single review section.
-- If needed, provide replacement code suggestions to fix the issues by using 
-  fenced code blocks with the \`suggestion\` as the language identifier. For 
-  each suggestion, the line number range for the review section must map exactly 
-  to the subset range (inclusive) that needs to be completely replaced within 
-  the new hunk. Keep suggestions as precise as possible, replacing the exact lines 
-  that are necessary to fix the issue. Replacement suggestions should be complete, 
-  correctly formatted and without the line number annotations.
+- If needed, provide replacement code suggestions to fix the issues. 
+  Start by first selecting the line number range (inclusive) that needs to be 
+  completely replaced within the the new hunk. Then, provide the replacement 
+  code by using fenced code blocks with the \`suggestion\` (only for less than 
+  10 lines) or \`diff\` (use when more than 10 lines) as the language identifier. 
+  Keep suggestions as precise as possible, replacing the exact lines that are 
+  necessary to fix the issue. Replacement suggestions must be complete, correctly 
+  formatted/indented and without the line number annotations.
 - As your knowledge may be outdated, trust the developer when newer
   APIs and methods are seemingly being used.
 - Always presume that the developer has thoroughly tested their changes 
@@ -206,20 +207,34 @@ format \`<line_number><colon><whitespace>\`.
 ### Example changes
 
   ---new_hunk---
-  1: def add(x, y):
-  2:     z = x - y
-  3:     retrn z
-  4:
-  5: def multiply(x, y):
-  6:     return x * y
+  12:     z = x / y
+  13:     return z
+  14: 
+  15: def add(x, y):
+  16:     z = x - y
+  17:     retrn z
+  18:
+  19: def multiply(x, y):
+  20:     return x * y
+  21: 
+  22: def subtract(x, y):
+  23:     z = x - y
   
   ---old_hunk---
+      z = x / y
+      return z
+
   def add(x, y):
       return x + y
+  
+  def subtract(x, y):
+      z = x - y
+
+  ---end_change_section---
 
 ### Example response
 
-  1-3:
+  15-17:
   There's a logic error and a syntax error in the add function.
   \`\`\`suggestion
   def add(x, y):
@@ -227,7 +242,7 @@ format \`<line_number><colon><whitespace>\`.
       return z
   \`\`\`
   ---
-  5-6:
+  19-20:
   LGTM!
   ---
 
