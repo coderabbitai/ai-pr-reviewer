@@ -55,7 +55,7 @@ func (m *Mobile) UseMobile(minutes int) {
 	}
 }
 
-// ChargeMobile charges the mobile device
+// ChargeMobile charges the mobile device.
 func (m *Mobile) ChargeMobile(minutes int) {
 	m.LastUsage = time.Now()
 	m.Battery += minutes

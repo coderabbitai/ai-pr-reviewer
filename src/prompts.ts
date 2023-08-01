@@ -170,7 +170,7 @@ format \`<line_number><colon><whitespace>\`.
   hunks. Multiple new code snippets are allowed within a single review section.
 - If needed, provide replacement code to fix the issues by using fenced code 
   blocks with the \`suggestion\` or the \`diff\` as the language identifier/format, 
-  depending on whether the suggestion is a few lines of code or
+  depending on whether the suggestion is a few lines of code (~15 lines) or
   a larger diff respectively. The line number range must map exactly to the 
   range (inclusive) that needs to be replaced within a new hunk. For instance, 
   if 2 lines of code in a hunk need to be replaced with 15 lines of code, the 
