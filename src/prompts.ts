@@ -173,10 +173,9 @@ format \`<line_number><colon><whitespace>\`.
   line number range must map exactly to the range (inclusive) that needs to 
   be replaced within a new hunk. For instance, if 2 lines of code in a hunk 
   need to be replaced with 15 lines of code, the line number range must be 
-  those exact 2 lines. If an entire hunk need to be replaced with new code, 
-  then the line number range must be the entire hunk and the new code must
-  exactly replace ALL the lines in the hunk. Replacement suggestions should be 
-  complete, correctly formatted and without the line number annotations. 
+  those exact 2 lines. You must replace all the lines in the range with your 
+  suggestion. Replacement suggestions must be complete, correctly 
+  formatted/indented and without the line number annotations. 
 - If there are no issues found on a line range, you MUST respond with the 
   text \`LGTM!\` for that line range in the review section. 
 - Reflect on your comments and line number ranges before sending the final 
@@ -207,18 +206,18 @@ format \`<line_number><colon><whitespace>\`.
 
   ---new_hunk---
   \`\`\`
-  12:     z = x / y
-  13:     return z
-  14: 
+      z = x / y
+      return z
+
   15: def add(x, y):
   16:     z = x - y
   17:     retrn z
   18:
   19: def multiply(x, y):
   20:     return x * y
-  21: 
-  22: def subtract(x, y):
-  23:     z = x - y
+
+  def subtract(x, y):
+      z = x - y
   \`\`\`
   
   ---old_hunk---

@@ -478,6 +478,10 @@ ${SHORT_SUMMARY_END_TAG}
 ### Ignoring further reviews
 - Type \`@coderabbitai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
+### Support us :)
+
+If you like this project, please support us by purchasing the [Pro version](https://coderabbit.ai)! The Pro version has advanced context and several proprietary improvements compared to the open source version.
+
 </details>
 `
 
@@ -810,7 +814,6 @@ const parsePatch = (
   const oldHunkLines: string[] = []
   const newHunkLines: string[] = []
 
-  // let old_line = hunkInfo.old_hunk.start_line
   let newLine = hunkInfo.newHunk.startLine
 
   const lines = patch.split('\n').slice(1) // Skip the @@ line
@@ -820,17 +823,32 @@ const parsePatch = (
     lines.pop()
   }
 
+  // Skip annotations for the first 3 and last 3 lines
+  const skipStart = 3
+  const skipEnd = 3
+
+  let currentLine = 0
+
+  const removalOnly = !lines.some(line => line.startsWith('+'))
+
   for (const line of lines) {
+    currentLine++
     if (line.startsWith('-')) {
       oldHunkLines.push(`${line.substring(1)}`)
-      // old_line++
     } else if (line.startsWith('+')) {
       newHunkLines.push(`${newLine}: ${line.substring(1)}`)
       newLine++
     } else {
+      // context line
       oldHunkLines.push(`${line}`)
-      newHunkLines.push(`${newLine}: ${line}`)
-      // old_line++
+      if (
+        removalOnly ||
+        (currentLine > skipStart && currentLine <= lines.length - skipEnd)
+      ) {
+        newHunkLines.push(`${newLine}: ${line}`)
+      } else {
+        newHunkLines.push(`${line}`)
+      }
       newLine++
     }
   }
