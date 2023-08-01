@@ -711,7 +711,7 @@ ${
 ${
   reviewsSkipped.length > 0
     ? `<details>
-<summary>Files skipped from reviewed due to trivial changes (${
+<summary>Files skipped from review due to trivial changes (${
         reviewsSkipped.length
       })</summary>
 
