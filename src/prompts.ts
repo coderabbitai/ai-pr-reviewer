@@ -99,12 +99,6 @@ $description
 $short_summary
 \`\`\`
 
-## Pseudo-code for \`$filename\` before changes
-
-\`\`\`
-$file_summary
-\`\`\`
-
 ## Parsing changes
 
 The format for changes provided below consists of multiple change 
@@ -149,31 +143,23 @@ format \`<line_number><colon><whitespace>\`.
   strong evidence within the provided context to suggest there might be a problem.
 - Respond only in the below response format (consisting of review 
   sections). Each review section must have a line number range and a review 
-  comment for that range. Do not include general feedback or summaries. You 
-  may optionally include a single replacement suggestion snippet and/or 
-  multiple new code snippets in the review comment. Use separator after each 
-  review section.
+  comment for that range. Use separator after each review section.
 - Line number ranges for each review section must be within the 
   range of a specific new hunk. <start_line_number> must belong to the same 
-  hunk as the <end_line_number>. The line number range is sufficient to map 
-  your comment to the code changes in the GitHub pull request.
+  hunk as the <end_line_number>.
 - Use Markdown format for review comment text and fenced code blocks for
   code snippets.
-- If needed, provide replacement code suggestions to fix the issue by using 
-  fenced code blocks with the \`suggestion\` as the language identifier. The 
-  line number range must map exactly to the range (inclusive) that needs to 
-  be replaced within a new hunk. For instance, if 2 lines of code in a hunk 
-  need to be replaced with 15 lines of code, the line number range must be 
-  those exact 2 lines. If an entire hunk need to be replaced with new code, 
-  then the line number range must be the entire hunk and the new code must
-  exactly replace all the lines in the hunk.Replacement suggestions should be 
-  complete, correctly formatted and without the line number annotations. 
-  Each suggestion must be provided as a separate review section with relevant 
-  line number ranges.
-- If needed, suggest new code snippets using the correct language identifier 
+- If needed, suggest new code snippets using the relevant language identifier 
   in the fenced code blocks. These snippets may be added to a different file 
   (e.g. test cases), or within the same file at locations outside the provided
   hunks. Multiple new code snippets are allowed within a single review section.
+- If needed, provide replacement code suggestions to fix the issues by using 
+  fenced code blocks with the \`suggestion\` as the language identifier. For 
+  each suggestion, the line number range for the review section must map exactly 
+  to the subset range (inclusive) that needs to be completely replaced within 
+  the new hunk. Keep suggestions as precise as possible, replacing the exact lines 
+  that are necessary to fix the issue. Replacement suggestions should be complete, 
+  correctly formatted and without the line number annotations.
 - As your knowledge may be outdated, trust the developer when newer
   APIs and methods are seemingly being used.
 - Always presume that the developer has thoroughly tested their changes 
@@ -221,7 +207,7 @@ format \`<line_number><colon><whitespace>\`.
 
   ---new_hunk---
   1: def add(x, y):
-  2:     z = x+y
+  2:     z = x - y
   3:     retrn z
   4:
   5: def multiply(x, y):
@@ -234,7 +220,7 @@ format \`<line_number><colon><whitespace>\`.
 ### Example response
 
   1-3:
-  There's a typo in the return statement.
+  There's a logic error and a syntax error in the add function.
   \`\`\`suggestion
   def add(x, y):
       z = x + y
