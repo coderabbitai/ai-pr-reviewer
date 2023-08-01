@@ -478,6 +478,10 @@ ${SHORT_SUMMARY_END_TAG}
 ### Ignoring further reviews
 - Type \`@coderabbitai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
 
+### Support us :)
+
+If you like this project, please support is by purchasing the [Pro version](https://coderabbit.ai)! The Pro version has advanced context and several proprietary improvements compared to the open source version.
+
 </details>
 `
 
@@ -819,16 +823,19 @@ const parsePatch = (
     lines.pop()
   }
 
-  // Keep track of first 3 and last 3 lines in the new hunk
-  const startLines = 3
-  const endLines = lines.length - 3
+  // Skip annotations for the first 3 and last 3 lines
+  const skipStart = 3
+  const skipEnd = 3
+
+  let currentLine = 0
 
   for (const line of lines) {
+    currentLine++
+
     if (line.startsWith('-')) {
       oldHunkLines.push(`${line.substring(1)}`)
     } else if (line.startsWith('+')) {
-      // Skip line number annotations for the first 3 and the last 3 lines
-      if (newHunkLines.length < startLines || newHunkLines.length >= endLines) {
+      if (currentLine <= skipStart || currentLine > lines.length - skipEnd) {
         newHunkLines.push(`${line.substring(1)}`)
       } else {
         newHunkLines.push(`${newLine}: ${line.substring(1)}`)
@@ -836,8 +843,7 @@ const parsePatch = (
       newLine++
     } else {
       oldHunkLines.push(`${line}`)
-      // Skip line number annotations for the first 3 and the last 3 lines
-      if (newHunkLines.length < startLines || newHunkLines.length >= endLines) {
+      if (currentLine <= skipStart || currentLine > lines.length - skipEnd) {
         newHunkLines.push(`${line}`)
       } else {
         newHunkLines.push(`${newLine}: ${line}`)
