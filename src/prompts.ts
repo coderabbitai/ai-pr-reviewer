@@ -171,11 +171,11 @@ format \`<line_number><colon><whitespace>\`.
 - If needed, provide replacement code to fix the issues by using fenced code 
   blocks with the \`suggestion\` or the \`diff\` as the language identifier/format, 
   depending on whether the suggestion is a few lines of code (~15 lines) or
-  a larger diff respectively. The line number range must map exactly to the 
-  range (inclusive) that needs to be replaced within a new hunk. For instance, 
-  if 2 lines of code in a hunk need to be replaced with 15 lines of code, the 
-  line number range must be those exact 2 lines. You must replace all the lines 
-  in the range with your suggestion. Replacement suggestions must be complete, 
+  a larger diff (> 15 lines) respectively. The line number range must map 
+  exactly to the range (inclusive) that needs to be replaced within a new hunk. 
+  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines of 
+  code, the line number range must be those exact 2 lines. You must replace all 
+  the lines in the range with your suggestion. Replacement suggestions must be complete, 
   correctly formatted/indented and without the line number annotations. 
 - If there are no issues found on a line range, you MUST respond with the 
   text \`LGTM!\` for that line range in the review section. 
