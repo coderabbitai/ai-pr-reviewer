@@ -99,12 +99,6 @@ $description
 $short_summary
 \`\`\`
 
-## Pseudo-code for \`$filename\` before changes
-
-\`\`\`
-$file_summary
-\`\`\`
-
 ## Parsing changes
 
 The format for changes provided below consists of multiple change 
