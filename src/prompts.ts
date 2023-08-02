@@ -105,7 +105,7 @@ The format for changes provided below consists of multiple change
 sections, each containing a new hunk (annotated with line numbers), 
 an old hunk, and optionally, existing comment chains. Note that the 
 old hunk code has been replaced by the new hunk. The line number 
-annotations on lines in the new hunk is of the format 
+annotation on some lines in the new hunk is of the format 
 \`<line_number><colon><whitespace>\`.
 
 ### Format for changes
@@ -128,54 +128,13 @@ annotations on lines in the new hunk is of the format
   ---end_change_section---
   ...
 
-### Response format expected
-
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`suggestion
-  <code/text that replaces everything between start_line_number and end_line_number>
-  \`\`\`
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`<language>
-  <new code snippet>
-  \`\`\`
-  ---
-  ...
-
-
 ## IMPORTANT: Response Instructions
 
 - Your task is to review ONLY the new hunks line by line, ONLY pointing out 
   substantive issues within line number ranges. Provide the exact line 
   number range (inclusive) for each issue. Take into account any supplementary 
   context from the old hunks, comment threads, and file contents during your 
-  review process.
-- Respond only in the above response format (consisting of review 
-  sections). Each review section must have a line number range and a review 
-  comment for that range. Use separator after each review section.
-- Line number ranges for each review section must be within the 
-  range of a specific new hunk. <start_line_number> must belong to the same 
-  hunk as the <end_line_number>.
-- Use Markdown format for review comment text and fenced code blocks for
-  code snippets.
-- If needed, suggest new code snippets using the relevant language identifier 
-  in the fenced code blocks. These snippets may be added to a different file 
-  (e.g. test cases), or within the same file at locations outside the provided
-  hunks. Multiple new code snippets are allowed within a single review section.
-- If needed, provide replacement code to fix the issues by using fenced code 
-  blocks with the \`suggestion\` or the \`diff\` as the language identifier/format, 
-  depending on whether the suggestion is a few lines of code (~15 lines) or
-  a larger diff (> 15 lines) respectively. The line number range must map 
-  exactly to the range (inclusive) that needs to be replaced within a new hunk. 
-  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines of 
-  code, the line number range must be those exact 2 lines. You must replace all 
-  the lines in the range with your suggestion. Replacement suggestions must be complete, 
-  correctly formatted/indented and without the line number annotations. 
+  review process. 
 - Understand that the hunk provided for review is a part of a larger codebase 
   and may not include all relevant parts, such as definitions, imports, or uses 
   of functions or variables. You may see incomplete fragments of code or 
@@ -197,10 +156,50 @@ annotations on lines in the new hunk is of the format
   and is aware of their implications on the entire system. Instead of 
   making generic comments about potential impacts on the system, focus 
   on providing specific, objective insights based on the code itself. 
+- Respond only in the below response format (consisting of review 
+  sections). Each review section must have a line number range and a review 
+  comment for that range. Use separator after each review section.
+- Line number ranges for each review section must be within the 
+  range of a specific new hunk. <start_line_number> must belong to the same 
+  hunk as the <end_line_number>.
+- Use Markdown format for review comment text and fenced code blocks for
+  code snippets.
+- If needed, suggest new code snippets using the relevant language identifier 
+  in the fenced code blocks. These snippets may be added to a different file 
+  (e.g. test cases), or within the same file at locations outside the provided
+  hunks. Multiple new code snippets are allowed within a single review section.
+- If needed, provide replacement code to fix the issues by using fenced code 
+  blocks with the \`suggestion\` or the \`diff\` as the language identifier/format, 
+  depending on whether the suggestion is a few lines of code (~15 lines) or
+  a larger diff (> 15 lines) respectively. The line number range must map 
+  exactly to the range (inclusive) that needs to be replaced within a new hunk. 
+  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines of 
+  code, the line number range must be those exact 2 lines. You must replace all 
+  the lines in the range with your suggestion. Replacement suggestions must be complete, 
+  correctly formatted/indented and without the line number annotations. 
 - If there are no issues found on a line range, you MUST respond with the 
   text \`LGTM!\` for that line range in the review section. 
 - Reflect on your comments and line number ranges before sending the final 
   response to ensure accuracy of line number ranges and replacement snippets.
+
+### Response format expected
+
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  \`\`\`suggestion
+  <code/text that replaces everything between start_line_number and end_line_number>
+  \`\`\`
+  ---
+  <start_line_number>-<end_line_number>:
+  <review comment>
+  \`\`\`<language>
+  <new code snippet>
+  \`\`\`
+  ---
+  ...
 
 ## Example
 
