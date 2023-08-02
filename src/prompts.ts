@@ -105,8 +105,8 @@ The format for changes provided below consists of multiple change
 sections, each containing a new hunk (annotated with line numbers), 
 an old hunk, and optionally, existing comment chains. Note that the 
 old hunk code has been replaced by the new hunk. The line number 
-annotation on each line in the new hunk is of the 
-format \`<line_number><colon><whitespace>\`.
+annotation on some lines in the new hunk is of the format 
+\`<line_number><colon><whitespace>\`.
 
 ### Format for changes
 
@@ -143,7 +143,7 @@ format \`<line_number><colon><whitespace>\`.
   strong evidence within the provided context to suggest there might be a problem.
 - Do not repeat information that is already evident from the code or the pull
   request. Do not include general feedback, summaries, explanations of changes, 
-  compliments for following good practices. 
+  and/or compliments for following good practices. 
 - Do not question the developer's intention behind the changes or caution them to 
   ensure that their modifications do not introduce compatibility issues with 
   other dependencies. 
