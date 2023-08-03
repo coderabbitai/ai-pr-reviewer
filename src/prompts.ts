@@ -99,155 +99,137 @@ $description
 $short_summary
 \`\`\`
 
-## Parsing changes
+## Instructions
 
-The format for changes provided below consists of multiple change 
-sections, each containing a new hunk (annotated with line numbers), 
-an old hunk, and optionally, existing comment chains. Note that the 
-old hunk code has been replaced by the new hunk. The line number 
-annotation on some lines in the new hunk is of the format 
-\`<line_number><colon><whitespace>\`.
+The format for changes provided in the example below consists of 
+multiple change sections, each containing a new hunk (annotated with 
+line numbers), an old hunk, and optionally, existing comment chains. 
+Note that the old hunk code has been replaced by the new hunk. Some 
+lines on the new hunk may be annotated with line numbers.
 
-### Format for changes
+Your task is to meticulously perform line-by-line review of new hunks, 
+identifying substantial issues only. Respond only in the below example format, 
+consisting of review sections. Each review section must have a line number range 
+and a review comment for that range. Use separator after each review section. 
+Line number ranges for each review section must be within the range of a specific 
+new hunk. Start line number must belong to the same hunk as the end line number.
+Provide the exact line number range (inclusive) for each issue.
 
-  ---new_hunk---
-  \`\`\`
-  <new hunk annotated with line numbers>
-  \`\`\`
+Take into consideration the context provided by old hunks, comment threads, and 
+file content during your review. Remember, the hunk under review is a fragment of a 
+larger codebase and may not show all relevant sections, such as definitions, 
+imports, or usage of functions or variables. Expect incomplete code fragments or 
+references to elements defined beyond the provided context. Do NOT flag missing 
+definitions, imports, or usages unless the context strongly suggests an issue. 
+Do NOT restate information readily apparent in the code or the pull request. 
+Do NOT provide general feedback, summaries, explanations of changes, or praises 
+for making good additions. Do NOT question the developer's intentions behind the 
+changes or warn them about potential compatibility issues with other dependencies. 
+Avoid making assumptions about broader impacts beyond the given context or the 
+necessity of the changes. Do NOT request the developer to review their changes. 
+Given your knowledge may be outdated, it is essential to trust the developer when 
+they appear to utilize newer APIs and methods. Presume the developer has 
+exhaustively tested their changes and is fully aware of their system-wide 
+implications. Focus solely on offering specific, objective insights based on the 
+actual code and refrain from making broad comments about potential impacts on 
+the system.
 
-  ---old_hunk---
-  \`\`\`
-  <old hunk that was replaced by the new hunk above>
-  \`\`\`
+Use Markdown format for review comment text and fenced code blocks for code 
+snippets. 
 
-  ---comment_chains---
-  \`\`\`
-  <comment chains>
-  \`\`\`
+If necessary, suggest new code snippets using the relevant language identifier in 
+the fenced code blocks. These snippets may be added to a different file (e.g. 
+test cases), or within the same file at locations outside the provided hunks. 
+Multiple new code snippets are allowed within a single review section.
 
-  ---end_change_section---
-  ...
+If necessary, provide a replacement snippet to fix an issue by using fenced code 
+blocks using with the \`diff\` format, marking additions with \`+\` and deletions
+with \`-\`. The line number range for the review section that includes the 
+replacement snippet must map exactly to the line number range that has to be 
+completely replaced within the new hunk. If less than 10 lines of the hunk have 
+to be replaced then you may alternatively use the \`suggestion\` format. You must 
+carefully include any lines of code that remain unchanged in the replacement 
+snippet to avoid issues when the replacement snippet is committed as-is. 
+Replacement snippet must be complete, correctly formatted & indented and 
+without the line number annotations. 
 
-## IMPORTANT: Response Instructions
-
-- Your task is to review ONLY the new hunks line by line, ONLY pointing out 
-  substantive issues within line number ranges. Provide the exact line 
-  number range (inclusive) for each issue. Take into account any supplementary 
-  context from the old hunks, comment threads, and file contents during your 
-  review process. 
-- Understand that the hunk provided for review is a part of a larger codebase 
-  and may not include all relevant parts, such as definitions, imports, or uses 
-  of functions or variables. You may see incomplete fragments of code or 
-  references to elements defined outside the provided context. Do not 
-  flag issues about missing definitions, imports, or uses unless there is 
-  strong evidence within the provided context to suggest there might be a problem.
-- Do not repeat information that is already evident from the code or the pull
-  request. Do not include general feedback, summaries, explanations of changes, 
-  and/or compliments for following good practices. 
-- Do not question the developer's intention behind the changes or caution them to 
-  ensure that their modifications do not introduce compatibility issues with 
-  other dependencies. 
-- Do not make presumptions about the larger impact outside the given context or 
-  the necessity of the changes. 
-- Do not ask the developer to review the changes.
-- As your knowledge may be outdated, trust the developer when newer
-  APIs and methods are seemingly being used.
-- Always presume that the developer has thoroughly tested their changes 
-  and is aware of their implications on the entire system. Instead of 
-  making generic comments about potential impacts on the system, focus 
-  on providing specific, objective insights based on the code itself. 
-- Respond only in the below response format (consisting of review 
-  sections). Each review section must have a line number range and a review 
-  comment for that range. Use separator after each review section.
-- Line number ranges for each review section must be within the 
-  range of a specific new hunk. <start_line_number> must belong to the same 
-  hunk as the <end_line_number>.
-- Use Markdown format for review comment text and fenced code blocks for
-  code snippets.
-- If needed, suggest new code snippets using the relevant language identifier 
-  in the fenced code blocks. These snippets may be added to a different file 
-  (e.g. test cases), or within the same file at locations outside the provided
-  hunks. Multiple new code snippets are allowed within a single review section.
-- If needed, provide replacement code to fix the issues by using fenced code 
-  blocks with the \`suggestion\` or the \`diff\` as the language identifier/format, 
-  depending on whether the suggestion is a few lines of code (~15 lines) or
-  a larger diff (> 15 lines) respectively. The line number range must map 
-  exactly to the range (inclusive) that needs to be replaced within a new hunk. 
-  For instance, if 2 lines of code in a hunk need to be replaced with 15 lines of 
-  code, the line number range must be those exact 2 lines. You must replace all 
-  the lines in the range with your suggestion. Replacement suggestions must be complete, 
-  correctly formatted/indented and without the line number annotations. 
-- If there are no issues found on a line range, you MUST respond with the 
-  text \`LGTM!\` for that line range in the review section. 
-- Reflect on your comments and line number ranges before sending the final 
-  response to ensure accuracy of line number ranges and replacement snippets.
-
-### Response format expected
-
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`suggestion
-  <code/text that replaces everything between start_line_number and end_line_number>
-  \`\`\`
-  ---
-  <start_line_number>-<end_line_number>:
-  <review comment>
-  \`\`\`<language>
-  <new code snippet>
-  \`\`\`
-  ---
-  ...
+If there are no issues found on a line range, you MUST respond with the 
+text \`LGTM!\` for that line range in the review section. 
 
 ## Example
 
 ### Example changes
 
-  ---new_hunk---
-  \`\`\`
-      z = x / y
-      return z
+---new_hunk---
+\`\`\`
+  z = x / y
+    return z
 
-  15: def add(x, y):
-  16:     z = x - y
-  17:     retrn z
-  18:
-  19: def multiply(x, y):
-  20:     return x * y
+15: def complex_function(x, y):
+16:     a = x * 2
+17:     b = y / 3
+18:     return a + b
+19:
+20: def add(x, y):
+21:     z = x - y
+22:     retrn z
+23: 
+24: def multiply(x, y):
+25:     return x * y
 
-  def subtract(x, y):
-      z = x - y
-  \`\`\`
+def subtract(x, y):
+  z = x - y
+\`\`\`
   
-  ---old_hunk---
-  \`\`\`
-      z = x / y
-      return z
+---old_hunk---
+\`\`\`
+  z = x / y
+    return z
 
-  def add(x, y):
-      return x + y
-  
-  def subtract(x, y):
-      z = x - y
-  \`\`\`
+def complex_function(x, y):
+    return x + y
 
-  ---end_change_section---
+def add(x, y):
+    return x + y
+
+def subtract(x, y):
+    z = x - y
+\`\`\`
+
+
+---comment_chains---
+\`\`\`
+Please review this change.
+\`\`\`
+
+---end_change_section---
 
 ### Example response
 
-  15-17:
-  There's a logic error and a syntax error in the add function.
-  \`\`\`suggestion
-  def add(x, y):
-      z = x + y
-      return z
-  \`\`\`
-  ---
-  19-20:
-  LGTM!
-  ---
+15-18:
+I suggest the following improvements:
+\`\`\`diff
+def complex_function(x, y):
+-     a = x * 2
+-     b = y / 3
+-     return a + b
++     a = x ** 2
++     b = y ** 3
++     c = a + b
++     return c / 2
+\`\`\`
+---
+20-22:
+There's a logic error and a syntax error in the add function.
+\`\`\`suggestion
+def add(x, y):
+    z = x + y
+    return z
+\`\`\`
+---
+24-25:
+LGTM!
+---
 
 ## Changes made to \`$filename\` for your review
 

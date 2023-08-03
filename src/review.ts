@@ -461,28 +461,6 @@ ${RAW_SUMMARY_END_TAG}
 ${SHORT_SUMMARY_START_TAG}
 ${inputs.shortSummary}
 ${SHORT_SUMMARY_END_TAG}
-
----
-
-<details>
-<summary>Notes</summary>
-
-### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41" alt="Image description" width="20" height="20">  CodeRabbit Bot (\`@coderabbitai\`)
-- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@coderabbitai\` in a reply.
-
-### Code suggestions
-- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
-- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
-
-### Ignoring further reviews
-- Type \`@coderabbitai: ignore\` anywhere in the PR description to ignore further reviews from the bot.
-
-### Support us :)
-
-If you like this project, please support us by purchasing the [Pro version](https://coderabbit.ai)! The Pro version has advanced context and several proprietary improvements compared to the open source version.
-
-</details>
 `
 
   statusMsg += `
@@ -732,6 +710,24 @@ ${
 * LGTM: ${lgtmCount}
 
 </details>
+
+---
+
+<details>
+<summary>Tips</summary>
+
+### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41&u=fad245b8b4c7254fe63dd4dcd4d662ace122757e&v=4" alt="Image description" width="20" height="20">  CodeRabbit Bot (\`@coderabbitai\`)
+- Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
+- Invite the bot into a review comment chain by tagging \`@coderabbitai\` in a reply.
+
+### Code suggestions
+- The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
+- You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
+
+### Pausing incremental reviews
+- Add \`@coderabbitai: ignore\` anywhere in the PR description to pause further reviews from the bot.
+
+</details>
 `
     // add existing_comment_ids_block with latest head sha
     summarizeComment += `\n${commenter.addReviewedCommitId(
@@ -937,41 +933,47 @@ ${review.comment}`
     }
   }
 
-  function sanitizeComment(comment: string): string {
-    const suggestionStart = '```suggestion'
-    const suggestionEnd = '```'
+  function sanitizeCodeBlock(comment: string, codeBlockLabel: string): string {
+    const codeBlockStart = `\`\`\`${codeBlockLabel}`
+    const codeBlockEnd = '```'
     const lineNumberRegex = /^ *(\d+): /gm
 
-    let suggestionStartIndex = comment.indexOf(suggestionStart)
+    let codeBlockStartIndex = comment.indexOf(codeBlockStart)
 
-    while (suggestionStartIndex !== -1) {
-      const suggestionEndIndex = comment.indexOf(
-        suggestionEnd,
-        suggestionStartIndex + suggestionStart.length
+    while (codeBlockStartIndex !== -1) {
+      const codeBlockEndIndex = comment.indexOf(
+        codeBlockEnd,
+        codeBlockStartIndex + codeBlockStart.length
       )
 
-      if (suggestionEndIndex === -1) break
+      if (codeBlockEndIndex === -1) break
 
-      const suggestionBlock = comment.substring(
-        suggestionStartIndex + suggestionStart.length,
-        suggestionEndIndex
+      const codeBlock = comment.substring(
+        codeBlockStartIndex + codeBlockStart.length,
+        codeBlockEndIndex
       )
-      const sanitizedBlock = suggestionBlock.replace(lineNumberRegex, '')
+      const sanitizedBlock = codeBlock.replace(lineNumberRegex, '')
 
       comment =
-        comment.slice(0, suggestionStartIndex + suggestionStart.length) +
+        comment.slice(0, codeBlockStartIndex + codeBlockStart.length) +
         sanitizedBlock +
-        comment.slice(suggestionEndIndex)
+        comment.slice(codeBlockEndIndex)
 
-      suggestionStartIndex = comment.indexOf(
-        suggestionStart,
-        suggestionStartIndex +
-          suggestionStart.length +
+      codeBlockStartIndex = comment.indexOf(
+        codeBlockStart,
+        codeBlockStartIndex +
+          codeBlockStart.length +
           sanitizedBlock.length +
-          suggestionEnd.length
+          codeBlockEnd.length
       )
     }
 
+    return comment
+  }
+
+  function sanitizeComment(comment: string): string {
+    comment = sanitizeCodeBlock(comment, 'suggestion')
+    comment = sanitizeCodeBlock(comment, 'diff')
     return comment
   }
 
