@@ -868,9 +868,10 @@ function parseReview(
 ): Review[] {
   const reviews: Review[] = []
 
+  response = sanitizeResponse(response.trim())
+
   const lines = response.split('\n')
   const lineNumberRangeRegex = /(?:^|\s)(\d+)-(\d+):\s*$/
-  const lineNumberSingleRegex = /(?:^|\s)(\d+):\s*$/ // New single line regex
   const commentSeparator = '---'
 
   let currentStartLine: number | null = null
@@ -878,11 +879,10 @@ function parseReview(
   let currentComment = ''
   function storeReview(): void {
     if (currentStartLine !== null && currentEndLine !== null) {
-      const sanitizedComment = sanitizeComment(currentComment.trim())
       const review: Review = {
         startLine: currentStartLine,
         endLine: currentEndLine,
-        comment: sanitizedComment.trim()
+        comment: currentComment
       }
 
       let withinPatch = false
@@ -971,7 +971,7 @@ ${review.comment}`
     return comment
   }
 
-  function sanitizeComment(comment: string): string {
+  function sanitizeResponse(comment: string): string {
     comment = sanitizeCodeBlock(comment, 'suggestion')
     comment = sanitizeCodeBlock(comment, 'diff')
     return comment
@@ -979,7 +979,6 @@ ${review.comment}`
 
   for (const line of lines) {
     const lineNumberRangeMatch = line.match(lineNumberRangeRegex)
-    const lineNumberSingleMatch = line.match(lineNumberSingleRegex) // Check for single line match
 
     if (lineNumberRangeMatch != null) {
       storeReview()
@@ -988,15 +987,6 @@ ${review.comment}`
       currentComment = ''
       if (debug) {
         info(`Found line number range: ${currentStartLine}-${currentEndLine}`)
-      }
-      continue
-    } else if (lineNumberSingleMatch != null) {
-      storeReview()
-      currentStartLine = parseInt(lineNumberSingleMatch[1], 10)
-      currentEndLine = currentStartLine // For single line comments, start and end are the same
-      currentComment = ''
-      if (debug) {
-        info(`Found single line comment: ${currentStartLine}`)
       }
       continue
     }

@@ -113,7 +113,8 @@ consisting of review sections. Each review section must have a line number range
 and a review comment for that range. Use separator after each review section. 
 Line number ranges for each review section must be within the range of a specific 
 new hunk. Start line number must belong to the same hunk as the end line number.
-Provide the exact line number range (inclusive) for each issue.
+Provide the exact line number range (inclusive) for each review comment. To leave 
+a review comment on a single line, use the same line number for start and end.
 
 Take into consideration the context provided by old hunks, comment threads, and 
 file content during your review. Remember, the hunk under review is a fragment of a 
@@ -171,7 +172,7 @@ text \`LGTM!\` for that line range in the review section.
 18:     return a + b
 19:
 20: def add(x, y):
-21:     z = x - y
+21:     z = x + y
 22:     retrn z
 23: 
 24: def multiply(x, y):
@@ -219,11 +220,9 @@ def complex_function(x, y):
 +     return c / 2
 \`\`\`
 ---
-20-22:
-There's a logic error and a syntax error in the add function.
+22-22:
+There's a syntax error in the add function.
 \`\`\`suggestion
-def add(x, y):
-    z = x + y
     return z
 \`\`\`
 ---
