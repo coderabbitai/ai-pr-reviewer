@@ -143,7 +143,7 @@ test cases), or within the same file at locations outside the provided hunks.
 Multiple new code snippets are allowed within a single review section.
 
 If necessary, provide a replacement snippet to fix an issue by using fenced code 
-blocks using with the \`diff\` format, marking additions with \`+\` and deletions
+blocks using the \`diff\` format, marking additions with \`+\` and deletions
 with \`-\`. The line number range for the review section that includes the 
 replacement snippet must map exactly to the line number range that has to be 
 completely replaced within the new hunk. If less than 10 lines of the hunk have 
