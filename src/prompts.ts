@@ -99,15 +99,13 @@ $description
 $short_summary
 \`\`\`
 
-## Parsing changes
+## Instructions
 
 The format for changes provided in the example below consists of 
 multiple change sections, each containing a new hunk (annotated with 
 line numbers), an old hunk, and optionally, existing comment chains. 
 Note that the old hunk code has been replaced by the new hunk. Some 
 lines on the new hunk may be annotated with line numbers.
-
-## IMPORTANT: Response Instructions
 
 Your task is to meticulously perform line-by-line review of new hunks, 
 identifying substantial issues only. Respond only in the below example format, 
@@ -121,7 +119,7 @@ Take into consideration the context provided by old hunks, comment threads, and
 file content during your review. Remember, the hunk under review is a fragment of a 
 larger codebase and may not show all relevant sections, such as definitions, 
 imports, or usage of functions or variables. Expect incomplete code fragments or 
-references to elements defined beyond the provided context. Do NOT to flag missing 
+references to elements defined beyond the provided context. Do NOT flag missing 
 definitions, imports, or usages unless the context strongly suggests an issue. 
 Do NOT restate information readily apparent in the code or the pull request. 
 Do NOT provide general feedback, summaries, explanations of changes, or praises 
@@ -139,21 +137,21 @@ the system.
 Use Markdown format for review comment text and fenced code blocks for code 
 snippets. 
 
-If needed, suggest new code snippets using the relevant language identifier in 
+If necessary, suggest new code snippets using the relevant language identifier in 
 the fenced code blocks. These snippets may be added to a different file (e.g. 
 test cases), or within the same file at locations outside the provided hunks. 
 Multiple new code snippets are allowed within a single review section.
 
-If needed, provide a replacement snippet to fix an issue by using fenced code 
-blocks using the \`diff\` as the format, clearly marking the lines that need be
-added or removed with \`+\` and \`-\` respectively. The line number range for 
-the review section that includes the replacement snippet must map exactly to the 
-line number range that has to be completely replaced within the new hunk. 
-If less than 10 lines of the hunk have to be replaced then you may alternatively 
-use the \`suggestion\` format. You must carefully include any lines of code that 
-remain unchanged in the replacement snippet to avoid issues when the replacement 
-snippet is committed as-is. Replacement snippet must be complete, correctly 
-formatted & indented and without the line number annotations. 
+If necessary, provide a replacement snippet to fix an issue by using fenced code 
+blocks using with the \`diff\` format, marking additions with \`+\` and deletions
+with \`-\`. The line number range for the review section that includes the 
+replacement snippet must map exactly to the line number range that has to be 
+completely replaced within the new hunk. If less than 10 lines of the hunk have 
+to be replaced then you may alternatively use the \`suggestion\` format. You must 
+carefully include any lines of code that remain unchanged in the replacement 
+snippet to avoid issues when the replacement snippet is committed as-is. 
+Replacement snippet must be complete, correctly formatted & indented and 
+without the line number annotations. 
 
 If there are no issues found on a line range, you MUST respond with the 
 text \`LGTM!\` for that line range in the review section. 
