@@ -320,26 +320,22 @@ ${
     }
 
     ins.filename = filename
+    ins.fileDiff = fileDiff
 
     // render prompt based on inputs so far
-    let tokens = getTokenCount(
-      prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges)
-    )
+    const summarizePrompt = prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges)
+    let tokens = getTokenCount(summarizePrompt)
 
-    const diffTokens = getTokenCount(fileDiff)
-    if (tokens + diffTokens > options.lightTokenLimits.requestTokens) {
+    if (tokens > options.lightTokenLimits.requestTokens) {
       info(`summarize: diff tokens exceeds limit, skip ${filename}`)
       summariesFailed.push(`${filename} (diff tokens exceeds limit)`)
       return null
     }
 
-    ins.fileDiff = fileDiff
-    tokens += fileDiff.length
-
     // summarize content
     try {
       const [summarizeResp] = await lightBot.chat(
-        prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges),
+        summarizePrompt,
         {}
       )
 
