@@ -12,16 +12,15 @@
 
 CodeRabbit `ai-pr-reviewer` is an open-source project built on AI, designed to
 enhance developer productivity and efficiency by performing automated reviews of
-pull requests. 
+pull requests.
 
-# Professional Version of CodeRabbit 
+# Professional Version of CodeRabbit
 
 The professional version of our openai-pr-reviewer project is now live at
 [coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
-CodeRabbit offers premium features including enhanced context and superior 
-noise reduction, dedicated support, and our ongoing commitment to improve code 
+CodeRabbit offers premium features including enhanced context and superior noise
+reduction, dedicated support, and our ongoing commitment to improve code
 reviews.
-
 
 ## Reviewer Features:
 
@@ -56,7 +55,6 @@ configure the required environment variables, such as `GITHUB_TOKEN` and
 `OPENAI_API_KEY`. For more information on usage, examples, contributing, and
 FAQs, you can refer to the sections below.
 
-
 - [Overview](#overview)
 - [Professional Version of CodeRabbit](#professional-version-of-coderabbit)
 - [Reviewer Features](#reviewer-features)
@@ -65,8 +63,6 @@ FAQs, you can refer to the sections below.
 - [Examples](#examples)
 - [Contribute](#contribute)
 - [FAQs](#faqs)
-
-
 
 ## Install instructions
 
@@ -195,12 +191,9 @@ Some of the reviews done by ai-pr-reviewer
 
 ![PR Summary](./docs/images/PRSummary.png)
 
-
 ![PR Release Notes](./docs/images/ReleaseNotes.png)
 
-
 ![PR Review](./docs/images/section-1.png)
-
 
 ![PR Conversation](./docs/images/section-3.png)
 
@@ -212,7 +205,7 @@ appreciated.
 ### Developing
 
 > First, you'll need to have a reasonably modern version of `node` handy, tested
-> with node 16.
+> with node 17+.
 
 Install the dependencies
 
