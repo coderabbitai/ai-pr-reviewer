@@ -323,8 +323,11 @@ ${
     ins.fileDiff = fileDiff
 
     // render prompt based on inputs so far
-    const summarizePrompt = prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges)
-    let tokens = getTokenCount(summarizePrompt)
+    const summarizePrompt = prompts.renderSummarizeFileDiff(
+      ins,
+      options.reviewSimpleChanges
+    )
+    const tokens = getTokenCount(summarizePrompt)
 
     if (tokens > options.lightTokenLimits.requestTokens) {
       info(`summarize: diff tokens exceeds limit, skip ${filename}`)
@@ -334,10 +337,7 @@ ${
 
     // summarize content
     try {
-      const [summarizeResp] = await lightBot.chat(
-        summarizePrompt,
-        {}
-      )
+      const [summarizeResp] = await lightBot.chat(summarizePrompt, {})
 
       if (summarizeResp === '') {
         info('summarize: nothing obtained from openai')

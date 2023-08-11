@@ -28,7 +28,10 @@ export class Bot {
       const currentDate = new Date().toISOString().split('T')[0]
       const systemMessage = `${options.systemMessage} 
 Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
-Current date: ${currentDate}`
+Current date: ${currentDate}
+
+IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
+`
 
       this.api = new ChatGPTAPI({
         apiBaseUrl: options.apiBaseUrl,
