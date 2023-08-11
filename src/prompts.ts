@@ -165,11 +165,6 @@ ensure accuracy and compliance with the above guidelines.
   z = x / y
     return z
 
-15: def complex_function(x, y):
-16:     a = x * 2
-17:     b = y / 3
-18:     return a + b
-19:
 20: def add(x, y):
 21:     z = x + y
 22:     retrn z
@@ -186,16 +181,12 @@ def subtract(x, y):
   z = x / y
     return z
 
-def complex_function(x, y):
-    return x + y
-
 def add(x, y):
     return x + y
 
 def subtract(x, y):
     z = x - y
 \`\`\`
-
 
 ---comment_chains---
 \`\`\`
@@ -206,23 +197,11 @@ Please review this change.
 
 ### Example response
 
-15-18:
-I suggest the following improvements:
-\`\`\`diff
-def complex_function(x, y):
--     a = x * 2
--     b = y / 3
--     return a + b
-+     a = x ** 2
-+     b = y ** 3
-+     c = a + b
-+     return c / 2
-\`\`\`
----
 22-22:
 There's a syntax error in the add function.
-\`\`\`suggestion
-    return z
+\`\`\`diff
+-    retrn z
++    return z
 \`\`\`
 ---
 24-25:
