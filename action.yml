@@ -229,6 +229,10 @@ inputs:
       "New Feature: An integrations page was added to the UI". Keep your 
       response within 50-100 words. Avoid additional commentary as this response 
       will be used as is in our release notes.
+
+      Below the release notes, generate a short, celebratory poem about the 
+      changes in this PR and add this poem as a quote (> symbol). You can 
+      use emojis in the poem, where they are relevant.
   language:
     required: false
     description: ISO code for the response language
