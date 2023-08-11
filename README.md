@@ -59,7 +59,7 @@ FAQs, you can refer to the sections below.
 ## Professional Version of CodeRabbit
 
 The professional version of `openai-pr-reviewer` project is now available at
-[coderabbit.ai](http://Coderabbit.ai). Building upon our open-source foundation,
+[coderabbit.ai](http://coderabbit.ai). Building upon our open-source foundation,
 CodeRabbit offers premium features including enhanced context and superior noise
 reduction, dedicated support, and our ongoing commitment to improve code
 reviews.
