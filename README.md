@@ -27,8 +27,7 @@ reviews.
 - **PR Summarization**: It generates a summary and release notes of the changes
   in the pull request.
 - **Line-by-line code change suggestions**: Reviews the changes line by line and
-  provides code change suggestions that can be directly committed from the
-  GitHub UI.
+  provides code change suggestions.
 - **Continuous, incremental reviews**: Reviews are performed on each commit
   within a pull request, rather than a one-time review on the entire pull
   request.
