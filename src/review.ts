@@ -730,17 +730,17 @@ ${
       existingCommitIdsBlock,
       context.payload.pull_request.head.sha
     )}`
+
+    // post the review
+    await commenter.submitReview(
+      context.payload.pull_request.number,
+      commits[commits.length - 1].sha,
+      statusMsg
+    )
   }
 
   // post the final summary comment
   await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
-
-  // post the review
-  await commenter.submitReview(
-    context.payload.pull_request.number,
-    commits[commits.length - 1].sha,
-    statusMsg
-  )
 }
 
 const splitPatch = (patch: string | null | undefined): string[] => {
