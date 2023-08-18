@@ -48,6 +48,8 @@ inputs:
       !**/*.gz
       !**/*.xz
       !**/*.zip
+      !**/*.7z
+      !**/*.rar
       !**/*.zst
       !**/*.ico
       !**/*.jar
@@ -56,18 +58,41 @@ inputs:
       !**/*.lo
       !**/*.log
       !**/*.mp3
+      !**/*.wav
+      !**/*.wma
       !**/*.mp4
+      !**/*.avi
+      !**/*.mkv
+      !**/*.wmv
+      !**/*.m4a
+      !**/*.m4v
+      !**/*.3gp
+      !**/*.3g2
+      !**/*.rm
+      !**/*.mov
+      !**/*.flv
+      !**/*.iso
+      !**/*.swf
+      !**/*.flac
       !**/*.nar
       !**/*.o
       !**/*.ogg
       !**/*.otf
       !**/*.p
       !**/*.pdf
+      !**/*.doc
+      !**/*.docx
+      !**/*.xls
+      !**/*.xlsx
+      !**/*.ppt
+      !**/*.pptx
       !**/*.pkl
       !**/*.pickle
       !**/*.pyc
       !**/*.pyd
       !**/*.pyo
+      !**/*.pub
+      !**/*.pem
       !**/*.rkt
       !**/*.so
       !**/*.ss
@@ -91,6 +116,8 @@ inputs:
       !**/*.jpg
       !**/*.png
       !**/*.gif
+      !**/*.bmp
+      !**/*.tiff
       !**/*.webm
       !**/*.woff
       !**/*.woff2
@@ -98,10 +125,17 @@ inputs:
       !**/*.md5sum
       !**/*.wasm
       !**/*.snap
+      !**/*.parquet
       !**/gen/**
       !**/_gen/**
       !**/generated/**
+      !**/@generated/**
       !**/vendor/**
+      !**/*.min.js
+      !**/*.min.js.map
+      !**/*.min.js.css
+      !**/*.tfstate
+      !**/*.tfstate.backup
   disable_review:
     required: false
     description: 'Only provide the summary and skip the code review.'
@@ -199,6 +233,10 @@ inputs:
       Below the release notes, generate a short, celebratory poem about the 
       changes in this PR and add this poem as a quote (> symbol). You can 
       use emojis in the poem, where they are relevant.
+  language:
+    required: false
+    description: ISO code for the response language
+    default: en-US
 runs:
   using: 'node16'
   main: 'dist/index.js'

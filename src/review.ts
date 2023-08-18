@@ -320,28 +320,24 @@ ${
     }
 
     ins.filename = filename
+    ins.fileDiff = fileDiff
 
     // render prompt based on inputs so far
-    let tokens = getTokenCount(
-      prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges)
+    const summarizePrompt = prompts.renderSummarizeFileDiff(
+      ins,
+      options.reviewSimpleChanges
     )
+    const tokens = getTokenCount(summarizePrompt)
 
-    const diffTokens = getTokenCount(fileDiff)
-    if (tokens + diffTokens > options.lightTokenLimits.requestTokens) {
+    if (tokens > options.lightTokenLimits.requestTokens) {
       info(`summarize: diff tokens exceeds limit, skip ${filename}`)
       summariesFailed.push(`${filename} (diff tokens exceeds limit)`)
       return null
     }
 
-    ins.fileDiff = fileDiff
-    tokens += fileDiff.length
-
     // summarize content
     try {
-      const [summarizeResp] = await lightBot.chat(
-        prompts.renderSummarizeFileDiff(ins, options.reviewSimpleChanges),
-        {}
-      )
+      const [summarizeResp] = await lightBot.chat(summarizePrompt, {})
 
       if (summarizeResp === '') {
         info('summarize: nothing obtained from openai')
@@ -734,17 +730,17 @@ ${
       existingCommitIdsBlock,
       context.payload.pull_request.head.sha
     )}`
+
+    // post the review
+    await commenter.submitReview(
+      context.payload.pull_request.number,
+      commits[commits.length - 1].sha,
+      statusMsg
+    )
   }
 
   // post the final summary comment
   await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
-
-  // post the review
-  await commenter.submitReview(
-    context.payload.pull_request.number,
-    commits[commits.length - 1].sha,
-    statusMsg
-  )
 }
 
 const splitPatch = (patch: string | null | undefined): string[] => {
