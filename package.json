@@ -1,6 +1,6 @@
 {
   "name": "openai-pr-reviewer",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "OpenAI-based PR Reviewer and Summarizer.",
   "main": "lib/main.js",
