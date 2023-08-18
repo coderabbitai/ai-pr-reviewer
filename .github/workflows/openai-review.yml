@@ -30,6 +30,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BASE_API_URL: ${{ secrets.BASE_API_URL }}
         with:
           debug: true
           review_comment_lgtm: false
