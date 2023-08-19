@@ -457,6 +457,17 @@ ${RAW_SUMMARY_END_TAG}
 ${SHORT_SUMMARY_START_TAG}
 ${inputs.shortSummary}
 ${SHORT_SUMMARY_END_TAG}
+
+---
+
+<details>
+<summary>Uplevel your code reviews with CodeRabbit Pro</summary>
+
+### CodeRabbit Pro
+
+If you like this project, please support us by purchasing the [Pro version](https://coderabbit.ai). The Pro version has advanced context, superior noise reduction and several proprietary improvements compared to the open source version.
+
+</details>
 `
 
   statusMsg += `
