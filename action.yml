@@ -225,7 +225,7 @@ inputs:
       'The prompt for generating release notes in the same chat as summarize
       stage'
     default: |
-      Craft concise release notes for the pull request in Markdown format. 
+      Craft concise release notes for the pull request. 
       Focus on the purpose and user impact, categorizing changes as "New Feature", "Bug Fix", 
       "Documentation", "Refactor", "Style", "Test", "Chore", or "Revert". Provide a bullet-point list, 
       e.g., "- New Feature: Added search functionality to the UI". Limit your response to 50-100 words 
