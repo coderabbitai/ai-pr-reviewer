@@ -206,33 +206,30 @@ inputs:
     required: false
     description: 'The prompt for final summarization response'
     default: |
-      Provide your final response in the `markdown` format with 
-      the following content:
-        - *Walkthrough*: A high-level summary of the  
-          overall change instead of specific files within 80 words.
-        - *Changes*: A table of files and their summaries. You can group 
-          files with similar changes together into a single row to conserve
-          space.
+      Provide your final response in markdown with the following content:
 
-      Avoid additional commentary as this summary will be added as a 
-      comment on the GitHub pull request.
+      - **Walkthrough**: A high-level summary of the overall change instead of 
+        specific files within 80 words.
+      - **Changes**: A markdown table of files and their summaries. Group files 
+        with similar changes together into a single row to save space.
+      - **Poem**: Below the changes, include a whimsical, short poem written by 
+        a rabbit to celebrate the changes. Format the poem as a quote using 
+        the ">" symbol and feel free to use emojis where relevant.
+
+      Avoid additional commentary as this summary will be added as a comment on the 
+      GitHub pull request. Use the titles "Walkthrough" and "Changes" and they must be H2.
+
   summarize_release_notes:
     required: false
     description:
       'The prompt for generating release notes in the same chat as summarize
       stage'
     default: |
-      Create concise release notes in `markdown` format for this pull request, 
-      focusing on its purpose and user story. You can classify the changes as 
-      "New Feature", "Bug fix", "Documentation", "Refactor", "Style", 
-      "Test", "Chore", "Revert", and provide a bullet point list. For example: 
-      "New Feature: An integrations page was added to the UI". Keep your 
-      response within 50-100 words. Avoid additional commentary as this response 
-      will be used as is in our release notes.
-
-      Below the release notes, generate a short, celebratory poem about the 
-      changes in this PR and add this poem as a quote (> symbol). You can 
-      use emojis in the poem, where they are relevant.
+      Craft concise release notes for the pull request. 
+      Focus on the purpose and user impact, categorizing changes as "New Feature", "Bug Fix", 
+      "Documentation", "Refactor", "Style", "Test", "Chore", or "Revert". Provide a bullet-point list, 
+      e.g., "- New Feature: Added search functionality to the UI". Limit your response to 50-100 words 
+      and emphasize features visible to the end-user while omitting code-level details.
   language:
     required: false
     description: ISO code for the response language
