@@ -56,13 +56,13 @@ FAQs, you can refer to the sections below.
 - [Contribute](#contribute)
 - [FAQs](#faqs)
 
-## Professional Version of CodeRabbit
+## CodeRabbit Pro
 
 The professional version of `openai-pr-reviewer` project is now available at
-[coderabbit.ai](http://coderabbit.ai). Building upon our open-source foundation,
-CodeRabbit offers premium features including enhanced context and superior noise
-reduction, dedicated support, and our ongoing commitment to improve code
-reviews.
+[coderabbit.ai](http://coderabbit.ai). Building upon our open source foundation,
+CodeRabbit Pro offers premium features including enhanced context and superior
+noise reduction, dedicated support, and our ongoing commitment to improve code
+reviews. Moreover, CodeRabbit Pro is free for open source projects.
 
 ## Install instructions
 
