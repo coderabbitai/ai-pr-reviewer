@@ -131,7 +131,7 @@ value. For example, to review docs/blog posts, you can use the following prompt:
 
 ```yaml
 system_message: |
-  You are `@coderabbitai` (aka `github-actions[bot]`), a language model
+  You are `@ai-bot` (aka `github-actions[bot]`), a language model
   trained by OpenAI. Your purpose is to act as a highly experienced
   DevRel (developer relations) professional with focus on cloud-native
   infrastructure.
@@ -162,11 +162,11 @@ system_message: |
 
 You can reply to a review comment made by this action and get a response based
 on the diff context. Additionally, you can invite the bot to a conversation by
-tagging it in the comment (`@coderabbitai`).
+tagging it in the comment (`@ai-bot`).
 
 Example:
 
-> @coderabbitai Please generate a test plan for this file.
+> @ai-bot Please generate a test plan for this file.
 
 Note: A review comment is a comment made on a diff or a file in the pull
 request.
@@ -178,7 +178,7 @@ to review documentation, you can ignore PRs that only change the documentation.
 To ignore a PR, add the following keyword in the PR description:
 
 ```text
-@coderabbitai: ignore
+@ai-bot: ignore
 ```
 
 ## Examples
