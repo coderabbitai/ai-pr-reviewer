@@ -10,6 +10,7 @@ import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
+import { context } from "@actions/github";
 
 async function run(): Promise<void> {
   const options: Options = new Options(
@@ -75,7 +76,7 @@ async function run(): Promise<void> {
       process.env.GITHUB_EVENT_NAME === 'issue_comment'
     ) {
       // @ts-ignore
-      info({msg: 'foo', env: process.env})
+      info({msg: 'foo', context: context.payload})
       await codeReview(lightBot, heavyBot, options, prompts)
     } else if (
       process.env.GITHUB_EVENT_NAME === 'pull_request_review_comment'
