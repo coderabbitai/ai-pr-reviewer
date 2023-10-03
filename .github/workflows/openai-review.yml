@@ -29,8 +29,9 @@ jobs:
       - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          BASE_API_URL: ${{ secrets.BASE_API_URL }}
+          OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          BASE_API_URL: ${{ secrets.AZURE_OPENAI_API_BASE }}
+          OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAPI_VERSION }}
         with:
           debug: true
           review_comment_lgtm: false
