@@ -152,11 +152,11 @@ inputs:
     required: false
     description:
       'Model to use for simple tasks like summarizing diff on a file.'
-    default: 'gpt-3.5-turbo'
+    default: 'anthropic.claude-instant-v1'
   openai_heavy_model:
     required: false
     description: 'Model to use for complex tasks such as code reviews.'
-    default: 'gpt-4'
+    default: 'anthropic.claude-v2'
   openai_model_temperature:
     required: false
     description: 'Temperature for GPT model'
