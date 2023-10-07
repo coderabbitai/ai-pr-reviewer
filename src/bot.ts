@@ -83,7 +83,9 @@ export class Bot {
 
     let responseText = ''
     if (response != null) {
-      responseText = Buffer.from(response.body).toString('utf-8')
+      responseText = JSON.parse(
+        Buffer.from(response.body).toString('utf-8')
+      ).completion
     } else {
       warning('openai response is null')
     }

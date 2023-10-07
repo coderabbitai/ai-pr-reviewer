@@ -2335,7 +2335,7 @@ class Bot {
         (0,core.info)(`bedrock sendMessage (including retries) response time: ${end - start} ms`);
         let responseText = '';
         if (response != null) {
-            responseText = Buffer.from(response.body).toString('utf-8');
+            responseText = JSON.parse(Buffer.from(response.body).toString('utf-8')).completion;
         }
         else {
             (0,core.warning)('openai response is null');
