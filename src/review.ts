@@ -337,7 +337,7 @@ ${
 
     // summarize content
     try {
-      const [summarizeResp] = await lightBot.chat(summarizePrompt, {})
+      const [summarizeResp] = await lightBot.chat(summarizePrompt)
 
       if (summarizeResp === '') {
         info('summarize: nothing obtained from openai')
@@ -401,8 +401,7 @@ ${filename}: ${summary}
       }
       // ask chatgpt to summarize the summaries
       const [summarizeResp] = await heavyBot.chat(
-        prompts.renderSummarizeChangesets(inputs),
-        {}
+        prompts.renderSummarizeChangesets(inputs)
       )
       if (summarizeResp === '') {
         warning('summarize: nothing obtained from openai')
@@ -414,8 +413,7 @@ ${filename}: ${summary}
 
   // final summary
   const [summarizeFinalResponse] = await heavyBot.chat(
-    prompts.renderSummarize(inputs),
-    {}
+    prompts.renderSummarize(inputs)
   )
   if (summarizeFinalResponse === '') {
     info('summarize: nothing obtained from openai')
@@ -424,8 +422,7 @@ ${filename}: ${summary}
   if (options.disableReleaseNotes === false) {
     // final release notes
     const [releaseNotesResponse] = await heavyBot.chat(
-      prompts.renderSummarizeReleaseNotes(inputs),
-      {}
+      prompts.renderSummarizeReleaseNotes(inputs)
     )
     if (releaseNotesResponse === '') {
       info('release notes: nothing obtained from openai')
@@ -445,8 +442,7 @@ ${filename}: ${summary}
 
   // generate a short summary as well
   const [summarizeShortResponse] = await heavyBot.chat(
-    prompts.renderSummarizeShort(inputs),
-    {}
+    prompts.renderSummarizeShort(inputs)
   )
   inputs.shortSummary = summarizeShortResponse
 
@@ -620,8 +616,7 @@ ${commentChain}
         // perform review
         try {
           const [response] = await heavyBot.chat(
-            prompts.renderReviewFileDiff(ins),
-            {}
+            prompts.renderReviewFileDiff(ins)
           )
           if (response === '') {
             info('review: nothing obtained from openai')

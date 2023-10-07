@@ -138,11 +138,14 @@ export class PathFilter {
   }
 }
 
-export class OpenAIOptions {
+export class BedrockOptions {
   model: string
   tokenLimits: TokenLimits
 
-  constructor(model = 'gpt-3.5-turbo', tokenLimits: TokenLimits | null = null) {
+  constructor(
+    model = 'anthropic.claude-instant-v1',
+    tokenLimits: TokenLimits | null = null
+  ) {
     this.model = model
     if (tokenLimits != null) {
       this.tokenLimits = tokenLimits

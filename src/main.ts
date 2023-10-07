@@ -6,7 +6,7 @@ import {
   warning
 } from '@actions/core'
 import {Bot} from './bot'
-import {OpenAIOptions, Options} from './options'
+import {BedrockOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
@@ -46,7 +46,7 @@ async function run(): Promise<void> {
   try {
     lightBot = new Bot(
       options,
-      new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
+      new BedrockOptions(options.openaiLightModel, options.lightTokenLimits)
     )
   } catch (e: any) {
     warning(
@@ -59,7 +59,7 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(
       options,
-      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
+      new BedrockOptions(options.openaiHeavyModel, options.heavyTokenLimits)
     )
   } catch (e: any) {
     warning(
