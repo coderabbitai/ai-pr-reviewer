@@ -1,4 +1,4 @@
-name: 'AI-based PR Reviewer & Summarizer with Chat Capabilities'
+name: 'AI-based PR Reviewer & Summarizer with Chat Capabilities (Bedrock Claude)'
 description: 'AI-based PR Reviewer & Summarizer with Chat Capabilities'
 branding:
   icon: 'git-merge'
