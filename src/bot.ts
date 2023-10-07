@@ -56,9 +56,12 @@ export class Bot {
               body: JSON.stringify({
                 prompt: message,
                 temperature: 0,
-                // top_p: float,
-                // top_k: int,
-                // max_tokens_to_sample: int,
+                // eslint-disable-next-line camelcase
+                top_p: 1,
+                // eslint-disable-next-line camelcase
+                top_k: 250,
+                // eslint-disable-next-line camelcase
+                max_tokens_to_sample: 200,
                 // eslint-disable-next-line camelcase
                 stop_sequences: ['\n\nHuman:']
               }),
