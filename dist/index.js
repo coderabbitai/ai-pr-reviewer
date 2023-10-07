@@ -2311,7 +2311,7 @@ class Bot {
             response = await pRetry(() => this.client.send(new dist_cjs.InvokeModelCommand({
                 modelId: this.bedrockOptions.model,
                 body: JSON.stringify({
-                    prompt: message,
+                    prompt: `\n\nHuman:${message}\n\nAssistant:`,
                     temperature: 0,
                     // eslint-disable-next-line camelcase
                     top_p: 1,
