@@ -1,39 +1,77 @@
-name: OpenAI Reviewer
+name: ai-pr-reviewer
 
 permissions:
   contents: read
   pull-requests: write
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  pull_request:
+    types: [opened]
+    branches-ignore:
+      - master
+      - main
   pull_request_review_comment:
+    types: [created]
+  issue_comment:
     types: [created]
 
 concurrency:
-  group:
-    ${{ github.repository }}-${{ github.event.number || github.head_ref ||
-    github.sha }}-${{ github.workflow }}-${{ github.event_name ==
-    'pull_request_review_comment' && 'pr_comment' || 'pr' }}
+  group: ${{ github.repository }}-${{ github.event.number || github.head_ref || github.sha }}-${{ github.workflow }}-${{ github.event_name == 'pull_request_review_comment' && 'pr_comment' || 'pr' }}
   cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
 
 jobs:
   review:
     runs-on: ubuntu-latest
+    if: (github.event_name == 'issue_comment' && contains(github.event.comment.body, '[run review]') && github.event.issue.pull_request) ||　(github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '[run review]')) || (github.event_name == 'pull_request' && !contains(github.event.pull_request.title, 'release') && !contains(github.event.pull_request.title, 'Release'))
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
-        with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
-      - uses: ./
+      - uses: coderabbitai/openai-pr-reviewer@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
-          debug: true
+          debug: false
+          review_simple_changes: false
           review_comment_lgtm: false
-          openai_heavy_model: gpt-4
+          openai_light_model: gpt-4 # 好みで変更
+          openai_heavy_model: gpt-4 # 好みで変更
+          openai_timeout_ms: 900000 # 15分.
+          language: ja-JP
           path_filters: |
-            !dist/**
+            !db/**
             !**/*.lock
+          system_message: |
+            あなたは @coderabbitai（別名 github-actions[bot]）で、OpenAIによって訓練された言語モデルです。
+            あなたの目的は、非常に経験豊富なソフトウェアエンジニアとして機能し、コードの一部を徹底的にレビューし、
+            以下のようなキーエリアを改善するためのコードスニペットを提案することです：
+              - ロジック
+              - セキュリティ
+              - パフォーマンス
+              - データ競合
+              - 一貫性
+              - エラー処理
+              - 保守性
+              - モジュール性
+              - 複雑性
+              - 最適化
+              - ベストプラクティス: DRY, SOLID, KISS
+
+            些細なコードスタイルの問題や、コメント・ドキュメントの欠落についてはコメントしないでください。
+            重要な問題を特定し、解決して全体的なコード品質を向上させることを目指してくださいが、細かい問題は意図的に無視してください。
+          summarize: |
+            次の内容でmarkdownフォーマットを使用して、最終的な回答を提供してください。
+
+              - *ウォークスルー*: 特定のファイルではなく、全体の変更に関する高レベルの要約を80語以内で。
+              - *変更点*: ファイルとその要約のテーブル。スペースを節約するために、同様の変更を持つファイルを1行にまとめることができます。
+
+            GitHubのプルリクエストにコメントとして追加されるこの要約には、追加のコメントを避けてください。
+          summarize_release_notes: |
+            このプルリクエストのために、その目的とユーザーストーリーに焦点を当てて、markdownフォーマットで簡潔なリリースノートを作成してください。
+            変更は次のように分類し箇条書きにすること:
+              "New Feature", "Bug fix", "Documentation", "Refactor", "Style",
+              "Test", "Chore", "Revert"
+            例えば:
+            ```
+            - New Feature: UIに統合ページが追加されました
+            ```
+            回答は50-100語以内にしてください。この回答はそのままリリースノートに使用されるので、追加のコメントは避けてください。
