@@ -206,7 +206,7 @@ ${COMMENT_TAG}`
       })
 
       const pendingReview = reviews.data.find(
-        review => review.state === 'PENDING'
+        (        review: { state: string }) => review.state === 'PENDING'
       )
 
       if (pendingReview) {
@@ -745,7 +745,7 @@ ${chain}
           page
         })
 
-        allCommits.push(...commits.data.map(commit => commit.sha))
+        allCommits.push(...commits.data.map((commit: { sha: any }) => commit.sha))
         page++
       } while (commits.data.length > 0)
     }
