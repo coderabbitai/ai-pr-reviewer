@@ -2,8 +2,6 @@ POST http://localhost:3000/api
 Content-Type: application/json
 
 {
-  "openai_api_key": "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",
-    "github_event_name": "pull_request",
     "settings": {
         "debug": false,
         "disable_review": false,
