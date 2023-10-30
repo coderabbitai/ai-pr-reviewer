@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "OpenAI-based PR Reviewer and Summarizer.",
-  "main": "lib/dev.js",
+  "main": "lib/main.js",
   "type": "module",
   "scripts": {
     "build": "cp node_modules/@dqbd/tiktoken/tiktoken_bg.wasm dist/tiktoken_bg.wasm && tsc-esm",
