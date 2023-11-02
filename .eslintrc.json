@@ -18,7 +18,8 @@
     "globalThis": false
   },
   "rules": {
-    "i18n-text/no-en": "off"
+    "i18n-text/no-en": "off",
+    "no-console": "off"
   },
   "env": {
     "node": true,

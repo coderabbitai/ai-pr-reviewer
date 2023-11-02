@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {Bot} from './bot'
 import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
@@ -15,8 +14,6 @@ export async function run(settings: any, requestBody: any): Promise<void> {
       process.env.GITHUB_APP_PEM_FILE &&
       process.env.GITHUB_APP_PEM_FILE.replace(/\\n/g, '\n')
   })
-
-
 
   // end octokit
   const GITHUB_EVENT_NAME: string = settings.github_event_name
@@ -127,5 +124,3 @@ process
   .on('uncaughtException', (e: any) => {
     console.log(`Uncaught Exception thrown: ${e}, backtrace: ${e.stack}`)
   })
-
-
