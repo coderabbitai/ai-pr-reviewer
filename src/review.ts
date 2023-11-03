@@ -17,7 +17,7 @@ import {Inputs} from './inputs'
 import {octokit} from './octokit'
 import {type Options} from './options'
 import {type Prompts} from './prompts'
-import {getTokenCount} from './tokenizer'
+import {getTokenCount, splitPrompt} from './tokenizer'
 
 dotenv.config()
 
@@ -384,13 +384,33 @@ ${
 
   const summaryPromises = []
   const skippedFiles = []
+  let promptArray: string[] | string = []
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
-    if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
-      summaryPromises.push(
-        openaiConcurrencyLimit(
-          async () => await doSummary(filename, fileContent, fileDiff)
-        )
+    // =============================================================================================================Harsh's Changes
+    // check current difference prompt token count
+    if (getTokenCount(fileDiff) > options.lightTokenLimits.requestTokens) {
+      promptArray = await splitPrompt(
+        options.lightTokenLimits.requestTokens - 100,
+        fileDiff
       )
+    }
+    if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
+      if (Array.isArray(promptArray) && promptArray.length > 0) {
+        for (const promptContent of promptArray) {
+          summaryPromises.push(
+            openaiConcurrencyLimit(
+              async () => await doSummary(filename, fileContent, promptContent)
+            )
+          )
+        }
+        promptArray = []
+      } else {
+        summaryPromises.push(
+          openaiConcurrencyLimit(
+            async () => await doSummary(filename, fileContent, fileDiff)
+          )
+        )
+      }
     } else {
       skippedFiles.push(filename)
     }
