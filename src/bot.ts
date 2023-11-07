@@ -5,7 +5,7 @@ import {
   ChatGPTAPI,
   ChatGPTError,
   ChatMessage,
-  SendMessageOptions,
+  SendMessageOptions
   // eslint-disable-next-line import/no-unresolved
 } from 'chatgpt'
 import pRetry from 'p-retry'
@@ -51,7 +51,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
           delete ops.headers['Authorization']
           delete ops.headers['OpenAI-Organization']
           return globalThis.fetch(newUrl, ops)
-        },
+        }
       })
     } else {
       const err =
