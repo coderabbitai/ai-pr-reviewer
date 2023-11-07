@@ -5,7 +5,7 @@ import {
   ChatGPTAPI,
   ChatGPTError,
   ChatMessage,
-  SendMessageOptions
+  SendMessageOptions,
   // eslint-disable-next-line import/no-unresolved
 } from 'chatgpt'
 import pRetry from 'p-retry'
@@ -44,7 +44,14 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
         completionParams: {
           temperature: options.openaiModelTemperature,
           model: openaiOptions.model
-        }
+        },
+        fetch: (input: RequestInfo | URL, ops?: any): Promise<Response> => {
+          const newUrl = `${input}?api-version=2023-03-15-preview`
+          ops.headers['api-key'] = process.env.OPENAI_API_KEY
+          delete ops.headers['Authorization']
+          delete ops.headers['OpenAI-Organization']
+          return globalThis.fetch(newUrl, ops)
+        },
       })
     } else {
       const err =
