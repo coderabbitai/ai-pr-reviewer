@@ -6,9 +6,9 @@ permissions:
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, push]
   pull_request_review_comment:
-    types: [created]
+    types: [created, push]
 
 concurrency:
   group:
