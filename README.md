@@ -1,7 +1,7 @@
-## CodeRabbit Pro
+# CodeRabbit Pro
 
 This is an old version of [coderabbit.ai](http://coderabbit.ai) and is now in the mainatance mode.
-We recommend installing the Pro version from [coderabbit.ai](http://coderabbit.ai). It is free for OSS. The Pro version is a total redesign and offers significantly better reviews that learn from your usage, and improve over time.
+We recommend installing the Pro version from [coderabbit.ai](http://coderabbit.ai). The Pro version is a total redesign and offers significantly better reviews that learn from your usage and improve over time. CodeRabbit Pro is free for open source projects. 
 
 [![Discord](https://img.shields.io/badge/Join%20us%20on-Discord-blue?logo=discord&style=flat-square)](https://discord.gg/GsXnASn26c)
 
@@ -9,14 +9,6 @@ We recommend installing the Pro version from [coderabbit.ai](http://coderabbit.a
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/last-commit/coderabbitai/ai-pr-reviewer/main?style=flat-square)](https://github.com/coderabbitai/ai-pr-reviewer/commits/main)
-
-
-The professional version of `openai-pr-reviewer` project is now available at
-[coderabbit.ai](http://coderabbit.ai). Building upon our open source foundation,
-CodeRabbit Pro offers premium features including enhanced context and superior
-noise reduction, dedicated support, and our ongoing commitment to improve code
-reviews. Moreover, CodeRabbit Pro is free for open source projects.
-
 
 ## Overview
 
