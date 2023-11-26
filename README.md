@@ -1,8 +1,7 @@
 ## CodeRabbit Pro
 
 This is an old version of [coderabbit.ai](http://coderabbit.ai) and is now in the mainatance mode.
-We recommend installing the Pro version from [coderabbit.ai](http://coderabbit.ai). It is free for OSS.  
-The Pro version is a total redesign and offers significantly better reviews that learn from your usage, and improve over time.
+We recommend installing the Pro version from [coderabbit.ai](http://coderabbit.ai). It is free for OSS. The Pro version is a total redesign and offers significantly better reviews that learn from your usage, and improve over time.
 
 [![Discord](https://img.shields.io/badge/Join%20us%20on-Discord-blue?logo=discord&style=flat-square)](https://discord.gg/GsXnASn26c)
 
