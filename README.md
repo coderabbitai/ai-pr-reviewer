@@ -49,14 +49,23 @@ configure the required environment variables, such as `GITHUB_TOKEN` and
 `OPENAI_API_KEY`. For more information on usage, examples, contributing, and
 FAQs, you can refer to the sections below.
 
-- [Overview](#overview)
-- [Professional Version of CodeRabbit](#professional-version-of-coderabbit)
-- [Reviewer Features](#reviewer-features)
-- [Install instructions](#install-instructions)
-- [Conversation with CodeRabbit](#conversation-with-coderabbit)
-- [Examples](#examples)
-- [Contribute](#contribute)
-- [FAQs](#faqs)
+- [AI-based PR reviewer and summarizer](#ai-based-pr-reviewer-and-summarizer)
+  - [Overview](#overview)
+  - [Reviewer Features:](#reviewer-features)
+  - [CodeRabbit Pro](#coderabbit-pro)
+  - [Install instructions](#install-instructions)
+      - [Environment variables](#environment-variables)
+    - [Models: `gpt-4` and `gpt-3.5-turbo`](#models-gpt-4-and-gpt-35-turbo)
+    - [Prompts \& Configuration](#prompts--configuration)
+  - [Conversation with CodeRabbit](#conversation-with-coderabbit)
+    - [Ignoring PRs](#ignoring-prs)
+  - [Examples](#examples)
+  - [Contribute](#contribute)
+    - [Developing](#developing)
+  - [FAQs](#faqs)
+    - [Review pull requests from forks](#review-pull-requests-from-forks)
+    - [Inspect the messages between OpenAI server](#inspect-the-messages-between-openai-server)
+    - [Disclaimer](#disclaimer)
 
 
 ## Install instructions
@@ -208,11 +217,10 @@ Install the dependencies
 $ npm install
 ```
 
-Build the typescript and package it for distribution
-
 ```bash
 $ npm run build && npm run package
 ```
+
 
 ## FAQs
 

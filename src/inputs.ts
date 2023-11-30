@@ -11,6 +11,7 @@ export class Inputs {
   diff: string
   commentChain: string
   comment: string
+  fileIndex: number | undefined
 
   constructor(
     systemMessage = '',
@@ -96,6 +97,9 @@ export class Inputs {
     }
     if (this.comment) {
       content = content.replace('$comment', this.comment)
+    }
+    if (this.fileIndex) {
+      content = content.replace('$fileIndex', this.fileIndex.toString())
     }
     return content
   }

@@ -28,6 +28,74 @@ to the signatures of exported functions, global data structures and
 variables, and any changes that might affect the external interface or 
 behavior of the code.
 `
+
+  splittedSummarizeFileDiff = [
+    `## GitHub PR Title
+
+\`$title\` 
+
+## Description
+
+\`\`\`
+$description
+\`\`\`
+
+## Information
+      
+This is the \`$fileIndex\` section of file differences. 
+
+## Diff
+
+\`\`\`diff
+$file_diff
+\`\`\`
+
+## Instructions
+      
+Please wait for another part of this file then only you can respond according to instructions that I will send in the end. 
+
+`,
+
+    `
+      ## Information
+      
+      This is the \`$fileIndex\` section of file differences. 
+
+      ## Diff
+
+\`\`\`diff
+$file_diff
+\`\`\`
+      
+      ## Instructions
+      
+      Please wait for another part of this file then only you can respond according to instructions that I will send in the end. 
+      `,
+
+    `
+
+    ## Information
+      
+    This is the last section of file differences. 
+    
+    ## Diff
+
+    \`\`\`diff
+    $file_diff
+    \`\`\`
+          
+    
+    
+    ## Instructions
+
+      Now, I would like you to succinctly summarize the diff within 500 words.
+      If applicable, your summary should include a note about alterations 
+      to the signatures of exported functions, global data structures and 
+      variables, and any changes that might affect the external interface or 
+      behavior of the code.
+`
+  ]
+
   triageFileDiff = `Below the summary, I would also like you to triage the diff as \`NEEDS_REVIEW\` or 
 \`APPROVED\` based on the following criteria:
 
@@ -244,12 +312,28 @@ $comment
 
   renderSummarizeFileDiff(
     inputs: Inputs,
-    reviewSimpleChanges: boolean
+    reviewSimpleChanges: boolean,
+    fileContentIndex: number,
+    splitPromptArrLength: number
   ): string {
-    let prompt = this.summarizeFileDiff
+    let prompt
+    if (fileContentIndex > 0) {
+      if (fileContentIndex === 1) {
+        prompt = this.splittedSummarizeFileDiff[0]
+      } else if (
+        fileContentIndex > 1 &&
+        fileContentIndex < splitPromptArrLength
+      ) {
+        prompt = this.splittedSummarizeFileDiff[1]
+      } else {
+        prompt = this.splittedSummarizeFileDiff[2]
+      }
+    } else prompt = this.summarizeFileDiff
+
     if (reviewSimpleChanges === false) {
       prompt += this.triageFileDiff
     }
+    if (fileContentIndex > 0) inputs.fileIndex = fileContentIndex
     return inputs.render(prompt)
   }
 
