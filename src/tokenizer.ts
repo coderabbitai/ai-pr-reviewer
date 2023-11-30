@@ -12,6 +12,7 @@ export function getTokenCount(input: string): number {
   return encode(input).length
 }
 
+
 export function splitPrompt(
   maxTokens: number,
   prompt: string
@@ -22,24 +23,24 @@ export function splitPrompt(
   const promptPieces: string[] = []
   let remainingPrompt = prompt
   while (remainingPrompt.length > 0) {
-     if (remainingPrompt.length > maxTokens && !remainingPrompt.includes(' ')) {
-     const piece = remainingPrompt.substring(0, maxTokens).trim();
-       promptPieces.push(piece);
-       remainingPrompt = remainingPrompt.substring(maxTokens).trim();
-  }
-    const lastSpaceIndex = remainingPrompt.lastIndexOf(' ', maxTokens)
-    if (lastSpaceIndex >= 0) {
-      // Split at the last space
-      const piece = remainingPrompt.substring(0, lastSpaceIndex).trim()
-      promptPieces.push(piece)
-      remainingPrompt = remainingPrompt.substring(lastSpaceIndex).trim()
+    let piece;
+    if (remainingPrompt.length > maxTokens && !remainingPrompt.includes(' ')) {
+      piece = remainingPrompt.substring(0, maxTokens).trim();
     } else {
-      // If no space found in the next `maxTokens` characters, split at `maxTokens` directly
-      const piece = remainingPrompt.substring(0, maxTokens).trim()
-      promptPieces.push(piece)
-      remainingPrompt = remainingPrompt.substring(maxTokens).trim()
+      const lastSpaceIndex = remainingPrompt.lastIndexOf(' ', maxTokens)
+      if (lastSpaceIndex >= 0) {
+        // Split at the last space
+        piece = remainingPrompt.substring(0, lastSpaceIndex).trim()
+      } else {
+        // If no space found in the next `maxTokens` characters, split at `maxTokens` directly
+        piece = remainingPrompt.substring(0, maxTokens).trim()
+      }
     }
+    promptPieces.push(piece)
+    remainingPrompt = remainingPrompt.substring(piece.length).trim()
   }
 
   return promptPieces
 }
+
+
