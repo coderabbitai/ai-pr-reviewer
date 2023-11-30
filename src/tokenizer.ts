@@ -22,6 +22,9 @@ export function splitPrompt(
   const promptPieces: string[] = []
   let remainingPrompt = prompt
   while (remainingPrompt.length > 0) {
+     if (remainingPrompt.length > maxTokens && !remainingPrompt.includes(' ')) {
+     throw new Error(`Word length exceeds maxTokens: ${maxTokens}`);
+  }
     const lastSpaceIndex = remainingPrompt.lastIndexOf(' ', maxTokens)
     if (lastSpaceIndex >= 0) {
       // Split at the last space
