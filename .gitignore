@@ -123,3 +123,4 @@ tags.lock
 .env
 .secrets
 bin/act
+.idea/
