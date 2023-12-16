@@ -20,7 +20,6 @@ export class Options {
   vertexaiTopK: number
   vertexaiTopP: number
   vertexaiRetries: number
-  vertexaiTimeoutMS: number
   vertexaiConcurrencyLimit: number
   githubConcurrencyLimit: number
   lightTokenLimits: TokenLimits
@@ -46,7 +45,6 @@ export class Options {
     vertexaiTopK = '32',
     vertexaiTopP = '1.0',
     vertexaiRetries = '3',
-    vertexaiTimeoutMS = '120000',
     vertexaiConcurrencyLimit = '6',
     githubConcurrencyLimit = '6',
     // apiBaseUrl = 'https://api.vertexai.com/v1',
@@ -69,7 +67,6 @@ export class Options {
     this.vertexaiTopK = parseInt(vertexaiTopK)
     this.vertexaiTopP = parseFloat(vertexaiTopP)
     this.vertexaiRetries = parseInt(vertexaiRetries)
-    this.vertexaiTimeoutMS = parseInt(vertexaiTimeoutMS)
     this.vertexaiConcurrencyLimit = parseInt(vertexaiConcurrencyLimit)
     this.githubConcurrencyLimit = parseInt(githubConcurrencyLimit)
     this.lightTokenLimits = new TokenLimits(vertexaiLightModel)
@@ -97,7 +94,6 @@ export class Options {
     info(`vertexai_top_k: ${this.vertexaiTopK}`)
     info(`vertexai_top_p: ${this.vertexaiTopP}`)
     info(`vertexai_retries: ${this.vertexaiRetries}`)
-    info(`vertexai_timeout_ms: ${this.vertexaiTimeoutMS}`)
     info(`vertexai_concurrency_limit: ${this.vertexaiConcurrencyLimit}`)
     info(`github_concurrency_limit: ${this.githubConcurrencyLimit}`)
     info(`summary_token_limits: ${this.lightTokenLimits.string()}`)

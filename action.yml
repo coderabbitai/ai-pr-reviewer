@@ -181,10 +181,6 @@ inputs:
     description:
       'How many times to retry Vertex AI API in case of timeouts or errors?'
     default: '5'
-  vertexai_timeout_ms:
-    required: false
-    description: 'Timeout for Vertex AI API call in millis'
-    default: '360000'
   vertexai_concurrency_limit:
     required: false
     description: 'How many concurrent API calls to make to Vertex AI servers?'

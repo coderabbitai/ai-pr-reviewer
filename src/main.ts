@@ -30,7 +30,6 @@ async function run(): Promise<void> {
     getInput('vertexai_top_k'),
     getInput('vertexai_top_p'),
     getInput('vertexai_retries'),
-    getInput('vertexai_timeout_ms'),
     getInput('vertexai_concurrency_limit'),
     getInput('github_concurrency_limit'),
     // getInput('vertexai_base_url'),
