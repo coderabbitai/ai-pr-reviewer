@@ -401,7 +401,7 @@ ${
 ${filename}: ${summary}
 `
       }
-      // ask chatgpt to summarize the summaries
+      // ask model to summarize the summaries
       const [summarizeResp] = await heavyBot.chat(
         prompts.renderSummarizeChangesets(inputs)
       )
