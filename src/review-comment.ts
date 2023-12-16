@@ -17,7 +17,7 @@ import {getTokenCount} from './tokenizer'
 // eslint-disable-next-line camelcase
 const context = github_context
 const repo = context.repo
-const ASK_BOT = '@coderabbitai'
+const ASK_BOT = '/aireviewer'
 
 export const handleReviewComment = async (
   heavyBot: Bot,

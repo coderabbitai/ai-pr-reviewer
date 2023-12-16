@@ -1,4 +1,4 @@
-import {getInput, info, warning} from '@actions/core'
+import {info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import {octokit} from './octokit'
@@ -7,40 +7,40 @@ import {octokit} from './octokit'
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = `${getInput('bot_icon')}   CodeRabbit`
+export const COMMENT_GREETING = `{getInput('bot_icon')} AI Reviewer`
 
 export const COMMENT_TAG =
-  '<!-- This is an auto-generated comment by OSS CodeRabbit -->'
+  '<!-- This is an auto-generated comment by Vertex AI Reviewer -->'
 
 export const COMMENT_REPLY_TAG =
-  '<!-- This is an auto-generated reply by OSS CodeRabbit -->'
+  '<!-- This is an auto-generated reply by Vertex AI Reviewer -->'
 
 export const SUMMARIZE_TAG =
-  '<!-- This is an auto-generated comment: summarize by OSS CodeRabbit -->'
+  '<!-- This is an auto-generated comment: summarize by Vertex AI Reviewer -->'
 
 export const IN_PROGRESS_START_TAG =
-  '<!-- This is an auto-generated comment: summarize review in progress by OSS CodeRabbit -->'
+  '<!-- This is an auto-generated comment: summarize review in progress by Vertex AI Reviewer -->'
 
 export const IN_PROGRESS_END_TAG =
-  '<!-- end of auto-generated comment: summarize review in progress by OSS CodeRabbit -->'
+  '<!-- end of auto-generated comment: summarize review in progress by Vertex AI Reviewer -->'
 
 export const DESCRIPTION_START_TAG =
-  '<!-- This is an auto-generated comment: release notes by OSS CodeRabbit -->'
+  '<!-- This is an auto-generated comment: release notes by Vertex AI Reviewer -->'
 export const DESCRIPTION_END_TAG =
-  '<!-- end of auto-generated comment: release notes by OSS CodeRabbit -->'
+  '<!-- end of auto-generated comment: release notes by Vertex AI Reviewer -->'
 
-export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by OSS CodeRabbit -->
+export const RAW_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: raw summary by Vertex AI Reviewer -->
 <!--
 `
 export const RAW_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: raw summary by OSS CodeRabbit -->`
+<!-- end of auto-generated comment: raw summary by Vertex AI Reviewer -->`
 
-export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by OSS CodeRabbit -->
+export const SHORT_SUMMARY_START_TAG = `<!-- This is an auto-generated comment: short summary by Vertex AI Reviewer -->
 <!--
 `
 
 export const SHORT_SUMMARY_END_TAG = `-->
-<!-- end of auto-generated comment: short summary by OSS CodeRabbit -->`
+<!-- end of auto-generated comment: short summary by Vertex AI Reviewer -->`
 
 export const COMMIT_ID_START_TAG = '<!-- commit_ids_reviewed_start -->'
 export const COMMIT_ID_END_TAG = '<!-- commit_ids_reviewed_end -->'
