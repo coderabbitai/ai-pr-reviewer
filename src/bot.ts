@@ -45,10 +45,10 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     })
   }
 
-  chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-    let res: [string, Ids] = ['', {}]
+  chat = async (message: string): Promise<string> => {
+    let res: string = ''
     try {
-      res = await this.chat_(message, ids)
+      res = await this.chat_(message)
       return res
     } catch (e: unknown) {
       if (e instanceof Error) {
@@ -58,15 +58,11 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     }
   }
 
-  private readonly chat_ = async (
-    message: string,
-    // eslint-disable-next-line no-unused-vars
-    ids: Ids
-  ): Promise<[string, Ids]> => {
+  private readonly chat_ = async (message: string): Promise<string> => {
     // record timing
     const start = Date.now()
     if (!message) {
-      return ['', {}]
+      return ''
     }
 
     let response: GenerateContentResult | undefined
@@ -106,7 +102,6 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     if (this.options.debug) {
       info(`vertexai responses: ${responseText}`)
     }
-    const newIds: Ids = {}
-    return [responseText, newIds]
+    return responseText
   }
 }
