@@ -166,8 +166,16 @@ inputs:
     default: 'gemini-pro'
   vertexai_model_temperature:
     required: false
-    description: 'Temperature for GPT model'
-    default: '0.2'
+    description: 'Temperature for Vertex AI model'
+    default: '0.9'
+  vertexai_model_top_k:
+    required: false
+    description: 'Top K for Vertex AI model'
+    default: '32'
+  vertexai_model_top_p:
+    required: false
+    description: 'Top P for Vertex AI model'
+    default: '1.0'
   vertexai_retries:
     required: false
     description:

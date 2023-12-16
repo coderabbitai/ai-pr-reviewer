@@ -16,6 +16,8 @@ export class Options {
   vertexaiLightModel: string
   vertexaiHeavyModel: string
   vertexaiModelTemperature: number
+  vertexaiTopK: number
+  vertexaiTopP: number
   vertexaiRetries: number
   vertexaiTimeoutMS: number
   vertexaiConcurrencyLimit: number
@@ -38,7 +40,9 @@ export class Options {
     vertexaiLocation = 'us-central1',
     vertexaiLightModel = 'gemini-pro',
     vertexaiHeavyModel = 'gemini-pro',
-    vertexaiModelTemperature = '0.2',
+    vertexaiModelTemperature = '0.9',
+    vertexaiTopK = '32',
+    vertexaiTopP = '1.0',
     vertexaiRetries = '3',
     vertexaiTimeoutMS = '120000',
     vertexaiConcurrencyLimit = '6',
@@ -59,6 +63,8 @@ export class Options {
     this.vertexaiLightModel = vertexaiLightModel
     this.vertexaiHeavyModel = vertexaiHeavyModel
     this.vertexaiModelTemperature = parseFloat(vertexaiModelTemperature)
+    this.vertexaiTopK = parseInt(vertexaiTopK)
+    this.vertexaiTopP = parseFloat(vertexaiTopP)
     this.vertexaiRetries = parseInt(vertexaiRetries)
     this.vertexaiTimeoutMS = parseInt(vertexaiTimeoutMS)
     this.vertexaiConcurrencyLimit = parseInt(vertexaiConcurrencyLimit)
@@ -84,6 +90,8 @@ export class Options {
     info(`vertexai_light_model: ${this.vertexaiLightModel}`)
     info(`vertexai_heavy_model: ${this.vertexaiHeavyModel}`)
     info(`vertexai_model_temperature: ${this.vertexaiModelTemperature}`)
+    info(`vertexai_top_k: ${this.vertexaiTopK}`)
+    info(`vertexai_top_p: ${this.vertexaiTopP}`)
     info(`vertexai_retries: ${this.vertexaiRetries}`)
     info(`vertexai_timeout_ms: ${this.vertexaiTimeoutMS}`)
     info(`vertexai_concurrency_limit: ${this.vertexaiConcurrencyLimit}`)

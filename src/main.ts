@@ -26,6 +26,8 @@ async function run(): Promise<void> {
     getInput('vertexai_light_model'),
     getInput('vertexai_heavy_model'),
     getInput('vertexai_model_temperature'),
+    getInput('vertexai_top_k'),
+    getInput('vertexai_top_p'),
     getInput('vertexai_retries'),
     getInput('vertexai_timeout_ms'),
     getInput('vertexai_concurrency_limit'),

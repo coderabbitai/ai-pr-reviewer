@@ -30,7 +30,11 @@ export class Bot {
       generation_config: {
         // eslint-disable-next-line camelcase
         max_output_tokens: vertexaiOptions.tokenLimits.responseTokens,
-        temperature: options.vertexaiModelTemperature
+        temperature: options.vertexaiModelTemperature,
+        // eslint-disable-next-line camelcase
+        top_p: options.vertexaiTopP,
+        // eslint-disable-next-line camelcase
+        top_k: options.vertexaiTopK
       }
     })
 
