@@ -148,6 +148,13 @@ inputs:
   #   required: false
   #   description: 'The url of the Vertex AI api interface.'
   #   default: 'https://us-central1-aiplatform.googleapis.com'
+  vertexai_project_id:
+    required: true
+    description: 'Project ID for Vertex AI'
+  vertexai_location:
+    required: false
+    description: 'Location for Vertex AI'
+    default: 'us-central1'
   vertexai_light_model:
     required: false
     description:
