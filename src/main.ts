@@ -6,7 +6,7 @@ import {
   warning
 } from '@actions/core'
 import {Bot} from './bot'
-import {OpenAIOptions, Options} from './options'
+import {VertexAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
@@ -21,14 +21,14 @@ async function run(): Promise<void> {
     getBooleanInput('review_comment_lgtm'),
     getMultilineInput('path_filters'),
     getInput('system_message'),
-    getInput('openai_light_model'),
-    getInput('openai_heavy_model'),
-    getInput('openai_model_temperature'),
-    getInput('openai_retries'),
-    getInput('openai_timeout_ms'),
-    getInput('openai_concurrency_limit'),
+    getInput('vertexai_light_model'),
+    getInput('vertexai_heavy_model'),
+    getInput('vertexai_model_temperature'),
+    getInput('vertexai_retries'),
+    getInput('vertexai_timeout_ms'),
+    getInput('vertexai_concurrency_limit'),
     getInput('github_concurrency_limit'),
-    getInput('openai_base_url'),
+    // getInput('vertexai_base_url'),
     getInput('language')
   )
 
@@ -46,11 +46,11 @@ async function run(): Promise<void> {
   try {
     lightBot = new Bot(
       options,
-      new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
+      new VertexAIOptions(options.vertexaiLightModel, options.lightTokenLimits)
     )
   } catch (e: any) {
     warning(
-      `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+      `Skipped: failed to create summary bot, please check your vertexai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
   }
@@ -59,11 +59,11 @@ async function run(): Promise<void> {
   try {
     heavyBot = new Bot(
       options,
-      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
+      new VertexAIOptions(options.vertexaiHeavyModel, options.heavyTokenLimits)
     )
   } catch (e: any) {
     warning(
-      `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+      `Skipped: failed to create review bot, please check your vertexai_api_key: ${e}, backtrace: ${e.stack}`
     )
     return
   }

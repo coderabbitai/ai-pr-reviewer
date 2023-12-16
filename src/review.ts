@@ -32,7 +32,7 @@ export const codeReview = async (
 ): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
-  const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
+  const vertexaiConcurrencyLimit = pLimit(options.vertexaiConcurrencyLimit)
   const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
 
   if (
@@ -340,8 +340,8 @@ ${
       const [summarizeResp] = await lightBot.chat(summarizePrompt, {})
 
       if (summarizeResp === '') {
-        info('summarize: nothing obtained from openai')
-        summariesFailed.push(`${filename} (nothing obtained from openai)`)
+        info('summarize: nothing obtained from vertexai')
+        summariesFailed.push(`${filename} (nothing obtained from vertexai)`)
         return null
       } else {
         if (options.reviewSimpleChanges === false) {
@@ -364,8 +364,10 @@ ${
         return [filename, summarizeResp, true]
       }
     } catch (e: any) {
-      warning(`summarize: error from openai: ${e as string}`)
-      summariesFailed.push(`${filename} (error from openai: ${e as string})})`)
+      warning(`summarize: error from vertexai: ${e as string}`)
+      summariesFailed.push(
+        `${filename} (error from vertexai: ${e as string})})`
+      )
       return null
     }
   }
@@ -375,7 +377,7 @@ ${
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
     if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
       summaryPromises.push(
-        openaiConcurrencyLimit(
+        vertexaiConcurrencyLimit(
           async () => await doSummary(filename, fileContent, fileDiff)
         )
       )
@@ -405,7 +407,7 @@ ${filename}: ${summary}
         {}
       )
       if (summarizeResp === '') {
-        warning('summarize: nothing obtained from openai')
+        warning('summarize: nothing obtained from vertexai')
       } else {
         inputs.rawSummary = summarizeResp
       }
@@ -418,7 +420,7 @@ ${filename}: ${summary}
     {}
   )
   if (summarizeFinalResponse === '') {
-    info('summarize: nothing obtained from openai')
+    info('summarize: nothing obtained from vertexai')
   }
 
   if (options.disableReleaseNotes === false) {
@@ -428,7 +430,7 @@ ${filename}: ${summary}
       {}
     )
     if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
+      info('release notes: nothing obtained from vertexai')
     } else {
       let message = '### Summary by CodeRabbit\n\n'
       message += releaseNotesResponse
@@ -624,7 +626,7 @@ ${commentChain}
             {}
           )
           if (response === '') {
-            info('review: nothing obtained from openai')
+            info('review: nothing obtained from vertexai')
             reviewsFailed.push(`${filename} (no response)`)
             return
           }
@@ -674,7 +676,7 @@ ${commentChain}
     for (const [filename, fileContent, , patches] of filesAndChangesReview) {
       if (options.maxFiles <= 0 || reviewPromises.length < options.maxFiles) {
         reviewPromises.push(
-          openaiConcurrencyLimit(async () => {
+          vertexaiConcurrencyLimit(async () => {
             await doReview(filename, fileContent, patches)
           })
         )
