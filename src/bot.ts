@@ -1,13 +1,10 @@
 import './fetch-polyfill'
-
-import {info, setFailed, warning} from '@actions/core'
 import {
-  ChatGPTAPI,
-  ChatGPTError,
-  ChatMessage,
-  SendMessageOptions
-  // eslint-disable-next-line import/no-unresolved
-} from 'chatgpt'
+  VertexAI,
+  ChatSession,
+  GenerateContentResult
+} from '@google-cloud/vertexai'
+import {info, setFailed, warning} from '@actions/core'
 import pRetry from 'p-retry'
 import {VertexAIOptions, Options} from './options'
 
@@ -18,39 +15,34 @@ export interface Ids {
 }
 
 export class Bot {
-  private readonly api: ChatGPTAPI | null = null // not free
-
+  private readonly api: ChatSession
   private readonly options: Options
 
   constructor(options: Options, vertexaiOptions: VertexAIOptions) {
     this.options = options
-    if (process.env.OPENAI_API_KEY) {
-      const currentDate = new Date().toISOString().split('T')[0]
-      const systemMessage = `${options.systemMessage} 
-Knowledge cutoff: ${vertexaiOptions.tokenLimits.knowledgeCutOff}
-Current date: ${currentDate}
+    const vertexAI = new VertexAI({
+      project: options.vertexaiProjectID,
+      location: options.vertexaiLocation
+    })
+    const generativeModel = vertexAI.preview.getGenerativeModel({
+      model: vertexaiOptions.model,
+      // eslint-disable-next-line camelcase
+      generation_config: {
+        // eslint-disable-next-line camelcase
+        max_output_tokens: vertexaiOptions.tokenLimits.responseTokens,
+        temperature: options.vertexaiModelTemperature
+      }
+    })
 
+    const systemMessage = `${options.systemMessage}
 IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
 `
-
-      this.api = new ChatGPTAPI({
-        // apiBaseUrl: options.apiBaseUrl,
-        systemMessage,
-        apiKey: process.env.OPENAI_API_KEY,
-        apiOrg: process.env.OPENAI_API_ORG ?? undefined,
-        debug: options.debug,
-        maxModelTokens: vertexaiOptions.tokenLimits.maxTokens,
-        maxResponseTokens: vertexaiOptions.tokenLimits.responseTokens,
-        completionParams: {
-          temperature: options.vertexaiModelTemperature,
-          model: vertexaiOptions.model
-        }
-      })
-    } else {
-      const err =
-        "Unable to initialize the Vertex AI API, both 'OPENAI_API_KEY' environment variable are not available"
-      throw new Error(err)
-    }
+    this.api = generativeModel.startChat({
+      history: [
+        {role: 'user', parts: [{text: systemMessage}]},
+        {role: 'model', parts: [{text: `Got it. Let's get started!`}]}
+      ]
+    })
   }
 
   chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
@@ -59,7 +51,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       res = await this.chat_(message, ids)
       return res
     } catch (e: unknown) {
-      if (e instanceof ChatGPTError) {
+      if (e instanceof Error) {
         warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
       }
       return res
@@ -68,6 +60,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
 
   private readonly chat_ = async (
     message: string,
+    // eslint-disable-next-line no-unused-vars
     ids: Ids
   ): Promise<[string, Ids]> => {
     // record timing
@@ -76,21 +69,15 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
       return ['', {}]
     }
 
-    let response: ChatMessage | undefined
+    let response: GenerateContentResult | undefined
 
     if (this.api != null) {
-      const opts: SendMessageOptions = {
-        timeoutMs: this.options.vertexaiTimeoutMS
-      }
-      if (ids.parentMessageId) {
-        opts.parentMessageId = ids.parentMessageId
-      }
       try {
-        response = await pRetry(() => this.api!.sendMessage(message, opts), {
+        response = await pRetry(() => this.api!.sendMessage(message), {
           retries: this.options.vertexaiRetries
         })
       } catch (e: unknown) {
-        if (e instanceof ChatGPTError) {
+        if (e instanceof Error) {
           info(
             `response: ${response}, failed to send message to vertexai: ${e}, backtrace: ${e.stack}`
           )
@@ -108,7 +95,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     }
     let responseText = ''
     if (response != null) {
-      responseText = response.text
+      responseText = response.response.candidates[0].content.parts[0].text || ''
     } else {
       warning('vertexai response is null')
     }
@@ -119,10 +106,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     if (this.options.debug) {
       info(`vertexai responses: ${responseText}`)
     }
-    const newIds: Ids = {
-      parentMessageId: response?.id,
-      conversationId: response?.conversationId
-    }
+    const newIds: Ids = {}
     return [responseText, newIds]
   }
 }
