@@ -217,6 +217,11 @@ inputs:
       comments/documentation. Identify and resolve significant 
       concerns to improve overall code quality while deliberately 
       disregarding minor issues.
+  reply_for_system_message:
+    required: false
+    description: 'The first reply for system message from Vertex AI'
+    default: |
+      Got it. I'll review the code and provide a summary. Let's get started.
   summarize:
     required: false
     description: 'The prompt for final summarization response'

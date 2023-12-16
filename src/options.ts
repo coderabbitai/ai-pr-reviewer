@@ -11,6 +11,7 @@ export class Options {
   reviewCommentLGTM: boolean
   pathFilters: PathFilter
   systemMessage: string
+  replyForSystemMessage: string
   vertexaiProjectID: string
   vertexaiLocation: string
   vertexaiLightModel: string
@@ -36,6 +37,7 @@ export class Options {
     reviewCommentLGTM = false,
     pathFilters: string[] | null = null,
     systemMessage = '',
+    replyForSystemMessage = '',
     vertexaiProjectID: string,
     vertexaiLocation = 'us-central1',
     vertexaiLightModel = 'gemini-pro',
@@ -58,6 +60,7 @@ export class Options {
     this.reviewCommentLGTM = reviewCommentLGTM
     this.pathFilters = new PathFilter(pathFilters)
     this.systemMessage = systemMessage
+    this.replyForSystemMessage = replyForSystemMessage
     this.vertexaiProjectID = vertexaiProjectID
     this.vertexaiLocation = vertexaiLocation
     this.vertexaiLightModel = vertexaiLightModel
@@ -85,6 +88,7 @@ export class Options {
     info(`review_comment_lgtm: ${this.reviewCommentLGTM}`)
     info(`path_filters: ${this.pathFilters}`)
     info(`system_message: ${this.systemMessage}`)
+    info(`reply_for_system_message: ${this.replyForSystemMessage}`)
     info(`vertexai_project_id: ${this.vertexaiProjectID}`)
     info(`vertexai_location: ${this.vertexaiLocation}`)
     info(`vertexai_light_model: ${this.vertexaiLightModel}`)

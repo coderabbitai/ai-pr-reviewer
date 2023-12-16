@@ -44,7 +44,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     this.api = generativeModel.startChat({
       history: [
         {role: 'user', parts: [{text: systemMessage}]},
-        {role: 'model', parts: [{text: `Got it. Let's get started!`}]}
+        {role: 'model', parts: [{text: options.replyForSystemMessage}]}
       ]
     })
   }

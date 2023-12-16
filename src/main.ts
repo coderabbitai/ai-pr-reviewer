@@ -21,6 +21,7 @@ async function run(): Promise<void> {
     getBooleanInput('review_comment_lgtm'),
     getMultilineInput('path_filters'),
     getInput('system_message'),
+    getInput('reply_for_system_message'),
     getInput('vertexai_project_id'),
     getInput('vertexai_location'),
     getInput('vertexai_light_model'),
