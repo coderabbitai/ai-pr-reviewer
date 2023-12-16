@@ -21,19 +21,24 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{github.event.pull_request.head.repo.full_name}}
           ref: ${{github.event.pull_request.head.ref}}
           submodules: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/636924443032/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+
+          project_id: sandbox-toga4-vertexai
+
       - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           debug: true
-          review_comment_lgtm: false
-          openai_heavy_model: gpt-4
-          path_filters: |
-            !dist/**
-            !**/*.lock
+          language: ja-JP
+          vertexai_project_id: sandbox-toga4-vertexai
+          vertexai_location: asia-northeast1
