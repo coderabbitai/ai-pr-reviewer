@@ -22,7 +22,7 @@ import {getTokenCount} from './tokenizer'
 const context = github_context
 const repo = context.repo
 
-const ignoreKeyword = '@coderabbitai: ignore'
+const ignoreKeyword = '/aireviewer: ignore'
 
 export const codeReview = async (
   lightBot: Bot,
@@ -32,7 +32,7 @@ export const codeReview = async (
 ): Promise<void> => {
   const commenter: Commenter = new Commenter()
 
-  const openaiConcurrencyLimit = pLimit(options.openaiConcurrencyLimit)
+  const vertexaiConcurrencyLimit = pLimit(options.vertexaiConcurrencyLimit)
   const githubConcurrencyLimit = pLimit(options.githubConcurrencyLimit)
 
   if (
@@ -337,11 +337,11 @@ ${
 
     // summarize content
     try {
-      const [summarizeResp] = await lightBot.chat(summarizePrompt, {})
+      const summarizeResp = await lightBot.chat(summarizePrompt)
 
-      if (summarizeResp === '') {
-        info('summarize: nothing obtained from openai')
-        summariesFailed.push(`${filename} (nothing obtained from openai)`)
+      if (!summarizeResp) {
+        info('summarize: nothing obtained from vertexai')
+        summariesFailed.push(`${filename} (nothing obtained from vertexai)`)
         return null
       } else {
         if (options.reviewSimpleChanges === false) {
@@ -364,8 +364,10 @@ ${
         return [filename, summarizeResp, true]
       }
     } catch (e: any) {
-      warning(`summarize: error from openai: ${e as string}`)
-      summariesFailed.push(`${filename} (error from openai: ${e as string})})`)
+      warning(`summarize: error from vertexai: ${e as string}`)
+      summariesFailed.push(
+        `${filename} (error from vertexai: ${e as string})})`
+      )
       return null
     }
   }
@@ -375,7 +377,7 @@ ${
   for (const [filename, fileContent, fileDiff] of filesAndChanges) {
     if (options.maxFiles <= 0 || summaryPromises.length < options.maxFiles) {
       summaryPromises.push(
-        openaiConcurrencyLimit(
+        vertexaiConcurrencyLimit(
           async () => await doSummary(filename, fileContent, fileDiff)
         )
       )
@@ -399,13 +401,12 @@ ${
 ${filename}: ${summary}
 `
       }
-      // ask chatgpt to summarize the summaries
-      const [summarizeResp] = await heavyBot.chat(
-        prompts.renderSummarizeChangesets(inputs),
-        {}
+      // ask model to summarize the summaries
+      const summarizeResp = await heavyBot.chat(
+        prompts.renderSummarizeChangesets(inputs)
       )
-      if (summarizeResp === '') {
-        warning('summarize: nothing obtained from openai')
+      if (!summarizeResp) {
+        warning('summarize: nothing obtained from vertexai')
       } else {
         inputs.rawSummary = summarizeResp
       }
@@ -413,24 +414,22 @@ ${filename}: ${summary}
   }
 
   // final summary
-  const [summarizeFinalResponse] = await heavyBot.chat(
-    prompts.renderSummarize(inputs),
-    {}
+  const summarizeFinalResponse = await heavyBot.chat(
+    prompts.renderSummarize(inputs)
   )
-  if (summarizeFinalResponse === '') {
-    info('summarize: nothing obtained from openai')
+  if (!summarizeFinalResponse) {
+    info('summarize: nothing obtained from vertexai')
   }
 
   if (options.disableReleaseNotes === false) {
     // final release notes
-    const [releaseNotesResponse] = await heavyBot.chat(
-      prompts.renderSummarizeReleaseNotes(inputs),
-      {}
+    const releaseNotesResponse = await heavyBot.chat(
+      prompts.renderSummarizeReleaseNotes(inputs)
     )
-    if (releaseNotesResponse === '') {
-      info('release notes: nothing obtained from openai')
+    if (!releaseNotesResponse) {
+      info('release notes: nothing obtained from vertexai')
     } else {
-      let message = '### Summary by CodeRabbit\n\n'
+      let message = '### Summary by AI Reviewer\n\n'
       message += releaseNotesResponse
       try {
         await commenter.updateDescription(
@@ -444,9 +443,8 @@ ${filename}: ${summary}
   }
 
   // generate a short summary as well
-  const [summarizeShortResponse] = await heavyBot.chat(
-    prompts.renderSummarizeShort(inputs),
-    {}
+  const summarizeShortResponse = await heavyBot.chat(
+    prompts.renderSummarizeShort(inputs)
   )
   inputs.shortSummary = summarizeShortResponse
 
@@ -457,17 +455,6 @@ ${RAW_SUMMARY_END_TAG}
 ${SHORT_SUMMARY_START_TAG}
 ${inputs.shortSummary}
 ${SHORT_SUMMARY_END_TAG}
-
----
-
-<details>
-<summary>Uplevel your code reviews with CodeRabbit Pro</summary>
-
-### CodeRabbit Pro
-
-If you like this project, please support us by purchasing the [Pro version](https://coderabbit.ai). The Pro version has advanced context, superior noise reduction and several proprietary improvements compared to the open source version. Moreover, CodeRabbit Pro is free for open source projects.
-
-</details>
 `
 
   statusMsg += `
@@ -619,12 +606,11 @@ ${commentChain}
       if (patchesPacked > 0) {
         // perform review
         try {
-          const [response] = await heavyBot.chat(
-            prompts.renderReviewFileDiff(ins),
-            {}
+          const response = await heavyBot.chat(
+            prompts.renderReviewFileDiff(ins)
           )
-          if (response === '') {
-            info('review: nothing obtained from openai')
+          if (!response) {
+            info('review: nothing obtained from vertexai')
             reviewsFailed.push(`${filename} (no response)`)
             return
           }
@@ -674,7 +660,7 @@ ${commentChain}
     for (const [filename, fileContent, , patches] of filesAndChangesReview) {
       if (options.maxFiles <= 0 || reviewPromises.length < options.maxFiles) {
         reviewPromises.push(
-          openaiConcurrencyLimit(async () => {
+          vertexaiConcurrencyLimit(async () => {
             await doReview(filename, fileContent, patches)
           })
         )
@@ -723,16 +709,16 @@ ${
 <details>
 <summary>Tips</summary>
 
-### Chat with <img src="https://avatars.githubusercontent.com/in/347564?s=41&u=fad245b8b4c7254fe63dd4dcd4d662ace122757e&v=4" alt="Image description" width="20" height="20">  CodeRabbit Bot (\`@coderabbitai\`)
+### Chat with AI Reviewer (\`/aireviewer\`)
 - Reply on review comments left by this bot to ask follow-up questions. A review comment is a comment on a diff or a file.
-- Invite the bot into a review comment chain by tagging \`@coderabbitai\` in a reply.
+- Invite the bot into a review comment chain by tagging \`/aireviewer\` in a reply.
 
 ### Code suggestions
 - The bot may make code suggestions, but please review them carefully before committing since the line number ranges may be misaligned. 
 - You can edit the comment made by the bot and manually tweak the suggestion if it is slightly off.
 
 ### Pausing incremental reviews
-- Add \`@coderabbitai: ignore\` anywhere in the PR description to pause further reviews from the bot.
+- Add \`/aireviewer: ignore\` anywhere in the PR description to pause further reviews from the bot.
 
 </details>
 `

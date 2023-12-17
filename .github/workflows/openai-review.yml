@@ -3,9 +3,10 @@ name: OpenAI Reviewer
 permissions:
   contents: read
   pull-requests: write
+  id-token: 'write'
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
   pull_request_review_comment:
     types: [created]
@@ -21,19 +22,20 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-          submodules: false
-      - uses: ./
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: true
-          review_comment_lgtm: false
-          openai_heavy_model: gpt-4
-          path_filters: |
-            !dist/**
-            !**/*.lock
+          # workload_identity_provider: projects/636924443032/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+          project_id: sandbox-toga4-vertexai
+
+      # - uses: ./
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     debug: true
+      #     language: ja-JP
+      #     vertexai_project_id: sandbox-toga4-vertexai
+      #     vertexai_location: asia-northeast1

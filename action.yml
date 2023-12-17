@@ -3,7 +3,7 @@ description: 'AI-based PR Reviewer & Summarizer with Chat Capabilities'
 branding:
   icon: 'git-merge'
   color: 'orange'
-author: 'CodeRabbit LLC'
+author: 'toga4'
 inputs:
   debug:
     required: false
@@ -144,46 +144,57 @@ inputs:
     required: false
     description: 'Disable release notes'
     default: 'false'
-  openai_base_url:
+  # vertexai_base_url:
+  #   required: false
+  #   description: 'The url of the Vertex AI api interface.'
+  #   default: 'https://us-central1-aiplatform.googleapis.com'
+  vertexai_project_id:
+    required: true
+    description: 'Project ID for Vertex AI'
+  vertexai_location:
     required: false
-    description: 'The url of the openai api interface.'
-    default: 'https://api.openai.com/v1'
-  openai_light_model:
+    description: 'Location for Vertex AI'
+    default: 'us-central1'
+  vertexai_light_model:
     required: false
     description:
       'Model to use for simple tasks like summarizing diff on a file.'
-    default: 'gpt-3.5-turbo'
-  openai_heavy_model:
+    default: 'codechat-bison'
+  vertexai_heavy_model:
     required: false
     description: 'Model to use for complex tasks such as code reviews.'
-    default: 'gpt-4'
-  openai_model_temperature:
+    default: 'codechat-bison-32k'
+  vertexai_model_temperature:
     required: false
-    description: 'Temperature for GPT model'
-    default: '0.05'
-  openai_retries:
+    description: 'Temperature for Vertex AI model'
+    default: '0.9'
+  vertexai_model_top_k:
+    required: false
+    description: 'Top K for Vertex AI model'
+    default: '32'
+  vertexai_model_top_p:
+    required: false
+    description: 'Top P for Vertex AI model'
+    default: '1.0'
+  vertexai_retries:
     required: false
     description:
-      'How many times to retry OpenAI API in case of timeouts or errors?'
+      'How many times to retry Vertex AI API in case of timeouts or errors?'
     default: '5'
-  openai_timeout_ms:
+  vertexai_concurrency_limit:
     required: false
-    description: 'Timeout for OpenAI API call in millis'
-    default: '360000'
-  openai_concurrency_limit:
-    required: false
-    description: 'How many concurrent API calls to make to OpenAI servers?'
-    default: '6'
+    description: 'How many concurrent API calls to make to Vertex AI servers?'
+    default: '1'
   github_concurrency_limit:
     required: false
     description: 'How many concurrent API calls to make to GitHub?'
     default: '6'
   system_message:
     required: false
-    description: 'System message to be sent to OpenAI'
+    description: 'System message to be sent to Vertex AI'
     default: |
-      You are `@coderabbitai` (aka `github-actions[bot]`), a language model 
-      trained by OpenAI. Your purpose is to act as a highly experienced 
+      You are `/aireviewer` (aka `github-actions[bot]`), a language model 
+      trained by Vertex AI. Your purpose is to act as a highly experienced 
       software engineer and provide a thorough review of the code hunks
       and suggest code snippets to improve key areas such as:
         - Logic
@@ -202,6 +213,11 @@ inputs:
       comments/documentation. Identify and resolve significant 
       concerns to improve overall code quality while deliberately 
       disregarding minor issues.
+  reply_for_system_message:
+    required: false
+    description: 'The first reply for system message from Vertex AI'
+    default: |
+      Got it. I'll review the code and provide a summary. Let's get started.
   summarize:
     required: false
     description: 'The prompt for final summarization response'
@@ -237,7 +253,7 @@ inputs:
   bot_icon:
     required: false
     description: 'The icon for the bot'
-    default: '<img src="https://avatars.githubusercontent.com/in/347564?s=41" alt="Image description" width="20" height="20">'
+    default: 🤖
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'

@@ -1,8 +1,8 @@
 {
-  "name": "openai-pr-reviewer",
+  "name": "vertexai-pr-reviewer",
   "version": "0.0.0",
   "private": true,
-  "description": "OpenAI-based PR Reviewer and Summarizer.",
+  "description": "Vertex AI based PR Reviewer and Summarizer.",
   "main": "lib/main.js",
   "scripts": {
     "build": "cp node_modules/@dqbd/tiktoken/tiktoken_bg.wasm dist/tiktoken_bg.wasm && tsc",
@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fluxninja/openai-pr-reviewer.git"
+    "url": "git+https://github.com/toga4/vertexai-pr-reviewer.git"
   },
   "keywords": [
     "actions",
