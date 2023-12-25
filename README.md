@@ -97,6 +97,7 @@ jobs:
           debug: false
           review_simple_changes: false
           review_comment_lgtm: false
+          language: ja-JP
 ```
 
 #### Environment variables
