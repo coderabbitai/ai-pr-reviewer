@@ -23,10 +23,10 @@ export class Bot {
   constructor(options: Options, openaiOptions: OpenAIOptions) {
     this.options = options
     if (
-        process.env.AZURE_OPENAI_API_KEY &&
-        process.env.AZURE_OPENAI_API_VERSION &&
-        process.env.AZURE_OPENAI_API_INSTANCE_NAME &&
-        process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME
+      process.env.AZURE_OPENAI_API_KEY &&
+      process.env.AZURE_OPENAI_API_VERSION &&
+      process.env.AZURE_OPENAI_API_INSTANCE_NAME &&
+      process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME
     ) {
       const currentDate = new Date().toISOString().split('T')[0]
       const systemMessage = `${options.systemMessage}
@@ -47,7 +47,7 @@ export class Bot {
         azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
         azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
         azureOpenAIApiDeploymentName:
-        process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+          process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
         timeout: this.options.openaiTimeoutMS,
         maxRetries: this.options.openaiRetries
       })
@@ -58,7 +58,7 @@ export class Bot {
       })
     } else {
       const err =
-          "Unable to initialize the OpenAI API, both 'AZURE_OPENAI_API_KEY' environment variable are not available"
+        "Unable to initialize the OpenAI API, both 'AZURE_OPENAI_API_KEY' environment variable are not available"
       throw new Error(err)
     }
   }
