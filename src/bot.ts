@@ -1,14 +1,11 @@
 import './fetch-polyfill'
 
 import {info, setFailed, warning} from '@actions/core'
-import {
-  ChatGPTAPI,
-  ChatGPTError,
-  ChatMessage,
-  SendMessageOptions
-  // eslint-disable-next-line import/no-unresolved
-} from 'chatgpt'
-import pRetry from 'p-retry'
+import {ConversationChain} from 'langchain/chains'
+import {ChatOpenAI} from 'langchain/chat_models/openai'
+import {BufferMemory} from 'langchain/memory'
+import {ChatPromptTemplate, MessagesPlaceholder} from 'langchain/prompts'
+import {ChainValues} from 'langchain/schema'
 import {OpenAIOptions, Options} from './options'
 
 // define type to save parentMessageId and conversationId
@@ -18,83 +15,78 @@ export interface Ids {
 }
 
 export class Bot {
-  private readonly api: ChatGPTAPI | null = null // not free
+  private readonly model: ChatOpenAI | null = null
+  private readonly api: ConversationChain | null = null
 
   private readonly options: Options
 
   constructor(options: Options, openaiOptions: OpenAIOptions) {
     this.options = options
-    if (process.env.OPENAI_API_KEY) {
+    if (
+        process.env.AZURE_OPENAI_API_KEY &&
+        process.env.AZURE_OPENAI_API_VERSION &&
+        process.env.AZURE_OPENAI_API_INSTANCE_NAME &&
+        process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME
+    ) {
       const currentDate = new Date().toISOString().split('T')[0]
-      const systemMessage = `${options.systemMessage} 
-Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
-Current date: ${currentDate}
+      const systemMessage = `${options.systemMessage}
+      Knowledge cutoff: ${openaiOptions.tokenLimits.knowledgeCutOff}
+      Current date: ${currentDate}
+      
+      IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
+      `
+      const chatPrompt = ChatPromptTemplate.fromMessages([
+        ['system', systemMessage],
+        new MessagesPlaceholder('history'),
+        ['human', '{input}']
+      ])
 
-IMPORTANT: Entire response must be in the language with ISO code: ${options.language}
-`
-
-      this.api = new ChatGPTAPI({
-        apiBaseUrl: options.apiBaseUrl,
-        systemMessage,
-        apiKey: process.env.OPENAI_API_KEY,
-        apiOrg: process.env.OPENAI_API_ORG ?? undefined,
-        debug: options.debug,
-        maxModelTokens: openaiOptions.tokenLimits.maxTokens,
-        maxResponseTokens: openaiOptions.tokenLimits.responseTokens,
-        completionParams: {
-          temperature: options.openaiModelTemperature,
-          model: openaiOptions.model
-        }
+      this.model = new ChatOpenAI({
+        temperature: options.openaiModelTemperature,
+        azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+        azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
+        azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+        azureOpenAIApiDeploymentName:
+        process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+        timeout: this.options.openaiTimeoutMS,
+        maxRetries: this.options.openaiRetries
+      })
+      this.api = new ConversationChain({
+        memory: new BufferMemory({returnMessages: true, memoryKey: 'history'}),
+        prompt: chatPrompt,
+        llm: this.model
       })
     } else {
       const err =
-        "Unable to initialize the OpenAI API, both 'OPENAI_API_KEY' environment variable are not available"
+          "Unable to initialize the OpenAI API, both 'AZURE_OPENAI_API_KEY' environment variable are not available"
       throw new Error(err)
     }
   }
 
-  chat = async (message: string, ids: Ids): Promise<[string, Ids]> => {
-    let res: [string, Ids] = ['', {}]
+  chat = async (message: string): Promise<string> => {
+    let res: string = ''
     try {
-      res = await this.chat_(message, ids)
+      res = await this.chat_(message)
       return res
     } catch (e: unknown) {
-      if (e instanceof ChatGPTError) {
-        warning(`Failed to chat: ${e}, backtrace: ${e.stack}`)
-      }
       return res
     }
   }
 
-  private readonly chat_ = async (
-    message: string,
-    ids: Ids
-  ): Promise<[string, Ids]> => {
+  private readonly chat_ = async (message: string): Promise<string> => {
     // record timing
     const start = Date.now()
     if (!message) {
-      return ['', {}]
+      return ''
     }
 
-    let response: ChatMessage | undefined
+    let response: ChainValues | undefined
 
     if (this.api != null) {
-      const opts: SendMessageOptions = {
-        timeoutMs: this.options.openaiTimeoutMS
-      }
-      if (ids.parentMessageId) {
-        opts.parentMessageId = ids.parentMessageId
-      }
       try {
-        response = await pRetry(() => this.api!.sendMessage(message, opts), {
-          retries: this.options.openaiRetries
-        })
+        response = await this.api.call({input: message})
       } catch (e: unknown) {
-        if (e instanceof ChatGPTError) {
-          info(
-            `response: ${response}, failed to send message to openai: ${e}, backtrace: ${e.stack}`
-          )
-        }
+        info(`response: ${response}, failed to send message to openai: ${e}`)
       }
       const end = Date.now()
       info(`response: ${JSON.stringify(response)}`)
@@ -108,7 +100,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     }
     let responseText = ''
     if (response != null) {
-      responseText = response.text
+      responseText = response.response
     } else {
       warning('openai response is null')
     }
@@ -119,10 +111,6 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
     if (this.options.debug) {
       info(`openai responses: ${responseText}`)
     }
-    const newIds: Ids = {
-      parentMessageId: response?.id,
-      conversationId: response?.conversationId
-    }
-    return [responseText, newIds]
+    return responseText
   }
 }

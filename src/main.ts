@@ -28,7 +28,6 @@ async function run(): Promise<void> {
     getInput('openai_timeout_ms'),
     getInput('openai_concurrency_limit'),
     getInput('github_concurrency_limit'),
-    getInput('openai_base_url'),
     getInput('language')
   )
 
