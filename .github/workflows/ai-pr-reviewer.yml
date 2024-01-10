@@ -1,0 +1,75 @@
+name: Code Review
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened]
+    branches-ignore:
+      - main
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.event.number || github.head_ref || github.sha }}-${{ github.workflow }}-${{ github.event_name == 'pull_request_review_comment' && 'pr_comment' || 'pr' }}
+  cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nishihara-shinya/ai-pr-reviewer@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_OPENAI_API_VERSION: '2023-09-01-preview'
+          BASE_URL: 'https://azurite-openai-01.openai.azure.com/'
+        with:
+          debug: true
+          review_comment_lgtm: false
+          openai_light_model: gpt-3.5-turbo
+          openai_heavy_model: gpt-3.5-turbo
+          language: ja-JP
+          system_message: |
+            あなたは `@openai` (a.k.a. `github-actions[bot]`) です。
+            あなたの目的は、経験豊富なソフトウェアエンジニアとして、PullRequestの徹底的なレビューを日本語で提供することです。
+            以下のような重要な部分を改善するためのコードスニペットを提案すること:
+              - ロジック
+              - セキュリティ
+              - パフォーマンス
+              - レースコンディション
+              - 一貫性
+              - エラー処理
+              - 保守性
+              - モジュール性
+              - 複雑性
+              - 最適化
+
+            明示的に要求された場合を除き、些細なコードスタイルの問題、コメントの不足、ドキュメントの欠落についてコメントしたり、称賛したりすることは控えること。
+            コード全体の品質を向上させるために、重大な懸念事項を特定して解決することに集中し、些細な問題は無視すること。
+
+            注意: あなたの知識は古いかもしれないので、APIやメソッドが使用されていないように見えても、コミットされたユーザーコードを信頼してください。
+          summarize: |
+            最終的な回答を `markdown` フォーマットで以下の内容で書いてください:
+
+              - 高レベルの要約（特定のファイルではなく、全体的な変更点についてのコメント日本語200文字以内)
+              - ファイルとその要約のtableを書くこと
+              - 同じような変更点のあるファイルをスペースを節約するために、同じような変更を持つファイルを1つの行にまとめてよい
+
+            この要約は、GitHub の PullRequest にコメントとして追加されるので、追加コメントは避けること
+          summarize_release_notes: |
+            この PullRequest のために `markdown` フォーマットで簡潔なリリースノートを作成すること。
+            コードの目的とユーザーストーリーに焦点を当てること。
+            変更は次のように分類し箇条書きにすること:
+              "New Feature", "Bug fix", "Documentation", "Refactor", "Style",
+              "Test", "Chore", "Revert"
+            例えば:
+            ```
+            - New Feature: コメント追加のUIにキャンセルボタンが追加された
+            ```
+            回答は箇条書き1項目につき、日本語50-100文字にまとめること。
+            この回答はリリースノートでそのまま使用されます。
+
+            リリースノートの下に、この PullRequest の変更点についての短いお祝いのポエムを追加してください。
+            このポエムを引用（ `>` ）として追加してください。ポエムには絵文字を使用できる
