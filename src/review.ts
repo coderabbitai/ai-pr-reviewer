@@ -751,7 +751,9 @@ ${
   }
 
   // post the final summary comment
-  await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
+
+  // close summary to reduce comment noise
+  // await commenter.comment(`${summarizeComment}`, SUMMARIZE_TAG, 'replace')
 }
 
 const splitPatch = (patch: string | null | undefined): string[] => {
