@@ -134,6 +134,8 @@ inputs:
       !**/*.min.js.css
       !**/*.tfstate
       !**/*.tfstate.backup
+      !**/vault.yml
+      !**/vault.yaml
   disable_review:
     required: false
     description: 'Only provide the summary and skip the code review.'
