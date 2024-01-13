@@ -18,7 +18,7 @@ inputs:
   review_simple_changes:
     required: false
     description: 'Review even when the changes are simple'
-    default: 'false'
+    default: 'true'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
