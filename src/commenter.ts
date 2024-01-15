@@ -7,8 +7,6 @@ import {octokit} from './octokit'
 const context = github_context
 const repo = context.repo
 
-export const COMMENT_GREETING = `${getInput('bot_icon')}   CodeRabbit`
-
 export const COMMENT_TAG =
   '<!-- This is an auto-generated comment by OSS CodeRabbit -->'
 
@@ -66,9 +64,7 @@ export class Commenter {
       tag = COMMENT_TAG
     }
 
-    const body = `${COMMENT_GREETING}
-
-${message}
+    const body = `${message}
 
 ${tag}`
 
@@ -183,9 +179,7 @@ ${tag}`
     endLine: number,
     message: string
   ) {
-    message = `${COMMENT_GREETING}
-
-${message}
+    message = `${message}
 
 ${COMMENT_TAG}`
     this.reviewCommentsBuffer.push({
@@ -232,8 +226,7 @@ ${COMMENT_TAG}`
   }
 
   async submitReview(pullNumber: number, commitId: string) {
-    const body = `${COMMENT_GREETING}
-`
+    const body = ``
 
     if (this.reviewCommentsBuffer.length === 0) {
       // Submit empty review with statusMsg
@@ -365,9 +358,7 @@ ${COMMENT_TAG}`
     topLevelComment: any,
     message: string
   ) {
-    const reply = `${COMMENT_GREETING}
-
-${message}
+    const reply = `${message}
 
 ${COMMENT_REPLY_TAG}
 `
