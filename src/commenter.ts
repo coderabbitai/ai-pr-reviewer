@@ -231,10 +231,8 @@ ${COMMENT_TAG}`
     }
   }
 
-  async submitReview(pullNumber: number, commitId: string, statusMsg: string) {
+  async submitReview(pullNumber: number, commitId: string) {
     const body = `${COMMENT_GREETING}
-
-${statusMsg}
 `
 
     if (this.reviewCommentsBuffer.length === 0) {

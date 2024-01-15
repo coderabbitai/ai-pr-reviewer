@@ -123,3 +123,11 @@ tags.lock
 .env
 .secrets
 bin/act
+/.idea/.gitignore
+/.idea/ai-pr-reviewer.iml
+/.idea/codeStyles/codeStyleConfig.xml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/codeStyles/Project.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml
