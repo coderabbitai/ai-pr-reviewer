@@ -294,13 +294,6 @@ ${
     : ''
 }
 `
-
-  // update the existing comment with in progress status
-  /*const inProgressSummarizeCmt = commenter.addInProgressStatus(
-    existingSummarizeCmtBody,
-    statusMsg
-  )*/
-
   // add in progress status to the summarize comment
   // await commenter.comment(`${inProgressSummarizeCmt}`, SUMMARIZE_TAG, 'replace')
 
