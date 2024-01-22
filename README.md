@@ -104,6 +104,9 @@ jobs:
 - `OPENAI_API_KEY`: use this to authenticate with OpenAI API. You can get one
   [here](https://platform.openai.com/account/api-keys). Please add this key to
   your GitHub Action secrets.
+- `OPENAI_API_BASE_URL`: (optional) use this to use a custom OpenAI API base
+  URL. This is useful if you are using a custom OpenAI API server. Defaults to
+  `https://api.openai.com`.
 - `OPENAI_API_ORG`: (optional) use this to use the specified organization with
   OpenAI API if you have multiple. Please add this key to your GitHub Action
   secrets.
