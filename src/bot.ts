@@ -34,7 +34,7 @@ IMPORTANT: Entire response must be in the language with ISO code: ${options.lang
 `
 
       this.api = new ChatGPTAPI({
-        apiBaseUrl: options.apiBaseUrl,
+        apiBaseUrl: process.env.OPENAI_API_BASE_URL,
         systemMessage,
         apiKey: process.env.OPENAI_API_KEY,
         apiOrg: process.env.OPENAI_API_ORG ?? undefined,
