@@ -144,6 +144,15 @@ inputs:
     required: false
     description: 'Disable release notes'
     default: 'false'
+  azure_api_instance_name:  
+    required: false
+    description: 'For example, if your Azure instance is hosted under https://{INSTANCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME} use INSTANCE_NAME'
+  azure_api_deployment_name:  
+    required: false
+    description: 'For example, if your Azure instance is hosted under https://{INSTANCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME} use DEPLOYMENT_NAME'
+  azure_api_version:
+    required: false
+    description: 'Api version like "2023-07-01-preview"'
   openai_base_url:
     required: false
     description: 'The url of the openai api interface.'

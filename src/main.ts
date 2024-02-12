@@ -5,7 +5,10 @@ import {
   setFailed,
   warning
 } from '@actions/core'
+import {AzureBot} from './azure-bot'
 import {Bot} from './bot'
+import {BotProtocol} from './bot-interface'
+
 import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
@@ -29,7 +32,10 @@ async function run(): Promise<void> {
     getInput('openai_concurrency_limit'),
     getInput('github_concurrency_limit'),
     getInput('openai_base_url'),
-    getInput('language')
+    getInput('language'),
+    getInput('azure_api_instance_name'),
+    getInput('azure_api_deployment_name'),
+    getInput('azure_api_version')
   )
 
   // print options
@@ -42,12 +48,19 @@ async function run(): Promise<void> {
 
   // Create two bots, one for summary and one for review
 
-  let lightBot: Bot | null = null
+  let lightBot: BotProtocol | null = null
   try {
-    lightBot = new Bot(
-      options,
-      new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
-    )
+    if (options.azureApiDeployment.length > 0) {
+      lightBot = new AzureBot(
+        options,
+        new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
+      )
+    } else {
+      lightBot = new Bot(
+        options,
+        new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
+      )
+    }
   } catch (e: any) {
     warning(
       `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
@@ -55,12 +68,19 @@ async function run(): Promise<void> {
     return
   }
 
-  let heavyBot: Bot | null = null
+  let heavyBot: BotProtocol | null = null
   try {
-    heavyBot = new Bot(
-      options,
-      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
-    )
+    if (options.azureApiDeployment.length > 0) {
+      heavyBot = new AzureBot(
+        options,
+        new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
+      )
+    } else {
+      heavyBot = new Bot(
+        options,
+        new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
+      )
+    }
   } catch (e: any) {
     warning(
       `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`

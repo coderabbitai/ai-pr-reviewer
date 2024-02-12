@@ -22,6 +22,9 @@ export class Options {
   heavyTokenLimits: TokenLimits
   apiBaseUrl: string
   language: string
+  azureApiInstance: string
+  azureApiDeployment: string
+  azureApiVersion: string
 
   constructor(
     debug: boolean,
@@ -40,7 +43,10 @@ export class Options {
     openaiConcurrencyLimit = '6',
     githubConcurrencyLimit = '6',
     apiBaseUrl = 'https://api.openai.com/v1',
-    language = 'en-US'
+    language = 'en-US',
+    azureApiInstance = '',
+    azureApiDeployment = '',
+    azureApiVersion = ''
   ) {
     this.debug = debug
     this.disableReview = disableReview
@@ -61,6 +67,9 @@ export class Options {
     this.heavyTokenLimits = new TokenLimits(openaiHeavyModel)
     this.apiBaseUrl = apiBaseUrl
     this.language = language
+    this.azureApiInstance = azureApiInstance
+    this.azureApiDeployment = azureApiDeployment
+    this.azureApiVersion = azureApiVersion
   }
 
   // print all options using core.info
@@ -84,6 +93,9 @@ export class Options {
     info(`review_token_limits: ${this.heavyTokenLimits.string()}`)
     info(`api_base_url: ${this.apiBaseUrl}`)
     info(`language: ${this.language}`)
+    info(`azureApiInstance: ${this.azureApiInstance}`)
+    info(`azureApiDeployment: ${this.azureApiDeployment}`)
+    info(`azureApiVersion: ${this.azureApiVersion}`)
   }
 
   checkPath(path: string): boolean {
