@@ -146,10 +146,10 @@ inputs:
     default: 'false'
   azure_api_instance_name:  
     required: false
-    description: 'For example, if your Azure instance is hosted under https://{INSTANCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME} use INSTANCE_NAME'
+    description: 'Instance name of your Azure API. For example, if your Azure instance is hosted under https://{INSTANCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME}, use INSTANCE_NAME'
   azure_api_deployment_name:  
     required: false
-    description: 'For example, if your Azure instance is hosted under https://{INSTANCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME} use DEPLOYMENT_NAME'
+    description: 'Deployment name of your Azure API. For example, if your Azure instance is hosted under https://{INSTANCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME}, use DEPLOYMENT_NAME'
   azure_api_version:
     required: false
     description: 'Api version like "2023-07-01-preview"'

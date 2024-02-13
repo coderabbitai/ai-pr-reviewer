@@ -1,7 +1,7 @@
 import {info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
-import {type BotProtocol} from './bot-interface'
+import {BotProtocol} from './bot-interface'
 import {
   Commenter,
   COMMENT_REPLY_TAG,

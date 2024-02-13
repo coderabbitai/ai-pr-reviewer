@@ -52,7 +52,7 @@ export class AzureBot implements BotProtocol {
       })
     } else {
       const err =
-        "Unable to initialize the OpenAI API, both 'AZURE_OPENAI_API_KEY' environment variable are not available"
+        "Unable to initialize the OpenAI API, ensure 'AZURE_OPENAI_API_KEY', 'azureApiDeployment', 'apiBaseUrl', and 'azureApiInstance' are properly set"
       throw new Error(err)
     }
   }
@@ -63,6 +63,7 @@ export class AzureBot implements BotProtocol {
       res = await this.chat_(message)
       return res
     } catch (e: unknown) {
+      warning(`Failed to chat: ${e}`)
       return res
     }
   }

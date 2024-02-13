@@ -13,6 +13,7 @@ import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
+import {TokenLimits} from './limits'
 
 async function run(): Promise<void> {
   const options: Options = new Options(
@@ -48,43 +49,33 @@ async function run(): Promise<void> {
 
   // Create two bots, one for summary and one for review
 
-  let lightBot: BotProtocol | null = null
-  try {
-    if (options.azureApiDeployment.length > 0) {
-      lightBot = new AzureBot(
-        options,
-        new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
+  function createBot(
+    model: string,
+    tokenLimits: TokenLimits
+  ): BotProtocol | null {
+    try {
+      if (options.azureApiDeployment.length > 0) {
+        return new AzureBot(options, new OpenAIOptions(model, tokenLimits))
+      } else {
+        return new Bot(options, new OpenAIOptions(model, tokenLimits))
+      }
+    } catch (e: any) {
+      warning(
+        `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
       )
-    } else {
-      lightBot = new Bot(
-        options,
-        new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
-      )
+      return null
     }
-  } catch (e: any) {
-    warning(
-      `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
-    )
-    return
   }
 
-  let heavyBot: BotProtocol | null = null
-  try {
-    if (options.azureApiDeployment.length > 0) {
-      heavyBot = new AzureBot(
-        options,
-        new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
-      )
-    } else {
-      heavyBot = new Bot(
-        options,
-        new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
-      )
-    }
-  } catch (e: any) {
-    warning(
-      `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
-    )
+  const lightBot: BotProtocol | null = createBot(
+    options.openaiLightModel,
+    options.lightTokenLimits
+  )
+  const heavyBot: BotProtocol | null = createBot(
+    options.openaiHeavyModel,
+    options.heavyTokenLimits
+  )
+  if (lightBot == null || heavyBot == null) {
     return
   }
 
