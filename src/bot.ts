@@ -10,14 +10,9 @@ import {
 } from 'chatgpt'
 import pRetry from 'p-retry'
 import {OpenAIOptions, Options} from './options'
+import {BotProtocol, Ids} from './bot-interface'
 
-// define type to save parentMessageId and conversationId
-export interface Ids {
-  parentMessageId?: string
-  conversationId?: string
-}
-
-export class Bot {
+export class Bot implements BotProtocol {
   private readonly api: ChatGPTAPI | null = null // not free
 
   private readonly options: Options

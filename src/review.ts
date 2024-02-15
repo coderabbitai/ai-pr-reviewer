@@ -2,7 +2,7 @@ import {error, info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
 import pLimit from 'p-limit'
-import {type Bot} from './bot'
+import {BotProtocol} from './bot-interface'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
@@ -25,8 +25,8 @@ const repo = context.repo
 const ignoreKeyword = '@coderabbitai: ignore'
 
 export const codeReview = async (
-  lightBot: Bot,
-  heavyBot: Bot,
+  lightBot: BotProtocol,
+  heavyBot: BotProtocol,
   options: Options,
   prompts: Prompts
 ): Promise<void> => {

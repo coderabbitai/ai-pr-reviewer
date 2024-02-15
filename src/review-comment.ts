@@ -1,7 +1,7 @@
 import {info, warning} from '@actions/core'
 // eslint-disable-next-line camelcase
 import {context as github_context} from '@actions/github'
-import {type Bot} from './bot'
+import {BotProtocol} from './bot-interface'
 import {
   Commenter,
   COMMENT_REPLY_TAG,
@@ -20,7 +20,7 @@ const repo = context.repo
 const ASK_BOT = '@coderabbitai'
 
 export const handleReviewComment = async (
-  heavyBot: Bot,
+  heavyBot: BotProtocol,
   options: Options,
   prompts: Prompts
 ) => {

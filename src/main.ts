@@ -5,11 +5,15 @@ import {
   setFailed,
   warning
 } from '@actions/core'
+import {AzureBot} from './azure-bot'
 import {Bot} from './bot'
+import {BotProtocol} from './bot-interface'
+
 import {OpenAIOptions, Options} from './options'
 import {Prompts} from './prompts'
 import {codeReview} from './review'
 import {handleReviewComment} from './review-comment'
+import {TokenLimits} from './limits'
 
 async function run(): Promise<void> {
   const options: Options = new Options(
@@ -29,7 +33,10 @@ async function run(): Promise<void> {
     getInput('openai_concurrency_limit'),
     getInput('github_concurrency_limit'),
     getInput('openai_base_url'),
-    getInput('language')
+    getInput('language'),
+    getInput('azure_api_instance_name'),
+    getInput('azure_api_deployment_name'),
+    getInput('azure_api_version')
   )
 
   // print options
@@ -42,29 +49,33 @@ async function run(): Promise<void> {
 
   // Create two bots, one for summary and one for review
 
-  let lightBot: Bot | null = null
-  try {
-    lightBot = new Bot(
-      options,
-      new OpenAIOptions(options.openaiLightModel, options.lightTokenLimits)
-    )
-  } catch (e: any) {
-    warning(
-      `Skipped: failed to create summary bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
-    )
-    return
+  function createBot(
+    model: string,
+    tokenLimits: TokenLimits
+  ): BotProtocol | null {
+    try {
+      if (options.azureApiDeployment.length > 0) {
+        return new AzureBot(options, new OpenAIOptions(model, tokenLimits))
+      } else {
+        return new Bot(options, new OpenAIOptions(model, tokenLimits))
+      }
+    } catch (e: any) {
+      warning(
+        `Skipped: failed to create bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
+      )
+      return null
+    }
   }
 
-  let heavyBot: Bot | null = null
-  try {
-    heavyBot = new Bot(
-      options,
-      new OpenAIOptions(options.openaiHeavyModel, options.heavyTokenLimits)
-    )
-  } catch (e: any) {
-    warning(
-      `Skipped: failed to create review bot, please check your openai_api_key: ${e}, backtrace: ${e.stack}`
-    )
+  const lightBot: BotProtocol | null = createBot(
+    options.openaiLightModel,
+    options.lightTokenLimits
+  )
+  const heavyBot: BotProtocol | null = createBot(
+    options.openaiHeavyModel,
+    options.heavyTokenLimits
+  )
+  if (lightBot == null || heavyBot == null) {
     return
   }
 

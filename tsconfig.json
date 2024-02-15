@@ -4,6 +4,7 @@
     "sourceMap": false,
     "allowJs": true,
     "checkJs": false,
+    "skipLibCheck": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
