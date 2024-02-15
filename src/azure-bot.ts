@@ -38,6 +38,7 @@ export class AzureBot implements BotProtocol {
 
       this.model = new ChatOpenAI({
         temperature: options.openaiModelTemperature,
+        maxTokens: openaiOptions.tokenLimits.responseTokens,
         azureOpenAIApiKey: process.env.AZURE_OPENAI_API_KEY,
         azureOpenAIApiVersion: options.azureApiVersion,
         azureOpenAIApiInstanceName: options.azureApiInstance,
