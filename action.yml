@@ -18,7 +18,7 @@ inputs:
   review_simple_changes:
     required: false
     description: 'Review even when the changes are simple'
-    default: 'true'
+    default: 'false'
   review_comment_lgtm:
     required: false
     description: 'Leave comments even if the patch is LGTM'
@@ -156,7 +156,7 @@ inputs:
   openai_heavy_model:
     required: false
     description: 'Model to use for complex tasks such as code reviews.'
-    default: 'gpt-3.5-turbo'
+    default: 'gpt-4-turbo-preview'
   openai_model_temperature:
     required: false
     description: 'Temperature for GPT model'
